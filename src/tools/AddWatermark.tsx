@@ -1,0 +1,204 @@
+import { useState, useCallback, useRef } from "react";
+import { FileDropZone } from "../components/FileDropZone.tsx";
+import { addWatermark } from "../utils/pdf-operations.ts";
+import { renderPageThumbnail } from "../utils/pdf-renderer.ts";
+import { downloadPdf } from "../utils/file-helpers.ts";
+import type { WatermarkOptions } from "../types.ts";
+
+export default function AddWatermark() {
+  const [file, setFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [processing, setProcessing] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [options, setOptions] = useState<WatermarkOptions>({
+    text: "CONFIDENTIAL",
+    fontSize: 48,
+    color: { r: 128, g: 128, b: 128 },
+    opacity: 0.3,
+    rotation: -45,
+  });
+  const fileDataRef = useRef<ArrayBuffer | null>(null);
+
+  const handleFile = useCallback(async (files: File[]) => {
+    const pdf = files[0];
+    if (!pdf) return;
+    setFile(pdf);
+    setLoading(true);
+    try {
+      const data = await pdf.arrayBuffer();
+      fileDataRef.current = data;
+      const thumb = await renderPageThumbnail(data, 1, 0.8);
+      setPreview(thumb);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Debounced preview could go here but we keep it simple
+
+  const handleApply = useCallback(async () => {
+    if (!file || !options.text.trim()) return;
+    setProcessing(true);
+    try {
+      const result = await addWatermark(file, options);
+      const baseName = file.name.replace(/\.pdf$/i, "");
+      downloadPdf(result, `${baseName}_watermarked.pdf`);
+    } finally {
+      setProcessing(false);
+    }
+  }, [file, options]);
+
+  return (
+    <div className="space-y-6">
+      {!file ? (
+        <FileDropZone
+          accept=".pdf,application/pdf"
+          onFiles={handleFile}
+          label="Drop a PDF file here"
+          hint="Add a text watermark to all pages"
+        />
+      ) : (
+        <>
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-slate-600">
+              <span className="font-medium">{file.name}</span>
+            </p>
+            <button
+              onClick={() => {
+                setFile(null);
+                setPreview(null);
+                fileDataRef.current = null;
+              }}
+              className="text-sm text-indigo-600 hover:text-indigo-700"
+            >
+              Change file
+            </button>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                  Watermark Text
+                </label>
+                <input
+                  type="text"
+                  value={options.text}
+                  onChange={(e) => setOptions((o) => ({ ...o, text: e.target.value }))}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  placeholder="Enter watermark text"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                  Font Size: {options.fontSize}px
+                </label>
+                <input
+                  type="range"
+                  min={12}
+                  max={120}
+                  value={options.fontSize}
+                  onChange={(e) => setOptions((o) => ({ ...o, fontSize: Number(e.target.value) }))}
+                  className="w-full accent-indigo-600"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                  Opacity: {Math.round(options.opacity * 100)}%
+                </label>
+                <input
+                  type="range"
+                  min={5}
+                  max={100}
+                  value={Math.round(options.opacity * 100)}
+                  onChange={(e) =>
+                    setOptions((o) => ({ ...o, opacity: Number(e.target.value) / 100 }))
+                  }
+                  className="w-full accent-indigo-600"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">
+                  Rotation: {options.rotation}°
+                </label>
+                <input
+                  type="range"
+                  min={-90}
+                  max={90}
+                  value={options.rotation}
+                  onChange={(e) => setOptions((o) => ({ ...o, rotation: Number(e.target.value) }))}
+                  className="w-full accent-indigo-600"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1.5">Color</label>
+                <div className="flex gap-2">
+                  {[
+                    { label: "Gray", color: { r: 128, g: 128, b: 128 } },
+                    { label: "Red", color: { r: 220, g: 38, b: 38 } },
+                    { label: "Blue", color: { r: 59, g: 130, b: 246 } },
+                    { label: "Black", color: { r: 0, g: 0, b: 0 } },
+                  ].map((preset) => (
+                    <button
+                      key={preset.label}
+                      onClick={() => setOptions((o) => ({ ...o, color: preset.color }))}
+                      className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                        options.color.r === preset.color.r && options.color.g === preset.color.g
+                          ? "bg-indigo-600 text-white"
+                          : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                      }`}
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <p className="text-sm font-medium text-slate-700 mb-1.5">Preview (page 1)</p>
+              {loading ? (
+                <div className="aspect-[3/4] bg-slate-100 rounded-lg flex items-center justify-center">
+                  <div className="w-8 h-8 border-3 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+                </div>
+              ) : preview ? (
+                <div className="relative aspect-[3/4] bg-white rounded-lg border border-slate-200 overflow-hidden">
+                  <img src={preview} alt="Preview" className="w-full h-full object-contain" />
+                  <div
+                    className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                    style={{
+                      transform: `rotate(${options.rotation}deg)`,
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: `${options.fontSize * 0.4}px`,
+                        color: `rgba(${options.color.r}, ${options.color.g}, ${options.color.b}, ${options.opacity})`,
+                        fontWeight: "bold",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {options.text}
+                    </span>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          </div>
+
+          <button
+            onClick={handleApply}
+            disabled={processing || !options.text.trim()}
+            className="w-full bg-indigo-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {processing ? "Applying..." : "Apply Watermark & Download"}
+          </button>
+        </>
+      )}
+    </div>
+  );
+}

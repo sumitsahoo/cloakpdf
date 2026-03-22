@@ -1,0 +1,185 @@
+import { useState, useCallback } from "react";
+import { FileDropZone } from "../components/FileDropZone.tsx";
+import { PageThumbnail } from "../components/PageThumbnail.tsx";
+import { rotatePages } from "../utils/pdf-operations.ts";
+import { renderAllThumbnails } from "../utils/pdf-renderer.ts";
+import { downloadPdf } from "../utils/file-helpers.ts";
+
+export default function RotatePages() {
+  const [file, setFile] = useState<File | null>(null);
+  const [thumbnails, setThumbnails] = useState<string[]>([]);
+  const [rotations, setRotations] = useState<Map<number, number>>(new Map());
+  const [processing, setProcessing] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const handleFile = useCallback(async (files: File[]) => {
+    const pdf = files[0];
+    if (!pdf) return;
+    setFile(pdf);
+    setRotations(new Map());
+    setLoading(true);
+    try {
+      const thumbs = await renderAllThumbnails(pdf);
+      setThumbnails(thumbs);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const rotatePage = useCallback((pageIndex: number, angle: number) => {
+    setRotations((prev) => {
+      const next = new Map(prev);
+      const current = next.get(pageIndex) ?? 0;
+      next.set(pageIndex, (current + angle) % 360);
+      return next;
+    });
+  }, []);
+
+  const rotateAll = useCallback(
+    (angle: number) => {
+      setRotations((prev) => {
+        const next = new Map(prev);
+        for (let i = 0; i < thumbnails.length; i++) {
+          const current = next.get(i) ?? 0;
+          next.set(i, (current + angle) % 360);
+        }
+        return next;
+      });
+    },
+    [thumbnails.length],
+  );
+
+  const handleApply = useCallback(async () => {
+    if (!file || rotations.size === 0) return;
+    setProcessing(true);
+    try {
+      const result = await rotatePages(file, rotations);
+      const baseName = file.name.replace(/\.pdf$/i, "");
+      downloadPdf(result, `${baseName}_rotated.pdf`);
+    } finally {
+      setProcessing(false);
+    }
+  }, [file, rotations]);
+
+  return (
+    <div className="space-y-6">
+      {!file ? (
+        <FileDropZone
+          accept=".pdf,application/pdf"
+          onFiles={handleFile}
+          label="Drop a PDF file here"
+          hint="Click rotation buttons on each page to adjust"
+        />
+      ) : (
+        <>
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <p className="text-sm text-slate-600">
+              <span className="font-medium">{file.name}</span> — {thumbnails.length} pages
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => rotateAll(90)}
+                className="text-sm px-3 py-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+              >
+                Rotate All 90° →
+              </button>
+              <button
+                onClick={() => {
+                  setFile(null);
+                  setThumbnails([]);
+                  setRotations(new Map());
+                }}
+                className="text-sm text-indigo-600 hover:text-indigo-700"
+              >
+                Change file
+              </button>
+            </div>
+          </div>
+
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="w-8 h-8 border-3 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+              {thumbnails.map((thumb, i) => (
+                <div key={i} className="space-y-2">
+                  <PageThumbnail src={thumb} pageNumber={i + 1} rotation={rotations.get(i) ?? 0} />
+                  <div className="flex justify-center gap-1">
+                    <button
+                      onClick={() => rotatePage(i, -90)}
+                      className="p-1.5 rounded hover:bg-slate-100 text-slate-500 transition-colors"
+                      title="Rotate 90° left"
+                    >
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M3 10h10a5 5 0 015 5v2M3 10l4-4m-4 4l4 4"
+                        />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => rotatePage(i, 90)}
+                      className="p-1.5 rounded hover:bg-slate-100 text-slate-500 transition-colors"
+                      title="Rotate 90° right"
+                    >
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M21 10H11a5 5 0 00-5 5v2m15-7l-4-4m4 4l-4 4"
+                        />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => rotatePage(i, 180)}
+                      className="p-1.5 rounded hover:bg-slate-100 text-slate-500 transition-colors"
+                      title="Rotate 180°"
+                    >
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {rotations.size > 0 && (
+            <button
+              onClick={handleApply}
+              disabled={processing}
+              className="w-full bg-indigo-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {processing ? "Applying..." : "Apply Rotations & Download"}
+            </button>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
