@@ -47,7 +47,7 @@ BytePDF offers **9 powerful PDF tools**, all running 100% client-side:
 | 🖥️ PDF Rendering    | [PDF.js](https://mozilla.github.io/pdf.js/)                    |
 | 🔤 Font Support     | [@pdf-lib/fontkit](https://github.com/Hopding/fontkit)         |
 | 🖱️ Drag & Drop      | [dnd-kit](https://dndkit.com/)                                 |
-| 📦 Package Manager  | [pnpm](https://pnpm.io/)                                       |
+| 📦 Toolchain CLI    | [Vite+ (`vp`)](https://vite.dev/)                              |
 
 ---
 
@@ -56,7 +56,7 @@ BytePDF offers **9 powerful PDF tools**, all running 100% client-side:
 ### Prerequisites
 
 - **Node.js** ≥ 24.x (LTS recommended)
-- **pnpm** ≥ 11.x
+- **Vite+ (`vp`)** — install globally via `npm i -g vite-plus`
 
 ### Installation
 
@@ -66,19 +66,21 @@ git clone https://github.com/sumitsahoo/bytepdf.git
 cd bytepdf
 
 # Install dependencies
-pnpm install
+vp install
 
 # Start the development server
-pnpm run dev
+vp dev
 ```
 
-### Available Scripts
+### Available Commands
 
-| Command            | Description                               |
-| ------------------ | ----------------------------------------- |
-| `pnpm run dev`     | Start the Vite dev server with hot reload |
-| `pnpm run build`   | TypeScript check + production build       |
-| `pnpm run preview` | Preview the production build locally      |
+| Command      | Description                               |
+| ------------ | ----------------------------------------- |
+| `vp dev`     | Start the Vite dev server with hot reload |
+| `vp build`   | TypeScript check + production build       |
+| `vp preview` | Preview the production build locally      |
+| `vp check`   | Run format, lint, and type checks         |
+| `vp test`    | Run tests                                 |
 
 ---
 
@@ -141,7 +143,7 @@ BytePDF is deployed to **GitHub Pages** via a CI/CD workflow on every push to `m
 The deployment pipeline:
 
 1. ✅ Checks out the code
-2. 📦 Installs dependencies with `pnpm install --frozen-lockfile`
+2. 📦 Installs dependencies with `vp install`
 3. 🏗️ Builds the production bundle with Vite
 4. 🚀 Deploys the `dist/` folder to GitHub Pages
 
