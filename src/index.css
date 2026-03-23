@@ -35,8 +35,9 @@
   --color-dark-text-muted: #94a3b8;
 }
 
+@custom-variant dark (@media (prefers-color-scheme: dark));
+
 html {
-  scroll-behavior: smooth;
 }
 
 body {
