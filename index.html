@@ -2,17 +2,36 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.svg" />
+
+    <!-- SVG favicon (primary + only) -->
+    <link rel="icon" href="/icons/favicon.svg" type="image/svg+xml" />
+
+    <!-- Optional: Safari pinned tab (nice touch for macOS) -->
+    <link rel="mask-icon" href="/icons/favicon.svg" color="#2563EB" />
+
+    <!-- PWA manifest -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+
+    <!-- Viewport -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="color-scheme" content="light dark" />
+
+    <!-- Theme -->
     <meta name="theme-color" content="#2563EB" />
+    <meta name="color-scheme" content="light dark" />
+
+    <!-- iOS PWA (will NOT use SVG icon, but still safe to include) -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+
+    <!-- SEO -->
     <meta
       name="description"
       content="Free, private, browser-based PDF toolkit — merge, split, compress, rotate, reorder, delete pages, add watermarks & signatures."
     />
+
     <title>BytePDF</title>
   </head>
+
   <body>
     <div id="app"></div>
     <script type="module" src="/src/main.tsx"></script>
