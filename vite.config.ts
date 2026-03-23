@@ -31,6 +31,25 @@ export default defineConfig({
             type: "image/svg+xml",
           },
         ],
+        screenshots: [
+          // Screenshots taken from Chrome Dev Tools. Actual resolution may vary.
+          // iPhone 14 Pro Max (Portrait)
+          {
+            src: "screenshots/iPhone.png",
+            sizes: "1290x2796",
+            type: "image/png",
+            form_factor: "narrow",
+            label: "BytePDF App on iPhone 14 Pro Max",
+          },
+          // iPad Pro (Landscape)
+          {
+            src: "screenshots/iPad.png",
+            sizes: "2732x2048",
+            type: "image/png",
+            form_factor: "wide",
+            label: "BytePDF App on iPad Pro Landscape",
+          },
+        ],
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,svg,png,woff2}"],
