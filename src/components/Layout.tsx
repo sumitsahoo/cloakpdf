@@ -31,8 +31,8 @@ export function Layout({ children, onHome, showBack }: LayoutProps) {
             onClick={onHome}
             className="flex items-center gap-2.5 hover:opacity-80 transition-opacity"
           >
-            <div className="w-8 h-8 bg-linear-to-br from-primary-400 to-accent rounded-lg flex items-center justify-center shadow-sm">
-              <svg className="w-5 h-5" viewBox="0 0 48 48" fill="none">
+            <div className="w-10 h-10 bg-linear-to-br from-primary-400 to-accent rounded-xl flex items-center justify-center shadow-sm">
+              <svg className="w-6 h-6" viewBox="0 0 48 48" fill="none">
                 <path
                   d="M13 7h15l9 9v24a3 3 0 01-3 3H13a3 3 0 01-3-3V10a3 3 0 013-3z"
                   fill="white"
@@ -40,7 +40,7 @@ export function Layout({ children, onHome, showBack }: LayoutProps) {
                 />
                 <path d="M28 7v6a3 3 0 003 3h6l-9-9z" fill="#d5f2ec" />
                 <text
-                  x="20.5"
+                  x="23.5"
                   y="22"
                   fontFamily="ui-monospace,monospace"
                   fontWeight="700"
@@ -52,7 +52,7 @@ export function Layout({ children, onHome, showBack }: LayoutProps) {
                   1 0 1 1
                 </text>
                 <text
-                  x="20.5"
+                  x="23.5"
                   y="28.5"
                   fontFamily="ui-monospace,monospace"
                   fontWeight="700"
@@ -64,7 +64,7 @@ export function Layout({ children, onHome, showBack }: LayoutProps) {
                   0 1 0 0
                 </text>
                 <text
-                  x="20.5"
+                  x="23.5"
                   y="35"
                   fontFamily="ui-monospace,monospace"
                   fontWeight="700"

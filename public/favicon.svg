@@ -13,13 +13,13 @@
     <path d="M28 7v6a3 3 0 003 3h6l-9-9z" fill="#d5f2ec" />
     <!-- Fold shadow line -->
     <path d="M28 7l9 9" stroke="#aee6db" stroke-width="0.5" />
-    <!-- Binary digits - row 1 (centered at doc midpoint x=20.5) -->
-    <text x="20.5" y="22" font-family="ui-monospace,monospace" font-weight="700" font-size="5.5" fill="#3da396"
+    <!-- Binary digits - row 1 (centered at doc midpoint x=23.5) -->
+    <text x="23.5" y="22" font-family="ui-monospace,monospace" font-weight="700" font-size="5.5" fill="#3da396"
         opacity="0.85" text-anchor="middle">1 0 1 1</text>
     <!-- Binary digits - row 2 -->
-    <text x="20.5" y="28.5" font-family="ui-monospace,monospace" font-weight="700" font-size="5.5" fill="#4db8a8"
+    <text x="23.5" y="28.5" font-family="ui-monospace,monospace" font-weight="700" font-size="5.5" fill="#4db8a8"
         opacity="0.6" text-anchor="middle">0 1 0 0</text>
     <!-- Binary digits - row 3 -->
-    <text x="20.5" y="35" font-family="ui-monospace,monospace" font-weight="700" font-size="5.5" fill="#3da396"
+    <text x="23.5" y="35" font-family="ui-monospace,monospace" font-weight="700" font-size="5.5" fill="#3da396"
         opacity="0.4" text-anchor="middle">1 1 0 1</text>
 </svg>
