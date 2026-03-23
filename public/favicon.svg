@@ -5,9 +5,21 @@
             <stop offset="100%" stop-color="#8b5cf6" />
         </linearGradient>
     </defs>
-    <rect width="48" height="48" rx="10" fill="url(#bg)" />
-    <path d="M14 8h13l9 9v21a3 3 0 01-3 3H14a3 3 0 01-3-3V11a3 3 0 013-3z" fill="white" opacity="0.2" />
-    <path d="M27 8l9 9h-6a3 3 0 01-3-3V8z" fill="white" opacity="0.35" />
-    <text x="24" y="33" text-anchor="middle" font-family="system-ui,-apple-system,sans-serif" font-weight="800"
-        font-size="13" fill="white" letter-spacing="-0.5">BP</text>
+    <!-- Rounded square background -->
+    <rect width="48" height="48" rx="12" fill="url(#bg)" />
+    <!-- Document body -->
+    <path d="M13 7h15l9 9v24a3 3 0 01-3 3H13a3 3 0 01-3-3V10a3 3 0 013-3z" fill="white" opacity="0.95" />
+    <!-- Document fold -->
+    <path d="M28 7v6a3 3 0 003 3h6l-9-9z" fill="#e0e7ff" />
+    <!-- Fold shadow line -->
+    <path d="M28 7l9 9" stroke="#c7d2fe" stroke-width="0.5" />
+    <!-- Binary digits - row 1 -->
+    <text x="14" y="23" font-family="ui-monospace,monospace" font-weight="700" font-size="5.5" fill="#6366f1"
+        opacity="0.8">1 0 1 1</text>
+    <!-- Binary digits - row 2 -->
+    <text x="14" y="29.5" font-family="ui-monospace,monospace" font-weight="700" font-size="5.5" fill="#8b5cf6"
+        opacity="0.6">0 1 0 0</text>
+    <!-- Binary digits - row 3 -->
+    <text x="14" y="36" font-family="ui-monospace,monospace" font-weight="700" font-size="5.5" fill="#6366f1"
+        opacity="0.4">1 1 0 1</text>
 </svg>

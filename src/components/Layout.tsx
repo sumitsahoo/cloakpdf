@@ -32,21 +32,46 @@ export function Layout({ children, onHome, showBack }: LayoutProps) {
             className="flex items-center gap-2.5 hover:opacity-80 transition-opacity"
           >
             <div className="w-8 h-8 bg-linear-to-br from-indigo-500 to-violet-600 rounded-lg flex items-center justify-center shadow-sm">
-              <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none">
+              <svg className="w-5 h-5" viewBox="0 0 48 48" fill="none">
                 <path
-                  d="M6 2h8l6 6v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4a2 2 0 012-2z"
-                  fill="currentColor"
-                  opacity="0.3"
+                  d="M13 7h15l9 9v24a3 3 0 01-3 3H13a3 3 0 01-3-3V10a3 3 0 013-3z"
+                  fill="white"
+                  opacity="0.95"
                 />
-                <path d="M14 2l6 6h-4a2 2 0 01-2-2V2z" fill="currentColor" opacity="0.5" />
-                <path
-                  d="M8 13h2.5a1.5 1.5 0 010 3H8v-3zm0 0V11m0 5v2"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <circle cx="15" cy="14.5" r="2" stroke="currentColor" strokeWidth="1.5" />
+                <path d="M28 7v6a3 3 0 003 3h6l-9-9z" fill="#e0e7ff" />
+                <text
+                  x="14"
+                  y="23"
+                  fontFamily="ui-monospace,monospace"
+                  fontWeight="700"
+                  fontSize="5.5"
+                  fill="#6366f1"
+                  opacity="0.85"
+                >
+                  1 0 1 1
+                </text>
+                <text
+                  x="14"
+                  y="29.5"
+                  fontFamily="ui-monospace,monospace"
+                  fontWeight="700"
+                  fontSize="5.5"
+                  fill="#8b5cf6"
+                  opacity="0.65"
+                >
+                  0 1 0 0
+                </text>
+                <text
+                  x="14"
+                  y="36"
+                  fontFamily="ui-monospace,monospace"
+                  fontWeight="700"
+                  fontSize="5.5"
+                  fill="#6366f1"
+                  opacity="0.45"
+                >
+                  1 1 0 1
+                </text>
               </svg>
             </div>
             <span className="text-lg font-semibold text-slate-800">BytePDF</span>
