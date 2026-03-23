@@ -52,7 +52,9 @@ export async function compressPdf(
   const { scale, jpegQuality } = qualitySettings[quality];
 
   // Dynamic import to avoid circular dependency
+  const { default: workerSrc } = await import("pdfjs-dist/build/pdf.worker.min.mjs?worker&url");
   const pdfjsLib = await import("pdfjs-dist");
+  pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
   const arrayBuffer = await file.arrayBuffer();
   const sourcePdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
   const newPdf = await PDFDocument.create();

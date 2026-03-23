@@ -1,9 +1,7 @@
+import workerSrc from "pdfjs-dist/build/pdf.worker.min.mjs?worker&url";
 import * as pdfjsLib from "pdfjs-dist";
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-  "pdfjs-dist/build/pdf.worker.min.mjs",
-  import.meta.url,
-).toString();
+pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
 
 export async function getPageCount(file: File): Promise<number> {
   const arrayBuffer = await file.arrayBuffer();
