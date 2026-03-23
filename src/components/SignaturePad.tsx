@@ -22,10 +22,18 @@ interface SignaturePadProps {
   height?: number;
 }
 
+const SIGNATURE_COLORS = [
+  { label: "Black", value: "#1e293b" },
+  { label: "Blue", value: "#1d4ed8" },
+  { label: "Red", value: "#dc2626" },
+  { label: "Grey", value: "#6b7280" },
+];
+
 export function SignaturePad({ onSignature, width = 500, height = 200 }: SignaturePadProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [hasContent, setHasContent] = useState(false);
+  const [color, setColor] = useState(SIGNATURE_COLORS[0].value);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -33,11 +41,17 @@ export function SignaturePad({ onSignature, width = 500, height = 200 }: Signatu
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.strokeStyle = "#1e293b";
+    ctx.strokeStyle = color;
     ctx.lineWidth = 2;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
   }, []);
+
+  useEffect(() => {
+    const ctx = canvasRef.current?.getContext("2d");
+    if (!ctx) return;
+    ctx.strokeStyle = color;
+  }, [color]);
 
   const getPos = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     const canvas = canvasRef.current!;
@@ -121,9 +135,22 @@ export function SignaturePad({ onSignature, width = 500, height = 200 }: Signatu
         />
       </div>
       <div className="flex items-center justify-between">
-        <p className="text-xs text-slate-400 dark:text-dark-text-muted">
-          Draw your signature above
-        </p>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-slate-400 dark:text-dark-text-muted">Color:</span>
+          {SIGNATURE_COLORS.map((c) => (
+            <button
+              key={c.value}
+              title={c.label}
+              onClick={() => setColor(c.value)}
+              className={`w-5 h-5 rounded-full border-2 transition-transform ${
+                color === c.value
+                  ? "border-primary-500 scale-125"
+                  : "border-slate-300 dark:border-dark-border hover:scale-110"
+              }`}
+              style={{ backgroundColor: c.value }}
+            />
+          ))}
+        </div>
         {hasContent && (
           <button
             onClick={clear}
