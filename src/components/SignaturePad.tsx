@@ -1,8 +1,24 @@
+/**
+ * Canvas-based signature drawing pad.
+ *
+ * Captures mouse and touch input to draw freehand strokes on an HTML5 canvas.
+ * The canvas is initialised with a white background so the exported PNG has
+ * an opaque backdrop. When the user lifts the pen/finger, the current canvas
+ * content is exported as a PNG data-URL via `onSignature`. A "Clear" button
+ * lets the user reset the canvas.
+ *
+ * Coordinate scaling (`scaleX/scaleY`) is applied so strokes stay accurate
+ * even when the canvas is CSS-resized to fill its container.
+ */
+
 import { useRef, useEffect, useState, useCallback } from "react";
 
 interface SignaturePadProps {
+  /** Called with the PNG data-URL every time the user finishes a stroke. Empty string on clear. */
   onSignature: (dataUrl: string) => void;
+  /** Intrinsic canvas width in pixels (default 500). */
   width?: number;
+  /** Intrinsic canvas height in pixels (default 200). */
   height?: number;
 }
 

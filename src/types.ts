@@ -1,16 +1,28 @@
+/**
+ * Shared TypeScript type definitions used across the application.
+ */
+
+/** A 1-based inclusive page range used by the Split PDF tool. */
 export interface PageRange {
   start: number;
   end: number;
 }
 
+/** Configuration options for the Add Watermark tool. */
 export interface WatermarkOptions {
+  /** The watermark text to display. */
   text: string;
+  /** Font size in PDF points. */
   fontSize: number;
+  /** RGB colour with values in the 0–255 range. */
   color: { r: number; g: number; b: number };
+  /** Opacity from 0 (fully transparent) to 1 (fully opaque). */
   opacity: number;
+  /** Rotation angle in degrees (negative = counter-clockwise). */
   rotation: number;
 }
 
+/** Absolute position and dimensions (in PDF points) for signature placement. */
 export interface Position {
   x: number;
   y: number;
@@ -18,6 +30,7 @@ export interface Position {
   height: number;
 }
 
+/** Metadata describing a single PDF tool shown on the home screen. */
 export interface Tool {
   id: string;
   title: string;
@@ -25,6 +38,7 @@ export interface Tool {
   icon: string;
 }
 
+/** Union of all valid tool identifiers. */
 export type ToolId =
   | "merge"
   | "split"

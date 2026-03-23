@@ -1,8 +1,19 @@
+/**
+ * Root layout shell for the application.
+ *
+ * Provides a sticky header (logo, privacy badge, optional back button),
+ * a centred content area, and a footer reinforcing the privacy message.
+ * All pages/tools are rendered inside `children`.
+ */
+
 import type { ReactNode } from "react";
 
 interface LayoutProps {
+  /** Content to render in the main area. */
   children: ReactNode;
+  /** Callback fired when the user navigates back to the home screen. */
   onHome: () => void;
+  /** When true, displays a back-arrow button in the header. */
   showBack?: boolean;
 }
 

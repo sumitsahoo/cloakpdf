@@ -1,8 +1,17 @@
+/**
+ * Merge PDFs tool.
+ *
+ * Lets the user drop multiple PDF files, reorder them with up/down buttons,
+ * and merge them into a single downloaded PDF. Files are stored locally
+ * with unique IDs for stable list keys.
+ */
+
 import { useState, useCallback } from "react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { mergePdfs } from "../utils/pdf-operations.ts";
 import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
 
+/** Internal representation of a queued PDF file. */
 interface FileItem {
   file: File;
   id: string;

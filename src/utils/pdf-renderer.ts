@@ -1,8 +1,25 @@
+/**
+ * PDF page rendering utilities powered by PDF.js.
+ *
+ * Renders individual or all pages of a PDF to off-screen canvases and
+ * returns the result as PNG data-URL strings — used for page thumbnails
+ * across the Split, Rotate, Delete, Reorder, Watermark, and Signature tools.
+ */
+
 import workerSrc from "pdfjs-dist/build/pdf.worker.min.mjs?worker&url";
 import * as pdfjsLib from "pdfjs-dist";
 
+// PDF.js requires a Web Worker for parsing. The `?worker&url` Vite suffix
+// ensures the worker file is emitted as a standalone asset with the correct
+// base path, even when deployed under a subpath like /bytepdf/.
 pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
 
+/**
+ * Return the total number of pages in a PDF file.
+ *
+ * @param file - The PDF file to inspect.
+ * @returns Total page count.
+ */
 export async function getPageCount(file: File): Promise<number> {
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
@@ -11,6 +28,17 @@ export async function getPageCount(file: File): Promise<number> {
   return count;
 }
 
+/**
+ * Render a single PDF page to a PNG data-URL thumbnail.
+ *
+ * An off-screen canvas is created, the page is rendered at the given scale,
+ * and the canvas content is exported as a base-64 PNG data URL.
+ *
+ * @param data - Raw PDF bytes as an ArrayBuffer.
+ * @param pageNum - 1-based page number to render.
+ * @param scale - Render scale factor (default 0.5). Higher = better quality but slower.
+ * @returns A `data:image/png;base64,…` string of the rendered page.
+ */
 export async function renderPageThumbnail(
   data: ArrayBuffer,
   pageNum: number,
@@ -32,6 +60,16 @@ export async function renderPageThumbnail(
   return dataUrl;
 }
 
+/**
+ * Render every page of a PDF file into an array of PNG data-URL thumbnails.
+ *
+ * Pages are rendered sequentially to avoid excessive memory usage.
+ * The PDF document is destroyed after all pages are processed.
+ *
+ * @param file - The PDF file whose pages should be rendered.
+ * @param scale - Render scale factor (default 0.4 for lighter thumbnails).
+ * @returns An ordered array of `data:image/png;base64,…` strings, one per page.
+ */
 export async function renderAllThumbnails(file: File, scale = 0.4): Promise<string[]> {
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;

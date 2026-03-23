@@ -1,3 +1,17 @@
+/**
+ * Add Signature tool.
+ *
+ * Combines the SignaturePad canvas component with page selection, position
+ * controls, and size sliders. The user draws a signature, chooses a page,
+ * adjusts placement via percentage-based sliders, and the signature is
+ * embedded into the PDF at the calculated coordinates.
+ *
+ * Position is specified as percentages of the page dimensions to decouple
+ * the preview from the actual PDF point-based coordinate system. The
+ * conversion to absolute PDF points happens at apply-time by loading the
+ * document and reading the target page’s dimensions.
+ */
+
 import { useState, useCallback } from "react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { SignaturePad } from "../components/SignaturePad.tsx";

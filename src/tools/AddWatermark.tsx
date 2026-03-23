@@ -1,3 +1,13 @@
+/**
+ * Add Watermark tool.
+ *
+ * Provides a form to configure watermark text, font size, opacity, rotation,
+ * and colour (from preset options). A live preview overlays the watermark on
+ * the first page’s thumbnail using CSS transforms so the user can see how
+ * it will look before committing. The actual watermark is drawn into the PDF
+ * using pdf-lib.
+ */
+
 import { useState, useCallback, useRef } from "react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { addWatermark } from "../utils/pdf-operations.ts";

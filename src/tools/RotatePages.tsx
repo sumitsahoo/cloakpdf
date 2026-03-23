@@ -1,3 +1,12 @@
+/**
+ * Rotate Pages tool.
+ *
+ * Renders page thumbnails with per-page rotation buttons (−90°, +90°, 180°)
+ * and a “Rotate All” shortcut. Rotation angles are accumulated in a Map
+ * keyed by 0-based page index. Only pages with a non-zero rotation are
+ * modified on save.
+ */
+
 import { useState, useCallback } from "react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { PageThumbnail } from "../components/PageThumbnail.tsx";

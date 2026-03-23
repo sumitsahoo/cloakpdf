@@ -1,9 +1,23 @@
+/**
+ * Card displaying a rendered PDF page thumbnail.
+ *
+ * Shows the page image inside a 3:4 aspect-ratio container with a page
+ * number badge. Supports optional rotation (CSS transform), a selected
+ * state with a highlighted border, and a custom overlay (e.g. a delete icon).
+ */
+
 interface PageThumbnailProps {
+  /** Data-URL (PNG) of the rendered page. */
   src: string;
+  /** 1-based page number shown in the badge. */
   pageNumber: number;
+  /** Whether this page is currently selected. */
   selected?: boolean;
+  /** CSS rotation angle in degrees applied to the thumbnail image. */
   rotation?: number;
+  /** Click handler for selecting/toggling the page. */
   onClick?: () => void;
+  /** Optional overlay element rendered on top of the thumbnail (e.g. delete icon). */
   overlay?: React.ReactNode;
 }
 

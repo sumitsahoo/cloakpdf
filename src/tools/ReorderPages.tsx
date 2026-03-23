@@ -1,3 +1,12 @@
+/**
+ * Reorder Pages tool.
+ *
+ * Uses dnd-kit to provide drag-and-drop page reordering. Each page is
+ * rendered as a sortable thumbnail using `SortablePage`. The internal
+ * `order` array tracks page indices as strings (required by dnd-kit IDs).
+ * The "Apply" button only appears when the order has actually changed.
+ */
+
 import { useState, useCallback } from "react";
 import {
   DndContext,

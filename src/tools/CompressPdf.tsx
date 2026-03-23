@@ -1,3 +1,11 @@
+/**
+ * Compress PDF tool.
+ *
+ * Offers three compression levels (Light / Balanced / Maximum). After
+ * compression, shows a summary comparing original vs. compressed size
+ * and the percentage saved. The compressed file can then be downloaded.
+ */
+
 import { useState, useCallback } from "react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { compressPdf } from "../utils/pdf-operations.ts";

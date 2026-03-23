@@ -1,10 +1,24 @@
+/**
+ * Reusable drag-and-drop file input component.
+ *
+ * Supports both drag-over drop and traditional click-to-browse. Visual
+ * feedback (border/background color change) is provided while a file
+ * is being dragged over the zone. The hidden `<input>` is reset after
+ * each selection so the same file can be picked again if needed.
+ */
+
 import { useState, useRef, useCallback } from "react";
 
 interface FileDropZoneProps {
+  /** MIME type filter for the hidden file input (e.g. ".pdf,application/pdf"). */
   accept: string;
+  /** Whether to allow selecting multiple files at once. */
   multiple?: boolean;
+  /** Callback invoked with the selected/dropped File objects. */
   onFiles: (files: File[]) => void;
+  /** Primary label text shown in the drop zone. */
   label?: string;
+  /** Optional secondary hint text below the label. */
   hint?: string;
 }
 

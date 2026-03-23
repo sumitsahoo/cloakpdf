@@ -1,11 +1,22 @@
+/**
+ * Images to PDF tool.
+ *
+ * Accepts multiple image files (JPEG, PNG, WebP) via drag-and-drop, shows
+ * previews with ordering controls, and converts them into a single PDF.
+ * Supports three page-size options: A4, Letter, and Fit-to-Image.
+ * Object URLs for image previews are revoked on removal to avoid memory leaks.
+ */
+
 import { useState, useCallback } from "react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { imagesToPdf } from "../utils/pdf-operations.ts";
 import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
 
+/** Internal representation of a queued image with its preview URL. */
 interface ImageItem {
   file: File;
   id: string;
+  /** Object URL for the image preview thumbnail. */
   preview: string;
 }
 

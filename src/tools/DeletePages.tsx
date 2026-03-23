@@ -1,3 +1,11 @@
+/**
+ * Delete Pages tool.
+ *
+ * Displays page thumbnails in a grid. Clicking a page toggles it for deletion
+ * (shown with a red overlay). The user cannot delete all pages — at least one
+ * must remain. On confirmation, a new PDF is created with the remaining pages.
+ */
+
 import { useState, useCallback } from "react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { PageThumbnail } from "../components/PageThumbnail.tsx";

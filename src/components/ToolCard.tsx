@@ -1,7 +1,16 @@
+/**
+ * Clickable card displayed on the home screen for each available tool.
+ *
+ * Shows the tool’s emoji icon, title, and a short description. Hover
+ * state adds a subtle border highlight and shadow.
+ */
+
 import type { Tool } from "../types.ts";
 
 interface ToolCardProps {
+  /** Tool metadata (id, title, description, icon). */
   tool: Tool;
+  /** Callback fired when the card is clicked. */
   onClick: () => void;
 }
 

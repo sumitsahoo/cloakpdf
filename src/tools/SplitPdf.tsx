@@ -1,3 +1,12 @@
+/**
+ * Split PDF tool.
+ *
+ * Displays all pages as selectable thumbnails. The user can click individual
+ * pages to select them or enter a range string (e.g. "1-3, 5, 7-9") to
+ * specify which pages to extract. The selected pages are written to a new
+ * PDF and downloaded.
+ */
+
 import { useState, useCallback } from "react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { PageThumbnail } from "../components/PageThumbnail.tsx";

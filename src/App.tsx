@@ -1,7 +1,18 @@
+/**
+ * Root application component.
+ *
+ * Manages the active tool state and renders either the home screen
+ * (a grid of ToolCards) or the selected tool’s component. All tool
+ * components are lazy-loaded via `React.lazy` and wrapped in
+ * `Suspense` with a spinning loader fallback.
+ */
+
 import { useState, useCallback, lazy, Suspense } from "react";
 import { Layout } from "./components/Layout.tsx";
 import { ToolCard } from "./components/ToolCard.tsx";
 import type { Tool, ToolId } from "./types.ts";
+
+// ---- Lazy-loaded tool components (code-split per tool) ----
 
 const MergePdf = lazy(() => import("./tools/MergePdf.tsx"));
 const SplitPdf = lazy(() => import("./tools/SplitPdf.tsx"));
@@ -13,6 +24,7 @@ const ImagesToPdf = lazy(() => import("./tools/ImagesToPdf.tsx"));
 const AddWatermark = lazy(() => import("./tools/AddWatermark.tsx"));
 const AddSignature = lazy(() => import("./tools/AddSignature.tsx"));
 
+// ---- Tool metadata displayed on the home screen grid ----
 const tools: Tool[] = [
   {
     id: "merge",
@@ -70,6 +82,7 @@ const tools: Tool[] = [
   },
 ];
 
+// ---- Map tool IDs to their lazily-loaded components ----
 const toolComponents: Record<string, React.LazyExoticComponent<React.ComponentType>> = {
   merge: MergePdf,
   split: SplitPdf,
@@ -82,6 +95,7 @@ const toolComponents: Record<string, React.LazyExoticComponent<React.ComponentTy
   signature: AddSignature,
 };
 
+/** Full-screen centred spinner shown while a tool component is loading. */
 function LoadingSpinner() {
   return (
     <div className="flex items-center justify-center py-20">
