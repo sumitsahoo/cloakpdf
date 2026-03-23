@@ -20,6 +20,7 @@ export default function AddWatermark() {
   const [preview, setPreview] = useState<string | null>(null);
   const [processing, setProcessing] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [options, setOptions] = useState<WatermarkOptions>({
     text: "CONFIDENTIAL",
     fontSize: 48,
@@ -34,11 +35,19 @@ export default function AddWatermark() {
     if (!pdf) return;
     setFile(pdf);
     setLoading(true);
+    setError(null);
     try {
       const data = await pdf.arrayBuffer();
       fileDataRef.current = data;
       const thumb = await renderPageThumbnail(data, 1, 0.8);
       setPreview(thumb);
+    } catch (e) {
+      setError(
+        e instanceof Error
+          ? e.message
+          : "Failed to load PDF. The file may be corrupted or password-protected.",
+      );
+      setFile(null);
     } finally {
       setLoading(false);
     }
@@ -49,10 +58,13 @@ export default function AddWatermark() {
   const handleApply = useCallback(async () => {
     if (!file || !options.text.trim()) return;
     setProcessing(true);
+    setError(null);
     try {
       const result = await addWatermark(file, options);
       const baseName = file.name.replace(/\.pdf$/i, "");
       downloadPdf(result, `${baseName}_watermarked.pdf`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to add watermark. Please try again.");
     } finally {
       setProcessing(false);
     }
@@ -212,6 +224,12 @@ export default function AddWatermark() {
             {processing ? "Applying..." : "Apply Watermark & Download"}
           </button>
         </>
+      )}
+
+      {error && (
+        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-4">
+          <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
+        </div>
       )}
     </div>
   );

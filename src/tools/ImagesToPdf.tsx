@@ -7,7 +7,7 @@
  * Object URLs for image previews are revoked on removal to avoid memory leaks.
  */
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { imagesToPdf } from "../utils/pdf-operations.ts";
 import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
@@ -24,6 +24,15 @@ export default function ImagesToPdf() {
   const [images, setImages] = useState<ImageItem[]>([]);
   const [pageSize, setPageSize] = useState<"a4" | "letter" | "fit">("a4");
   const [processing, setProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Revoke all object URLs when the component unmounts
+  useEffect(() => {
+    return () => {
+      images.forEach((item) => URL.revokeObjectURL(item.preview));
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only on unmount
+  }, []);
 
   const handleFiles = useCallback((files: File[]) => {
     const imageFiles = files.filter((f) => f.type.startsWith("image/"));
@@ -56,12 +65,17 @@ export default function ImagesToPdf() {
   const handleConvert = useCallback(async () => {
     if (images.length === 0) return;
     setProcessing(true);
+    setError(null);
     try {
       const result = await imagesToPdf(
         images.map((i) => i.file),
         pageSize,
       );
       downloadPdf(result, "images.pdf");
+    } catch (e) {
+      setError(
+        e instanceof Error ? e.message : "Failed to create PDF from images. Please try again.",
+      );
     } finally {
       setProcessing(false);
     }
@@ -194,6 +208,12 @@ export default function ImagesToPdf() {
               : `Create PDF from ${images.length} Image${images.length > 1 ? "s" : ""}`}
           </button>
         </>
+      )}
+
+      {error && (
+        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-4">
+          <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
+        </div>
       )}
     </div>
   );

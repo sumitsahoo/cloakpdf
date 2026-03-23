@@ -15,6 +15,7 @@ export default function CompressPdf() {
   const [file, setFile] = useState<File | null>(null);
   const [processing, setProcessing] = useState(false);
   const [quality, setQuality] = useState<"low" | "medium" | "high">("medium");
+  const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<{
     original: number;
     compressed: number;
@@ -31,6 +32,7 @@ export default function CompressPdf() {
   const handleCompress = useCallback(async () => {
     if (!file) return;
     setProcessing(true);
+    setError(null);
     try {
       const data = await compressPdf(file, quality);
       setResult({
@@ -38,6 +40,8 @@ export default function CompressPdf() {
         compressed: data.length,
         data,
       });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to compress PDF. Please try again.");
     } finally {
       setProcessing(false);
     }
@@ -174,6 +178,12 @@ export default function CompressPdf() {
             </div>
           )}
         </>
+      )}
+
+      {error && (
+        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-4">
+          <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
+        </div>
       )}
     </div>
   );

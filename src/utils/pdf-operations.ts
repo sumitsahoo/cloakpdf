@@ -50,10 +50,12 @@ export async function splitPdf(file: File, ranges: PageRange[]): Promise<Uint8Ar
   const source = await PDFDocument.load(arrayBuffer);
   const result = await PDFDocument.create();
 
+  const seen = new Set<number>();
   const pageIndices: number[] = [];
   for (const range of ranges) {
     for (let i = range.start; i <= range.end && i <= source.getPageCount(); i++) {
-      if (!pageIndices.includes(i - 1)) {
+      if (!seen.has(i - 1)) {
+        seen.add(i - 1);
         pageIndices.push(i - 1);
       }
     }
@@ -115,10 +117,21 @@ export async function compressPdf(
 
     await page.render({ canvasContext: ctx, viewport, canvas }).promise;
 
-    // Convert to JPEG for lossy compression
-    const jpegDataUrl = canvas.toDataURL("image/jpeg", jpegQuality);
-    const response = await fetch(jpegDataUrl);
-    const jpegBytes = new Uint8Array(await response.arrayBuffer());
+    // Convert to JPEG via toBlob (avoids the overhead of a data-URL round-trip)
+    const jpegBytes = await new Promise<Uint8Array>((resolve, reject) => {
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) return reject(new Error("Canvas toBlob returned null"));
+          blob.arrayBuffer().then((ab) => resolve(new Uint8Array(ab)), reject);
+        },
+        "image/jpeg",
+        jpegQuality,
+      );
+    });
+
+    // Release canvas bitmap memory
+    canvas.width = 0;
+    canvas.height = 0;
 
     const image = await newPdf.embedJpg(jpegBytes);
 
@@ -333,9 +346,13 @@ export async function addSignature(
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await PDFDocument.load(arrayBuffer);
 
-  // Convert data URL to Uint8Array
-  const response = await fetch(signatureDataUrl);
-  const signatureBytes = new Uint8Array(await response.arrayBuffer());
+  // Decode data URL to Uint8Array without fetch() overhead
+  const base64 = signatureDataUrl.split(",")[1];
+  const binaryStr = atob(base64);
+  const signatureBytes = new Uint8Array(binaryStr.length);
+  for (let i = 0; i < binaryStr.length; i++) {
+    signatureBytes[i] = binaryStr.charCodeAt(i);
+  }
 
   const signatureImage = await pdf.embedPng(signatureBytes);
   const page = pdf.getPage(pageIndex);

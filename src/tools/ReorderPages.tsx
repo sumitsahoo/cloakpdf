@@ -79,6 +79,7 @@ export default function ReorderPages() {
   const [order, setOrder] = useState<string[]>([]);
   const [processing, setProcessing] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -90,10 +91,18 @@ export default function ReorderPages() {
     if (!pdf) return;
     setFile(pdf);
     setLoading(true);
+    setError(null);
     try {
       const thumbs = await renderAllThumbnails(pdf);
       setThumbnails(thumbs);
       setOrder(thumbs.map((_, i) => String(i)));
+    } catch (e) {
+      setError(
+        e instanceof Error
+          ? e.message
+          : "Failed to load PDF. The file may be corrupted or password-protected.",
+      );
+      setFile(null);
     } finally {
       setLoading(false);
     }
@@ -115,11 +124,14 @@ export default function ReorderPages() {
   const handleApply = useCallback(async () => {
     if (!file) return;
     setProcessing(true);
+    setError(null);
     try {
       const newOrder = order.map(Number);
       const result = await reorderPages(file, newOrder);
       const baseName = file.name.replace(/\.pdf$/i, "");
       downloadPdf(result, `${baseName}_reordered.pdf`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to reorder pages. Please try again.");
     } finally {
       setProcessing(false);
     }
@@ -192,6 +204,12 @@ export default function ReorderPages() {
             </button>
           )}
         </>
+      )}
+
+      {error && (
+        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-4">
+          <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
+        </div>
       )}
     </div>
   );

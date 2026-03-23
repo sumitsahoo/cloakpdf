@@ -21,6 +21,7 @@ export default function SplitPdf() {
   const [rangeInput, setRangeInput] = useState("");
   const [processing, setProcessing] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleFile = useCallback(async (files: File[]) => {
     const pdf = files[0];
@@ -29,9 +30,17 @@ export default function SplitPdf() {
     setSelectedPages(new Set());
     setRangeInput("");
     setLoading(true);
+    setError(null);
     try {
       const thumbs = await renderAllThumbnails(pdf);
       setThumbnails(thumbs);
+    } catch (e) {
+      setError(
+        e instanceof Error
+          ? e.message
+          : "Failed to load PDF. The file may be corrupted or password-protected.",
+      );
+      setFile(null);
     } finally {
       setLoading(false);
     }
@@ -73,11 +82,18 @@ export default function SplitPdf() {
     if (pages.length === 0) return;
 
     setProcessing(true);
+    setError(null);
     try {
       const ranges = pages.map((p) => ({ start: p, end: p }));
       const result = await splitPdf(file, ranges);
       const baseName = file.name.replace(/\.pdf$/i, "");
       downloadPdf(result, `${baseName}_extracted.pdf`);
+    } catch (e) {
+      setError(
+        e instanceof Error
+          ? e.message
+          : "Failed to split PDF. Please check your file and try again.",
+      );
     } finally {
       setProcessing(false);
     }
@@ -156,6 +172,12 @@ export default function SplitPdf() {
             </button>
           )}
         </>
+      )}
+
+      {error && (
+        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-4">
+          <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
+        </div>
       )}
     </div>
   );

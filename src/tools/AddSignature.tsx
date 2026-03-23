@@ -26,6 +26,7 @@ export default function AddSignature() {
   const [signatureDataUrl, setSignatureDataUrl] = useState("");
   const [processing, setProcessing] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [position, setPosition] = useState({ xPercent: 50, yPercent: 15 });
   const [sigSize, setSigSize] = useState({ width: 200, height: 80 });
 
@@ -35,9 +36,17 @@ export default function AddSignature() {
     setFile(pdf);
     setSelectedPage(0);
     setLoading(true);
+    setError(null);
     try {
       const thumbs = await renderAllThumbnails(pdf);
       setThumbnails(thumbs);
+    } catch (e) {
+      setError(
+        e instanceof Error
+          ? e.message
+          : "Failed to load PDF. The file may be corrupted or password-protected.",
+      );
+      setFile(null);
     } finally {
       setLoading(false);
     }
@@ -46,6 +55,7 @@ export default function AddSignature() {
   const handleApply = useCallback(async () => {
     if (!file || !signatureDataUrl) return;
     setProcessing(true);
+    setError(null);
     try {
       // Get actual page dimensions to calculate position
       const arrayBuffer = await file.arrayBuffer();
@@ -66,6 +76,8 @@ export default function AddSignature() {
 
       const baseName = file.name.replace(/\.pdf$/i, "");
       downloadPdf(result, `${baseName}_signed.pdf`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to add signature. Please try again.");
     } finally {
       setProcessing(false);
     }
@@ -244,6 +256,12 @@ export default function AddSignature() {
             {processing ? "Applying..." : "Apply Signature & Download"}
           </button>
         </>
+      )}
+
+      {error && (
+        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-4">
+          <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
+        </div>
       )}
     </div>
   );

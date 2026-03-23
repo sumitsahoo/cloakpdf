@@ -20,6 +20,7 @@ export default function RotatePages() {
   const [rotations, setRotations] = useState<Map<number, number>>(new Map());
   const [processing, setProcessing] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleFile = useCallback(async (files: File[]) => {
     const pdf = files[0];
@@ -27,9 +28,17 @@ export default function RotatePages() {
     setFile(pdf);
     setRotations(new Map());
     setLoading(true);
+    setError(null);
     try {
       const thumbs = await renderAllThumbnails(pdf);
       setThumbnails(thumbs);
+    } catch (e) {
+      setError(
+        e instanceof Error
+          ? e.message
+          : "Failed to load PDF. The file may be corrupted or password-protected.",
+      );
+      setFile(null);
     } finally {
       setLoading(false);
     }
@@ -61,10 +70,13 @@ export default function RotatePages() {
   const handleApply = useCallback(async () => {
     if (!file || rotations.size === 0) return;
     setProcessing(true);
+    setError(null);
     try {
       const result = await rotatePages(file, rotations);
       const baseName = file.name.replace(/\.pdf$/i, "");
       downloadPdf(result, `${baseName}_rotated.pdf`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to rotate pages. Please try again.");
     } finally {
       setProcessing(false);
     }
@@ -188,6 +200,12 @@ export default function RotatePages() {
             </button>
           )}
         </>
+      )}
+
+      {error && (
+        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-4">
+          <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
+        </div>
       )}
     </div>
   );

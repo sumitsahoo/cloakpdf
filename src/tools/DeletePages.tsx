@@ -19,6 +19,7 @@ export default function DeletePages() {
   const [selectedPages, setSelectedPages] = useState<Set<number>>(new Set());
   const [processing, setProcessing] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleFile = useCallback(async (files: File[]) => {
     const pdf = files[0];
@@ -26,9 +27,17 @@ export default function DeletePages() {
     setFile(pdf);
     setSelectedPages(new Set());
     setLoading(true);
+    setError(null);
     try {
       const thumbs = await renderAllThumbnails(pdf);
       setThumbnails(thumbs);
+    } catch (e) {
+      setError(
+        e instanceof Error
+          ? e.message
+          : "Failed to load PDF. The file may be corrupted or password-protected.",
+      );
+      setFile(null);
     } finally {
       setLoading(false);
     }
@@ -47,10 +56,13 @@ export default function DeletePages() {
     if (!file || selectedPages.size === 0) return;
     if (selectedPages.size >= thumbnails.length) return; // Can't delete all pages
     setProcessing(true);
+    setError(null);
     try {
       const result = await deletePages(file, Array.from(selectedPages));
       const baseName = file.name.replace(/\.pdf$/i, "");
       downloadPdf(result, `${baseName}_edited.pdf`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to delete pages. Please try again.");
     } finally {
       setProcessing(false);
     }
@@ -143,6 +155,12 @@ export default function DeletePages() {
             </p>
           )}
         </>
+      )}
+
+      {error && (
+        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-4">
+          <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
+        </div>
       )}
     </div>
   );

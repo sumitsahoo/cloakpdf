@@ -20,6 +20,7 @@ interface FileItem {
 export default function MergePdf() {
   const [files, setFiles] = useState<FileItem[]>([]);
   const [processing, setProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleFiles = useCallback((newFiles: File[]) => {
     const items = newFiles
@@ -45,11 +46,16 @@ export default function MergePdf() {
   const handleMerge = useCallback(async () => {
     if (files.length < 2) return;
     setProcessing(true);
+    setError(null);
     try {
       const result = await mergePdfs(files.map((f) => f.file));
       downloadPdf(result, "merged.pdf");
     } catch (e) {
-      console.error("Merge failed:", e);
+      setError(
+        e instanceof Error
+          ? e.message
+          : "Failed to merge PDFs. Please check your files and try again.",
+      );
     } finally {
       setProcessing(false);
     }
@@ -154,6 +160,12 @@ export default function MergePdf() {
         >
           {processing ? "Merging..." : `Merge ${files.length} Files`}
         </button>
+      )}
+
+      {error && (
+        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-4">
+          <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
+        </div>
       )}
     </div>
   );
