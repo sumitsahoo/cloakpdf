@@ -8,8 +8,6 @@
 
 import type { ReactNode } from "react";
 
-import { colors } from "../config/theme.ts";
-
 interface LayoutProps {
   /** Content to render in the main area. */
   children: ReactNode;
@@ -44,49 +42,57 @@ export function Layout({ children, onHome, showBack }: LayoutProps) {
             onClick={onHome}
             className="flex items-center gap-2.5 hover:opacity-80 transition-opacity"
           >
-            <div className="w-11 h-11 bg-linear-to-br from-primary-400 to-accent rounded-full flex items-center justify-center shadow-md">
-              <svg className="w-8 h-8" viewBox="0 0 48 48" fill="none">
-                <path
-                  d="M12 5h16l10 10v25a3 3 0 01-3 3H12a3 3 0 01-3-3V8a3 3 0 013-3z"
+            <div className="w-11 h-11 flex items-center justify-center">
+              <svg className="w-10 h-10 drop-shadow-md" viewBox="0 0 48 48" fill="none">
+                <defs>
+                  <linearGradient
+                    id="shld"
+                    x1="0"
+                    y1="0"
+                    x2="48"
+                    y2="48"
+                    gradientUnits="userSpaceOnUse"
+                  >
+                    <stop offset="0%" stopColor="#60A5FA" />
+                    <stop offset="100%" stopColor="#1D4ED8" />
+                  </linearGradient>
+                </defs>
+                <path d="M24 2 L44 12 L44 28 Q44 42 24 47 Q4 42 4 28 L4 12 Z" fill="url(#shld)" />
+                <text
+                  x="24"
+                  y="18"
+                  fontFamily="ui-monospace,monospace"
+                  fontWeight="700"
+                  fontSize="8"
                   fill="white"
-                  opacity="0.95"
-                />
-                <path d="M28 5v7a3 3 0 003 3h7l-10-10z" fill={colors.primary[100]} />
-                <text
-                  x="23.5"
-                  y="22"
-                  fontFamily="ui-monospace,monospace"
-                  fontWeight="700"
-                  fontSize="6"
-                  fill={colors.primary[600]}
-                  opacity="0.85"
+                  opacity="0.9"
                   textAnchor="middle"
                 >
-                  1 0 1 1
+                  1 0 1
                 </text>
                 <text
-                  x="23.5"
-                  y="29"
+                  x="24"
+                  y="28"
                   fontFamily="ui-monospace,monospace"
                   fontWeight="700"
-                  fontSize="6"
-                  fill={colors.primary[500]}
-                  opacity="0.65"
+                  fontSize="8"
+                  fill="white"
+                  opacity="0.7"
                   textAnchor="middle"
                 >
-                  0 1 0 0
+                  0 1 0
                 </text>
                 <text
-                  x="23.5"
-                  y="36"
+                  x="24"
+                  y="38"
                   fontFamily="ui-monospace,monospace"
                   fontWeight="700"
-                  fontSize="6"
-                  fill={colors.primary[600]}
-                  opacity="0.45"
+                  fontSize="8"
+                  fill="white"
+                  opacity="0.5"
                   textAnchor="middle"
                 >
-                  1 1 0 1
+                  1 0 1
                 </text>
               </svg>
             </div>

@@ -1,23 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48" fill="none">
     <defs>
-        <linearGradient id="bg" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+        <linearGradient id="shld" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
             <stop offset="0%" stop-color="#60A5FA" />
             <stop offset="100%" stop-color="#1D4ED8" />
         </linearGradient>
     </defs>
-    <!-- Circular background -->
-    <circle cx="24" cy="24" r="24" fill="url(#bg)" />
-    <!-- Document body (larger) -->
-    <path d="M12 5h16l10 10v25a3 3 0 01-3 3H12a3 3 0 01-3-3V8a3 3 0 013-3z" fill="white" opacity="0.95" />
-    <!-- Document fold -->
-    <path d="M28 5v7a3 3 0 003 3h7l-10-10z" fill="#DBEAFE" />
-    <!-- Binary digits - row 1 -->
-    <text x="23.5" y="22" font-family="ui-monospace,monospace" font-weight="700" font-size="6" fill="#2563EB"
-        opacity="0.85" text-anchor="middle">1 0 1 1</text>
-    <!-- Binary digits - row 2 -->
-    <text x="23.5" y="29" font-family="ui-monospace,monospace" font-weight="700" font-size="6" fill="#3B82F6"
-        opacity="0.6" text-anchor="middle">0 1 0 0</text>
-    <!-- Binary digits - row 3 -->
-    <text x="23.5" y="36" font-family="ui-monospace,monospace" font-weight="700" font-size="6" fill="#2563EB"
-        opacity="0.4" text-anchor="middle">1 1 0 1</text>
+    <!-- Shield shape -->
+    <path d="M24 2 L44 12 L44 28 Q44 42 24 47 Q4 42 4 28 L4 12 Z" fill="url(#shld)" />
+    <!-- Binary rows -->
+    <text x="24" y="18" font-family="ui-monospace,monospace" font-weight="700" font-size="8" fill="white" opacity="0.9"
+        text-anchor="middle">1 0 1</text>
+    <text x="24" y="28" font-family="ui-monospace,monospace" font-weight="700" font-size="8" fill="white" opacity="0.7"
+        text-anchor="middle">0 1 0</text>
+    <text x="24" y="38" font-family="ui-monospace,monospace" font-weight="700" font-size="8" fill="white" opacity="0.5"
+        text-anchor="middle">1 0 1</text>
 </svg>
