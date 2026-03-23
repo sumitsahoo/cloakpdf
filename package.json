@@ -7,8 +7,7 @@
     "dev": "vp dev",
     "build": "tsc && vp build",
     "preview": "vp preview",
-    "prepare": "vp config",
-    "pag": "pwa-assets-generator public/logo.svg public/icons --preset minimal"
+    "prepare": "vp config"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
