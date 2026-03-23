@@ -29,6 +29,7 @@ export default function AddSignature() {
   const [error, setError] = useState<string | null>(null);
   const [position, setPosition] = useState({ xPercent: 50, yPercent: 15 });
   const [sigSize, setSigSize] = useState({ width: 200, height: 80 });
+  const [pageDims, setPageDims] = useState<{ width: number; height: number }[]>([]);
 
   const handleFile = useCallback(async (files: File[]) => {
     const pdf = files[0];
@@ -40,6 +41,13 @@ export default function AddSignature() {
     try {
       const thumbs = await renderAllThumbnails(pdf);
       setThumbnails(thumbs);
+
+      // Read actual page dimensions for accurate preview sizing
+      const arrayBuffer = await pdf.arrayBuffer();
+      const { PDFDocument } = await import("pdf-lib");
+      const pdfDoc = await PDFDocument.load(arrayBuffer);
+      const dims = pdfDoc.getPages().map((p) => p.getSize());
+      setPageDims(dims);
     } catch (e) {
       setError(
         e instanceof Error
@@ -232,8 +240,12 @@ export default function AddSignature() {
                         left: `${position.xPercent}%`,
                         bottom: `${position.yPercent}%`,
                         transform: "translate(-50%, 50%)",
-                        width: `${Math.min(sigSize.width * 0.3, 150)}px`,
-                        height: `${Math.min(sigSize.height * 0.3, 60)}px`,
+                        width: pageDims[selectedPage]
+                          ? `${(sigSize.width / pageDims[selectedPage].width) * 100}%`
+                          : `${sigSize.width * 0.3}px`,
+                        height: pageDims[selectedPage]
+                          ? `${(sigSize.height / pageDims[selectedPage].height) * 100}%`
+                          : `${sigSize.height * 0.3}px`,
                       }}
                     >
                       <img

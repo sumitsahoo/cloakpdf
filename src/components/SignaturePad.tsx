@@ -32,8 +32,7 @@ export function SignaturePad({ onSignature, width = 500, height = 200 }: Signatu
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.strokeStyle = "#1e293b";
     ctx.lineWidth = 2;
     ctx.lineCap = "round";
@@ -99,8 +98,7 @@ export function SignaturePad({ onSignature, width = 500, height = 200 }: Signatu
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext("2d");
     if (!canvas || !ctx) return;
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     setHasContent(false);
     onSignature("");
   }, [onSignature]);
