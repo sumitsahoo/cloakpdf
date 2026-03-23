@@ -42,8 +42,8 @@ export function Layout({ children, onHome, showBack }: LayoutProps) {
             onClick={onHome}
             className="flex items-center gap-2.5 hover:opacity-80 transition-opacity"
           >
-            <div className="w-11 h-11 flex items-center justify-center">
-              <svg className="w-10 h-10 drop-shadow-md" viewBox="0 0 48 48" fill="none">
+            <div className="w-12 h-12 flex items-center justify-center">
+              <svg className="w-12 h-12 drop-shadow-md" viewBox="0 0 48 48" fill="none">
                 <defs>
                   <linearGradient
                     id="shld"
