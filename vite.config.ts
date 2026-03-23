@@ -22,8 +22,8 @@ export default defineConfig({
         background_color: "#F0F4FA",
         display: "standalone",
         orientation: "portrait",
-        scope: "/",
-        start_url: "/",
+        scope: process.env.VITE_APP_BASE_PATH || "/",
+        start_url: process.env.VITE_APP_BASE_PATH || "/",
         icons: [
           {
             src: "icons/logo.svg",
