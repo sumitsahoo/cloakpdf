@@ -6,6 +6,7 @@ import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
 export default function CompressPdf() {
   const [file, setFile] = useState<File | null>(null);
   const [processing, setProcessing] = useState(false);
+  const [quality, setQuality] = useState<"low" | "medium" | "high">("medium");
   const [result, setResult] = useState<{
     original: number;
     compressed: number;
@@ -23,7 +24,7 @@ export default function CompressPdf() {
     if (!file) return;
     setProcessing(true);
     try {
-      const data = await compressPdf(file);
+      const data = await compressPdf(file, quality);
       setResult({
         original: file.size,
         compressed: data.length,
@@ -32,7 +33,7 @@ export default function CompressPdf() {
     } finally {
       setProcessing(false);
     }
-  }, [file]);
+  }, [file, quality]);
 
   const handleDownload = useCallback(() => {
     if (!result || !file) return;
@@ -71,13 +72,57 @@ export default function CompressPdf() {
           </div>
 
           {!result ? (
-            <button
-              onClick={handleCompress}
-              disabled={processing}
-              className="w-full bg-indigo-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {processing ? "Compressing..." : "Compress PDF"}
-            </button>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Compression Level
+                </label>
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    {
+                      value: "low" as const,
+                      label: "Light",
+                      desc: "Best quality, less compression",
+                    },
+                    {
+                      value: "medium" as const,
+                      label: "Balanced",
+                      desc: "Good balance of size & quality",
+                    },
+                    {
+                      value: "high" as const,
+                      label: "Maximum",
+                      desc: "Smallest file, lower quality",
+                    },
+                  ].map((opt) => (
+                    <button
+                      key={opt.value}
+                      onClick={() => setQuality(opt.value)}
+                      className={`p-3 rounded-xl border-2 text-left transition-all ${
+                        quality === opt.value
+                          ? "border-indigo-500 bg-indigo-50"
+                          : "border-slate-200 hover:border-slate-300"
+                      }`}
+                    >
+                      <p
+                        className={`text-sm font-semibold ${quality === opt.value ? "text-indigo-700" : "text-slate-700"}`}
+                      >
+                        {opt.label}
+                      </p>
+                      <p className="text-xs text-slate-500 mt-0.5">{opt.desc}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <button
+                onClick={handleCompress}
+                disabled={processing}
+                className="w-full bg-indigo-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {processing ? "Compressing... (this may take a moment)" : "Compress PDF"}
+              </button>
+            </div>
           ) : (
             <div className="space-y-4">
               <div className="bg-white rounded-xl border border-slate-200 p-6">

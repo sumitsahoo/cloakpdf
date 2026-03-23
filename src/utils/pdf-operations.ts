@@ -39,21 +39,57 @@ export async function splitPdf(file: File, ranges: PageRange[]): Promise<Uint8Ar
   return result.save();
 }
 
-export async function compressPdf(file: File): Promise<Uint8Array> {
+export async function compressPdf(
+  file: File,
+  quality: "low" | "medium" | "high" = "medium",
+): Promise<Uint8Array> {
+  const qualitySettings = {
+    low: { scale: 1.0, jpegQuality: 0.85 },
+    medium: { scale: 1.5, jpegQuality: 0.7 },
+    high: { scale: 2.0, jpegQuality: 0.5 },
+  };
+
+  const { scale, jpegQuality } = qualitySettings[quality];
+
+  // Dynamic import to avoid circular dependency
+  const pdfjsLib = await import("pdfjs-dist");
   const arrayBuffer = await file.arrayBuffer();
-  const pdf = await PDFDocument.load(arrayBuffer);
+  const sourcePdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  const newPdf = await PDFDocument.create();
 
-  // Strip metadata to reduce size
-  pdf.setTitle("");
-  pdf.setAuthor("");
-  pdf.setSubject("");
-  pdf.setKeywords([]);
-  pdf.setProducer("");
-  pdf.setCreator("");
+  for (let i = 1; i <= sourcePdf.numPages; i++) {
+    const page = await sourcePdf.getPage(i);
+    const viewport = page.getViewport({ scale });
 
-  return pdf.save({
+    const canvas = document.createElement("canvas");
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    const ctx = canvas.getContext("2d")!;
+
+    await page.render({ canvasContext: ctx, viewport, canvas }).promise;
+
+    // Convert to JPEG for lossy compression
+    const jpegDataUrl = canvas.toDataURL("image/jpeg", jpegQuality);
+    const response = await fetch(jpegDataUrl);
+    const jpegBytes = new Uint8Array(await response.arrayBuffer());
+
+    const image = await newPdf.embedJpg(jpegBytes);
+
+    // Use original page dimensions (in PDF points)
+    const origViewport = page.getViewport({ scale: 1.0 });
+    const newPage = newPdf.addPage([origViewport.width, origViewport.height]);
+    newPage.drawImage(image, {
+      x: 0,
+      y: 0,
+      width: origViewport.width,
+      height: origViewport.height,
+    });
+  }
+
+  void sourcePdf.destroy();
+
+  return newPdf.save({
     useObjectStreams: true,
-    addDefaultPage: false,
   });
 }
 

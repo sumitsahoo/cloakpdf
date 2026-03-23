@@ -8,7 +8,7 @@ interface LayoutProps {
 
 export function Layout({ children, onHome, showBack }: LayoutProps) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50/30 flex flex-col">
+    <div className="min-h-screen bg-linear-to-br from-slate-50 to-indigo-50/30 flex flex-col">
       <header className="bg-white/80 backdrop-blur-sm border-b border-slate-200 sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center gap-3">
           {showBack && (
@@ -31,24 +31,27 @@ export function Layout({ children, onHome, showBack }: LayoutProps) {
             onClick={onHome}
             className="flex items-center gap-2.5 hover:opacity-80 transition-opacity"
           >
-            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
-              <svg
-                className="w-5 h-5 text-white"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
+            <div className="w-8 h-8 bg-linear-to-br from-indigo-500 to-violet-600 rounded-lg flex items-center justify-center shadow-sm">
+              <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none">
                 <path
+                  d="M6 2h8l6 6v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4a2 2 0 012-2z"
+                  fill="currentColor"
+                  opacity="0.3"
+                />
+                <path d="M14 2l6 6h-4a2 2 0 01-2-2V2z" fill="currentColor" opacity="0.5" />
+                <path
+                  d="M8 13h2.5a1.5 1.5 0 010 3H8v-3zm0 0V11m0 5v2"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                 />
+                <circle cx="15" cy="14.5" r="2" stroke="currentColor" strokeWidth="1.5" />
               </svg>
             </div>
-            <span className="text-lg font-semibold text-slate-800">Simple PDF Util</span>
+            <span className="text-lg font-semibold text-slate-800">BytePDF</span>
           </button>
-          <div className="ml-auto flex items-center gap-1.5 text-xs text-slate-500 bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full">
+          <div className="ml-auto flex items-center gap-1.5 text-xs bg-emerald-50 text-emerald-700 px-2.5 py-1 rounded-full">
             <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
               <path
                 fillRule="evenodd"
