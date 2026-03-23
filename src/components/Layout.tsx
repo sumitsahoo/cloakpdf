@@ -31,20 +31,20 @@ export function Layout({ children, onHome, showBack }: LayoutProps) {
             onClick={onHome}
             className="flex items-center gap-2.5 hover:opacity-80 transition-opacity"
           >
-            <div className="w-10 h-10 bg-linear-to-br from-primary-400 to-accent rounded-xl flex items-center justify-center shadow-sm">
-              <svg className="w-6 h-6" viewBox="0 0 48 48" fill="none">
+            <div className="w-11 h-11 bg-linear-to-br from-primary-400 to-accent rounded-full flex items-center justify-center shadow-md">
+              <svg className="w-8 h-8" viewBox="0 0 48 48" fill="none">
                 <path
-                  d="M13 7h15l9 9v24a3 3 0 01-3 3H13a3 3 0 01-3-3V10a3 3 0 013-3z"
+                  d="M12 5h16l10 10v25a3 3 0 01-3 3H12a3 3 0 01-3-3V8a3 3 0 013-3z"
                   fill="white"
                   opacity="0.95"
                 />
-                <path d="M28 7v6a3 3 0 003 3h6l-9-9z" fill="#d5f2ec" />
+                <path d="M28 5v7a3 3 0 003 3h7l-10-10z" fill="#d5f2ec" />
                 <text
-                  x="23.5"
+                  x="22.5"
                   y="22"
                   fontFamily="ui-monospace,monospace"
                   fontWeight="700"
-                  fontSize="5.5"
+                  fontSize="6"
                   fill="#3da396"
                   opacity="0.85"
                   textAnchor="middle"
@@ -52,11 +52,11 @@ export function Layout({ children, onHome, showBack }: LayoutProps) {
                   1 0 1 1
                 </text>
                 <text
-                  x="23.5"
-                  y="28.5"
+                  x="22.5"
+                  y="29"
                   fontFamily="ui-monospace,monospace"
                   fontWeight="700"
-                  fontSize="5.5"
+                  fontSize="6"
                   fill="#4db8a8"
                   opacity="0.65"
                   textAnchor="middle"
@@ -64,11 +64,11 @@ export function Layout({ children, onHome, showBack }: LayoutProps) {
                   0 1 0 0
                 </text>
                 <text
-                  x="23.5"
-                  y="35"
+                  x="22.5"
+                  y="36"
                   fontFamily="ui-monospace,monospace"
                   fontWeight="700"
-                  fontSize="5.5"
+                  fontSize="6"
                   fill="#3da396"
                   opacity="0.45"
                   textAnchor="middle"
