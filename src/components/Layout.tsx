@@ -40,7 +40,7 @@ export function Layout({ children, onHome, showBack }: LayoutProps) {
                 />
                 <path d="M28 5v7a3 3 0 003 3h7l-10-10z" fill="#d5f2ec" />
                 <text
-                  x="22.5"
+                  x="23.5"
                   y="22"
                   fontFamily="ui-monospace,monospace"
                   fontWeight="700"
@@ -52,7 +52,7 @@ export function Layout({ children, onHome, showBack }: LayoutProps) {
                   1 0 1 1
                 </text>
                 <text
-                  x="22.5"
+                  x="23.5"
                   y="29"
                   fontFamily="ui-monospace,monospace"
                   fontWeight="700"
@@ -64,7 +64,7 @@ export function Layout({ children, onHome, showBack }: LayoutProps) {
                   0 1 0 0
                 </text>
                 <text
-                  x="22.5"
+                  x="23.5"
                   y="36"
                   fontFamily="ui-monospace,monospace"
                   fontWeight="700"
