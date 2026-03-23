@@ -1,0 +1,170 @@
+# 📄 BytePDF
+
+**PDF Tools That Respect Your Privacy**
+
+A fast, modern, and privacy-focused PDF toolkit that runs entirely in your browser. No uploads, no servers, no tracking — your files never leave your device.
+
+🔗 **Live Demo**: [https://sumitsahoo.github.io/bytepdf/](https://sumitsahoo.github.io/bytepdf/)
+
+---
+
+## ✨ Features
+
+BytePDF offers **9 powerful PDF tools**, all running 100% client-side:
+
+| Tool                 | Description                                                                              |
+| -------------------- | ---------------------------------------------------------------------------------------- |
+| 📑 **Merge PDFs**    | Combine multiple PDF files into a single document with drag-to-reorder support           |
+| ✂️ **Split PDF**     | Extract specific pages or page ranges (e.g., `1-3, 5, 7-9`) with visual thumbnails       |
+| 🗜️ **Compress PDF**  | Reduce file size with 3 quality levels — Light, Balanced, and Maximum                    |
+| 🔄 **Rotate Pages**  | Rotate individual pages by 90°, -90°, or 180° — or rotate all at once                    |
+| 🗑️ **Delete Pages**  | Select and remove unwanted pages visually                                                |
+| ↕️ **Reorder Pages** | Drag and drop to rearrange page order with smooth animations                             |
+| 🖼️ **Images to PDF** | Convert images (PNG, JPEG) to PDF with A4, Letter, or Fit-to-Image page sizes            |
+| 💧 **Add Watermark** | Overlay custom text watermarks with configurable font size, color, opacity, and rotation |
+| ✍️ **Add Signature** | Draw a signature on a canvas and place it on any page with adjustable size and position  |
+
+---
+
+## 🔒 Privacy First
+
+- 🚫 **No file uploads** — everything is processed locally in your browser
+- 🚫 **No server-side processing** — zero network requests for your files
+- 🚫 **No data collection** — no analytics, no tracking, no cookies
+- ✅ **Fully offline capable** — works without an internet connection after initial load
+
+---
+
+## 🛠️ Tech Stack
+
+| Category            | Technology                                                     |
+| ------------------- | -------------------------------------------------------------- |
+| ⚛️ Framework        | [React 19](https://react.dev/)                                 |
+| 🎨 Styling          | [Tailwind CSS 4](https://tailwindcss.com/)                     |
+| 📦 Build Tool       | [Vite+](https://vite.dev/) (Vite + Rolldown unified toolchain) |
+| 📝 Language         | [TypeScript 5.9](https://www.typescriptlang.org/)              |
+| 📄 PDF Manipulation | [pdf-lib](https://pdf-lib.js.org/)                             |
+| 🖥️ PDF Rendering    | [PDF.js](https://mozilla.github.io/pdf.js/)                    |
+| 🔤 Font Support     | [@pdf-lib/fontkit](https://github.com/Hopding/fontkit)         |
+| 🖱️ Drag & Drop      | [dnd-kit](https://dndkit.com/)                                 |
+| 📦 Package Manager  | [pnpm](https://pnpm.io/)                                       |
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- **Node.js** ≥ 18
+- **pnpm** ≥ 10
+
+### Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/sumitsahoo/bytepdf.git
+cd bytepdf
+
+# Install dependencies
+pnpm install
+
+# Start the development server
+pnpm run dev
+```
+
+### Available Scripts
+
+| Command            | Description                               |
+| ------------------ | ----------------------------------------- |
+| `pnpm run dev`     | Start the Vite dev server with hot reload |
+| `pnpm run build`   | TypeScript check + production build       |
+| `pnpm run preview` | Preview the production build locally      |
+
+---
+
+## 🏗️ Project Structure
+
+```
+bytepdf/
+├── public/                 # Static assets
+├── src/
+│   ├── main.tsx            # App entry point
+│   ├── App.tsx             # Root component with lazy-loaded tools
+│   ├── index.css           # Global styles & Tailwind theme
+│   ├── types.ts            # TypeScript type definitions
+│   ├── assets/             # Images & icons
+│   ├── components/         # Reusable UI components
+│   │   ├── FileDropZone.tsx    # Drag-and-drop file input
+│   │   ├── Layout.tsx          # Page wrapper with header & footer
+│   │   ├── PageThumbnail.tsx   # PDF page preview card
+│   │   ├── SignaturePad.tsx    # Canvas-based signature drawing
+│   │   └── ToolCard.tsx        # Home screen tool card
+│   ├── config/
+│   │   └── theme.ts        # Color palette & theme tokens
+│   ├── tools/              # Individual tool pages
+│   │   ├── AddSignature.tsx
+│   │   ├── AddWatermark.tsx
+│   │   ├── CompressPdf.tsx
+│   │   ├── DeletePages.tsx
+│   │   ├── ImagesToPdf.tsx
+│   │   ├── MergePdf.tsx
+│   │   ├── ReorderPages.tsx
+│   │   ├── RotatePages.tsx
+│   │   └── SplitPdf.tsx
+│   └── utils/              # Core logic
+│       ├── file-helpers.ts     # File reading, downloading, formatting
+│       ├── pdf-operations.ts   # All PDF manipulation functions
+│       └── pdf-renderer.ts     # Page rendering & thumbnail generation
+├── index.html              # HTML entry point
+├── vite.config.ts          # Vite + Tailwind configuration
+├── tsconfig.json           # TypeScript configuration
+└── package.json
+```
+
+---
+
+## ⚙️ How It Works
+
+BytePDF leverages two complementary libraries for full PDF support:
+
+- **[pdf-lib](https://pdf-lib.js.org/)** — Handles all PDF manipulation: merging, splitting, rotation, page deletion, watermarking, signature embedding, and image-to-PDF conversion.
+- **[PDF.js](https://mozilla.github.io/pdf.js/)** — Renders PDF pages to canvas for visual previews and thumbnail generation.
+
+All operations happen in-memory using the browser's `FileReader` API and `ArrayBuffer`s. Processed files are delivered as downloadable blobs — no data ever touches a remote server.
+
+---
+
+## 🌐 Deployment
+
+BytePDF is deployed to **GitHub Pages** via a CI/CD workflow on every push to `main`.
+
+The deployment pipeline:
+
+1. ✅ Checks out the code
+2. 📦 Installs dependencies with `pnpm install --frozen-lockfile`
+3. 🏗️ Builds the production bundle with Vite
+4. 🚀 Deploys the `dist/` folder to GitHub Pages
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Here's how to get started:
+
+1. **Fork** the repository
+2. **Create** a feature branch (`git checkout -b feature/amazing-feature`)
+3. **Commit** your changes (`git commit -m 'Add amazing feature'`)
+4. **Push** to the branch (`git push origin feature/amazing-feature`)
+5. **Open** a Pull Request
+
+---
+
+## 📄 License
+
+This project is licensed under the terms specified in the [LICENSE](LICENSE) file.
+
+---
+
+<p align="center">
+  Built with ❤️ for privacy-conscious users everywhere
+</p>
