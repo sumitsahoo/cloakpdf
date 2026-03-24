@@ -42,12 +42,12 @@ BytePDF offers **9 powerful PDF tools**, all running 100% client-side:
 | ⚛️ Framework        | [React 19](https://react.dev/)                                 |
 | 🎨 Styling          | [Tailwind CSS 4](https://tailwindcss.com/)                     |
 | 📦 Build Tool       | [Vite+](https://vite.dev/) (Vite + Rolldown unified toolchain) |
-| 📝 Language         | [TypeScript 5.9](https://www.typescriptlang.org/)              |
+| 📝 Language         | [TypeScript 6](https://www.typescriptlang.org/)                |
 | 📄 PDF Manipulation | [pdf-lib](https://pdf-lib.js.org/)                             |
 | 🖥️ PDF Rendering    | [PDF.js](https://mozilla.github.io/pdf.js/)                    |
 | 🔤 Font Support     | [@pdf-lib/fontkit](https://github.com/Hopding/fontkit)         |
 | 🖱️ Drag & Drop      | [dnd-kit](https://dndkit.com/)                                 |
-| 📦 Toolchain CLI    | [Vite+ (`vp`)](https://vite.dev/)                              |
+| 📦 Toolchain CLI    | [Vite+ (`vp`)](https://viteplus.dev/)                          |
 
 ---
 
