@@ -326,21 +326,22 @@ export async function addWatermark(file: File, options: WatermarkOptions): Promi
 }
 
 /**
- * Place a signature image onto a specific page of a PDF.
+ * Place a signature image onto one or more pages of a PDF.
  *
  * The signature is provided as a PNG data-URL (typically drawn on an
- * HTML canvas). It is embedded at the supplied position and size.
+ * HTML canvas). It is embedded at the supplied position and size on
+ * every page specified by `pageIndices`.
  *
  * @param file - The PDF file to sign.
  * @param signatureDataUrl - A `data:image/png;base64,…` string of the signature.
- * @param pageIndex - 0-based index of the page to place the signature on.
+ * @param pageIndices - Array of 0-based page indices to place the signature on.
  * @param position - `{ x, y, width, height }` in PDF points for placement.
- * @returns PDF bytes with the signature embedded on the specified page.
+ * @returns PDF bytes with the signature embedded on the specified pages.
  */
 export async function addSignature(
   file: File,
   signatureDataUrl: string,
-  pageIndex: number,
+  pageIndices: number[],
   position: Position,
 ): Promise<Uint8Array> {
   const arrayBuffer = await file.arrayBuffer();
@@ -355,14 +356,16 @@ export async function addSignature(
   }
 
   const signatureImage = await pdf.embedPng(signatureBytes);
-  const page = pdf.getPage(pageIndex);
 
-  page.drawImage(signatureImage, {
-    x: position.x,
-    y: position.y,
-    width: position.width,
-    height: position.height,
-  });
+  for (const idx of pageIndices) {
+    const page = pdf.getPage(idx);
+    page.drawImage(signatureImage, {
+      x: position.x,
+      y: position.y,
+      width: position.width,
+      height: position.height,
+    });
+  }
 
   return pdf.save();
 }
