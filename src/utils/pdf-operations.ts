@@ -289,24 +289,34 @@ export async function imagesToPdf(
 }
 
 /**
- * Add a text watermark to every page of a PDF.
+ * Add a text watermark to pages of a PDF.
  *
- * The watermark is drawn at the centre of each page using Helvetica Bold.
+ * The watermark is drawn at the centre of each target page using Helvetica Bold.
  * Colour is specified in 0–255 RGB and converted to the 0–1 range required
  * by pdf-lib. Opacity and rotation are applied as-is.
  *
+ * When `pageIndices` is provided, only the specified pages receive the
+ * watermark. Otherwise every page is watermarked.
+ *
  * @param file - The PDF file to watermark.
  * @param options - Watermark settings (text, fontSize, color, opacity, rotation).
- * @returns PDF bytes with the watermark applied to all pages.
+ * @param pageIndices - Optional array of 0-based page indices to watermark.
+ * @returns PDF bytes with the watermark applied.
  */
-export async function addWatermark(file: File, options: WatermarkOptions): Promise<Uint8Array> {
+export async function addWatermark(
+  file: File,
+  options: WatermarkOptions,
+  pageIndices?: number[],
+): Promise<Uint8Array> {
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await PDFDocument.load(arrayBuffer);
   pdf.registerFontkit(fontkit);
 
   const font = await pdf.embedFont(StandardFonts.HelveticaBold);
 
-  for (const page of pdf.getPages()) {
+  const pages = pageIndices ? pageIndices.map((i) => pdf.getPage(i)) : pdf.getPages();
+
+  for (const page of pages) {
     const { width, height } = page.getSize();
     const textWidth = font.widthOfTextAtSize(options.text, options.fontSize);
     const textHeight = font.heightAtSize(options.fontSize);
