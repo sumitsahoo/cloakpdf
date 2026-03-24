@@ -31,6 +31,7 @@ export default function AddSignature() {
   const [sigSize, setSigSize] = useState({ width: 200, height: 80 });
   const [pageDims, setPageDims] = useState<{ width: number; height: number }[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [applyToAllPages, setApplyToAllPages] = useState(false);
 
   const previewRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef({ active: false, startX: 0, startY: 0, startXPct: 0, startYPct: 0 });
@@ -128,7 +129,11 @@ export default function AddSignature() {
       const x = (position.xPercent / 100) * pageWidth - sigSize.width / 2;
       const y = (position.yPercent / 100) * pageHeight - sigSize.height / 2;
 
-      const result = await addSignature(file, signatureDataUrl, selectedPage, {
+      const pageIndices = applyToAllPages
+        ? Array.from({ length: pdfDoc.getPageCount() }, (_, i) => i)
+        : [selectedPage];
+
+      const result = await addSignature(file, signatureDataUrl, pageIndices, {
         x: Math.max(0, x),
         y: Math.max(0, y),
         width: sigSize.width,
@@ -142,7 +147,7 @@ export default function AddSignature() {
     } finally {
       setProcessing(false);
     }
-  }, [file, signatureDataUrl, selectedPage, position, sigSize]);
+  }, [file, signatureDataUrl, selectedPage, position, sigSize, applyToAllPages]);
 
   return (
     <div className="space-y-6">
@@ -238,25 +243,41 @@ export default function AddSignature() {
               )}
 
               {thumbnails.length > 1 && (
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 dark:text-dark-text mb-1.5">
-                    Select Page ({selectedPage + 1} of {thumbnails.length})
+                <div className="space-y-3">
+                  <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={applyToAllPages}
+                      onChange={(e) => setApplyToAllPages(e.target.checked)}
+                      className="accent-primary-600 w-4 h-4 rounded"
+                    />
+                    <span className="text-sm font-medium text-slate-700 dark:text-dark-text">
+                      Apply to all pages at same position
+                    </span>
                   </label>
-                  <input
-                    type="range"
-                    min={0}
-                    max={thumbnails.length - 1}
-                    value={selectedPage}
-                    onChange={(e) => setSelectedPage(Number(e.target.value))}
-                    className="w-full accent-primary-600"
-                  />
+
+                  {!applyToAllPages && (
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 dark:text-dark-text mb-1.5">
+                        Select Page ({selectedPage + 1} of {thumbnails.length})
+                      </label>
+                      <input
+                        type="range"
+                        min={0}
+                        max={thumbnails.length - 1}
+                        value={selectedPage}
+                        onChange={(e) => setSelectedPage(Number(e.target.value))}
+                        className="w-full accent-primary-600"
+                      />
+                    </div>
+                  )}
                 </div>
               )}
             </div>
 
             <div>
               <p className="text-sm font-medium text-slate-700 dark:text-dark-text mb-1.5">
-                Preview — Page {selectedPage + 1}
+                Preview — {applyToAllPages ? "All Pages" : `Page ${selectedPage + 1}`}
               </p>
               {loading ? (
                 <div className="aspect-3/4 bg-slate-100 dark:bg-dark-surface-alt rounded-lg flex items-center justify-center">
