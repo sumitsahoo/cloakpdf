@@ -8,7 +8,7 @@
 
 import { PDFDocument, rgb, degrees, StandardFonts } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
-import type { PageRange, WatermarkOptions, Position } from "../types.ts";
+import type { PageRange, WatermarkOptions, Position, PdfMetadata } from "../types.ts";
 
 /**
  * Merge multiple PDF files into a single document.
@@ -375,6 +375,74 @@ export async function addSignature(
       width: position.width,
       height: position.height,
     });
+  }
+
+  return pdf.save();
+}
+
+/**
+ * Helper to format a Date object as an ISO-like datetime-local string
+ * (`YYYY-MM-DDTHH:mm`) suitable for `<input type="datetime-local">`.
+ */
+function formatDateForInput(date: Date | undefined): string {
+  if (!date || isNaN(date.getTime())) return "";
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+/**
+ * Read standard metadata fields from a PDF.
+ *
+ * Uses pdf-lib's built-in getters to extract title, author, subject,
+ * keywords, creator, producer, creation date, and modification date.
+ * Date values are converted to ISO-like strings for display.
+ *
+ * @param file - The PDF file to inspect.
+ * @returns A `PdfMetadata` object with all standard fields.
+ */
+export async function getPdfMetadata(file: File): Promise<PdfMetadata> {
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await PDFDocument.load(arrayBuffer);
+
+  return {
+    title: pdf.getTitle() ?? "",
+    author: pdf.getAuthor() ?? "",
+    subject: pdf.getSubject() ?? "",
+    keywords: pdf.getKeywords() ?? "",
+    creator: pdf.getCreator() ?? "",
+    producer: pdf.getProducer() ?? "",
+    creationDate: formatDateForInput(pdf.getCreationDate()),
+    modificationDate: formatDateForInput(pdf.getModificationDate()),
+  };
+}
+
+/**
+ * Write standard metadata fields to a PDF and return the modified bytes.
+ *
+ * Applies the provided metadata using pdf-lib's setters. Empty strings
+ * are still written (clearing the field). Date strings are parsed back
+ * from the `datetime-local` format used in the UI.
+ *
+ * @param file - The original PDF file.
+ * @param metadata - The metadata values to set.
+ * @returns Modified PDF bytes with updated metadata.
+ */
+export async function setPdfMetadata(file: File, metadata: PdfMetadata): Promise<Uint8Array> {
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await PDFDocument.load(arrayBuffer);
+
+  pdf.setTitle(metadata.title);
+  pdf.setAuthor(metadata.author);
+  pdf.setSubject(metadata.subject);
+  pdf.setKeywords(metadata.keywords.split(",").map((k) => k.trim()));
+  pdf.setCreator(metadata.creator);
+  pdf.setProducer(metadata.producer);
+
+  if (metadata.creationDate) {
+    pdf.setCreationDate(new Date(metadata.creationDate));
+  }
+  if (metadata.modificationDate) {
+    pdf.setModificationDate(new Date(metadata.modificationDate));
   }
 
   return pdf.save();

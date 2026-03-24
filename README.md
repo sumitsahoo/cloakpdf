@@ -15,7 +15,7 @@
 
 ## ✨ Features
 
-BytePDF offers **9 powerful PDF tools**, all running 100% client-side:
+BytePDF offers **10 powerful PDF tools**, all running 100% client-side:
 
 | Tool                 | Description                                                                              |
 | -------------------- | ---------------------------------------------------------------------------------------- |
@@ -28,6 +28,7 @@ BytePDF offers **9 powerful PDF tools**, all running 100% client-side:
 | 🖼️ **Images to PDF** | Convert images (PNG, JPEG) to PDF with A4, Letter, or Fit-to-Image page sizes            |
 | 💧 **Add Watermark** | Overlay custom text watermarks with configurable font size, color, opacity, and rotation |
 | ✍️ **Add Signature** | Draw a signature on a canvas and place it on any page with adjustable size and position  |
+| 📋 **Edit Metadata** | View and edit document properties like title, author, subject, keywords, and dates       |
 
 ## 🔒 Privacy First
 
@@ -109,7 +110,8 @@ bytepdf/
 │   │   ├── MergePdf.tsx
 │   │   ├── ReorderPages.tsx
 │   │   ├── RotatePages.tsx
-│   │   └── SplitPdf.tsx
+│   │   ├── SplitPdf.tsx
+│   │   └── EditMetadata.tsx
 │   └── utils/              # Core logic
 │       ├── file-helpers.ts     # File reading, downloading, formatting
 │       ├── pdf-operations.ts   # All PDF manipulation functions
@@ -124,7 +126,7 @@ bytepdf/
 
 BytePDF leverages two complementary libraries for full PDF support:
 
-- **[pdf-lib](https://pdf-lib.js.org/)** — Handles all PDF manipulation: merging, splitting, rotation, page deletion, watermarking, signature embedding, and image-to-PDF conversion.
+- **[pdf-lib](https://pdf-lib.js.org/)** — Handles all PDF manipulation: merging, splitting, rotation, page deletion, watermarking, signature embedding, image-to-PDF conversion, and metadata editing.
 - **[PDF.js](https://mozilla.github.io/pdf.js/)** — Renders PDF pages to canvas for visual previews and thumbnail generation.
 
 All operations happen in-memory using the browser's `FileReader` API and `ArrayBuffer`s. Processed files are delivered as downloadable blobs — no data ever touches a remote server.

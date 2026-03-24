@@ -22,6 +22,18 @@ export interface WatermarkOptions {
   rotation: number;
 }
 
+/** Standard PDF document metadata fields. */
+export interface PdfMetadata {
+  title: string;
+  author: string;
+  subject: string;
+  keywords: string;
+  creator: string;
+  producer: string;
+  creationDate: string;
+  modificationDate: string;
+}
+
 /** Absolute position and dimensions (in PDF points) for signature placement. */
 export interface Position {
   x: number;
@@ -48,4 +60,5 @@ export type ToolId =
   | "reorder"
   | "images-to-pdf"
   | "watermark"
-  | "signature";
+  | "signature"
+  | "metadata";
