@@ -1,23 +1,78 @@
 /**
  * Add Signature tool.
  *
- * Combines the SignaturePad canvas component with page selection, position
- * controls, and size sliders. The user draws a signature, chooses a page,
- * adjusts placement via percentage-based sliders, and the signature is
- * embedded into the PDF at the calculated coordinates.
+ * Supports two modes:
+ * 1. **Draw** — Freehand drawing via the SignaturePad canvas component.
+ * 2. **Upload** — Upload a custom image (PNG/JPEG) with optional colour tint.
  *
- * Position is specified as percentages of the page dimensions to decouple
- * the preview from the actual PDF point-based coordinate system. The
- * conversion to absolute PDF points happens at apply-time by loading the
- * document and reading the target page’s dimensions.
+ * Both modes share a single colour picker, position drag-and-drop, size
+ * sliders, and page selection controls. The signature is embedded into the
+ * PDF at the user-specified coordinates.
  */
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { SignaturePad } from "../components/SignaturePad.tsx";
+import { ColorPicker, hexToRgb } from "../components/ColorPicker.tsx";
 import { addSignature } from "../utils/pdf-operations.ts";
 import { renderAllThumbnails } from "../utils/pdf-renderer.ts";
 import { downloadPdf } from "../utils/file-helpers.ts";
+
+type SignatureMode = "draw" | "upload";
+
+const MAX_UPLOAD_SIZE = 5 * 1024 * 1024; // 5 MB
+
+/**
+ * Apply a colour tint to an image data-URL.
+ *
+ * - Transparent PNGs: replaces the RGB of every non-transparent pixel.
+ * - Opaque images (JPEG): derives alpha from luminance so that dark areas
+ *   become the tint colour and white becomes transparent.
+ */
+function tintImage(dataUrl: string, hex: string): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(img, 0, 0);
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const { data } = imageData;
+      const { r, g, b } = hexToRgb(hex);
+
+      // Detect whether the image has meaningful transparency
+      let hasAlpha = false;
+      for (let i = 3; i < data.length; i += 4) {
+        if (data[i] < 250) {
+          hasAlpha = true;
+          break;
+        }
+      }
+
+      for (let i = 0; i < data.length; i += 4) {
+        if (hasAlpha) {
+          if (data[i + 3] > 0) {
+            data[i] = r;
+            data[i + 1] = g;
+            data[i + 2] = b;
+          }
+        } else {
+          const lum = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+          data[i] = r;
+          data[i + 1] = g;
+          data[i + 2] = b;
+          data[i + 3] = Math.round(255 - lum);
+        }
+      }
+
+      ctx.putImageData(imageData, 0, 0);
+      resolve(canvas.toDataURL("image/png"));
+    };
+    img.src = dataUrl;
+  });
+}
 
 export default function AddSignature() {
   const [file, setFile] = useState<File | null>(null);
@@ -33,9 +88,35 @@ export default function AddSignature() {
   const [isDragging, setIsDragging] = useState(false);
   const [applyToAllPages, setApplyToAllPages] = useState(false);
 
+  // Centralised colour (drives both SignaturePad ink & image tint)
+  const [color, setColor] = useState("#1e293b");
+
+  // Upload-related state
+  const [mode, setMode] = useState<SignatureMode>("draw");
+  const [uploadedImageUrl, setUploadedImageUrl] = useState("");
+  const [tintEnabled, setTintEnabled] = useState(false);
+  const uploadInputRef = useRef<HTMLInputElement>(null);
+
   const previewRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef({ active: false, startX: 0, startY: 0, startXPct: 0, startYPct: 0 });
 
+  /* ---- tint uploaded image whenever colour or toggle changes ---- */
+  useEffect(() => {
+    if (mode !== "upload" || !uploadedImageUrl) return;
+    if (!tintEnabled) {
+      setSignatureDataUrl(uploadedImageUrl);
+      return;
+    }
+    let cancelled = false;
+    void tintImage(uploadedImageUrl, color).then((url) => {
+      if (!cancelled) setSignatureDataUrl(url);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [mode, uploadedImageUrl, tintEnabled, color]);
+
+  /* ---- drag-and-drop positioning ---- */
   const handleDragStart = useCallback(
     (e: React.MouseEvent | React.TouchEvent) => {
       e.preventDefault();
@@ -61,7 +142,6 @@ export default function AddSignature() {
       const clientY = "touches" in e ? e.touches[0].clientY : e.clientY;
       const rect = previewRef.current.getBoundingClientRect();
       const dx = ((clientX - dragRef.current.startX) / rect.width) * 100;
-      // Inverted because CSS bottom is used
       const dy = ((dragRef.current.startY - clientY) / rect.height) * 100;
       const newX = Math.max(2, Math.min(98, dragRef.current.startXPct + dx));
       const newY = Math.max(2, Math.min(98, dragRef.current.startYPct + dy));
@@ -85,6 +165,7 @@ export default function AddSignature() {
     };
   }, []);
 
+  /* ---- file handlers ---- */
   const handleFile = useCallback(async (files: File[]) => {
     const pdf = files[0];
     if (!pdf) return;
@@ -96,7 +177,6 @@ export default function AddSignature() {
       const thumbs = await renderAllThumbnails(pdf);
       setThumbnails(thumbs);
 
-      // Read actual page dimensions for accurate preview sizing
       const arrayBuffer = await pdf.arrayBuffer();
       const { PDFDocument } = await import("pdf-lib");
       const pdfDoc = await PDFDocument.load(arrayBuffer);
@@ -114,12 +194,33 @@ export default function AddSignature() {
     }
   }, []);
 
+  const handleImageUpload = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const imgFile = e.target.files?.[0];
+      if (!imgFile) return;
+      if (imgFile.size > MAX_UPLOAD_SIZE) {
+        setError("Image must be under 5 MB.");
+        return;
+      }
+      setError(null);
+      const reader = new FileReader();
+      reader.onload = () => {
+        const dataUrl = reader.result as string;
+        setUploadedImageUrl(dataUrl);
+        if (!tintEnabled) {
+          setSignatureDataUrl(dataUrl);
+        }
+      };
+      reader.readAsDataURL(imgFile);
+    },
+    [tintEnabled],
+  );
+
   const handleApply = useCallback(async () => {
     if (!file || !signatureDataUrl) return;
     setProcessing(true);
     setError(null);
     try {
-      // Get actual page dimensions to calculate position
       const arrayBuffer = await file.arrayBuffer();
       const { PDFDocument } = await import("pdf-lib");
       const pdfDoc = await PDFDocument.load(arrayBuffer);
@@ -169,6 +270,7 @@ export default function AddSignature() {
                 setFile(null);
                 setThumbnails([]);
                 setSignatureDataUrl("");
+                setUploadedImageUrl("");
               }}
               className="text-sm text-primary-600 hover:text-primary-700"
             >
@@ -178,13 +280,135 @@ export default function AddSignature() {
 
           <div className="grid md:grid-cols-2 gap-6">
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-dark-text mb-2">
-                  Draw Your Signature
-                </label>
-                <SignaturePad onSignature={setSignatureDataUrl} />
+              {/* ---- Mode toggle ---- */}
+              <div className="inline-flex rounded-lg border border-slate-200 dark:border-dark-border p-0.5 bg-slate-100 dark:bg-dark-surface-alt">
+                <button
+                  onClick={() => {
+                    setMode("draw");
+                    setSignatureDataUrl("");
+                  }}
+                  className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                    mode === "draw"
+                      ? "bg-white dark:bg-dark-surface text-slate-900 dark:text-dark-text shadow-sm"
+                      : "text-slate-500 dark:text-dark-text-muted hover:text-slate-700 dark:hover:text-dark-text"
+                  }`}
+                >
+                  Draw
+                </button>
+                <button
+                  onClick={() => {
+                    setMode("upload");
+                    setSignatureDataUrl(uploadedImageUrl);
+                  }}
+                  className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                    mode === "upload"
+                      ? "bg-white dark:bg-dark-surface text-slate-900 dark:text-dark-text shadow-sm"
+                      : "text-slate-500 dark:text-dark-text-muted hover:text-slate-700 dark:hover:text-dark-text"
+                  }`}
+                >
+                  Upload
+                </button>
               </div>
 
+              {/* ---- Draw mode ---- */}
+              {mode === "draw" && (
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 dark:text-dark-text mb-2">
+                    Draw Your Signature
+                  </label>
+                  <SignaturePad onSignature={setSignatureDataUrl} color={color} />
+                </div>
+              )}
+
+              {/* ---- Upload mode ---- */}
+              {mode === "upload" && (
+                <div className="space-y-3">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-dark-text mb-1">
+                    Upload Signature Image
+                  </label>
+
+                  {/* Hidden file input */}
+                  <input
+                    ref={uploadInputRef}
+                    type="file"
+                    accept=".png,.jpg,.jpeg,image/png,image/jpeg"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                  />
+
+                  {!uploadedImageUrl ? (
+                    <button
+                      onClick={() => uploadInputRef.current?.click()}
+                      className="w-full flex flex-col items-center justify-center gap-2 py-8 border-2 border-dashed border-slate-300 dark:border-dark-border rounded-xl text-slate-500 dark:text-dark-text-muted hover:border-primary-400 hover:text-primary-600 transition-colors"
+                    >
+                      <svg
+                        className="w-8 h-8"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        strokeWidth={1.5}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"
+                        />
+                      </svg>
+                      <span className="text-sm font-medium">Click to upload PNG or JPEG</span>
+                      <span className="text-xs text-slate-400 dark:text-dark-text-muted">
+                        Max 5 MB — transparent PNG recommended
+                      </span>
+                    </button>
+                  ) : (
+                    <div className="flex items-center gap-3">
+                      <div className="w-24 h-12 rounded-md border border-slate-200 dark:border-dark-border bg-white dark:bg-dark-surface flex items-center justify-center overflow-hidden">
+                        <img
+                          src={signatureDataUrl || uploadedImageUrl}
+                          alt="Uploaded signature"
+                          className="max-w-full max-h-full object-contain"
+                        />
+                      </div>
+                      <button
+                        onClick={() => {
+                          setUploadedImageUrl("");
+                          setSignatureDataUrl("");
+                          if (uploadInputRef.current) uploadInputRef.current.value = "";
+                        }}
+                        className="text-xs text-slate-500 hover:text-red-500 transition-colors"
+                      >
+                        Remove
+                      </button>
+                      <button
+                        onClick={() => uploadInputRef.current?.click()}
+                        className="text-xs text-primary-600 hover:text-primary-700 transition-colors"
+                      >
+                        Change
+                      </button>
+                    </div>
+                  )}
+
+                  {uploadedImageUrl && (
+                    <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={tintEnabled}
+                        onChange={(e) => setTintEnabled(e.target.checked)}
+                        className="accent-primary-600 w-4 h-4 rounded"
+                      />
+                      <span className="text-sm text-slate-700 dark:text-dark-text">
+                        Tint with selected colour
+                      </span>
+                    </label>
+                  )}
+                </div>
+              )}
+
+              {/* ---- Shared colour picker ---- */}
+              {(mode === "draw" || (mode === "upload" && tintEnabled)) && (
+                <ColorPicker value={color} onChange={setColor} />
+              )}
+
+              {/* ---- Signature Size ---- */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-dark-text mb-1.5">
                   Signature Size

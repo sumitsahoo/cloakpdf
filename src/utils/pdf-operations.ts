@@ -358,14 +358,17 @@ export async function addSignature(
   const pdf = await PDFDocument.load(arrayBuffer);
 
   // Decode data URL to Uint8Array without fetch() overhead
-  const base64 = signatureDataUrl.split(",")[1];
+  const [header, base64] = signatureDataUrl.split(",");
   const binaryStr = atob(base64);
   const signatureBytes = new Uint8Array(binaryStr.length);
   for (let i = 0; i < binaryStr.length; i++) {
     signatureBytes[i] = binaryStr.charCodeAt(i);
   }
 
-  const signatureImage = await pdf.embedPng(signatureBytes);
+  const isJpeg = header.includes("image/jpeg") || header.includes("image/jpg");
+  const signatureImage = isJpeg
+    ? await pdf.embedJpg(signatureBytes)
+    : await pdf.embedPng(signatureBytes);
 
   for (const idx of pageIndices) {
     const page = pdf.getPage(idx);

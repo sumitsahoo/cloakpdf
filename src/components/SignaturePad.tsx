@@ -16,26 +16,20 @@ import { useRef, useEffect, useState, useCallback } from "react";
 interface SignaturePadProps {
   /** Called with the PNG data-URL every time the user finishes a stroke. Empty string on clear. */
   onSignature: (dataUrl: string) => void;
+  /** Hex colour string for the stroke ink (e.g. "#1e293b"). */
+  color: string;
   /** Intrinsic canvas width in pixels (default 500). */
   width?: number;
   /** Intrinsic canvas height in pixels (default 200). */
   height?: number;
 }
 
-const SIGNATURE_COLORS = [
-  { label: "Black", value: "#1e293b" },
-  { label: "Grey", value: "#6b7280" },
-  { label: "Blue", value: "#1d4ed8" },
-  { label: "Red", value: "#dc2626" },
-];
-
 type Point = { x: number; y: number };
 
-export function SignaturePad({ onSignature, width = 500, height = 200 }: SignaturePadProps) {
+export function SignaturePad({ onSignature, color, width = 500, height = 200 }: SignaturePadProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [hasContent, setHasContent] = useState(false);
-  const [color, setColor] = useState(SIGNATURE_COLORS[0].value);
   const strokesRef = useRef<Point[][]>([]);
   const currentStrokeRef = useRef<Point[]>([]);
 
@@ -173,32 +167,16 @@ export function SignaturePad({ onSignature, width = 500, height = 200 }: Signatu
           onTouchEnd={stopDrawing}
         />
       </div>
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-slate-400 dark:text-dark-text-muted">Color:</span>
-          {SIGNATURE_COLORS.map((c) => (
-            <button
-              key={c.value}
-              title={c.label}
-              onClick={() => setColor(c.value)}
-              className={`w-5 h-5 rounded-full border-2 transition-transform ${
-                color === c.value
-                  ? "border-primary-500 scale-125"
-                  : "border-slate-300 dark:border-dark-border hover:scale-110"
-              }`}
-              style={{ backgroundColor: c.value }}
-            />
-          ))}
-        </div>
-        {hasContent && (
+      {hasContent && (
+        <div className="flex justify-end">
           <button
             onClick={clear}
             className="text-xs text-slate-500 hover:text-red-500 transition-colors"
           >
             Clear
           </button>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

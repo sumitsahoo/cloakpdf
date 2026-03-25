@@ -10,6 +10,7 @@
 
 import { useState, useCallback, useRef } from "react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
+import { ColorPicker, hexToRgb, rgbToHex } from "../components/ColorPicker.tsx";
 import { addWatermark } from "../utils/pdf-operations.ts";
 import { renderAllThumbnails } from "../utils/pdf-renderer.ts";
 import { downloadPdf } from "../utils/file-helpers.ts";
@@ -160,31 +161,10 @@ export default function AddWatermark() {
                 />
               </div>
 
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-slate-400 dark:text-dark-text-muted">Color:</span>
-                  {[
-                    { label: "Black", hex: "#1e293b", color: { r: 30, g: 41, b: 59 } },
-                    { label: "Grey", hex: "#6b7280", color: { r: 107, g: 114, b: 128 } },
-                    { label: "Blue", hex: "#1d4ed8", color: { r: 29, g: 78, b: 216 } },
-                    { label: "Red", hex: "#dc2626", color: { r: 220, g: 38, b: 38 } },
-                  ].map((preset) => (
-                    <button
-                      key={preset.label}
-                      title={preset.label}
-                      onClick={() => setOptions((o) => ({ ...o, color: preset.color }))}
-                      className={`w-5 h-5 rounded-full border-2 transition-transform ${
-                        options.color.r === preset.color.r &&
-                        options.color.g === preset.color.g &&
-                        options.color.b === preset.color.b
-                          ? "border-primary-500 scale-125"
-                          : "border-slate-300 dark:border-dark-border hover:scale-110"
-                      }`}
-                      style={{ backgroundColor: preset.hex }}
-                    />
-                  ))}
-                </div>
-              </div>
+              <ColorPicker
+                value={rgbToHex(options.color.r, options.color.g, options.color.b)}
+                onChange={(hex) => setOptions((o) => ({ ...o, color: hexToRgb(hex) }))}
+              />
 
               {thumbnails.length > 1 && (
                 <div className="space-y-3">
