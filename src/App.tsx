@@ -194,11 +194,11 @@ export function App() {
         </div>
       ) : (
         <div>
-          <div className="text-center mb-10">
-            <h1 className="text-3xl sm:text-4xl font-bold text-slate-800 dark:text-dark-text mb-3">
+          <div className="text-center mb-8">
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-800 dark:text-dark-text mb-1.5">
               PDF Tools That Respect Your Privacy
             </h1>
-            <p className="text-lg text-slate-500 dark:text-dark-text-muted max-w-2xl mx-auto">
+            <p className="text-base text-slate-500 dark:text-dark-text-muted max-w-2xl mx-auto">
               Edit, merge, split, and compress PDFs entirely in your browser. Your files never leave
               your device.
             </p>
