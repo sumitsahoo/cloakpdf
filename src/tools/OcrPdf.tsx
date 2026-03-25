@@ -269,19 +269,17 @@ export default function OcrPdf() {
                 </div>
               </div>
 
-              {/* Expand / Collapse all */}
-              <div className="flex items-center justify-end gap-2">
+              {/* Expand / Collapse all toggle */}
+              <div className="flex items-center justify-end">
                 <button
-                  onClick={() => setExpandedPages(new Set(pages.map((_, i) => i)))}
+                  onClick={() =>
+                    expandedPages.size === pages.length
+                      ? setExpandedPages(new Set())
+                      : setExpandedPages(new Set(pages.map((_, i) => i)))
+                  }
                   className="text-xs px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-dark-border text-slate-600 dark:text-dark-text-muted hover:bg-slate-200 dark:hover:bg-dark-surface transition-colors"
                 >
-                  ▼ Expand All
-                </button>
-                <button
-                  onClick={() => setExpandedPages(new Set())}
-                  className="text-xs px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-dark-border text-slate-600 dark:text-dark-text-muted hover:bg-slate-200 dark:hover:bg-dark-surface transition-colors"
-                >
-                  ▲ Collapse All
+                  {expandedPages.size === pages.length ? "▲ Collapse All" : "▼ Expand All"}
                 </button>
               </div>
 
