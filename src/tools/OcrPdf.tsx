@@ -3,17 +3,22 @@
  *
  * Extracts text from scanned or image-based PDFs using Tesseract.js OCR.
  * Each page is rendered at high DPI via PDF.js, preprocessed for contrast,
- * and then recognised with spatial layout preservation. The extracted text
- * can be copied to clipboard or downloaded as a `.txt` file.
+ * and then recognised with spatial layout preservation. Features:
+ *
+ * - **Auto Detect** language or manual language selection via pill buttons
+ * - Per-page progress bar during OCR
+ * - Page-wise collapsible text panels with individual "Copy" buttons
+ * - "Copy All" and "Download as TXT" actions
  */
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback } from "react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { extractTextOcr } from "../utils/pdf-operations.ts";
 import { downloadBlob, formatFileSize } from "../utils/file-helpers.ts";
 
-/** Supported OCR languages with friendly labels. */
+/** Language options displayed as pill buttons. "auto" uses Tesseract OSD. */
 const LANGUAGES = [
+  { code: "auto", label: "🌐 Auto Detect" },
   { code: "eng", label: "English" },
   { code: "fra", label: "French" },
   { code: "deu", label: "German" },
@@ -22,71 +27,112 @@ const LANGUAGES = [
   { code: "por", label: "Portuguese" },
   { code: "nld", label: "Dutch" },
   { code: "jpn", label: "Japanese" },
-  { code: "chi_sim", label: "Chinese (Simplified)" },
+  { code: "chi_sim", label: "Chinese" },
   { code: "kor", label: "Korean" },
   { code: "ara", label: "Arabic" },
   { code: "hin", label: "Hindi" },
+  { code: "rus", label: "Russian" },
 ] as const;
 
 export default function OcrPdf() {
   const [file, setFile] = useState<File | null>(null);
-  const [language, setLanguage] = useState("eng");
+  const [language, setLanguage] = useState("auto");
   const [processing, setProcessing] = useState(false);
+  const [progressStatus, setProgressStatus] = useState<string | null>(null);
   const [progress, setProgress] = useState<{ current: number; total: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
-  const textRef = useRef<HTMLTextAreaElement>(null);
+  const [pages, setPages] = useState<string[]>([]);
+  const [expandedPages, setExpandedPages] = useState<Set<number>>(new Set());
+  const [copiedPage, setCopiedPage] = useState<number | null>(null);
+  const [copiedAll, setCopiedAll] = useState(false);
 
   const handleFile = useCallback((files: File[]) => {
     const pdf = files[0];
     if (!pdf) return;
     setFile(pdf);
-    setResult(null);
+    setPages([]);
     setProgress(null);
-    setCopied(false);
+    setProgressStatus(null);
     setError(null);
+    setExpandedPages(new Set());
   }, []);
 
   const handleExtract = useCallback(async () => {
     if (!file) return;
     setProcessing(true);
     setError(null);
-    setResult(null);
+    setPages([]);
     setProgress({ current: 0, total: 0 });
+    setProgressStatus("Initializing OCR engine…");
     try {
-      const text = await extractTextOcr(file, language, (current, total) => {
+      const pageTexts = await extractTextOcr(file, language, (current, total, status) => {
         setProgress({ current, total });
+        if (status) setProgressStatus(status);
       });
-      setResult(text);
+      setPages(pageTexts);
+      // Auto-expand all pages by default
+      setExpandedPages(new Set(pageTexts.map((_, i) => i)));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to extract text. Please try again.");
     } finally {
       setProcessing(false);
       setProgress(null);
+      setProgressStatus(null);
     }
   }, [file, language]);
 
-  const handleCopy = useCallback(async () => {
-    if (!result) return;
+  const fullText = pages.map((text, i) => `--- Page ${i + 1} ---\n\n${text}`).join("\n\n");
+
+  const handleCopyAll = useCallback(async () => {
+    if (!fullText) return;
     try {
-      await navigator.clipboard.writeText(result);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      await navigator.clipboard.writeText(fullText);
+      setCopiedAll(true);
+      setTimeout(() => setCopiedAll(false), 2000);
     } catch {
       setError("Failed to copy to clipboard.");
     }
-  }, [result]);
+  }, [fullText]);
+
+  const handleCopyPage = useCallback(
+    async (pageIndex: number) => {
+      const text = pages[pageIndex];
+      if (!text) return;
+      try {
+        await navigator.clipboard.writeText(text);
+        setCopiedPage(pageIndex);
+        setTimeout(() => setCopiedPage(null), 2000);
+      } catch {
+        setError("Failed to copy to clipboard.");
+      }
+    },
+    [pages],
+  );
 
   const handleDownload = useCallback(() => {
-    if (!result || !file) return;
+    if (!fullText || !file) return;
     const baseName = file.name.replace(/\.pdf$/i, "");
-    const blob = new Blob([result], { type: "text/plain;charset=utf-8" });
+    const blob = new Blob([fullText], { type: "text/plain;charset=utf-8" });
     downloadBlob(blob, `${baseName}_ocr.txt`);
-  }, [result, file]);
+  }, [fullText, file]);
 
-  const wordCount = result ? result.split(/\s+/).filter((w) => w.length > 0).length : 0;
-  const charCount = result ? result.length : 0;
+  const togglePage = useCallback((pageIndex: number) => {
+    setExpandedPages((prev) => {
+      const next = new Set(prev);
+      if (next.has(pageIndex)) {
+        next.delete(pageIndex);
+      } else {
+        next.add(pageIndex);
+      }
+      return next;
+    });
+  }, []);
+
+  const totalWords = pages.reduce(
+    (sum, text) => sum + text.split(/\s+/).filter((w) => w.length > 0).length,
+    0,
+  );
+  const totalChars = pages.reduce((sum, text) => sum + text.length, 0);
   const progressPercent =
     progress && progress.total > 0 ? Math.round((progress.current / progress.total) * 100) : 0;
 
@@ -108,9 +154,10 @@ export default function OcrPdf() {
             <button
               onClick={() => {
                 setFile(null);
-                setResult(null);
+                setPages([]);
                 setProgress(null);
-                setCopied(false);
+                setProgressStatus(null);
+                setExpandedPages(new Set());
               }}
               className="text-sm text-primary-600 hover:text-primary-700"
             >
@@ -118,37 +165,37 @@ export default function OcrPdf() {
             </button>
           </div>
 
-          {!result ? (
+          {pages.length === 0 ? (
             <div className="space-y-4">
-              {/* Language selector */}
+              {/* Language pill selector */}
               <div>
-                <label
-                  htmlFor="ocr-language"
-                  className="block text-sm font-medium text-slate-700 dark:text-dark-text mb-2"
-                >
+                <label className="block text-sm font-medium text-slate-700 dark:text-dark-text mb-3">
                   OCR Language
                 </label>
-                <select
-                  id="ocr-language"
-                  value={language}
-                  onChange={(e) => setLanguage(e.target.value)}
-                  disabled={processing}
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-dark-border bg-white dark:bg-dark-surface text-sm text-slate-800 dark:text-dark-text focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
-                >
+                <div className="flex flex-wrap gap-2">
                   {LANGUAGES.map((lang) => (
-                    <option key={lang.code} value={lang.code}>
+                    <button
+                      key={lang.code}
+                      onClick={() => setLanguage(lang.code)}
+                      disabled={processing}
+                      className={`px-3.5 py-1.5 rounded-full text-sm font-medium transition-all ${
+                        language === lang.code
+                          ? "bg-primary-600 text-white shadow-sm"
+                          : "bg-slate-100 dark:bg-dark-surface text-slate-600 dark:text-dark-text-muted border border-slate-200 dark:border-dark-border hover:bg-slate-200 dark:hover:bg-dark-border"
+                      } disabled:opacity-50 disabled:cursor-not-allowed`}
+                    >
                       {lang.label}
-                    </option>
+                    </button>
                   ))}
-                </select>
+                </div>
               </div>
 
-              {/* Progress bar */}
+              {/* Progress section */}
               {processing && progress && progress.total > 0 && (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-slate-600 dark:text-dark-text-muted">
-                      Processing page {progress.current} of {progress.total}
+                      {progressStatus || `Processing page ${progress.current} of ${progress.total}`}
                     </span>
                     <span className="font-medium text-primary-600">{progressPercent}%</span>
                   </div>
@@ -161,12 +208,12 @@ export default function OcrPdf() {
                 </div>
               )}
 
-              {/* Loading spinner for initial setup (before page count known) */}
+              {/* Initializing spinner */}
               {processing && (!progress || progress.total === 0) && (
                 <div className="flex items-center gap-3 py-4">
                   <div className="w-5 h-5 border-2 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
                   <span className="text-sm text-slate-600 dark:text-dark-text-muted">
-                    Initializing OCR engine...
+                    {progressStatus || "Initializing OCR engine…"}
                   </span>
                 </div>
               )}
@@ -183,40 +230,89 @@ export default function OcrPdf() {
             <div className="space-y-4">
               {/* Stats bar */}
               <div className="bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border p-4">
-                <div className="grid grid-cols-2 gap-4 text-center">
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <p className="text-sm text-slate-500 dark:text-dark-text-muted">Pages</p>
+                    <p className="text-xl font-bold text-slate-800 dark:text-dark-text">
+                      {pages.length}
+                    </p>
+                  </div>
                   <div>
                     <p className="text-sm text-slate-500 dark:text-dark-text-muted">Words</p>
                     <p className="text-xl font-bold text-slate-800 dark:text-dark-text">
-                      {wordCount.toLocaleString()}
+                      {totalWords.toLocaleString()}
                     </p>
                   </div>
                   <div>
                     <p className="text-sm text-slate-500 dark:text-dark-text-muted">Characters</p>
                     <p className="text-xl font-bold text-slate-800 dark:text-dark-text">
-                      {charCount.toLocaleString()}
+                      {totalChars.toLocaleString()}
                     </p>
                   </div>
                 </div>
               </div>
 
-              {/* Extracted text */}
-              <div className="relative">
-                <textarea
-                  ref={textRef}
-                  readOnly
-                  value={result}
-                  rows={16}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-bg text-sm text-slate-800 dark:text-dark-text font-mono leading-relaxed resize-y focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                />
+              {/* Page-wise text panels */}
+              <div className="space-y-2">
+                {pages.map((pageText, idx) => {
+                  const isExpanded = expandedPages.has(idx);
+                  const pageWords = pageText.split(/\s+/).filter((w) => w.length > 0).length;
+                  return (
+                    <div
+                      key={idx}
+                      className="bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border overflow-hidden"
+                    >
+                      {/* Page header — click to expand/collapse */}
+                      <div
+                        onClick={() => togglePage(idx)}
+                        className="w-full flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-slate-50 dark:hover:bg-dark-border/50 transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <span
+                            className={`text-slate-400 dark:text-dark-text-muted transition-transform ${
+                              isExpanded ? "rotate-90" : ""
+                            }`}
+                          >
+                            ▶
+                          </span>
+                          <span className="text-sm font-semibold text-slate-700 dark:text-dark-text">
+                            Page {idx + 1}
+                          </span>
+                          <span className="text-xs text-slate-400 dark:text-dark-text-muted">
+                            {pageWords} words
+                          </span>
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            void handleCopyPage(idx);
+                          }}
+                          className="text-xs px-3 py-1 rounded-full bg-slate-100 dark:bg-dark-border text-slate-600 dark:text-dark-text-muted hover:bg-primary-100 hover:text-primary-700 dark:hover:bg-primary-900/40 dark:hover:text-primary-300 transition-colors"
+                        >
+                          {copiedPage === idx ? "✅ Copied!" : "📋 Copy"}
+                        </button>
+                      </div>
+
+                      {/* Collapsible text content */}
+                      {isExpanded && (
+                        <div className="px-4 pb-4">
+                          <pre className="whitespace-pre-wrap text-sm text-slate-700 dark:text-dark-text font-mono leading-relaxed bg-slate-50 dark:bg-dark-bg rounded-lg p-3 max-h-64 overflow-y-auto">
+                            {pageText || "(No text detected on this page)"}
+                          </pre>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
 
-              {/* Action buttons */}
+              {/* Global action buttons */}
               <div className="grid grid-cols-2 gap-3">
                 <button
-                  onClick={handleCopy}
+                  onClick={handleCopyAll}
                   className="bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border text-slate-700 dark:text-dark-text py-3 px-6 rounded-xl font-medium hover:bg-slate-50 dark:hover:bg-dark-border transition-colors"
                 >
-                  {copied ? "✅ Copied!" : "📋 Copy to Clipboard"}
+                  {copiedAll ? "✅ Copied!" : "📋 Copy All"}
                 </button>
                 <button
                   onClick={handleDownload}

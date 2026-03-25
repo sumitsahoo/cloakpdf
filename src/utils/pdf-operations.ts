@@ -482,6 +482,45 @@ function preprocessCanvasForOcr(canvas: HTMLCanvasElement): void {
 }
 
 /**
+ * Map Tesseract script detection results to the most common language code.
+ * Used by auto-detection to pick the right language for OCR.
+ */
+const SCRIPT_TO_LANGUAGE: Record<string, string> = {
+  Latin: "eng",
+  Han: "chi_sim",
+  Hangul: "kor",
+  Japanese: "jpn",
+  Arabic: "ara",
+  Devanagari: "hin",
+  Cyrillic: "rus",
+  Greek: "ell",
+  Thai: "tha",
+  Hebrew: "heb",
+};
+
+/**
+ * Render a single PDF page to a preprocessed canvas for OCR.
+ * Extracted as a helper to avoid duplication between detect + recognize passes.
+ */
+async function renderPageToCanvas(
+  pdfDoc: { getPage(n: number): Promise<any> },
+  pageNum: number,
+  scale: number,
+): Promise<HTMLCanvasElement> {
+  const page = await pdfDoc.getPage(pageNum);
+  const viewport = page.getViewport({ scale });
+
+  const canvas = document.createElement("canvas");
+  canvas.width = viewport.width;
+  canvas.height = viewport.height;
+  const ctx = canvas.getContext("2d")!;
+
+  await page.render({ canvasContext: ctx, viewport, canvas }).promise;
+  preprocessCanvasForOcr(canvas);
+  return canvas;
+}
+
+/**
  * Extract text from a PDF using OCR (Tesseract.js).
  *
  * Each page is rendered to a high-DPI canvas via PDF.js, preprocessed
@@ -489,16 +528,19 @@ function preprocessCanvasForOcr(canvas: HTMLCanvasElement): void {
  * block/paragraph/line hierarchy is used to reconstruct spatially-aware
  * text output — preserving where text appears on the page.
  *
+ * When `language` is `"auto"`, the first page is analysed with Tesseract's
+ * script detection to automatically pick the best language model.
+ *
  * @param file - The PDF file to OCR.
- * @param language - Tesseract language code (default "eng").
- * @param onProgress - Optional callback reporting (currentPage, totalPages).
- * @returns The full extracted text, with page separators.
+ * @param language - Tesseract language code, or "auto" for auto-detection.
+ * @param onProgress - Optional callback: (currentPage, totalPages, status).
+ * @returns Array of per-page extracted text strings.
  */
 export async function extractTextOcr(
   file: File,
   language = "eng",
-  onProgress?: (current: number, total: number) => void,
-): Promise<string> {
+  onProgress?: (current: number, total: number, status?: string) => void,
+): Promise<string[]> {
   const { createWorker, PSM } = await import("tesseract.js");
 
   // Dynamic import to match the pattern already used in compressPdf
@@ -509,33 +551,44 @@ export async function extractTextOcr(
   const arrayBuffer = await file.arrayBuffer();
   const pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
   const totalPages = pdfDoc.numPages;
+  const OCR_SCALE = 3; // 3× ≈ 216 DPI for typical 72-DPI PDFs
+
+  // --- Auto-detect language from first page ---
+  let resolvedLang = language;
+  if (language === "auto") {
+    onProgress?.(0, totalPages, "Detecting language…");
+    const detectCanvas = await renderPageToCanvas(pdfDoc, 1, OCR_SCALE);
+    const detectWorker = await createWorker("osd");
+    try {
+      const { data } = await detectWorker.detect(detectCanvas);
+      if (data.script && SCRIPT_TO_LANGUAGE[data.script]) {
+        resolvedLang = SCRIPT_TO_LANGUAGE[data.script];
+      } else {
+        resolvedLang = "eng"; // Default fallback
+      }
+    } catch {
+      resolvedLang = "eng";
+    } finally {
+      await detectWorker.terminate();
+      detectCanvas.width = 0;
+      detectCanvas.height = 0;
+    }
+  }
 
   // Create Tesseract worker once, reuse across all pages
-  const worker = await createWorker(language);
+  const worker = await createWorker(resolvedLang);
   await worker.setParameters({
     tessedit_pageseg_mode: PSM.SINGLE_BLOCK,
     preserve_interword_spaces: "1",
   });
 
   const pageTexts: string[] = [];
-  const OCR_SCALE = 3; // 3× ≈ 216 DPI for typical 72-DPI PDFs
 
   try {
     for (let i = 1; i <= totalPages; i++) {
-      const page = await pdfDoc.getPage(i);
-      const viewport = page.getViewport({ scale: OCR_SCALE });
+      onProgress?.(i, totalPages, `Extracting page ${i} of ${totalPages}…`);
 
-      const canvas = document.createElement("canvas");
-      canvas.width = viewport.width;
-      canvas.height = viewport.height;
-      const ctx = canvas.getContext("2d")!;
-
-      await page.render({ canvasContext: ctx, viewport, canvas }).promise;
-
-      // Preprocess: grayscale + contrast stretch
-      preprocessCanvasForOcr(canvas);
-
-      // OCR the preprocessed canvas
+      const canvas = await renderPageToCanvas(pdfDoc, i, OCR_SCALE);
       const { data } = await worker.recognize(canvas);
 
       // Build spatially-aware text from the block hierarchy
@@ -567,5 +620,5 @@ export async function extractTextOcr(
     void pdfDoc.destroy();
   }
 
-  return pageTexts.map((text, i) => `--- Page ${i + 1} ---\n\n${text}`).join("\n\n");
+  return pageTexts;
 }
