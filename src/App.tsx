@@ -25,6 +25,7 @@ const AddWatermark = lazy(() => import("./tools/AddWatermark.tsx"));
 const AddSignature = lazy(() => import("./tools/AddSignature.tsx"));
 const EditMetadata = lazy(() => import("./tools/EditMetadata.tsx"));
 const OcrPdf = lazy(() => import("./tools/OcrPdf.tsx"));
+const PdfPassword = lazy(() => import("./tools/PdfPassword.tsx"));
 
 // ---- Tool metadata displayed on the home screen grid ----
 const tools: Tool[] = [
@@ -94,6 +95,12 @@ const tools: Tool[] = [
     description: "Extract text from scanned PDFs using OCR",
     icon: "🔍",
   },
+  {
+    id: "pdf-password",
+    title: "PDF Password",
+    description: "Add or remove a password from a PDF",
+    icon: "🔒",
+  },
 ];
 
 // ---- Map tool IDs to their lazily-loaded components ----
@@ -109,6 +116,7 @@ const toolComponents: Record<string, React.LazyExoticComponent<React.ComponentTy
   signature: AddSignature,
   metadata: EditMetadata,
   ocr: OcrPdf,
+  "pdf-password": PdfPassword,
 };
 
 /** Full-screen centred spinner shown while a tool component is loading. */

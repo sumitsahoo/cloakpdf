@@ -9,7 +9,6 @@
 import { PDFDocument, rgb, degrees, StandardFonts } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
 import type { PageRange, WatermarkOptions, Position, PdfMetadata } from "../types.ts";
-
 /**
  * Merge multiple PDF files into a single document.
  *

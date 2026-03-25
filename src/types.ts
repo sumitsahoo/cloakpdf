@@ -62,4 +62,5 @@ export type ToolId =
   | "watermark"
   | "signature"
   | "metadata"
-  | "ocr";
+  | "ocr"
+  | "pdf-password";
