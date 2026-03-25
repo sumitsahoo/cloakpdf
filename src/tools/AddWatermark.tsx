@@ -8,7 +8,7 @@
  * using pdf-lib.
  */
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { ColorPicker, hexToRgb, rgbToHex } from "../components/ColorPicker.tsx";
 import { addWatermark } from "../utils/pdf-operations.ts";
@@ -32,6 +32,9 @@ export default function AddWatermark() {
     rotation: -45,
   });
   const fileDataRef = useRef<ArrayBuffer | null>(null);
+  const [pageDims, setPageDims] = useState<{ width: number; height: number }[]>([]);
+  const previewRef = useRef<HTMLDivElement>(null);
+  const [previewScale, setPreviewScale] = useState(0.4);
 
   const handleFile = useCallback(async (files: File[]) => {
     const pdf = files[0];
@@ -45,6 +48,12 @@ export default function AddWatermark() {
       fileDataRef.current = data;
       const thumbs = await renderAllThumbnails(pdf);
       setThumbnails(thumbs);
+
+      // Read actual page dimensions for accurate preview scaling
+      const { PDFDocument } = await import("pdf-lib");
+      const pdfDoc = await PDFDocument.load(data);
+      const dims = pdfDoc.getPages().map((p) => p.getSize());
+      setPageDims(dims);
     } catch (e) {
       setError(
         e instanceof Error
@@ -57,7 +66,20 @@ export default function AddWatermark() {
     }
   }, []);
 
-  // Debounced preview could go here but we keep it simple
+  // Recompute preview scale when page dims or container size changes
+  useEffect(() => {
+    if (!previewRef.current || !pageDims[selectedPage]) return;
+    const el = previewRef.current;
+    const updateScale = () => {
+      const rect = el.getBoundingClientRect();
+      if (!rect) return;
+      setPreviewScale(rect.width / pageDims[selectedPage].width);
+    };
+    updateScale();
+    const observer = new ResizeObserver(updateScale);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [pageDims, selectedPage]);
 
   const handleApply = useCallback(async () => {
     if (!file || !options.text.trim()) return;
@@ -208,7 +230,17 @@ export default function AddWatermark() {
                   <div className="w-8 h-8 border-3 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
                 </div>
               ) : thumbnails[selectedPage] ? (
-                <div className="relative aspect-[3/4] bg-white dark:bg-dark-surface rounded-lg border border-slate-200 dark:border-dark-border overflow-hidden">
+                <div
+                  ref={previewRef}
+                  className="relative bg-white dark:bg-dark-surface rounded-lg border border-slate-200 dark:border-dark-border overflow-hidden"
+                  style={
+                    pageDims[selectedPage]
+                      ? {
+                          aspectRatio: `${pageDims[selectedPage].width} / ${pageDims[selectedPage].height}`,
+                        }
+                      : { aspectRatio: "3 / 4" }
+                  }
+                >
                   <img
                     src={thumbnails[selectedPage]}
                     alt={`Page ${selectedPage + 1}`}
@@ -222,7 +254,7 @@ export default function AddWatermark() {
                   >
                     <span
                       style={{
-                        fontSize: `${options.fontSize * 0.4}px`,
+                        fontSize: `${options.fontSize * previewScale}px`,
                         color: `rgba(${options.color.r}, ${options.color.g}, ${options.color.b}, ${options.opacity})`,
                         fontWeight: "bold",
                         whiteSpace: "nowrap",

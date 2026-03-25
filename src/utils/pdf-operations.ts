@@ -321,14 +321,26 @@ export async function addWatermark(
     const textWidth = font.widthOfTextAtSize(options.text, options.fontSize);
     const textHeight = font.heightAtSize(options.fontSize);
 
+    // pdf-lib rotates text around its draw origin (bottom-left of glyph).
+    // To keep the visual center of the rotated text at the page center,
+    // we reverse-rotate the text-center-to-origin offset from page center.
+    // Negate rotation: CSS uses clockwise-positive, pdf-lib uses
+    // counter-clockwise-positive.
+    const pdfRotation = -options.rotation;
+    const rad = (pdfRotation * Math.PI) / 180;
+    const cos = Math.cos(rad);
+    const sin = Math.sin(rad);
+    const x = width / 2 - (textWidth / 2) * cos + (textHeight / 2) * sin;
+    const y = height / 2 - (textWidth / 2) * sin - (textHeight / 2) * cos;
+
     page.drawText(options.text, {
-      x: (width - textWidth) / 2,
-      y: (height - textHeight) / 2,
+      x,
+      y,
       size: options.fontSize,
       font,
       color: rgb(options.color.r / 255, options.color.g / 255, options.color.b / 255),
       opacity: options.opacity,
-      rotate: degrees(options.rotation),
+      rotate: degrees(pdfRotation),
     });
   }
 
