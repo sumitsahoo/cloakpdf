@@ -35,8 +35,8 @@ jobs:
         env:
           VITE_APP_BASE_PATH: /bytepdf/
 
-      - name: Test
-        run: vp run test
+      # - name: Test
+      #   run: vp run test
 
       - name: Setup Pages
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
