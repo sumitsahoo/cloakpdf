@@ -196,11 +196,11 @@ export function App() {
         <div>
           <div className="text-center mb-8">
             <h1 className="text-2xl sm:text-3xl font-bold text-slate-800 dark:text-dark-text mb-1.5">
-              PDF Tools That Respect Your Privacy
+              All-in-One PDF Tools That Respect Your Privacy
             </h1>
             <p className="text-base text-slate-500 dark:text-dark-text-muted max-w-2xl mx-auto">
-              Edit, merge, split, and compress PDFs entirely in your browser. Your files never leave
-              your device.
+              Edit, merge, sign, secure, and convert PDFs entirely in your browser. Your files never
+              leave your device.
             </p>
           </div>
           <div className="space-y-10">
