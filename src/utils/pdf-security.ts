@@ -461,6 +461,16 @@ function verifyPasswordLegacy(
 
 // ─── Public API ───────────────────────────────────────────────────────────────
 
+/**
+ * Returns true if the PDF file has an Encrypt entry in its trailer.
+ * Uses ignoreEncryption so it never throws on protected files.
+ */
+export async function isPdfEncrypted(file: File) {
+  const arrayBuffer = await file.arrayBuffer();
+  const pdfDoc = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
+  return !!pdfDoc.context.trailerInfo.Encrypt;
+}
+
 const ALL_PERMS = -4; // 0xFFFFFFFC — all permission bits set
 
 /**

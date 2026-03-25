@@ -1,21 +1,20 @@
 /**
  * PDF Password tool.
  *
- * Combines two operations in a single UI:
- *   - Add Password  – encrypts the PDF with a user/owner password via
- *                     pdf-lib-with-encrypt. Text and structure are preserved.
- *   - Remove Password – decrypts a protected PDF using the supplied password
- *                     and saves an unencrypted copy. Text remains selectable.
+ * Uploads a PDF, auto-detects whether it is encrypted, then shows the
+ * appropriate form:
+ *   - Unencrypted PDF → Add Password (protects with AES-256)
+ *   - Encrypted PDF   → Remove Password (decrypts using the supplied password)
  *
  * All processing happens entirely in the browser — no files are uploaded.
  */
 
 import { useState, useCallback } from "react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
-import { protectPdf, unlockPdf } from "../utils/pdf-security.ts";
+import { isPdfEncrypted, protectPdf, unlockPdf } from "../utils/pdf-security.ts";
 import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
 
-type Mode = "add" | "remove";
+type PdfState = "idle" | "detecting" | "unencrypted" | "encrypted";
 
 // Eye icon (open)
 function IconEyeOpen() {
@@ -121,9 +120,8 @@ function PasswordField({
 }
 
 export default function PdfPassword() {
-  const [mode, setMode] = useState<Mode>("add");
-
   const [file, setFile] = useState<File | null>(null);
+  const [pdfState, setPdfState] = useState<PdfState>("idle");
 
   // Add-password state
   const [newPassword, setNewPassword] = useState("");
@@ -140,27 +138,32 @@ export default function PdfPassword() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  const handleFile = useCallback((files: File[]) => {
+  const handleFile = useCallback(async (files: File[]) => {
     const pdf = files[0];
     if (!pdf) return;
     setFile(pdf);
     setError(null);
     setSuccess(false);
+    setNewPassword("");
+    setConfirmPassword("");
+    setCurrentPassword("");
+    setPdfState("detecting");
+    try {
+      const encrypted = await isPdfEncrypted(pdf);
+      setPdfState(encrypted ? "encrypted" : "unencrypted");
+    } catch {
+      setPdfState("unencrypted"); // fallback: let the operation surface the real error
+    }
   }, []);
 
   const reset = useCallback(() => {
     setFile(null);
+    setPdfState("idle");
     setError(null);
     setSuccess(false);
     setNewPassword("");
     setConfirmPassword("");
     setCurrentPassword("");
-  }, []);
-
-  const handleModeChange = useCallback((next: Mode) => {
-    setMode(next);
-    setError(null);
-    setSuccess(false);
   }, []);
 
   const handleAddPassword = useCallback(async () => {
@@ -219,49 +222,31 @@ export default function PdfPassword() {
 
   return (
     <div className="space-y-6">
-      {/* Mode toggle */}
-      <div className="inline-flex rounded-xl border border-slate-200 dark:border-dark-border bg-slate-100 dark:bg-dark-surface p-1 gap-1">
-        <button
-          type="button"
-          onClick={() => handleModeChange("add")}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-            mode === "add"
-              ? "bg-white dark:bg-dark-bg text-slate-800 dark:text-dark-text shadow-sm"
-              : "text-slate-500 dark:text-dark-text-muted hover:text-slate-700 dark:hover:text-dark-text"
-          }`}
-        >
-          Add Password
-        </button>
-        <button
-          type="button"
-          onClick={() => handleModeChange("remove")}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-            mode === "remove"
-              ? "bg-white dark:bg-dark-bg text-slate-800 dark:text-dark-text shadow-sm"
-              : "text-slate-500 dark:text-dark-text-muted hover:text-slate-700 dark:hover:text-dark-text"
-          }`}
-        >
-          Remove Password
-        </button>
-      </div>
-
       {/* File picker */}
       {!file ? (
         <FileDropZone
           accept=".pdf,application/pdf"
           onFiles={handleFile}
           label="Drop a PDF file here"
-          hint={
-            mode === "add"
-              ? "Select a PDF to password-protect"
-              : "Select a password-protected PDF to unlock"
-          }
+          hint="Select a PDF to add or remove a password"
         />
       ) : (
         <div className="flex items-center justify-between">
-          <p className="text-sm text-slate-600 dark:text-dark-text-muted">
-            <span className="font-medium">{file.name}</span> — {formatFileSize(file.size)}
-          </p>
+          <div className="flex items-center gap-2">
+            <p className="text-sm text-slate-600 dark:text-dark-text-muted">
+              <span className="font-medium">{file.name}</span> — {formatFileSize(file.size)}
+            </p>
+            {pdfState === "detecting" && (
+              <span className="text-xs text-slate-400 dark:text-dark-text-muted animate-pulse">
+                Detecting…
+              </span>
+            )}
+            {pdfState === "encrypted" && (
+              <span className="text-xs font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-full px-2 py-0.5">
+                Password protected
+              </span>
+            )}
+          </div>
           <button
             type="button"
             onClick={reset}
@@ -272,8 +257,8 @@ export default function PdfPassword() {
         </div>
       )}
 
-      {/* Panel: Add Password */}
-      {mode === "add" && file && (
+      {/* Panel: Add Password (unencrypted PDF) */}
+      {pdfState === "unencrypted" && (
         <div className="bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border divide-y divide-slate-100 dark:divide-dark-border">
           <PasswordField
             id="new-password"
@@ -299,8 +284,8 @@ export default function PdfPassword() {
         </div>
       )}
 
-      {/* Panel: Remove Password */}
-      {mode === "remove" && file && (
+      {/* Panel: Remove Password (encrypted PDF) */}
+      {pdfState === "encrypted" && (
         <div className="bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border divide-y divide-slate-100 dark:divide-dark-border">
           <PasswordField
             id="current-password"
@@ -317,18 +302,18 @@ export default function PdfPassword() {
       )}
 
       {/* Action button */}
-      {file && (
+      {(pdfState === "unencrypted" || pdfState === "encrypted") && (
         <button
           type="button"
-          onClick={mode === "add" ? handleAddPassword : handleRemovePassword}
-          disabled={mode === "add" ? !canSubmitAdd : !canSubmitRemove}
+          onClick={pdfState === "unencrypted" ? handleAddPassword : handleRemovePassword}
+          disabled={pdfState === "unencrypted" ? !canSubmitAdd : !canSubmitRemove}
           className="w-full bg-primary-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           {processing
-            ? mode === "add"
+            ? pdfState === "unencrypted"
               ? "Protecting…"
               : "Unlocking…"
-            : mode === "add"
+            : pdfState === "unencrypted"
               ? "Protect PDF & Download"
               : "Remove Password & Download"}
         </button>
@@ -338,7 +323,7 @@ export default function PdfPassword() {
       {success && (
         <div className="bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-xl p-4">
           <p className="text-sm text-emerald-700 dark:text-emerald-300">
-            {mode === "add"
+            {pdfState === "unencrypted"
               ? "Password added successfully. The protected PDF has been downloaded."
               : "Password removed successfully. The unlocked PDF has been downloaded."}
           </p>
