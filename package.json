@@ -25,7 +25,7 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
-    "@voidzero-dev/vite-plus-core": "^0.1.13",
+    "@voidzero-dev/vite-plus-core": "^0.1.14",
     "tailwindcss": "^4.2.2",
     "typescript": "^6.0.2",
     "vite": "npm:@voidzero-dev/vite-plus-core@^0.1.13",
