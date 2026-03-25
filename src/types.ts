@@ -61,4 +61,5 @@ export type ToolId =
   | "images-to-pdf"
   | "watermark"
   | "signature"
-  | "metadata";
+  | "metadata"
+  | "ocr";
