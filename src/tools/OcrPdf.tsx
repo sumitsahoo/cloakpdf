@@ -19,19 +19,19 @@ import { downloadBlob, formatFileSize } from "../utils/file-helpers.ts";
 /** Language options displayed as pill buttons. "auto" uses Tesseract OSD. */
 const LANGUAGES = [
   { code: "auto", label: "🌐 Auto Detect" },
-  { code: "eng", label: "English" },
-  { code: "fra", label: "French" },
-  { code: "deu", label: "German" },
-  { code: "spa", label: "Spanish" },
-  { code: "ita", label: "Italian" },
-  { code: "por", label: "Portuguese" },
-  { code: "nld", label: "Dutch" },
-  { code: "jpn", label: "Japanese" },
-  { code: "chi_sim", label: "Chinese" },
-  { code: "kor", label: "Korean" },
-  { code: "ara", label: "Arabic" },
-  { code: "hin", label: "Hindi" },
-  { code: "rus", label: "Russian" },
+  { code: "ara", label: "🇸🇦 Arabic" },
+  { code: "chi_sim", label: "🇨🇳 Chinese" },
+  { code: "nld", label: "🇳🇱 Dutch" },
+  { code: "eng", label: "🇬🇧 English" },
+  { code: "fra", label: "🇫🇷 French" },
+  { code: "deu", label: "🇩🇪 German" },
+  { code: "hin", label: "🇮🇳 Hindi" },
+  { code: "ita", label: "🇮🇹 Italian" },
+  { code: "jpn", label: "🇯🇵 Japanese" },
+  { code: "kor", label: "🇰🇷 Korean" },
+  { code: "por", label: "🇵🇹 Portuguese" },
+  { code: "rus", label: "🇷🇺 Russian" },
+  { code: "spa", label: "🇪🇸 Spanish" },
 ] as const;
 
 export default function OcrPdf() {
