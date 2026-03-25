@@ -15,7 +15,7 @@
 
 ## ✨ Features
 
-BytePDF offers **10 powerful PDF tools**, all running 100% client-side:
+BytePDF offers **11 powerful PDF tools**, all running 100% client-side:
 
 | Tool                 | Description                                                                              |
 | -------------------- | ---------------------------------------------------------------------------------------- |
@@ -29,6 +29,7 @@ BytePDF offers **10 powerful PDF tools**, all running 100% client-side:
 | 💧 **Add Watermark** | Overlay custom text watermarks with configurable font size, color, opacity, and rotation |
 | ✍️ **Add Signature** | Draw a signature on a canvas and place it on any page with adjustable size and position  |
 | 📋 **Edit Metadata** | View and edit document properties like title, author, subject, keywords, and dates       |
+| 🔍 **OCR PDF**       | Extract text from scanned or image-based PDFs using Tesseract.js OCR                     |
 
 ## 🔒 Privacy First
 
@@ -49,6 +50,7 @@ BytePDF offers **10 powerful PDF tools**, all running 100% client-side:
 | 🖥️ PDF Rendering    | [PDF.js](https://mozilla.github.io/pdf.js/)                    |
 | 🔤 Font Support     | [@pdf-lib/fontkit](https://github.com/Hopding/fontkit)         |
 | 🖱️ Drag & Drop      | [dnd-kit](https://dndkit.com/)                                 |
+| 🔍 OCR Engine       | [Tesseract.js](https://tesseract.projectnaptha.com/)           |
 | 📦 Toolchain CLI    | [Vite+ (`vp`)](https://viteplus.dev/)                          |
 
 ## 🚀 Getting Started

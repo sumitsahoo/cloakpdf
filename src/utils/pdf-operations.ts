@@ -447,3 +447,125 @@ export async function setPdfMetadata(file: File, metadata: PdfMetadata): Promise
 
   return pdf.save();
 }
+
+/**
+ * Preprocess a canvas for improved OCR accuracy.
+ *
+ * Converts to grayscale and applies contrast stretching so that
+ * Tesseract's internal binarisation produces cleaner results.
+ */
+function preprocessCanvasForOcr(canvas: HTMLCanvasElement): void {
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const data = imageData.data;
+
+  // Pass 1: convert to grayscale and find min/max for contrast stretch
+  let min = 255;
+  let max = 0;
+  for (let i = 0; i < data.length; i += 4) {
+    const gray = Math.round(0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]);
+    data[i] = data[i + 1] = data[i + 2] = gray;
+    if (gray < min) min = gray;
+    if (gray > max) max = gray;
+  }
+
+  // Pass 2: contrast stretch (map [min, max] → [0, 255])
+  const range = max - min || 1;
+  for (let i = 0; i < data.length; i += 4) {
+    const stretched = Math.round(((data[i] - min) / range) * 255);
+    data[i] = data[i + 1] = data[i + 2] = stretched;
+  }
+
+  ctx.putImageData(imageData, 0, 0);
+}
+
+/**
+ * Extract text from a PDF using OCR (Tesseract.js).
+ *
+ * Each page is rendered to a high-DPI canvas via PDF.js, preprocessed
+ * for contrast, and then recognised with Tesseract.js. The structured
+ * block/paragraph/line hierarchy is used to reconstruct spatially-aware
+ * text output — preserving where text appears on the page.
+ *
+ * @param file - The PDF file to OCR.
+ * @param language - Tesseract language code (default "eng").
+ * @param onProgress - Optional callback reporting (currentPage, totalPages).
+ * @returns The full extracted text, with page separators.
+ */
+export async function extractTextOcr(
+  file: File,
+  language = "eng",
+  onProgress?: (current: number, total: number) => void,
+): Promise<string> {
+  const { createWorker, PSM } = await import("tesseract.js");
+
+  // Dynamic import to match the pattern already used in compressPdf
+  const { default: workerSrc } = await import("pdfjs-dist/build/pdf.worker.min.mjs?worker&url");
+  const pdfjsLib = await import("pdfjs-dist");
+  pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
+
+  const arrayBuffer = await file.arrayBuffer();
+  const pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  const totalPages = pdfDoc.numPages;
+
+  // Create Tesseract worker once, reuse across all pages
+  const worker = await createWorker(language);
+  await worker.setParameters({
+    tessedit_pageseg_mode: PSM.SINGLE_BLOCK,
+    preserve_interword_spaces: "1",
+  });
+
+  const pageTexts: string[] = [];
+  const OCR_SCALE = 3; // 3× ≈ 216 DPI for typical 72-DPI PDFs
+
+  try {
+    for (let i = 1; i <= totalPages; i++) {
+      const page = await pdfDoc.getPage(i);
+      const viewport = page.getViewport({ scale: OCR_SCALE });
+
+      const canvas = document.createElement("canvas");
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      const ctx = canvas.getContext("2d")!;
+
+      await page.render({ canvasContext: ctx, viewport, canvas }).promise;
+
+      // Preprocess: grayscale + contrast stretch
+      preprocessCanvasForOcr(canvas);
+
+      // OCR the preprocessed canvas
+      const { data } = await worker.recognize(canvas);
+
+      // Build spatially-aware text from the block hierarchy
+      let pageText = "";
+      if (data.blocks && data.blocks.length > 0) {
+        for (const block of data.blocks) {
+          for (const paragraph of block.paragraphs) {
+            for (const line of paragraph.lines) {
+              pageText += line.text + "\n";
+            }
+            pageText += "\n"; // paragraph break
+          }
+        }
+      } else {
+        // Fallback to raw text if blocks aren't available
+        pageText = data.text;
+      }
+
+      pageTexts.push(pageText.trim());
+
+      // Release canvas memory
+      canvas.width = 0;
+      canvas.height = 0;
+
+      onProgress?.(i, totalPages);
+    }
+  } finally {
+    await worker.terminate();
+    void pdfDoc.destroy();
+  }
+
+  return pageTexts.map((text, i) => `--- Page ${i + 1} ---\n\n${text}`).join("\n\n");
+}
