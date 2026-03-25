@@ -79,7 +79,7 @@ const tools: Tool[] = [
   {
     id: "signature",
     title: "Add Signature",
-    description: "Draw and place a signature on a page",
+    description: "Draw or upload a custom signature image and place it on a page",
     icon: "✍️",
   },
   {

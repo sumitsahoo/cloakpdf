@@ -283,6 +283,13 @@ export default function AddSignature() {
 
           <div className="grid md:grid-cols-2 gap-6">
             <div className="space-y-4">
+              <p className="text-sm text-slate-600 dark:text-dark-text-muted">
+                Create your signature below — you can{" "}
+                <span className="font-semibold text-slate-800 dark:text-dark-text">draw</span> it
+                freehand or{" "}
+                <span className="font-semibold text-slate-800 dark:text-dark-text">upload</span> a
+                custom image (PNG/JPEG).
+              </p>
               {/* ---- Mode toggle ---- */}
               <div className="inline-flex rounded-lg border border-slate-200 dark:border-dark-border p-0.5 bg-slate-100 dark:bg-dark-surface-alt">
                 <button
