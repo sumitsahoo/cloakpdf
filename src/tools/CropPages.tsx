@@ -8,8 +8,9 @@
  * rendered or printed.
  */
 
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
+import { PageThumbnail } from "../components/PageThumbnail.tsx";
 import { cropPages } from "../utils/pdf-operations.ts";
 import { renderAllThumbnails } from "../utils/pdf-renderer.ts";
 import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
@@ -24,11 +25,12 @@ interface PageDims {
 
 export default function CropPages() {
   const [file, setFile] = useState<File | null>(null);
-  const [firstThumb, setFirstThumb] = useState<string | null>(null);
+  const [allThumbs, setAllThumbs] = useState<string[]>([]);
   const [pageDims, setPageDims] = useState<PageDims | null>(null);
   // Margins in mm (user input)
   const [margins, setMargins] = useState<CropMargins>({ top: 0, right: 0, bottom: 0, left: 0 });
   const [applyToAll, setApplyToAll] = useState(true);
+  const [selectedPages, setSelectedPages] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -38,14 +40,15 @@ export default function CropPages() {
     const pdf = files[0];
     if (!pdf) return;
     setFile(pdf);
-    setFirstThumb(null);
+    setAllThumbs([]);
     setPageDims(null);
     setMargins({ top: 0, right: 0, bottom: 0, left: 0 });
+    setSelectedPages(new Set());
     setError(null);
     setLoading(true);
     try {
       const thumbs = await renderAllThumbnails(pdf, 0.5);
-      if (thumbs[0]) setFirstThumb(thumbs[0]);
+      setAllThumbs(thumbs);
 
       // Get page dimensions from pdf-lib
       const { PDFDocument } = await import("pdf-lib");
@@ -69,6 +72,25 @@ export default function CropPages() {
     setMargins((prev) => ({ ...prev, [side]: Math.max(0, mm) }));
   }, []);
 
+  const togglePage = useCallback((index: number) => {
+    setSelectedPages((prev) => {
+      const next = new Set(prev);
+      if (next.has(index)) next.delete(index);
+      else next.add(index);
+      return next;
+    });
+  }, []);
+
+  const handleApplyToAllChange = useCallback(
+    (checked: boolean) => {
+      setApplyToAll(checked);
+      if (!checked && selectedPages.size === 0) {
+        setSelectedPages(new Set(allThumbs.map((_, i) => i)));
+      }
+    },
+    [allThumbs, selectedPages.size],
+  );
+
   // Compute overlay percentages from mm margins relative to page dimensions in pt
   const overlay = pageDims
     ? {
@@ -79,24 +101,30 @@ export default function CropPages() {
       }
     : null;
 
-  const marginsInPt: CropMargins = {
-    top: margins.top * MM_TO_PT,
-    right: margins.right * MM_TO_PT,
-    bottom: margins.bottom * MM_TO_PT,
-    left: margins.left * MM_TO_PT,
-  };
+  const marginsInPt = useMemo<CropMargins>(
+    () => ({
+      top: margins.top * MM_TO_PT,
+      right: margins.right * MM_TO_PT,
+      bottom: margins.bottom * MM_TO_PT,
+      left: margins.left * MM_TO_PT,
+    }),
+    [margins],
+  );
 
-  const isValid =
+  const marginsValid =
     pageDims !== null &&
     marginsInPt.left + marginsInPt.right < pageDims.width &&
     marginsInPt.top + marginsInPt.bottom < pageDims.height;
+
+  const isValid = marginsValid && (applyToAll || selectedPages.size > 0);
 
   const handleCrop = useCallback(async () => {
     if (!file || !isValid) return;
     setProcessing(true);
     setError(null);
     try {
-      const result = await cropPages(file, marginsInPt, applyToAll ? undefined : [0]);
+      const pageIndices = applyToAll ? undefined : Array.from(selectedPages).sort((a, b) => a - b);
+      const result = await cropPages(file, marginsInPt, pageIndices);
       const baseName = file.name.replace(/\.pdf$/i, "");
       downloadPdf(result, `${baseName}_cropped.pdf`);
     } catch (e) {
@@ -104,13 +132,15 @@ export default function CropPages() {
     } finally {
       setProcessing(false);
     }
-  }, [file, marginsInPt, applyToAll, isValid]);
+  }, [file, marginsInPt, applyToAll, selectedPages, isValid]);
 
   const inputClass =
     "w-full border border-slate-300 dark:border-dark-border rounded-lg px-3 py-2 text-sm bg-white dark:bg-dark-surface text-slate-800 dark:text-dark-text focus:outline-none focus:ring-2 focus:ring-primary-500";
 
   // Suppress unused ref warning — it's used for layout
   useEffect(() => void previewRef.current, []);
+
+  const firstThumb = allThumbs[0] ?? null;
 
   return (
     <div className="space-y-6">
@@ -128,6 +158,7 @@ export default function CropPages() {
               <span className="font-medium">{file.name}</span> — {formatFileSize(file.size)}
             </p>
             <button
+              type="button"
               onClick={() => setFile(null)}
               className="text-sm text-primary-600 hover:text-primary-700"
             >
@@ -149,11 +180,15 @@ export default function CropPages() {
 
                 {/* Top */}
                 <div>
-                  <label className="flex justify-between text-sm text-slate-600 dark:text-dark-text-muted mb-1">
+                  <label
+                    htmlFor="crop-top"
+                    className="flex justify-between text-sm text-slate-600 dark:text-dark-text-muted mb-1"
+                  >
                     <span>Top</span>
                     <span>{margins.top} mm</span>
                   </label>
                   <input
+                    id="crop-top"
                     type="number"
                     min={0}
                     step={1}
@@ -166,11 +201,15 @@ export default function CropPages() {
                 <div className="grid grid-cols-2 gap-3">
                   {/* Left */}
                   <div>
-                    <label className="flex justify-between text-sm text-slate-600 dark:text-dark-text-muted mb-1">
+                    <label
+                      htmlFor="crop-left"
+                      className="flex justify-between text-sm text-slate-600 dark:text-dark-text-muted mb-1"
+                    >
                       <span>Left</span>
                       <span>{margins.left} mm</span>
                     </label>
                     <input
+                      id="crop-left"
                       type="number"
                       min={0}
                       step={1}
@@ -181,11 +220,15 @@ export default function CropPages() {
                   </div>
                   {/* Right */}
                   <div>
-                    <label className="flex justify-between text-sm text-slate-600 dark:text-dark-text-muted mb-1">
+                    <label
+                      htmlFor="crop-right"
+                      className="flex justify-between text-sm text-slate-600 dark:text-dark-text-muted mb-1"
+                    >
                       <span>Right</span>
                       <span>{margins.right} mm</span>
                     </label>
                     <input
+                      id="crop-right"
                       type="number"
                       min={0}
                       step={1}
@@ -198,11 +241,15 @@ export default function CropPages() {
 
                 {/* Bottom */}
                 <div>
-                  <label className="flex justify-between text-sm text-slate-600 dark:text-dark-text-muted mb-1">
+                  <label
+                    htmlFor="crop-bottom"
+                    className="flex justify-between text-sm text-slate-600 dark:text-dark-text-muted mb-1"
+                  >
                     <span>Bottom</span>
                     <span>{margins.bottom} mm</span>
                   </label>
                   <input
+                    id="crop-bottom"
                     type="number"
                     min={0}
                     step={1}
@@ -212,7 +259,7 @@ export default function CropPages() {
                   />
                 </div>
 
-                {!isValid &&
+                {!marginsValid &&
                   (margins.top > 0 ||
                     margins.right > 0 ||
                     margins.bottom > 0 ||
@@ -234,7 +281,7 @@ export default function CropPages() {
                   <input
                     type="checkbox"
                     checked={applyToAll}
-                    onChange={(e) => setApplyToAll(e.target.checked)}
+                    onChange={(e) => handleApplyToAllChange(e.target.checked)}
                     className="w-4 h-4 text-primary-600 rounded"
                   />
                   <span className="text-sm text-slate-700 dark:text-dark-text">
@@ -242,7 +289,73 @@ export default function CropPages() {
                   </span>
                 </label>
 
+                {/* Per-page selector */}
+                {!applyToAll && allThumbs.length > 0 && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm text-slate-600 dark:text-dark-text-muted">
+                        Select pages to crop
+                      </p>
+                      <div className="flex gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedPages(new Set(allThumbs.map((_, i) => i)))}
+                          className="text-xs text-primary-600 hover:text-primary-700"
+                        >
+                          All
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedPages(new Set())}
+                          className="text-xs text-primary-600 hover:text-primary-700"
+                        >
+                          None
+                        </button>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 max-h-64 overflow-y-auto rounded-xl border border-slate-200 dark:border-dark-border p-2">
+                      {allThumbs.map((thumb, i) => (
+                        <PageThumbnail
+                          key={thumb}
+                          src={thumb}
+                          pageNumber={i + 1}
+                          selected={selectedPages.has(i)}
+                          onClick={() => togglePage(i)}
+                          overlay={
+                            selectedPages.has(i) ? (
+                              <div className="bg-primary-500/20 inset-0 absolute flex items-center justify-center">
+                                <div className="w-5 h-5 bg-primary-500 rounded-full flex items-center justify-center">
+                                  <svg
+                                    viewBox="0 0 12 12"
+                                    className="w-3 h-3 text-white"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth={2}
+                                    aria-hidden="true"
+                                  >
+                                    <path d="M2 6l3 3 5-5" />
+                                  </svg>
+                                </div>
+                              </div>
+                            ) : null
+                          }
+                        />
+                      ))}
+                    </div>
+                    {selectedPages.size === 0 && (
+                      <p className="text-xs text-red-500">Select at least one page.</p>
+                    )}
+                    {selectedPages.size > 0 && (
+                      <p className="text-xs text-slate-500 dark:text-dark-text-muted">
+                        {selectedPages.size} of {allThumbs.length} page
+                        {allThumbs.length !== 1 ? "s" : ""} selected
+                      </p>
+                    )}
+                  </div>
+                )}
+
                 <button
+                  type="button"
                   onClick={handleCrop}
                   disabled={processing || !isValid}
                   className="w-full bg-primary-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
