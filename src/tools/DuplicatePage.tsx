@@ -2,26 +2,30 @@
  * Duplicate Page tool.
  *
  * Displays all PDF pages as thumbnails. The user selects one page to
- * duplicate, then picks where the copy should be inserted. The resulting
- * PDF is downloaded immediately.
+ * duplicate, then drags the copy placeholder to choose where it is inserted.
+ * The resulting PDF is downloaded immediately.
  */
 
-import { useState, useCallback } from "react";
+import { useCallback, useState } from "react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { PageThumbnail } from "../components/PageThumbnail.tsx";
+import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
 import { duplicatePage } from "../utils/pdf-operations.ts";
 import { renderAllThumbnails } from "../utils/pdf-renderer.ts";
-import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
 
 export default function DuplicatePage() {
   const [file, setFile] = useState<File | null>(null);
   const [thumbnails, setThumbnails] = useState<string[]>([]);
+  // Stable IDs for thumbnails to avoid index-based keys.
+  const [thumbnailIds, setThumbnailIds] = useState<string[]>([]);
   const [selectedPage, setSelectedPage] = useState<number | null>(null);
   // targetPosition: 0-based index at which the copy is inserted.
   const [targetPosition, setTargetPosition] = useState(0);
   const [loading, setLoading] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOverPosition, setDragOverPosition] = useState<number | null>(null);
 
   const handleFile = useCallback(async (files: File[]) => {
     const pdf = files[0];
@@ -33,6 +37,7 @@ export default function DuplicatePage() {
     try {
       const thumbs = await renderAllThumbnails(pdf);
       setThumbnails(thumbs);
+      setThumbnailIds(thumbs.map((_, idx) => `thumb-${idx}-${Date.now()}`));
       setTargetPosition(thumbs.length); // default: insert copy at end
     } catch (e) {
       setError(
@@ -61,6 +66,100 @@ export default function DuplicatePage() {
     }
   }, [file, selectedPage, targetPosition]);
 
+  // Single stable layout: [dropzone_0] [page_0] [dropzone_1] ... [page_N-1] [dropzone_N]
+  // The dropzone at targetPosition renders the draggable "Copy" card.
+  // Other dropzones are thin gaps that expand into drop targets while dragging.
+  const renderCopyRow = () => {
+    if (selectedPage === null) return null;
+    const items: React.ReactNode[] = [];
+
+    for (let i = 0; i <= thumbnails.length; i++) {
+      const isInsertHere = i === targetPosition;
+      const isOver = dragOverPosition === i;
+      const dropId = thumbnailIds[i] ?? "drop-end";
+
+      if (isInsertHere) {
+        items.push(
+          <button
+            key="copy-page"
+            type="button"
+            draggable
+            onDragStart={(e) => {
+              e.dataTransfer.effectAllowed = "move";
+              setIsDragging(true);
+            }}
+            onDragEnd={() => {
+              setIsDragging(false);
+              setDragOverPosition(null);
+            }}
+            className="shrink-0 flex flex-col items-center gap-1 cursor-grab active:cursor-grabbing border-0 bg-transparent p-0"
+          >
+            <div className="relative w-16 aspect-3/4">
+              <img
+                src={thumbnails[selectedPage]}
+                className="w-full h-full object-cover rounded-lg border-2 border-primary-400"
+                alt={`Copy of page ${selectedPage + 1}`}
+              />
+              <div className="absolute inset-0 bg-primary-500/20 rounded-lg" />
+            </div>
+            <span className="text-xs text-primary-500 font-medium">Copy</span>
+          </button>,
+        );
+      } else {
+        items.push(
+          <button
+            key={`drop-${dropId}`}
+            type="button"
+            aria-label={`Insert copy before page ${i + 1}`}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragOverPosition(i);
+            }}
+            onDragLeave={(e) => {
+              if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                setDragOverPosition(null);
+              }
+            }}
+            onDrop={(e) => {
+              e.preventDefault();
+              setTargetPosition(i);
+              setIsDragging(false);
+              setDragOverPosition(null);
+            }}
+            className={`shrink-0 self-stretch flex items-center justify-center rounded-lg transition-all duration-150 border-0 bg-transparent p-0 ${
+              isDragging ? (isOver ? "w-16 bg-primary-50 dark:bg-primary-900/20" : "w-4") : "w-1"
+            }`}
+          >
+            {isDragging && (
+              <div
+                className={`rounded-full transition-all duration-150 ${
+                  isOver
+                    ? "w-1 h-14 bg-primary-500"
+                    : "w-0.5 h-10 bg-primary-200 dark:bg-primary-800"
+                }`}
+              />
+            )}
+          </button>,
+        );
+      }
+
+      if (i < thumbnails.length) {
+        items.push(
+          <div key={thumbnailIds[i]} className="shrink-0 flex flex-col items-center gap-1">
+            <img
+              src={thumbnails[i]}
+              className="w-16 aspect-3/4 object-cover rounded-lg border border-slate-200 dark:border-dark-border"
+              alt={`Page ${i + 1}`}
+            />
+            <span className="text-xs text-slate-400 dark:text-dark-text-muted">{i + 1}</span>
+          </div>,
+        );
+      }
+    }
+
+    return items;
+  };
+
   const insertLabel = targetPosition === 0 ? "At the beginning" : `After page ${targetPosition}`;
 
   return (
@@ -70,7 +169,7 @@ export default function DuplicatePage() {
           accept=".pdf,application/pdf"
           onFiles={handleFile}
           label="Drop a PDF file here"
-          hint="Click a page to select it, then choose where to place the copy"
+          hint="Click a page to select it, then drag the copy to choose where to place it"
         />
       ) : (
         <>
@@ -79,9 +178,11 @@ export default function DuplicatePage() {
               <span className="font-medium">{file.name}</span> — {formatFileSize(file.size)}
             </p>
             <button
+              type="button"
               onClick={() => {
                 setFile(null);
                 setThumbnails([]);
+                setThumbnailIds([]);
                 setSelectedPage(null);
               }}
               className="text-sm text-primary-600 hover:text-primary-700"
@@ -100,12 +201,12 @@ export default function DuplicatePage() {
                 <p className="text-sm font-medium text-slate-700 dark:text-dark-text mb-2">
                   {selectedPage === null
                     ? "Click a page to select it for duplication"
-                    : `Page ${selectedPage + 1} selected — choose where to insert the copy`}
+                    : `Page ${selectedPage + 1} selected — drag the copy to set its position`}
                 </p>
                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
                   {thumbnails.map((thumb, i) => (
                     <PageThumbnail
-                      key={i}
+                      key={thumbnailIds[i] ?? i}
                       src={thumb}
                       pageNumber={i + 1}
                       selected={selectedPage === i}
@@ -118,6 +219,7 @@ export default function DuplicatePage() {
                               fill="none"
                               stroke="currentColor"
                               viewBox="0 0 24 24"
+                              aria-hidden="true"
                             >
                               <path
                                 strokeLinecap="round"
@@ -136,29 +238,20 @@ export default function DuplicatePage() {
 
               {selectedPage !== null && (
                 <div className="space-y-3">
-                  <div>
-                    <div className="flex justify-between mb-1.5">
-                      <label className="text-sm font-medium text-slate-700 dark:text-dark-text">
-                        Insert copy
-                      </label>
-                      <span className="text-sm text-primary-600 font-medium">{insertLabel}</span>
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium text-slate-700 dark:text-dark-text">
+                      {isDragging
+                        ? "Drop the copy at the desired position"
+                        : "Drag the copy to set its position"}
+                    </p>
+                    <div className="flex items-end gap-2 overflow-x-auto pb-2 min-h-22">
+                      {renderCopyRow()}
                     </div>
-                    <input
-                      type="range"
-                      min={0}
-                      max={thumbnails.length}
-                      step={1}
-                      value={targetPosition}
-                      onChange={(e) => setTargetPosition(Number(e.target.value))}
-                      className="w-full accent-primary-600"
-                    />
-                    <div className="flex justify-between text-xs text-slate-400 dark:text-dark-text-muted mt-0.5">
-                      <span>Beginning</span>
-                      <span>End</span>
-                    </div>
+                    <p className="text-sm text-primary-600 font-medium">{insertLabel}</p>
                   </div>
 
                   <button
+                    type="button"
                     onClick={handleDuplicate}
                     disabled={processing}
                     className="w-full bg-primary-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
