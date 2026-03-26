@@ -23,6 +23,7 @@ import {
   StandardFonts,
 } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
+import type { PDFDocumentProxy } from "pdfjs-dist";
 import type {
   PageRange,
   WatermarkOptions,
@@ -43,6 +44,7 @@ import type {
  * @returns The merged PDF as raw bytes.
  */
 export async function mergePdfs(files: File[]): Promise<Uint8Array> {
+  if (files.length === 0) throw new Error("At least one PDF file is required to merge.");
   const merged = await PDFDocument.create();
 
   for (const file of files) {
@@ -135,7 +137,8 @@ export async function compressPdf(
     const canvas = document.createElement("canvas");
     canvas.width = viewport.width;
     canvas.height = viewport.height;
-    const ctx = canvas.getContext("2d")!;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error(`Failed to acquire 2D canvas context for page ${i}`);
 
     await page.render({ canvasContext: ctx, viewport, canvas }).promise;
 
@@ -215,6 +218,8 @@ export async function deletePages(file: File, pageIndicesToDelete: number[]): Pr
   const result = await PDFDocument.create();
 
   const keepIndices = source.getPageIndices().filter((i) => !pageIndicesToDelete.includes(i));
+  if (keepIndices.length === 0)
+    throw new Error("Cannot delete all pages — at least one page must remain.");
 
   const copiedPages = await result.copyPages(source, keepIndices);
   for (const page of copiedPages) {
@@ -275,12 +280,13 @@ export async function imagesToPdf(
     const imageBytes = await imageFile.arrayBuffer();
     const uint8 = new Uint8Array(imageBytes);
 
-    let image;
-    if (imageFile.type === "image/png") {
-      image = await pdf.embedPng(uint8);
-    } else {
-      image = await pdf.embedJpg(uint8);
+    if (!["image/png", "image/jpeg", "image/jpg"].includes(imageFile.type)) {
+      throw new Error(
+        `Unsupported image type "${imageFile.type}" (${imageFile.name}). Only PNG and JPEG images are supported.`,
+      );
     }
+    const image =
+      imageFile.type === "image/png" ? await pdf.embedPng(uint8) : await pdf.embedJpg(uint8);
 
     let pageWidth: number;
     let pageHeight: number;
@@ -392,7 +398,10 @@ export async function addSignature(
   const pdf = await PDFDocument.load(arrayBuffer);
 
   // Decode data URL to Uint8Array without fetch() overhead
-  const [header, base64] = signatureDataUrl.split(",");
+  const commaIndex = signatureDataUrl.indexOf(",");
+  if (commaIndex === -1) throw new Error("Invalid signature data URL: missing base64 payload.");
+  const header = signatureDataUrl.slice(0, commaIndex);
+  const base64 = signatureDataUrl.slice(commaIndex + 1);
   const binaryStr = atob(base64);
   const signatureBytes = new Uint8Array(binaryStr.length);
   for (let i = 0; i < binaryStr.length; i++) {
@@ -422,7 +431,7 @@ export async function addSignature(
  * (`YYYY-MM-DDTHH:mm`) suitable for `<input type="datetime-local">`.
  */
 function formatDateForInput(date: Date | undefined): string {
-  if (!date || isNaN(date.getTime())) return "";
+  if (!date || Number.isNaN(date.getTime())) return "";
   const pad = (n: number) => n.toString().padStart(2, "0");
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
@@ -540,7 +549,7 @@ const SCRIPT_TO_LANGUAGE: Record<string, string> = {
  * Extracted as a helper to avoid duplication between detect + recognize passes.
  */
 async function renderPageToCanvas(
-  pdfDoc: { getPage(n: number): Promise<any> },
+  pdfDoc: PDFDocumentProxy,
   pageNum: number,
   scale: number,
 ): Promise<HTMLCanvasElement> {
@@ -550,7 +559,8 @@ async function renderPageToCanvas(
   const canvas = document.createElement("canvas");
   canvas.width = viewport.width;
   canvas.height = viewport.height;
-  const ctx = canvas.getContext("2d")!;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error(`Failed to acquire 2D canvas context for page ${pageNum}`);
 
   await page.render({ canvasContext: ctx, viewport, canvas }).promise;
   preprocessCanvasForOcr(canvas);
@@ -634,7 +644,7 @@ export async function extractTextOcr(
         for (const block of data.blocks) {
           for (const paragraph of block.paragraphs) {
             for (const line of paragraph.lines) {
-              pageText += line.text + "\n";
+              pageText += `${line.text}\n`;
             }
             pageText += "\n"; // paragraph break
           }
@@ -813,10 +823,10 @@ function clonePageFormFields(pdf: PDFDocument, pageIndex: number): void {
 
     // Use only the leaf segment as the base for the copy name.
     const leafName = fullName.split(".").pop() ?? fullName;
-    let uniqueName = leafName + "_copy";
+    let uniqueName = `${leafName}_copy`;
     let counter = 2;
     while (existingNames.has(uniqueName)) {
-      uniqueName = leafName + "_copy" + counter++;
+      uniqueName = `${leafName}_copy${counter++}`;
     }
     existingNames.add(uniqueName);
 
@@ -879,7 +889,7 @@ function collectFieldNames(
     const entry = pdf.context.lookup(fieldsArray.get(i));
     if (!(entry instanceof PDFDict)) continue;
     const t = entry.get(PDFName.of("T"));
-    const name = t ? (prefix ? prefix + "." + decodePdfString(t) : decodePdfString(t)) : prefix;
+    const name = t ? (prefix ? `${prefix}.${decodePdfString(t)}` : decodePdfString(t)) : prefix;
     if (name) out.add(name);
     const kidsEntry = entry.get(PDFName.of("Kids"));
     if (kidsEntry) {
@@ -1079,6 +1089,10 @@ export async function cropPages(
  * Remove the crop box from pages to restore the full visible area. Because
  * cropping is non-destructive (the original content is never removed), this
  * effectively reverses any crop applied by `cropPages` or any other tool.
+ *
+ * @param file - The PDF file to modify.
+ * @param pageIndices - Optional 0-based indices to uncrop; defaults to all pages.
+ * @returns New PDF bytes with crop boxes removed.
  */
 export async function uncropPages(file: File, pageIndices?: number[]): Promise<Uint8Array> {
   const arrayBuffer = await file.arrayBuffer();

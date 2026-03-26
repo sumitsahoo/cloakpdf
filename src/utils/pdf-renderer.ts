@@ -51,10 +51,15 @@ export async function renderPageThumbnail(
   const canvas = document.createElement("canvas");
   canvas.width = viewport.width;
   canvas.height = viewport.height;
-  const ctx = canvas.getContext("2d")!;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Failed to acquire 2D canvas context for thumbnail rendering");
 
   await page.render({ canvasContext: ctx, viewport, canvas }).promise;
   const dataUrl = canvas.toDataURL("image/png");
+
+  // Release canvas bitmap memory before destroying the PDF document
+  canvas.width = 0;
+  canvas.height = 0;
 
   void pdf.destroy();
   return dataUrl;
@@ -95,7 +100,8 @@ export async function renderPagesToBlobs(
     const canvas = document.createElement("canvas");
     canvas.width = viewport.width;
     canvas.height = viewport.height;
-    const ctx = canvas.getContext("2d")!;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error(`Failed to acquire 2D canvas context for page ${pageIndex + 1}`);
 
     await page.render({ canvasContext: ctx, viewport, canvas }).promise;
 
@@ -143,10 +149,15 @@ export async function renderAllThumbnails(file: File, scale = 0.4): Promise<stri
     const canvas = document.createElement("canvas");
     canvas.width = viewport.width;
     canvas.height = viewport.height;
-    const ctx = canvas.getContext("2d")!;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error(`Failed to acquire 2D canvas context for page ${i}`);
 
     await page.render({ canvasContext: ctx, viewport, canvas }).promise;
     thumbnails.push(canvas.toDataURL("image/png"));
+
+    // Release canvas bitmap memory before moving to the next page
+    canvas.width = 0;
+    canvas.height = 0;
   }
 
   void pdf.destroy();

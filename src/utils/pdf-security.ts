@@ -747,7 +747,8 @@ async function verifyPasswordV5(
  *      Use decryptOwnerEntry() to extract the padded user password from /O,
  *      then proceed as in step 1 with that recovered user password.
  *
- * @returns The document encryption key if the password is correct, null otherwise.
+ * @returns The 5- or 16-byte document encryption key if the password is correct,
+ *   or `null` if neither the user nor owner password matches.
  */
 function verifyPasswordLegacy(
   pw: string,
@@ -784,8 +785,11 @@ function verifyPasswordLegacy(
  * The file is loaded with `ignoreEncryption: true` so that even an
  * incorrectly password-protected or fully-locked PDF can be inspected without
  * pdf-lib throwing an EncryptedPDFError.
+ *
+ * @param file - The PDF file to inspect.
+ * @returns `true` if the file is encrypted, `false` otherwise.
  */
-export async function isPdfEncrypted(file: File) {
+export async function isPdfEncrypted(file: File): Promise<boolean> {
   const arrayBuffer = await file.arrayBuffer();
   const pdfDoc = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
   return !!pdfDoc.context.trailerInfo.Encrypt;
@@ -826,7 +830,12 @@ export async function protectPdf(
   ownerPassword?: string,
 ): Promise<Uint8Array> {
   const arrayBuffer = await file.arrayBuffer();
-  const pdfDoc = await PDFDocument.load(arrayBuffer);
+  const pdfDoc = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
+  if (pdfDoc.context.trailerInfo.Encrypt) {
+    throw new Error(
+      "This PDF is already encrypted. Remove the existing password first before adding a new one.",
+    );
+  }
   const ctx = pdfDoc.context;
 
   const { keyBytes, U, UE, O, OE, Perms } = await buildEncDataV5(
