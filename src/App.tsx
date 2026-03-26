@@ -27,6 +27,13 @@ const EditMetadata = lazy(() => import("./tools/EditMetadata.tsx"));
 const OcrPdf = lazy(() => import("./tools/OcrPdf.tsx"));
 const PdfPassword = lazy(() => import("./tools/PdfPassword.tsx"));
 const FlattenPdf = lazy(() => import("./tools/FlattenPdf.tsx"));
+const AddBlankPage = lazy(() => import("./tools/AddBlankPage.tsx"));
+const DuplicatePage = lazy(() => import("./tools/DuplicatePage.tsx"));
+const AddPageNumbers = lazy(() => import("./tools/AddPageNumbers.tsx"));
+const HeaderFooter = lazy(() => import("./tools/HeaderFooter.tsx"));
+const CropPages = lazy(() => import("./tools/CropPages.tsx"));
+const PdfToImage = lazy(() => import("./tools/PdfToImage.tsx"));
+const FillPdfForm = lazy(() => import("./tools/FillPdfForm.tsx"));
 
 // ---- Tool metadata displayed on the home screen grid ----
 const tools: Tool[] = [
@@ -121,6 +128,55 @@ const tools: Tool[] = [
     icon: "📐",
     category: "transform",
   },
+  {
+    id: "add-blank-page",
+    title: "Add Blank Page",
+    description: "Insert a blank page at any position in the document",
+    icon: "📄",
+    category: "organise",
+  },
+  {
+    id: "duplicate-page",
+    title: "Duplicate Page",
+    description: "Copy a page and insert it at any position",
+    icon: "📋",
+    category: "organise",
+  },
+  {
+    id: "add-page-numbers",
+    title: "Add Page Numbers",
+    description: "Insert page numbers with custom position and format",
+    icon: "🔢",
+    category: "transform",
+  },
+  {
+    id: "header-footer",
+    title: "Header & Footer",
+    description: "Add repeating text at the top and/or bottom of every page",
+    icon: "📝",
+    category: "transform",
+  },
+  {
+    id: "crop-pages",
+    title: "Crop Pages",
+    description: "Trim page margins by adjusting the visible area",
+    icon: "✂️",
+    category: "transform",
+  },
+  {
+    id: "pdf-to-image",
+    title: "PDF to Image",
+    description: "Export pages as PNG or JPEG images",
+    icon: "🖼️",
+    category: "transform",
+  },
+  {
+    id: "fill-pdf-form",
+    title: "Fill PDF Form",
+    description: "Fill interactive form fields in existing PDFs",
+    icon: "📝",
+    category: "annotate",
+  },
 ];
 
 // ---- Category definitions for the home screen ----
@@ -166,6 +222,13 @@ const toolComponents: Record<string, React.LazyExoticComponent<React.ComponentTy
   ocr: OcrPdf,
   "pdf-password": PdfPassword,
   flatten: FlattenPdf,
+  "add-blank-page": AddBlankPage,
+  "duplicate-page": DuplicatePage,
+  "add-page-numbers": AddPageNumbers,
+  "header-footer": HeaderFooter,
+  "crop-pages": CropPages,
+  "pdf-to-image": PdfToImage,
+  "fill-pdf-form": FillPdfForm,
 };
 
 /** Full-screen centred spinner shown while a tool component is loading. */

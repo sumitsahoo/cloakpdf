@@ -14,6 +14,7 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@pdf-lib/fontkit": "^1.1.1",
+    "jszip": "^3.10.1",
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^5.5.207",
     "react": "^19.2.4",

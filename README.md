@@ -19,30 +19,36 @@
 
 ## ✨ Features
 
-BytePDF offers **13 powerful PDF tools**, all running 100% client-side:
+BytePDF offers **20 powerful PDF tools**, all running 100% client-side:
 
 ### 📄 Organise & Edit
 
 _Rearrange, combine, and manage your PDF pages_
 
-| Tool                 | Description                                                                        |
-| -------------------- | ---------------------------------------------------------------------------------- |
-| 📑 **Merge PDFs**    | Combine multiple PDF files into a single document with drag-to-reorder support     |
-| ✂️ **Split PDF**     | Extract specific pages or page ranges (e.g., `1-3, 5, 7-9`) with visual thumbnails |
-| 🔄 **Rotate Pages**  | Rotate individual pages by 90°, -90°, or 180° — or rotate all at once              |
-| 🗑️ **Delete Pages**  | Select and remove unwanted pages visually                                          |
-| ↕️ **Reorder Pages** | Drag and drop to rearrange page order with smooth animations                       |
+| Tool                  | Description                                                                        |
+| --------------------- | ---------------------------------------------------------------------------------- |
+| 📑 **Merge PDFs**     | Combine multiple PDF files into a single document with drag-to-reorder support     |
+| ✂️ **Split PDF**      | Extract specific pages or page ranges (e.g., `1-3, 5, 7-9`) with visual thumbnails |
+| 🔄 **Rotate Pages**   | Rotate individual pages by 90°, -90°, or 180° — or rotate all at once              |
+| 🗑️ **Delete Pages**   | Select and remove unwanted pages visually                                          |
+| ↕️ **Reorder Pages**  | Drag and drop to rearrange page order with smooth animations                       |
+| 📄 **Add Blank Page** | Insert a blank page at any position — dimensions match the adjacent page           |
+| 📋 **Duplicate Page** | Copy any page and insert it at a chosen position in the document                   |
 
 ### 🔄 Transform & Convert
 
 _Compress, convert, and extract content_
 
-| Tool                 | Description                                                                   |
-| -------------------- | ----------------------------------------------------------------------------- |
-| 🗜️ **Compress PDF**  | Reduce file size with 3 quality levels — Light, Balanced, and Maximum         |
-| 🖼️ **Images to PDF** | Convert images (PNG, JPEG) to PDF with A4, Letter, or Fit-to-Image page sizes |
-| 🔍 **OCR PDF**       | Extract text from scanned or image-based PDFs using Tesseract.js OCR          |
-| 📐 **Flatten PDF**   | Remove interactive form fields and annotations, making the PDF non-editable   |
+| Tool                    | Description                                                                      |
+| ----------------------- | -------------------------------------------------------------------------------- |
+| 🗜️ **Compress PDF**     | Reduce file size with 3 quality levels — Light, Balanced, and Maximum            |
+| 🖼️ **Images to PDF**    | Convert images (PNG, JPEG) to PDF with A4, Letter, or Fit-to-Image page sizes    |
+| 🔍 **OCR PDF**          | Extract text from scanned or image-based PDFs using Tesseract.js OCR             |
+| 📐 **Flatten PDF**      | Remove interactive form fields and annotations, making the PDF non-editable      |
+| 🔢 **Add Page Numbers** | Insert page numbers with 6 position options, 4 formats, and custom styling       |
+| 📝 **Header & Footer**  | Add repeating text (with `{{page}}` / `{{total}}` tokens) at the top and bottom  |
+| ✂️ **Crop Pages**       | Trim page margins non-destructively by setting a crop box (input in millimetres) |
+| 🖼️ **PDF to Image**     | Export pages as PNG or JPEG at 72 / 150 / 300 DPI — single file or ZIP           |
 
 ### ✏️ Annotate & Sign
 
@@ -52,6 +58,7 @@ _Add watermarks, signatures, and overlays_
 | -------------------- | -------------------------------------------------------------------------------------------------- |
 | 💧 **Add Watermark** | Overlay custom text watermarks with configurable font size, color, opacity, and rotation           |
 | ✍️ **Add Signature** | Draw or upload a custom signature image and place it on any page with adjustable size and position |
+| 📝 **Fill PDF Form** | Fill text fields, checkboxes, dropdowns, and radio groups in interactive PDF forms                 |
 
 ### 🔐 Security & Properties
 
@@ -82,6 +89,7 @@ _Protect your PDFs and manage metadata_
 | 🔤 Font Support     | [@pdf-lib/fontkit](https://github.com/Hopding/fontkit)         |
 | 🖱️ Drag & Drop      | [dnd-kit](https://dndkit.com/)                                 |
 | 🔍 OCR Engine       | [Tesseract.js](https://tesseract.projectnaptha.com/)           |
+| 🗜️ ZIP Export       | [JSZip](https://stuk.github.io/jszip/)                         |
 | 📦 Toolchain CLI    | [Vite+ (`vp`)](https://viteplus.dev/)                          |
 
 ## 🚀 Getting Started
