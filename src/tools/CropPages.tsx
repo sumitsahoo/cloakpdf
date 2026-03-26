@@ -11,7 +11,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { PageThumbnail } from "../components/PageThumbnail.tsx";
-import { cropPages } from "../utils/pdf-operations.ts";
+import { cropPages, uncropPages } from "../utils/pdf-operations.ts";
 import { renderAllThumbnails } from "../utils/pdf-renderer.ts";
 import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
 import type { CropMargins } from "../types.ts";
@@ -28,6 +28,7 @@ export default function CropPages() {
   const [allThumbs, setAllThumbs] = useState<string[]>([]);
   const [pageDims, setPageDims] = useState<PageDims | null>(null);
   // Margins in mm (user input)
+  const [allSides, setAllSides] = useState<number>(0);
   const [margins, setMargins] = useState<CropMargins>({ top: 0, right: 0, bottom: 0, left: 0 });
   const [applyToAll, setApplyToAll] = useState(true);
   const [selectedPages, setSelectedPages] = useState<Set<number>>(new Set());
@@ -42,6 +43,7 @@ export default function CropPages() {
     setFile(pdf);
     setAllThumbs([]);
     setPageDims(null);
+    setAllSides(0);
     setMargins({ top: 0, right: 0, bottom: 0, left: 0 });
     setSelectedPages(new Set());
     setError(null);
@@ -70,6 +72,12 @@ export default function CropPages() {
 
   const setMargin = useCallback((side: keyof CropMargins, mm: number) => {
     setMargins((prev) => ({ ...prev, [side]: Math.max(0, mm) }));
+  }, []);
+
+  const setUniformMargin = useCallback((mm: number) => {
+    const v = Math.max(0, mm);
+    setAllSides(v);
+    setMargins({ top: v, right: v, bottom: v, left: v });
   }, []);
 
   const togglePage = useCallback((index: number) => {
@@ -134,6 +142,22 @@ export default function CropPages() {
     }
   }, [file, marginsInPt, applyToAll, selectedPages, isValid]);
 
+  const handleUncrop = useCallback(async () => {
+    if (!file) return;
+    setProcessing(true);
+    setError(null);
+    try {
+      const pageIndices = applyToAll ? undefined : Array.from(selectedPages).sort((a, b) => a - b);
+      const result = await uncropPages(file, pageIndices);
+      const baseName = file.name.replace(/\.pdf$/i, "");
+      downloadPdf(result, `${baseName}_uncropped.pdf`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to remove crop. Please try again.");
+    } finally {
+      setProcessing(false);
+    }
+  }, [file, applyToAll, selectedPages]);
+
   const inputClass =
     "w-full border border-slate-300 dark:border-dark-border rounded-lg px-3 py-2 text-sm bg-white dark:bg-dark-surface text-slate-800 dark:text-dark-text focus:outline-none focus:ring-2 focus:ring-primary-500";
 
@@ -177,6 +201,27 @@ export default function CropPages() {
                 <p className="text-sm font-medium text-slate-700 dark:text-dark-text">
                   Margins to hide (mm)
                 </p>
+
+                {/* All sides */}
+                <div>
+                  <label
+                    htmlFor="crop-all"
+                    className="flex justify-between text-sm text-slate-600 dark:text-dark-text-muted mb-1"
+                  >
+                    <span>All sides</span>
+                    <span>{allSides} mm</span>
+                  </label>
+                  <input
+                    id="crop-all"
+                    type="number"
+                    min={0}
+                    step={1}
+                    value={allSides}
+                    onChange={(e) => setUniformMargin(Number(e.target.value))}
+                    className={inputClass}
+                    placeholder="Set all sides at once"
+                  />
+                </div>
 
                 {/* Top */}
                 <div>
@@ -269,11 +314,14 @@ export default function CropPages() {
                     </p>
                   )}
 
-                <div className="bg-slate-50 dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border p-3">
+                <div className="bg-slate-50 dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border p-3 space-y-1">
                   <p className="text-xs text-slate-500 dark:text-dark-text-muted">
-                    Cropping is <strong>non-destructive</strong>: it sets a crop box that hides
-                    content from view without permanently removing it. The hidden area remains in
-                    the file.
+                    <strong>Crop</strong> sets a crop box that hides margins from view without
+                    permanently removing them — the hidden content stays in the file.
+                  </p>
+                  <p className="text-xs text-slate-500 dark:text-dark-text-muted">
+                    <strong>Remove crop</strong> deletes any existing crop box, restoring the full
+                    visible area of each page.
                   </p>
                 </div>
 
@@ -354,14 +402,24 @@ export default function CropPages() {
                   </div>
                 )}
 
-                <button
-                  type="button"
-                  onClick={handleCrop}
-                  disabled={processing || !isValid}
-                  className="w-full bg-primary-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  {processing ? "Cropping…" : "Crop & Download"}
-                </button>
+                <div className="flex flex-col gap-2">
+                  <button
+                    type="button"
+                    onClick={handleCrop}
+                    disabled={processing || !isValid}
+                    className="w-full bg-primary-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    {processing ? "Processing…" : "Crop & Download"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleUncrop}
+                    disabled={processing || (!applyToAll && selectedPages.size === 0)}
+                    className="w-full bg-slate-100 dark:bg-dark-surface text-slate-700 dark:text-dark-text py-3 px-6 rounded-xl font-medium hover:bg-slate-200 dark:hover:bg-dark-border disabled:opacity-50 disabled:cursor-not-allowed transition-colors border border-slate-200 dark:border-dark-border"
+                  >
+                    {processing ? "Processing…" : "Remove Crop & Download"}
+                  </button>
+                </div>
               </div>
 
               {/* Right: preview */}

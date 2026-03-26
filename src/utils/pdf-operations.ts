@@ -1076,6 +1076,22 @@ export async function cropPages(
 }
 
 /**
+ * Remove the crop box from pages to restore the full visible area. Because
+ * cropping is non-destructive (the original content is never removed), this
+ * effectively reverses any crop applied by `cropPages` or any other tool.
+ */
+export async function uncropPages(file: File, pageIndices?: number[]): Promise<Uint8Array> {
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await PDFDocument.load(arrayBuffer);
+  const allPages = pdf.getPages();
+  const targets = pageIndices ? pageIndices.map((i) => allPages[i]) : allPages;
+  for (const page of targets) {
+    page.node.delete(PDFName.of("CropBox"));
+  }
+  return pdf.save();
+}
+
+/**
  * Build a map of fully-qualified field name → { pageIndex, y } by scanning
  * each page's widget annotations. The y value is the top of the widget's Rect
  * in PDF user-space units (higher = closer to top of page). Useful for grouping

@@ -39,16 +39,16 @@ _Rearrange, combine, and manage your PDF pages_
 
 _Compress, convert, and extract content_
 
-| Tool                    | Description                                                                      |
-| ----------------------- | -------------------------------------------------------------------------------- |
-| 🗜️ **Compress PDF**     | Reduce file size with 3 quality levels — Light, Balanced, and Maximum            |
-| 🖼️ **Images to PDF**    | Convert images (PNG, JPEG) to PDF with A4, Letter, or Fit-to-Image page sizes    |
-| 🔍 **OCR PDF**          | Extract text from scanned or image-based PDFs using Tesseract.js OCR             |
-| 📐 **Flatten PDF**      | Remove interactive form fields and annotations, making the PDF non-editable      |
-| 🔢 **Add Page Numbers** | Insert page numbers with 6 position options, 4 formats, and custom styling       |
-| 📝 **Header & Footer**  | Add repeating text (with `{{page}}` / `{{total}}` tokens) at the top and bottom  |
-| ✂️ **Crop Pages**       | Trim page margins non-destructively by setting a crop box (input in millimetres) |
-| 🖼️ **PDF to Image**     | Export pages as PNG or JPEG at 72 / 150 / 300 DPI — single file or ZIP           |
+| Tool                    | Description                                                                                                                        |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| 🗜️ **Compress PDF**     | Reduce file size with 3 quality levels — Light, Balanced, and Maximum                                                              |
+| 🖼️ **Images to PDF**    | Convert images (PNG, JPEG) to PDF with A4, Letter, or Fit-to-Image page sizes                                                      |
+| 🔍 **OCR PDF**          | Extract text from scanned or image-based PDFs using Tesseract.js OCR                                                               |
+| 📐 **Flatten PDF**      | Remove interactive form fields and annotations, making the PDF non-editable                                                        |
+| 🔢 **Add Page Numbers** | Insert page numbers with 6 position options, 4 formats, and custom styling                                                         |
+| 📝 **Header & Footer**  | Add repeating text (with `{{page}}` / `{{total}}` tokens) at the top and bottom                                                    |
+| ✂️ **Crop Pages**       | Trim page margins by setting a crop box (mm input, uniform or per-side); also removes existing crop boxes to restore the full page |
+| 🖼️ **PDF to Image**     | Export pages as PNG or JPEG at 72 / 150 / 300 DPI — single file or ZIP                                                             |
 
 ### ✏️ Annotate & Sign
 
