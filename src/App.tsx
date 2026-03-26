@@ -26,6 +26,7 @@ const AddSignature = lazy(() => import("./tools/AddSignature.tsx"));
 const EditMetadata = lazy(() => import("./tools/EditMetadata.tsx"));
 const OcrPdf = lazy(() => import("./tools/OcrPdf.tsx"));
 const PdfPassword = lazy(() => import("./tools/PdfPassword.tsx"));
+const FlattenPdf = lazy(() => import("./tools/FlattenPdf.tsx"));
 
 // ---- Tool metadata displayed on the home screen grid ----
 const tools: Tool[] = [
@@ -113,6 +114,13 @@ const tools: Tool[] = [
     icon: "🔒",
     category: "security",
   },
+  {
+    id: "flatten",
+    title: "Flatten PDF",
+    description: "Remove form fields and annotations, making the PDF non-editable",
+    icon: "📐",
+    category: "transform",
+  },
 ];
 
 // ---- Category definitions for the home screen ----
@@ -157,6 +165,7 @@ const toolComponents: Record<string, React.LazyExoticComponent<React.ComponentTy
   metadata: EditMetadata,
   ocr: OcrPdf,
   "pdf-password": PdfPassword,
+  flatten: FlattenPdf,
 };
 
 /** Full-screen centred spinner shown while a tool component is loading. */

@@ -693,3 +693,19 @@ export async function createSearchablePdf(file: File, pageTexts: string[]): Prom
 
   return pdfDoc.save();
 }
+
+/**
+ * Flatten a PDF by removing all interactive form fields and annotations,
+ * converting them to static content.
+ *
+ * Useful for locking down filled forms and removing comments before sharing.
+ *
+ * @param file - The source PDF file.
+ * @returns The flattened PDF as raw bytes.
+ */
+export async function flattenPdf(file: File): Promise<Uint8Array> {
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await PDFDocument.load(arrayBuffer);
+  pdf.getForm().flatten();
+  return pdf.save();
+}

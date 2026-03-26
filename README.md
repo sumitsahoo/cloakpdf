@@ -19,7 +19,7 @@
 
 ## ✨ Features
 
-BytePDF offers **12 powerful PDF tools**, all running 100% client-side:
+BytePDF offers **13 powerful PDF tools**, all running 100% client-side:
 
 | Tool                 | Description                                                                                        |
 | -------------------- | -------------------------------------------------------------------------------------------------- |
@@ -35,6 +35,7 @@ BytePDF offers **12 powerful PDF tools**, all running 100% client-side:
 | 📋 **Edit Metadata** | View and edit document properties like title, author, subject, keywords, and dates                 |
 | 🔍 **OCR PDF**       | Extract text from scanned or image-based PDFs using Tesseract.js OCR                               |
 | 🔐 **PDF Password**  | Add password protection to a PDF or remove encryption from a password-protected PDF                |
+| 📐 **Flatten PDF**   | Remove interactive form fields and annotations, converting them to static non-editable content     |
 
 ## 🔒 Privacy First
 

@@ -64,4 +64,5 @@ export type ToolId =
   | "signature"
   | "metadata"
   | "ocr"
-  | "pdf-password";
+  | "pdf-password"
+  | "flatten";
