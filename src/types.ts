@@ -51,6 +51,51 @@ export interface Tool {
   category?: string;
 }
 
+/** Position of page numbers on the page. */
+export type PageNumberPosition =
+  | "top-left"
+  | "top-center"
+  | "top-right"
+  | "bottom-left"
+  | "bottom-center"
+  | "bottom-right";
+
+/** Display format for page numbers. */
+export type PageNumberFormat = "1" | "Page 1" | "1 / N" | "Page 1 of N";
+
+/** Configuration options for the Add Page Numbers tool. */
+export interface PageNumberOptions {
+  position: PageNumberPosition;
+  format: PageNumberFormat;
+  fontSize: number;
+  color: { r: number; g: number; b: number };
+  margin: number;
+  startNumber: number;
+  firstPage: number;
+}
+
+/** Configuration options for the Header & Footer tool. */
+export interface HeaderFooterOptions {
+  headerLeft: string;
+  headerCenter: string;
+  headerRight: string;
+  footerLeft: string;
+  footerCenter: string;
+  footerRight: string;
+  fontSize: number;
+  color: { r: number; g: number; b: number };
+  margin: number;
+  skipFirstPage: boolean;
+}
+
+/** Crop margins in PDF points. */
+export interface CropMargins {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+}
+
 /** Union of all valid tool identifiers. */
 export type ToolId =
   | "merge"
@@ -65,4 +110,11 @@ export type ToolId =
   | "metadata"
   | "ocr"
   | "pdf-password"
-  | "flatten";
+  | "flatten"
+  | "add-blank-page"
+  | "duplicate-page"
+  | "add-page-numbers"
+  | "header-footer"
+  | "crop-pages"
+  | "pdf-to-image"
+  | "fill-pdf-form";

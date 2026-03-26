@@ -6,9 +6,26 @@
  * (compression). No files are uploaded to any server.
  */
 
-import { PDFDocument, rgb, degrees, StandardFonts } from "pdf-lib";
+import {
+  PDFDocument,
+  PDFTextField,
+  PDFCheckBox,
+  PDFDropdown,
+  PDFRadioGroup,
+  rgb,
+  degrees,
+  StandardFonts,
+} from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
-import type { PageRange, WatermarkOptions, Position, PdfMetadata } from "../types.ts";
+import type {
+  PageRange,
+  WatermarkOptions,
+  Position,
+  PdfMetadata,
+  PageNumberOptions,
+  HeaderFooterOptions,
+  CropMargins,
+} from "../types.ts";
 /**
  * Merge multiple PDF files into a single document.
  *
@@ -692,6 +709,272 @@ export async function createSearchablePdf(file: File, pageTexts: string[]): Prom
   }
 
   return pdfDoc.save();
+}
+
+/**
+ * Insert a blank page into a PDF at the specified position.
+ *
+ * The blank page dimensions are copied from the adjacent page so the new
+ * page blends seamlessly. Falls back to A4 if the PDF has no pages.
+ *
+ * @param file - The source PDF file.
+ * @param position - 0-based index at which to insert (0 = before first page).
+ * @returns New PDF bytes with the blank page inserted.
+ */
+export async function addBlankPage(file: File, position: number): Promise<Uint8Array> {
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await PDFDocument.load(arrayBuffer);
+  const pageCount = pdf.getPageCount();
+  const refIndex = Math.min(Math.max(position, 0), pageCount - 1);
+  const { width, height } =
+    pageCount > 0 ? pdf.getPage(refIndex).getSize() : { width: 595, height: 842 };
+  pdf.insertPage(position, [width, height]);
+  return pdf.save();
+}
+
+/**
+ * Duplicate a page in a PDF and insert the copy at a target position.
+ *
+ * The source page is copied from a fresh load of the same file to avoid
+ * internal reference issues.
+ *
+ * @param file - The source PDF file.
+ * @param sourceIndex - 0-based index of the page to duplicate.
+ * @param targetPosition - 0-based index at which to insert the copy.
+ * @returns New PDF bytes with the duplicated page inserted.
+ */
+export async function duplicatePage(
+  file: File,
+  sourceIndex: number,
+  targetPosition: number,
+): Promise<Uint8Array> {
+  const arrayBuffer = await file.arrayBuffer();
+  const source = await PDFDocument.load(arrayBuffer);
+  const result = await PDFDocument.load(arrayBuffer);
+  const [copiedPage] = await result.copyPages(source, [sourceIndex]);
+  result.insertPage(targetPosition, copiedPage);
+  return result.save();
+}
+
+/**
+ * Add page numbers to every (or a subset of) pages in a PDF.
+ *
+ * Supports six edge positions and four format presets. The total shown in
+ * "1 / N" style formats accounts for the `firstPage` skip offset so numbering
+ * stays consistent when a cover page is excluded.
+ *
+ * @param file - The source PDF file.
+ * @param options - Page number styling and placement options.
+ * @returns New PDF bytes with page numbers drawn.
+ */
+export async function addPageNumbers(file: File, options: PageNumberOptions): Promise<Uint8Array> {
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await PDFDocument.load(arrayBuffer);
+  const font = await pdf.embedFont(StandardFonts.Helvetica);
+  const pages = pdf.getPages();
+  const totalPages = pages.length;
+  // Last visible page number = totalPages - firstPage + startNumber
+  const lastPageNum = totalPages - options.firstPage + options.startNumber;
+
+  for (let i = 0; i < totalPages; i++) {
+    if (i < options.firstPage - 1) continue;
+
+    const displayNum = i - (options.firstPage - 1) + options.startNumber;
+
+    let text: string;
+    switch (options.format) {
+      case "Page 1":
+        text = `Page ${displayNum}`;
+        break;
+      case "1 / N":
+        text = `${displayNum} / ${lastPageNum}`;
+        break;
+      case "Page 1 of N":
+        text = `Page ${displayNum} of ${lastPageNum}`;
+        break;
+      default:
+        text = `${displayNum}`;
+    }
+
+    const page = pages[i];
+    const { width, height } = page.getSize();
+    const textWidth = font.widthOfTextAtSize(text, options.fontSize);
+    const { margin } = options;
+
+    const isLeft = options.position === "top-left" || options.position === "bottom-left";
+    const isRight = options.position === "top-right" || options.position === "bottom-right";
+    const isTop =
+      options.position === "top-left" ||
+      options.position === "top-center" ||
+      options.position === "top-right";
+
+    const x = isLeft ? margin : isRight ? width - textWidth - margin : (width - textWidth) / 2;
+    const y = isTop ? height - margin - options.fontSize : margin;
+
+    page.drawText(text, {
+      x,
+      y,
+      size: options.fontSize,
+      font,
+      color: rgb(options.color.r / 255, options.color.g / 255, options.color.b / 255),
+    });
+  }
+
+  return pdf.save();
+}
+
+/**
+ * Add a header and/or footer to every page of a PDF.
+ *
+ * Each of the six slots (header-left/center/right, footer-left/center/right)
+ * supports `{{page}}` and `{{total}}` tokens that are expanded per page.
+ * Center and right text is measured before drawing so it lands correctly.
+ *
+ * @param file - The source PDF file.
+ * @param options - Header/footer text, styling, and layout options.
+ * @returns New PDF bytes with the header and footer applied.
+ */
+export async function addHeaderFooter(
+  file: File,
+  options: HeaderFooterOptions,
+): Promise<Uint8Array> {
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await PDFDocument.load(arrayBuffer);
+  const font = await pdf.embedFont(StandardFonts.Helvetica);
+  const pages = pdf.getPages();
+  const totalPages = pages.length;
+
+  for (let i = 0; i < totalPages; i++) {
+    if (options.skipFirstPage && i === 0) continue;
+
+    const page = pages[i];
+    const { width, height } = page.getSize();
+    const pageNum = i + 1;
+
+    const resolve = (t: string) =>
+      t.replace(/\{\{page\}\}/g, String(pageNum)).replace(/\{\{total\}\}/g, String(totalPages));
+
+    const drawSlot = (raw: string, x: number, y: number) => {
+      if (!raw.trim()) return;
+      const text = resolve(raw);
+      page.drawText(text, {
+        x,
+        y,
+        size: options.fontSize,
+        font,
+        color: rgb(options.color.r / 255, options.color.g / 255, options.color.b / 255),
+      });
+    };
+
+    const m = options.margin;
+    const yTop = height - m - options.fontSize;
+    const yBot = m;
+
+    // Header row
+    drawSlot(options.headerLeft, m, yTop);
+    if (options.headerCenter.trim()) {
+      const tw = font.widthOfTextAtSize(resolve(options.headerCenter), options.fontSize);
+      drawSlot(options.headerCenter, (width - tw) / 2, yTop);
+    }
+    if (options.headerRight.trim()) {
+      const tw = font.widthOfTextAtSize(resolve(options.headerRight), options.fontSize);
+      drawSlot(options.headerRight, width - m - tw, yTop);
+    }
+
+    // Footer row
+    drawSlot(options.footerLeft, m, yBot);
+    if (options.footerCenter.trim()) {
+      const tw = font.widthOfTextAtSize(resolve(options.footerCenter), options.fontSize);
+      drawSlot(options.footerCenter, (width - tw) / 2, yBot);
+    }
+    if (options.footerRight.trim()) {
+      const tw = font.widthOfTextAtSize(resolve(options.footerRight), options.fontSize);
+      drawSlot(options.footerRight, width - m - tw, yBot);
+    }
+  }
+
+  return pdf.save();
+}
+
+/**
+ * Crop pages by setting a crop box that hides the specified margins.
+ *
+ * The crop box is a non-destructive trim — the hidden content remains in the
+ * file but won't be rendered or printed. At least one target page must have
+ * positive remaining dimensions for the operation to succeed.
+ *
+ * @param file - The source PDF file.
+ * @param margins - Margin values in PDF points to hide on each edge.
+ * @param pageIndices - Optional 0-based indices to crop; defaults to all pages.
+ * @returns New PDF bytes with crop boxes applied.
+ */
+export async function cropPages(
+  file: File,
+  margins: CropMargins,
+  pageIndices?: number[],
+): Promise<Uint8Array> {
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await PDFDocument.load(arrayBuffer);
+  const allPages = pdf.getPages();
+  const targets = pageIndices ? pageIndices.map((i) => allPages[i]) : allPages;
+
+  for (const page of targets) {
+    const { width, height } = page.getSize();
+    const x = margins.left;
+    const y = margins.bottom;
+    const w = width - margins.left - margins.right;
+    const h = height - margins.top - margins.bottom;
+    if (w > 0 && h > 0) {
+      page.setCropBox(x, y, w, h);
+    }
+  }
+
+  return pdf.save();
+}
+
+/**
+ * Fill interactive form fields in a PDF with the provided values.
+ *
+ * Handles text fields, checkboxes, dropdowns, and radio groups. Fields whose
+ * names are not found in `fieldValues` are left unchanged. Silently skips
+ * any field that errors (e.g. read-only or unsupported type). Optionally
+ * flattens the form after filling to produce a non-editable document.
+ *
+ * @param file - The source PDF file containing form fields.
+ * @param fieldValues - Map of field name → value (string for text/dropdown/radio, boolean for checkboxes).
+ * @param flatten - If true, flattens the form after filling (default false).
+ * @returns New PDF bytes with fields filled (and optionally flattened).
+ */
+export async function fillPdfForm(
+  file: File,
+  fieldValues: Record<string, string | boolean>,
+  flatten = false,
+): Promise<Uint8Array> {
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await PDFDocument.load(arrayBuffer);
+  const form = pdf.getForm();
+
+  for (const [name, value] of Object.entries(fieldValues)) {
+    try {
+      const field = form.getField(name);
+      if (field instanceof PDFTextField) {
+        field.setText(typeof value === "string" ? value : "");
+      } else if (field instanceof PDFCheckBox) {
+        if (value === true || value === "true") field.check();
+        else field.uncheck();
+      } else if (field instanceof PDFDropdown) {
+        if (typeof value === "string" && value) field.select(value);
+      } else if (field instanceof PDFRadioGroup) {
+        if (typeof value === "string" && value) field.select(value);
+      }
+    } catch {
+      // Skip fields that cannot be set (read-only, unknown type, etc.)
+    }
+  }
+
+  if (flatten) form.flatten();
+
+  return pdf.save();
 }
 
 /**
