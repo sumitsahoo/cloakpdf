@@ -12,8 +12,10 @@ import { FileDropZone } from "../components/FileDropZone.tsx";
 import { PageThumbnail } from "../components/PageThumbnail.tsx";
 import type { WatermarkOptions } from "../types.ts";
 import { downloadPdf } from "../utils/file-helpers.ts";
-import { addWatermark } from "../utils/pdf-operations.ts";
+import { addSealStamp, addWatermark } from "../utils/pdf-operations.ts";
 import { renderAllThumbnails } from "../utils/pdf-renderer.ts";
+
+type StampStyle = "text" | "seal";
 
 interface StampPreset {
   id: string;
@@ -82,6 +84,7 @@ export default function StampPdf() {
   const [selectedStamp, setSelectedStamp] = useState<StampPreset>(STAMPS[0]);
   const [fontSize, setFontSize] = useState(64);
   const [opacity, setOpacity] = useState(0.35);
+  const [stampStyle, setStampStyle] = useState<StampStyle>("text");
   const [applyToAllPages, setApplyToAllPages] = useState(true);
   const [selectedPage, setSelectedPage] = useState(0);
   const [selectedPages, setSelectedPages] = useState<Set<number>>(new Set());
@@ -145,15 +148,27 @@ export default function StampPdf() {
     setProcessing(true);
     setError(null);
     try {
-      const options: WatermarkOptions = {
-        text: selectedStamp.label,
-        fontSize,
-        color: selectedStamp.color,
-        opacity,
-        rotation: -45,
-      };
       const pageIndices = applyToAllPages ? undefined : [...selectedPages].sort((a, b) => a - b);
-      const result = await addWatermark(file, options, pageIndices);
+      let result: Uint8Array;
+      if (stampStyle === "seal") {
+        result = await addSealStamp(
+          file,
+          selectedStamp.label,
+          fontSize,
+          selectedStamp.color,
+          opacity,
+          pageIndices,
+        );
+      } else {
+        const options: WatermarkOptions = {
+          text: selectedStamp.label,
+          fontSize,
+          color: selectedStamp.color,
+          opacity,
+          rotation: -45,
+        };
+        result = await addWatermark(file, options, pageIndices);
+      }
       const baseName = file.name.replace(/\.pdf$/i, "");
       downloadPdf(result, `${baseName}_stamped.pdf`);
     } catch (e) {
@@ -161,7 +176,7 @@ export default function StampPdf() {
     } finally {
       setProcessing(false);
     }
-  }, [file, selectedStamp, fontSize, opacity, applyToAllPages, selectedPages]);
+  }, [file, selectedStamp, fontSize, opacity, stampStyle, applyToAllPages, selectedPages]);
 
   const canApply = applyToAllPages || selectedPages.size > 0;
 
@@ -197,6 +212,29 @@ export default function StampPdf() {
           <div className="grid md:grid-cols-2 gap-6 items-start">
             {/* Left column: controls + page selection */}
             <div className="space-y-5">
+              {/* Stamp style toggle */}
+              <div>
+                <p className="text-sm font-medium text-slate-700 dark:text-dark-text mb-2">
+                  Stamp Style
+                </p>
+                <div className="flex gap-2">
+                  {(["text", "seal"] as const).map((style) => (
+                    <button
+                      key={style}
+                      type="button"
+                      onClick={() => setStampStyle(style)}
+                      className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium border-2 transition-all ${
+                        stampStyle === style
+                          ? "border-primary-500 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 ring-2 ring-primary-200 dark:ring-primary-800"
+                          : "border-slate-200 dark:border-dark-border text-slate-600 dark:text-dark-text-muted hover:border-slate-300"
+                      }`}
+                    >
+                      {style === "text" ? "⌶ Text" : "◎ Seal"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <div>
                 <p className="text-sm font-medium text-slate-700 dark:text-dark-text mb-2">
                   Stamp Type
@@ -377,22 +415,128 @@ export default function StampPdf() {
                     alt={`Page ${selectedPage + 1}`}
                     className="w-full h-full object-contain"
                   />
-                  <div
-                    className="absolute inset-0 flex items-center justify-center pointer-events-none"
-                    style={{ transform: "rotate(-45deg)" }}
-                  >
-                    <span
-                      style={{
-                        fontSize: `${fontSize * previewScale}px`,
-                        color: `rgba(${selectedStamp.color.r}, ${selectedStamp.color.g}, ${selectedStamp.color.b}, ${opacity})`,
-                        fontWeight: "bold",
-                        whiteSpace: "nowrap",
-                        letterSpacing: "0.05em",
-                      }}
+                  {stampStyle === "text" ? (
+                    <div
+                      className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                      style={{ transform: "rotate(-45deg)" }}
                     >
-                      {selectedStamp.label}
-                    </span>
-                  </div>
+                      <span
+                        style={{
+                          fontSize: `${fontSize * previewScale}px`,
+                          color: `rgba(${selectedStamp.color.r}, ${selectedStamp.color.g}, ${selectedStamp.color.b}, ${opacity})`,
+                          fontWeight: "bold",
+                          whiteSpace: "nowrap",
+                          letterSpacing: "0.05em",
+                        }}
+                      >
+                        {selectedStamp.label}
+                      </span>
+                    </div>
+                  ) : (
+                    /* Seal-style preview */
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      {(() => {
+                        const sealFontSize = fontSize * previewScale;
+                        const approxTextWidth = selectedStamp.label.length * sealFontSize * 0.55;
+                        const horizontalPad = sealFontSize * 0.8;
+                        const innerR = approxTextWidth / 2 + horizontalPad;
+                        const outerR = innerR + sealFontSize * 0.6;
+                        const border = sealFontSize * 0.15;
+                        const stampColor = `rgba(${selectedStamp.color.r}, ${selectedStamp.color.g}, ${selectedStamp.color.b}, ${opacity})`;
+                        const midR = (innerR + outerR) / 2;
+                        const dotSize = sealFontSize * 0.25;
+                        return (
+                          <div
+                            style={{ position: "relative", width: outerR * 2, height: outerR * 2 }}
+                          >
+                            {/* Outer circle */}
+                            <div
+                              style={{
+                                position: "absolute",
+                                inset: 0,
+                                borderRadius: "50%",
+                                border: `${border}px solid ${stampColor}`,
+                              }}
+                            />
+                            {/* Inner circle */}
+                            <div
+                              style={{
+                                position: "absolute",
+                                top: outerR - innerR,
+                                left: outerR - innerR,
+                                width: innerR * 2,
+                                height: innerR * 2,
+                                borderRadius: "50%",
+                                border: `${border * 0.7}px solid ${stampColor}`,
+                              }}
+                            />
+                            {/* Line above text */}
+                            <div
+                              style={{
+                                position: "absolute",
+                                top: outerR - sealFontSize * 0.65,
+                                left: outerR - innerR * 0.75,
+                                width: innerR * 1.5,
+                                height: border * 0.5,
+                                backgroundColor: stampColor,
+                              }}
+                            />
+                            {/* Line below text */}
+                            <div
+                              style={{
+                                position: "absolute",
+                                top: outerR + sealFontSize * 0.65,
+                                left: outerR - innerR * 0.75,
+                                width: innerR * 1.5,
+                                height: border * 0.5,
+                                backgroundColor: stampColor,
+                              }}
+                            />
+                            {/* Left dot (9 o'clock) */}
+                            <div
+                              style={{
+                                position: "absolute",
+                                top: outerR - dotSize / 2,
+                                left: outerR - midR - dotSize / 2,
+                                width: dotSize,
+                                height: dotSize,
+                                borderRadius: "50%",
+                                backgroundColor: stampColor,
+                              }}
+                            />
+                            {/* Right dot (3 o'clock) */}
+                            <div
+                              style={{
+                                position: "absolute",
+                                top: outerR - dotSize / 2,
+                                left: outerR + midR - dotSize / 2,
+                                width: dotSize,
+                                height: dotSize,
+                                borderRadius: "50%",
+                                backgroundColor: stampColor,
+                              }}
+                            />
+                            {/* Text */}
+                            <span
+                              style={{
+                                position: "absolute",
+                                top: "50%",
+                                left: "50%",
+                                transform: "translate(-50%, -50%)",
+                                fontSize: `${sealFontSize}px`,
+                                fontWeight: "bold",
+                                color: stampColor,
+                                whiteSpace: "nowrap",
+                                letterSpacing: "0.05em",
+                              }}
+                            >
+                              {selectedStamp.label}
+                            </span>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
                 </div>
               ) : null}
             </div>

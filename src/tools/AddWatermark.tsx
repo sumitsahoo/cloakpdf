@@ -127,6 +127,7 @@ export default function AddWatermark() {
               onClick={() => {
                 setFile(null);
                 setThumbnails([]);
+                setPageDims([]);
                 setSelectedPages(new Set());
                 fileDataRef.current = null;
               }}
