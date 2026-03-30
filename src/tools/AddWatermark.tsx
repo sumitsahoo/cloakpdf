@@ -3,23 +3,25 @@
  *
  * Provides a form to configure watermark text, font size, opacity, rotation,
  * and colour (from preset options). A live preview overlays the watermark on
- * the first page’s thumbnail using CSS transforms so the user can see how
+ * the first page's thumbnail using CSS transforms so the user can see how
  * it will look before committing. The actual watermark is drawn into the PDF
  * using pdf-lib.
  */
 
-import { useState, useCallback, useRef, useEffect } from "react";
-import { FileDropZone } from "../components/FileDropZone.tsx";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ColorPicker, hexToRgb, rgbToHex } from "../components/ColorPicker.tsx";
+import { FileDropZone } from "../components/FileDropZone.tsx";
+import { PageThumbnail } from "../components/PageThumbnail.tsx";
+import type { WatermarkOptions } from "../types.ts";
+import { downloadPdf } from "../utils/file-helpers.ts";
 import { addWatermark } from "../utils/pdf-operations.ts";
 import { renderAllThumbnails } from "../utils/pdf-renderer.ts";
-import { downloadPdf } from "../utils/file-helpers.ts";
-import type { WatermarkOptions } from "../types.ts";
 
 export default function AddWatermark() {
   const [file, setFile] = useState<File | null>(null);
   const [thumbnails, setThumbnails] = useState<string[]>([]);
   const [selectedPage, setSelectedPage] = useState(0);
+  const [selectedPages, setSelectedPages] = useState<Set<number>>(new Set());
   const [applyToAllPages, setApplyToAllPages] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -41,6 +43,7 @@ export default function AddWatermark() {
     if (!pdf) return;
     setFile(pdf);
     setSelectedPage(0);
+    setSelectedPages(new Set());
     setLoading(true);
     setError(null);
     try {
@@ -48,12 +51,9 @@ export default function AddWatermark() {
       fileDataRef.current = data;
       const thumbs = await renderAllThumbnails(pdf);
       setThumbnails(thumbs);
-
-      // Read actual page dimensions for accurate preview scaling
       const { PDFDocument } = await import("pdf-lib");
       const pdfDoc = await PDFDocument.load(data);
-      const dims = pdfDoc.getPages().map((p) => p.getSize());
-      setPageDims(dims);
+      setPageDims(pdfDoc.getPages().map((p) => p.getSize()));
     } catch (e) {
       setError(
         e instanceof Error
@@ -66,14 +66,12 @@ export default function AddWatermark() {
     }
   }, []);
 
-  // Recompute preview scale when page dims or container size changes
   useEffect(() => {
     if (!previewRef.current || !pageDims[selectedPage]) return;
     const el = previewRef.current;
     const updateScale = () => {
       const rect = el.getBoundingClientRect();
-      if (!rect) return;
-      setPreviewScale(rect.width / pageDims[selectedPage].width);
+      if (rect.width) setPreviewScale(rect.width / pageDims[selectedPage].width);
     };
     updateScale();
     const observer = new ResizeObserver(updateScale);
@@ -81,12 +79,22 @@ export default function AddWatermark() {
     return () => observer.disconnect();
   }, [pageDims, selectedPage]);
 
+  const togglePage = useCallback((index: number) => {
+    setSelectedPages((prev) => {
+      const next = new Set(prev);
+      if (next.has(index)) next.delete(index);
+      else next.add(index);
+      return next;
+    });
+    setSelectedPage(index);
+  }, []);
+
   const handleApply = useCallback(async () => {
     if (!file || !options.text.trim()) return;
     setProcessing(true);
     setError(null);
     try {
-      const pageIndices = applyToAllPages ? undefined : [selectedPage];
+      const pageIndices = applyToAllPages ? undefined : [...selectedPages].sort((a, b) => a - b);
       const result = await addWatermark(file, options, pageIndices);
       const baseName = file.name.replace(/\.pdf$/i, "");
       downloadPdf(result, `${baseName}_watermarked.pdf`);
@@ -95,7 +103,9 @@ export default function AddWatermark() {
     } finally {
       setProcessing(false);
     }
-  }, [file, options, applyToAllPages, selectedPage]);
+  }, [file, options, applyToAllPages, selectedPages]);
+
+  const canApply = applyToAllPages || selectedPages.size > 0;
 
   return (
     <div className="space-y-6">
@@ -113,9 +123,11 @@ export default function AddWatermark() {
               <span className="font-medium">{file.name}</span> — {thumbnails.length} pages
             </p>
             <button
+              type="button"
               onClick={() => {
                 setFile(null);
                 setThumbnails([]);
+                setSelectedPages(new Set());
                 fileDataRef.current = null;
               }}
               className="text-sm text-primary-600 hover:text-primary-700"
@@ -124,13 +136,18 @@ export default function AddWatermark() {
             </button>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid md:grid-cols-2 gap-6 items-start">
+            {/* Left column: controls + page selection */}
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-dark-text mb-1.5">
+                <label
+                  htmlFor="watermark-text"
+                  className="block text-sm font-medium text-slate-700 dark:text-dark-text mb-1.5"
+                >
                   Watermark Text
                 </label>
                 <input
+                  id="watermark-text"
                   type="text"
                   value={options.text}
                   onChange={(e) => setOptions((o) => ({ ...o, text: e.target.value }))}
@@ -140,10 +157,14 @@ export default function AddWatermark() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-dark-text mb-1.5">
+                <label
+                  htmlFor="watermark-font-size"
+                  className="block text-sm font-medium text-slate-700 dark:text-dark-text mb-1.5"
+                >
                   Font Size: {options.fontSize}px
                 </label>
                 <input
+                  id="watermark-font-size"
                   type="range"
                   min={12}
                   max={120}
@@ -154,10 +175,14 @@ export default function AddWatermark() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-dark-text mb-1.5">
+                <label
+                  htmlFor="watermark-opacity"
+                  className="block text-sm font-medium text-slate-700 dark:text-dark-text mb-1.5"
+                >
                   Opacity: {Math.round(options.opacity * 100)}%
                 </label>
                 <input
+                  id="watermark-opacity"
                   type="range"
                   min={5}
                   max={100}
@@ -170,10 +195,14 @@ export default function AddWatermark() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-dark-text mb-1.5">
+                <label
+                  htmlFor="watermark-rotation"
+                  className="block text-sm font-medium text-slate-700 dark:text-dark-text mb-1.5"
+                >
                   Rotation: {options.rotation}°
                 </label>
                 <input
+                  id="watermark-rotation"
                   type="range"
                   min={-90}
                   max={90}
@@ -194,7 +223,10 @@ export default function AddWatermark() {
                     <input
                       type="checkbox"
                       checked={applyToAllPages}
-                      onChange={(e) => setApplyToAllPages(e.target.checked)}
+                      onChange={(e) => {
+                        setApplyToAllPages(e.target.checked);
+                        if (e.target.checked) setSelectedPages(new Set());
+                      }}
                       className="accent-primary-600 w-4 h-4 rounded"
                     />
                     <span className="text-sm font-medium text-slate-700 dark:text-dark-text">
@@ -203,30 +235,91 @@ export default function AddWatermark() {
                   </label>
 
                   {!applyToAllPages && (
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 dark:text-dark-text mb-1.5">
-                        Select Page ({selectedPage + 1} of {thumbnails.length})
-                      </label>
-                      <input
-                        type="range"
-                        min={0}
-                        max={thumbnails.length - 1}
-                        value={selectedPage}
-                        onChange={(e) => setSelectedPage(Number(e.target.value))}
-                        className="w-full accent-primary-600"
-                      />
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-medium text-slate-700 dark:text-dark-text">
+                          Select pages
+                          {selectedPages.size > 0 && (
+                            <span className="text-primary-600 dark:text-primary-400 ml-1.5">
+                              ({selectedPages.size} selected)
+                            </span>
+                          )}
+                        </p>
+                        <div className="flex items-center gap-3">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedPages(new Set(thumbnails.map((_, i) => i)));
+                              setSelectedPage(0);
+                            }}
+                            className="text-xs text-primary-600 hover:text-primary-700 dark:text-primary-400"
+                          >
+                            All
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedPages(new Set())}
+                            className="text-xs text-slate-500 hover:text-slate-700 dark:text-dark-text-muted"
+                          >
+                            Clear
+                          </button>
+                        </div>
+                      </div>
+                      {loading ? (
+                        <div className="flex items-center justify-center py-8">
+                          <div className="w-6 h-6 border-2 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-3 gap-2">
+                          {thumbnails.map((thumb, i) => {
+                            const pageNumber = i + 1;
+                            return (
+                              <PageThumbnail
+                                key={pageNumber}
+                                src={thumb}
+                                pageNumber={pageNumber}
+                                selected={selectedPages.has(i)}
+                                onClick={() => togglePage(i)}
+                                overlay={
+                                  selectedPages.has(i) ? (
+                                    <div className="bg-primary-600/20 inset-0 absolute flex items-center justify-center">
+                                      <div className="w-5 h-5 rounded-full bg-primary-600 flex items-center justify-center shadow">
+                                        <svg
+                                          className="w-3 h-3 text-white"
+                                          fill="none"
+                                          stroke="currentColor"
+                                          viewBox="0 0 24 24"
+                                          aria-label="Selected"
+                                        >
+                                          <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={3}
+                                            d="M5 13l4 4L19 7"
+                                          />
+                                        </svg>
+                                      </div>
+                                    </div>
+                                  ) : null
+                                }
+                              />
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
               )}
             </div>
 
-            <div>
+            {/* Right column: preview */}
+            <div className="sticky top-4">
               <p className="text-sm font-medium text-slate-700 dark:text-dark-text mb-1.5">
-                Preview — {applyToAllPages ? "All Pages" : `Page ${selectedPage + 1}`}
+                Preview — Page {selectedPage + 1}
               </p>
               {loading ? (
-                <div className="aspect-[3/4] bg-slate-100 dark:bg-dark-surface-alt rounded-lg flex items-center justify-center">
+                <div className="aspect-3/4 bg-slate-100 dark:bg-dark-surface-alt rounded-lg flex items-center justify-center">
                   <div className="w-8 h-8 border-3 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
                 </div>
               ) : thumbnails[selectedPage] ? (
@@ -248,9 +341,7 @@ export default function AddWatermark() {
                   />
                   <div
                     className="absolute inset-0 flex items-center justify-center pointer-events-none"
-                    style={{
-                      transform: `rotate(${options.rotation}deg)`,
-                    }}
+                    style={{ transform: `rotate(${options.rotation}deg)` }}
                   >
                     <span
                       style={{
@@ -269,8 +360,9 @@ export default function AddWatermark() {
           </div>
 
           <button
+            type="button"
             onClick={handleApply}
-            disabled={processing || !options.text.trim()}
+            disabled={processing || !options.text.trim() || !canApply}
             className="w-full bg-primary-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {processing ? "Applying..." : "Apply Watermark & Download"}

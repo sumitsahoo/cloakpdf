@@ -7,18 +7,19 @@
  * Users can still adjust font size and opacity.
  */
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
+import { PageThumbnail } from "../components/PageThumbnail.tsx";
+import type { WatermarkOptions } from "../types.ts";
+import { downloadPdf } from "../utils/file-helpers.ts";
 import { addWatermark } from "../utils/pdf-operations.ts";
 import { renderAllThumbnails } from "../utils/pdf-renderer.ts";
-import { downloadPdf } from "../utils/file-helpers.ts";
-import type { WatermarkOptions } from "../types.ts";
 
 interface StampPreset {
   id: string;
   label: string;
   color: { r: number; g: number; b: number };
-  bg: string; // Tailwind color for the preset button
+  bg: string;
 }
 
 const STAMPS: StampPreset[] = [
@@ -83,6 +84,7 @@ export default function StampPdf() {
   const [opacity, setOpacity] = useState(0.35);
   const [applyToAllPages, setApplyToAllPages] = useState(true);
   const [selectedPage, setSelectedPage] = useState(0);
+  const [selectedPages, setSelectedPages] = useState<Set<number>>(new Set());
 
   const [pageDims, setPageDims] = useState<{ width: number; height: number }[]>([]);
   const previewRef = useRef<HTMLDivElement>(null);
@@ -93,6 +95,7 @@ export default function StampPdf() {
     if (!pdf) return;
     setFile(pdf);
     setSelectedPage(0);
+    setSelectedPages(new Set());
     setLoading(true);
     setError(null);
     try {
@@ -127,6 +130,16 @@ export default function StampPdf() {
     return () => ro.disconnect();
   }, [pageDims, selectedPage]);
 
+  const togglePage = useCallback((index: number) => {
+    setSelectedPages((prev) => {
+      const next = new Set(prev);
+      if (next.has(index)) next.delete(index);
+      else next.add(index);
+      return next;
+    });
+    setSelectedPage(index);
+  }, []);
+
   const handleApply = useCallback(async () => {
     if (!file) return;
     setProcessing(true);
@@ -139,7 +152,7 @@ export default function StampPdf() {
         opacity,
         rotation: -45,
       };
-      const pageIndices = applyToAllPages ? undefined : [selectedPage];
+      const pageIndices = applyToAllPages ? undefined : [...selectedPages].sort((a, b) => a - b);
       const result = await addWatermark(file, options, pageIndices);
       const baseName = file.name.replace(/\.pdf$/i, "");
       downloadPdf(result, `${baseName}_stamped.pdf`);
@@ -148,7 +161,9 @@ export default function StampPdf() {
     } finally {
       setProcessing(false);
     }
-  }, [file, selectedStamp, fontSize, opacity, applyToAllPages, selectedPage]);
+  }, [file, selectedStamp, fontSize, opacity, applyToAllPages, selectedPages]);
+
+  const canApply = applyToAllPages || selectedPages.size > 0;
 
   return (
     <div className="space-y-6">
@@ -166,10 +181,12 @@ export default function StampPdf() {
               <span className="font-medium">{file.name}</span> — {thumbnails.length} pages
             </p>
             <button
+              type="button"
               onClick={() => {
                 setFile(null);
                 setThumbnails([]);
                 setPageDims([]);
+                setSelectedPages(new Set());
               }}
               className="text-sm text-primary-600 hover:text-primary-700"
             >
@@ -177,17 +194,18 @@ export default function StampPdf() {
             </button>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid md:grid-cols-2 gap-6 items-start">
+            {/* Left column: controls + page selection */}
             <div className="space-y-5">
-              {/* Stamp presets */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-dark-text mb-2">
+                <p className="text-sm font-medium text-slate-700 dark:text-dark-text mb-2">
                   Stamp Type
-                </label>
+                </p>
                 <div className="grid grid-cols-2 gap-2">
                   {STAMPS.map((stamp) => (
                     <button
                       key={stamp.id}
+                      type="button"
                       onClick={() => setSelectedStamp(stamp)}
                       className={`px-3 py-2 rounded-lg text-xs font-bold border-2 transition-all ${stamp.bg} ${
                         selectedStamp.id === stamp.id
@@ -201,12 +219,15 @@ export default function StampPdf() {
                 </div>
               </div>
 
-              {/* Font size */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-dark-text mb-1.5">
+                <label
+                  htmlFor="stamp-font-size"
+                  className="block text-sm font-medium text-slate-700 dark:text-dark-text mb-1.5"
+                >
                   Size: {fontSize}pt
                 </label>
                 <input
+                  id="stamp-font-size"
                   type="range"
                   min={24}
                   max={120}
@@ -216,12 +237,15 @@ export default function StampPdf() {
                 />
               </div>
 
-              {/* Opacity */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-dark-text mb-1.5">
+                <label
+                  htmlFor="stamp-opacity"
+                  className="block text-sm font-medium text-slate-700 dark:text-dark-text mb-1.5"
+                >
                   Opacity: {Math.round(opacity * 100)}%
                 </label>
                 <input
+                  id="stamp-opacity"
                   type="range"
                   min={10}
                   max={100}
@@ -231,46 +255,109 @@ export default function StampPdf() {
                 />
               </div>
 
-              {/* Page scope */}
               {thumbnails.length > 1 && (
                 <div className="space-y-3">
                   <label className="flex items-center gap-2.5 cursor-pointer select-none">
                     <input
                       type="checkbox"
                       checked={applyToAllPages}
-                      onChange={(e) => setApplyToAllPages(e.target.checked)}
+                      onChange={(e) => {
+                        setApplyToAllPages(e.target.checked);
+                        if (e.target.checked) setSelectedPages(new Set());
+                      }}
                       className="accent-primary-600 w-4 h-4 rounded"
                     />
                     <span className="text-sm font-medium text-slate-700 dark:text-dark-text">
                       Apply to all pages
                     </span>
                   </label>
+
                   {!applyToAllPages && (
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 dark:text-dark-text mb-1.5">
-                        Page ({selectedPage + 1} of {thumbnails.length})
-                      </label>
-                      <input
-                        type="range"
-                        min={0}
-                        max={thumbnails.length - 1}
-                        value={selectedPage}
-                        onChange={(e) => setSelectedPage(Number(e.target.value))}
-                        className="w-full accent-primary-600"
-                      />
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-medium text-slate-700 dark:text-dark-text">
+                          Select pages
+                          {selectedPages.size > 0 && (
+                            <span className="text-primary-600 dark:text-primary-400 ml-1.5">
+                              ({selectedPages.size} selected)
+                            </span>
+                          )}
+                        </p>
+                        <div className="flex items-center gap-3">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedPages(new Set(thumbnails.map((_, i) => i)));
+                              setSelectedPage(0);
+                            }}
+                            className="text-xs text-primary-600 hover:text-primary-700 dark:text-primary-400"
+                          >
+                            All
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedPages(new Set())}
+                            className="text-xs text-slate-500 hover:text-slate-700 dark:text-dark-text-muted"
+                          >
+                            Clear
+                          </button>
+                        </div>
+                      </div>
+                      {loading ? (
+                        <div className="flex items-center justify-center py-8">
+                          <div className="w-6 h-6 border-2 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-3 gap-2">
+                          {thumbnails.map((thumb, i) => {
+                            const pageNumber = i + 1;
+                            return (
+                              <PageThumbnail
+                                key={pageNumber}
+                                src={thumb}
+                                pageNumber={pageNumber}
+                                selected={selectedPages.has(i)}
+                                onClick={() => togglePage(i)}
+                                overlay={
+                                  selectedPages.has(i) ? (
+                                    <div className="bg-primary-600/20 inset-0 absolute flex items-center justify-center">
+                                      <div className="w-5 h-5 rounded-full bg-primary-600 flex items-center justify-center shadow">
+                                        <svg
+                                          className="w-3 h-3 text-white"
+                                          fill="none"
+                                          stroke="currentColor"
+                                          viewBox="0 0 24 24"
+                                          aria-label="Selected"
+                                        >
+                                          <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={3}
+                                            d="M5 13l4 4L19 7"
+                                          />
+                                        </svg>
+                                      </div>
+                                    </div>
+                                  ) : null
+                                }
+                              />
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
               )}
             </div>
 
-            {/* Preview */}
-            <div>
+            {/* Right column: preview */}
+            <div className="sticky top-4">
               <p className="text-sm font-medium text-slate-700 dark:text-dark-text mb-1.5">
-                Preview
+                Preview — Page {selectedPage + 1}
               </p>
               {loading ? (
-                <div className="aspect-[3/4] bg-slate-100 dark:bg-dark-surface-alt rounded-lg flex items-center justify-center">
+                <div className="aspect-3/4 bg-slate-100 dark:bg-dark-surface-alt rounded-lg flex items-center justify-center">
                   <div className="w-8 h-8 border-3 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
                 </div>
               ) : thumbnails[selectedPage] ? (
@@ -312,8 +399,9 @@ export default function StampPdf() {
           </div>
 
           <button
+            type="button"
             onClick={handleApply}
-            disabled={processing}
+            disabled={processing || !canApply}
             className="w-full bg-primary-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {processing ? "Stamping..." : `Apply "${selectedStamp.label}" Stamp & Download`}
