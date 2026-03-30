@@ -18,6 +18,8 @@ import {
   PDFNumber,
   PDFString,
   PDFRef,
+  PDFOperator,
+  PDFOperatorNames,
   rgb,
   degrees,
   StandardFonts,
@@ -434,10 +436,34 @@ export async function addSealStamp(
   const outerRadius = innerRadius + fontSize * 0.6;
   const borderThickness = fontSize * 0.15;
 
+  // Rotation angle in degrees — positive here because PDF Y-axis points up,
+  // which mirrors the visual direction vs SVG/CSS (which use -12).
+  const rotationDeg = 12;
+  const rotationRad = (rotationDeg * Math.PI) / 180;
+  const cos = Math.cos(rotationRad);
+  const sin = Math.sin(rotationRad);
+
   for (const page of pages) {
     const { width, height } = page.getSize();
     const cx = width / 2;
     const cy = height / 2;
+
+    // Apply rotation around page center using a content stream transform.
+    // The cm operator sets a transformation matrix: [cos sin -sin cos tx ty]
+    // We translate origin to center, rotate, then translate back.
+    const tx = cx - cos * cx + sin * cy;
+    const ty = cy - sin * cx - cos * cy;
+    page.pushOperators(
+      PDFOperator.of(PDFOperatorNames.PushGraphicsState),
+      PDFOperator.of(PDFOperatorNames.ConcatTransformationMatrix, [
+        PDFNumber.of(cos),
+        PDFNumber.of(sin),
+        PDFNumber.of(-sin),
+        PDFNumber.of(cos),
+        PDFNumber.of(tx),
+        PDFNumber.of(ty),
+      ]),
+    );
 
     // Outer circle
     page.drawCircle({
@@ -514,6 +540,9 @@ export async function addSealStamp(
       color: pdfColor,
       opacity,
     });
+
+    // Restore graphics state (end rotation)
+    page.pushOperators(PDFOperator.of(PDFOperatorNames.PopGraphicsState));
   }
 
   return pdf.save();

@@ -104,69 +104,68 @@ function SealPreview({
   const lineY = fontSize * 0.55;
   const lineW = innerR * 0.75;
   const filterId = "stamp-grunge";
+  const rotation = -12;
 
   return (
-    <div style={{ transform: "rotate(-12deg)" }}>
-      <svg
-        width={size}
-        height={size}
-        viewBox={`0 0 ${size} ${size}`}
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <defs>
-          <filter id={filterId}>
-            <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="4" seed="2" />
-            <feDisplacementMap in="SourceGraphic" scale="2" />
-          </filter>
-        </defs>
-        <g filter={`url(#${filterId})`}>
-          {/* Outer circle */}
-          <circle cx={cx} cy={cy} r={outerR} fill="none" stroke={c} strokeWidth={stroke} />
-          {/* Inner circle */}
-          <circle cx={cx} cy={cy} r={innerR} fill="none" stroke={c} strokeWidth={stroke * 0.6} />
-          {/* Line above text */}
-          <line
-            x1={cx - lineW}
-            y1={cy - lineY}
-            x2={cx + lineW}
-            y2={cy - lineY}
-            stroke={c}
-            strokeWidth={stroke * 0.5}
-          />
-          {/* Line below text */}
-          <line
-            x1={cx - lineW}
-            y1={cy + lineY}
-            x2={cx + lineW}
-            y2={cy + lineY}
-            stroke={c}
-            strokeWidth={stroke * 0.5}
-          />
-          {/* Left dot */}
-          <circle cx={cx - midR} cy={cy} r={dot} fill={c} />
-          {/* Right dot */}
-          <circle cx={cx + midR} cy={cy} r={dot} fill={c} />
-          {/* Star at top */}
-          <polygon points={starPoints(cx, cy - midR, dot * 1.3, 5)} fill={c} />
-          {/* Star at bottom */}
-          <polygon points={starPoints(cx, cy + midR, dot * 1.3, 5)} fill={c} />
-          {/* Label */}
-          <text
-            x={cx}
-            y={cy}
-            textAnchor="middle"
-            dominantBaseline="central"
-            fill={c}
-            fontSize={fontSize}
-            fontWeight="bold"
-            letterSpacing="0.05em"
-            fontFamily="Helvetica, Arial, sans-serif"
-          >
-            {label}
-          </text>
-        </g>
-      </svg>
-    </div>
+    <svg
+      width={size}
+      height={size}
+      viewBox={`0 0 ${size} ${size}`}
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <defs>
+        <filter id={filterId}>
+          <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="4" seed="2" />
+          <feDisplacementMap in="SourceGraphic" scale="2" />
+        </filter>
+      </defs>
+      <g filter={`url(#${filterId})`} transform={`rotate(${rotation} ${cx} ${cy})`}>
+        {/* Outer circle */}
+        <circle cx={cx} cy={cy} r={outerR} fill="none" stroke={c} strokeWidth={stroke} />
+        {/* Inner circle */}
+        <circle cx={cx} cy={cy} r={innerR} fill="none" stroke={c} strokeWidth={stroke * 0.6} />
+        {/* Line above text */}
+        <line
+          x1={cx - lineW}
+          y1={cy - lineY}
+          x2={cx + lineW}
+          y2={cy - lineY}
+          stroke={c}
+          strokeWidth={stroke * 0.5}
+        />
+        {/* Line below text */}
+        <line
+          x1={cx - lineW}
+          y1={cy + lineY}
+          x2={cx + lineW}
+          y2={cy + lineY}
+          stroke={c}
+          strokeWidth={stroke * 0.5}
+        />
+        {/* Left dot */}
+        <circle cx={cx - midR} cy={cy} r={dot} fill={c} />
+        {/* Right dot */}
+        <circle cx={cx + midR} cy={cy} r={dot} fill={c} />
+        {/* Star at top */}
+        <polygon points={starPoints(cx, cy - midR, dot * 1.3, 5)} fill={c} />
+        {/* Star at bottom */}
+        <polygon points={starPoints(cx, cy + midR, dot * 1.3, 5)} fill={c} />
+        {/* Label */}
+        <text
+          x={cx}
+          y={cy}
+          textAnchor="middle"
+          dominantBaseline="central"
+          fill={c}
+          fontSize={fontSize}
+          fontWeight="bold"
+          letterSpacing="0.05em"
+          fontFamily="Helvetica, Arial, sans-serif"
+        >
+          {label}
+        </text>
+      </g>
+    </svg>
   );
 }
 
