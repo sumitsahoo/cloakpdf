@@ -19,7 +19,7 @@
 
 ## ✨ Features
 
-BytePDF offers **28 powerful PDF tools**, all running 100% client-side:
+BytePDF offers **27 powerful PDF tools**, all running 100% client-side:
 
 ### 📄 Organise & Edit
 
@@ -57,15 +57,14 @@ _Compress, convert, and extract content_
 
 _Add watermarks, signatures, and overlays_
 
-| Tool                    | Description                                                                                        |
-| ----------------------- | -------------------------------------------------------------------------------------------------- |
-| 💧 **Add Watermark**    | Overlay custom text watermarks with configurable font size, color, opacity, and rotation           |
-| ✍️ **Add Signature**    | Draw or upload a custom signature image and place it on any page with adjustable size and position |
-| 🔢 **Add Page Numbers** | Insert page numbers with 6 position options, 4 formats, and custom styling                         |
-| 📝 **Header & Footer**  | Add repeating text (with `{{page}}` / `{{total}}` tokens) at the top and bottom of every page      |
-| 📝 **Fill PDF Form**    | Fill text fields, checkboxes, dropdowns, and radio groups in interactive PDF forms                 |
-| 🖊️ **Stamp PDF**        | Apply pre-built stamps — DRAFT, APPROVED, CONFIDENTIAL, REJECTED, VOID, and more                   |
-| ⬛ **Redact PDF**       | Draw black boxes over sensitive content to permanently remove it from the file                     |
+| Tool                     | Description                                                                                                                                                        |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| ✍️ **Add Signature**     | Draw or upload a custom signature image and place it on any page with adjustable size and position                                                                 |
+| 🔢 **Add Page Numbers**  | Insert page numbers with 6 position options, 4 formats, and custom styling                                                                                         |
+| 📝 **Header & Footer**   | Add repeating text (with `{{page}}` / `{{total}}` tokens) at the top and bottom of every page                                                                      |
+| 📝 **Fill PDF Form**     | Fill text fields, checkboxes, dropdowns, and radio groups in interactive PDF forms                                                                                 |
+| 🖊️ **Stamp & Watermark** | Apply pre-built stamps (DRAFT, APPROVED, CONFIDENTIAL, etc.) in text or seal style, or add a custom text watermark with configurable colour, rotation, and opacity |
+| ⬛ **Redact PDF**        | Draw black boxes over sensitive content to permanently remove it from the file                                                                                     |
 
 ### 🔐 Security & Properties
 

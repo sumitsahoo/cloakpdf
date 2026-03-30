@@ -20,7 +20,6 @@ const RotatePages = lazy(() => import("./tools/RotatePages.tsx"));
 const DeletePages = lazy(() => import("./tools/DeletePages.tsx"));
 const ReorderPages = lazy(() => import("./tools/ReorderPages.tsx"));
 const ImagesToPdf = lazy(() => import("./tools/ImagesToPdf.tsx"));
-const AddWatermark = lazy(() => import("./tools/AddWatermark.tsx"));
 const AddSignature = lazy(() => import("./tools/AddSignature.tsx"));
 const EditMetadata = lazy(() => import("./tools/EditMetadata.tsx"));
 const OcrPdf = lazy(() => import("./tools/OcrPdf.tsx"));
@@ -87,13 +86,7 @@ const tools: Tool[] = [
     icon: "🖼️",
     category: "transform",
   },
-  {
-    id: "watermark",
-    title: "Add Watermark",
-    description: "Add text watermark to all pages",
-    icon: "💧",
-    category: "annotate",
-  },
+
   {
     id: "signature",
     title: "Add Signature",
@@ -201,8 +194,8 @@ const tools: Tool[] = [
   },
   {
     id: "stamp-pdf",
-    title: "Stamp PDF",
-    description: "Apply a pre-built stamp such as DRAFT, APPROVED, or CONFIDENTIAL",
+    title: "Stamp & Watermark",
+    description: "Apply pre-built stamps or custom text watermarks with configurable style",
     icon: "🖊️",
     category: "annotate",
   },
@@ -280,7 +273,7 @@ const toolComponents: Record<string, React.LazyExoticComponent<React.ComponentTy
   delete: DeletePages,
   reorder: ReorderPages,
   "images-to-pdf": ImagesToPdf,
-  watermark: AddWatermark,
+  watermark: StampPdf,
   signature: AddSignature,
   metadata: EditMetadata,
   ocr: OcrPdf,

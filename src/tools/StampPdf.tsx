@@ -1,13 +1,14 @@
 /**
- * Stamp PDF tool.
+ * Stamp & Watermark PDF tool.
  *
- * Applies a pre-defined text stamp (DRAFT, APPROVED, CONFIDENTIAL, etc.) to
- * all or selected pages. Uses the same underlying watermark operation as the
- * Add Watermark tool but with curated presets for the most common stamp types.
- * Users can still adjust font size and opacity.
+ * Applies a pre-defined text stamp (DRAFT, APPROVED, CONFIDENTIAL, etc.) or a
+ * custom text watermark to all or selected pages. Stamp mode offers curated
+ * presets in text or seal style; watermark mode provides free-text entry with
+ * configurable colour, rotation, and opacity.
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { ColorPicker, hexToRgb, rgbToHex } from "../components/ColorPicker.tsx";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { PageThumbnail } from "../components/PageThumbnail.tsx";
 import type { WatermarkOptions } from "../types.ts";
@@ -15,7 +16,7 @@ import { downloadPdf } from "../utils/file-helpers.ts";
 import { addSealStamp, addWatermark } from "../utils/pdf-operations.ts";
 import { renderAllThumbnails } from "../utils/pdf-renderer.ts";
 
-type StampStyle = "text" | "seal";
+type StampStyle = "text" | "seal" | "watermark";
 
 interface StampPreset {
   id: string;
@@ -192,6 +193,9 @@ export default function StampPdf() {
   const [fontSize, setFontSize] = useState(64);
   const [opacity, setOpacity] = useState(0.35);
   const [stampStyle, setStampStyle] = useState<StampStyle>("text");
+  const [customText, setCustomText] = useState("CONFIDENTIAL");
+  const [customColor, setCustomColor] = useState({ r: 30, g: 41, b: 59 });
+  const [rotation, setRotation] = useState(-45);
   const [applyToAllPages, setApplyToAllPages] = useState(true);
   const [selectedPage, setSelectedPage] = useState(0);
   const [selectedPages, setSelectedPages] = useState<Set<number>>(new Set());
@@ -266,6 +270,15 @@ export default function StampPdf() {
           opacity,
           pageIndices,
         );
+      } else if (stampStyle === "watermark") {
+        const options: WatermarkOptions = {
+          text: customText,
+          fontSize,
+          color: customColor,
+          opacity,
+          rotation,
+        };
+        result = await addWatermark(file, options, pageIndices);
       } else {
         const options: WatermarkOptions = {
           text: selectedStamp.label,
@@ -277,15 +290,29 @@ export default function StampPdf() {
         result = await addWatermark(file, options, pageIndices);
       }
       const baseName = file.name.replace(/\.pdf$/i, "");
-      downloadPdf(result, `${baseName}_stamped.pdf`);
+      const suffix = stampStyle === "watermark" ? "_watermarked" : "_stamped";
+      downloadPdf(result, `${baseName}${suffix}.pdf`);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to apply stamp. Please try again.");
     } finally {
       setProcessing(false);
     }
-  }, [file, selectedStamp, fontSize, opacity, stampStyle, applyToAllPages, selectedPages]);
+  }, [
+    file,
+    selectedStamp,
+    fontSize,
+    opacity,
+    stampStyle,
+    applyToAllPages,
+    selectedPages,
+    customText,
+    customColor,
+    rotation,
+  ]);
 
-  const canApply = applyToAllPages || selectedPages.size > 0;
+  const canApply =
+    (applyToAllPages || selectedPages.size > 0) &&
+    (stampStyle !== "watermark" || customText.trim().length > 0);
 
   return (
     <div className="space-y-6">
@@ -294,7 +321,7 @@ export default function StampPdf() {
           accept=".pdf,application/pdf"
           onFiles={handleFile}
           label="Drop a PDF file here"
-          hint="Apply a pre-built stamp like DRAFT, APPROVED, or CONFIDENTIAL"
+          hint="Apply a stamp (DRAFT, APPROVED, etc.) or a custom text watermark"
         />
       ) : (
         <>
@@ -321,11 +348,9 @@ export default function StampPdf() {
             <div className="space-y-5">
               {/* Stamp style toggle */}
               <div>
-                <p className="text-sm font-medium text-slate-700 dark:text-dark-text mb-2">
-                  Stamp Style
-                </p>
+                <p className="text-sm font-medium text-slate-700 dark:text-dark-text mb-2">Mode</p>
                 <div className="flex gap-2">
-                  {(["text", "seal"] as const).map((style) => (
+                  {(["text", "seal", "watermark"] as const).map((style) => (
                     <button
                       key={style}
                       type="button"
@@ -336,69 +361,151 @@ export default function StampPdf() {
                           : "border-slate-200 dark:border-dark-border text-slate-600 dark:text-dark-text-muted hover:border-slate-300"
                       }`}
                     >
-                      {style === "text" ? "⌶ Text" : "◎ Seal"}
+                      {style === "text" ? "⌶ Stamp" : style === "seal" ? "◎ Seal" : "💧 Watermark"}
                     </button>
                   ))}
                 </div>
               </div>
 
-              <div>
-                <p className="text-sm font-medium text-slate-700 dark:text-dark-text mb-2">
-                  Stamp Type
-                </p>
-                <div className="grid grid-cols-2 gap-2">
-                  {STAMPS.map((stamp) => (
-                    <button
-                      key={stamp.id}
-                      type="button"
-                      onClick={() => setSelectedStamp(stamp)}
-                      className={`px-3 py-2 rounded-lg text-xs font-bold border-2 transition-all ${stamp.bg} ${
-                        selectedStamp.id === stamp.id
-                          ? "border-primary-500 ring-2 ring-primary-200 dark:ring-primary-800"
-                          : "border-transparent"
-                      }`}
+              {stampStyle === "watermark" ? (
+                <>
+                  <div>
+                    <label
+                      htmlFor="watermark-text"
+                      className="block text-sm font-medium text-slate-700 dark:text-dark-text mb-1.5"
                     >
-                      {stamp.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
+                      Watermark Text
+                    </label>
+                    <input
+                      id="watermark-text"
+                      type="text"
+                      value={customText}
+                      onChange={(e) => setCustomText(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-300 dark:border-dark-border dark:bg-dark-surface dark:text-dark-text rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      placeholder="Enter watermark text"
+                    />
+                  </div>
 
-              <div>
-                <label
-                  htmlFor="stamp-font-size"
-                  className="block text-sm font-medium text-slate-700 dark:text-dark-text mb-1.5"
-                >
-                  Size: {fontSize}pt
-                </label>
-                <input
-                  id="stamp-font-size"
-                  type="range"
-                  min={24}
-                  max={120}
-                  value={fontSize}
-                  onChange={(e) => setFontSize(Number(e.target.value))}
-                  className="w-full accent-primary-600"
-                />
-              </div>
+                  <div>
+                    <label
+                      htmlFor="watermark-font-size"
+                      className="block text-sm font-medium text-slate-700 dark:text-dark-text mb-1.5"
+                    >
+                      Font Size: {fontSize}px
+                    </label>
+                    <input
+                      id="watermark-font-size"
+                      type="range"
+                      min={12}
+                      max={120}
+                      value={fontSize}
+                      onChange={(e) => setFontSize(Number(e.target.value))}
+                      className="w-full accent-primary-600"
+                    />
+                  </div>
 
-              <div>
-                <label
-                  htmlFor="stamp-opacity"
-                  className="block text-sm font-medium text-slate-700 dark:text-dark-text mb-1.5"
-                >
-                  Opacity: {Math.round(opacity * 100)}%
-                </label>
-                <input
-                  id="stamp-opacity"
-                  type="range"
-                  min={10}
-                  max={100}
-                  value={Math.round(opacity * 100)}
-                  onChange={(e) => setOpacity(Number(e.target.value) / 100)}
-                  className="w-full accent-primary-600"
-                />
-              </div>
+                  <div>
+                    <label
+                      htmlFor="watermark-opacity"
+                      className="block text-sm font-medium text-slate-700 dark:text-dark-text mb-1.5"
+                    >
+                      Opacity: {Math.round(opacity * 100)}%
+                    </label>
+                    <input
+                      id="watermark-opacity"
+                      type="range"
+                      min={5}
+                      max={100}
+                      value={Math.round(opacity * 100)}
+                      onChange={(e) => setOpacity(Number(e.target.value) / 100)}
+                      className="w-full accent-primary-600"
+                    />
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="watermark-rotation"
+                      className="block text-sm font-medium text-slate-700 dark:text-dark-text mb-1.5"
+                    >
+                      Rotation: {rotation}°
+                    </label>
+                    <input
+                      id="watermark-rotation"
+                      type="range"
+                      min={-90}
+                      max={90}
+                      value={rotation}
+                      onChange={(e) => setRotation(Number(e.target.value))}
+                      className="w-full accent-primary-600"
+                    />
+                  </div>
+
+                  <ColorPicker
+                    value={rgbToHex(customColor.r, customColor.g, customColor.b)}
+                    onChange={(hex) => setCustomColor(hexToRgb(hex))}
+                  />
+                </>
+              ) : (
+                <>
+                  <div>
+                    <p className="text-sm font-medium text-slate-700 dark:text-dark-text mb-2">
+                      Stamp Type
+                    </p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {STAMPS.map((stamp) => (
+                        <button
+                          key={stamp.id}
+                          type="button"
+                          onClick={() => setSelectedStamp(stamp)}
+                          className={`px-3 py-2 rounded-lg text-xs font-bold border-2 transition-all ${stamp.bg} ${
+                            selectedStamp.id === stamp.id
+                              ? "border-primary-500 ring-2 ring-primary-200 dark:ring-primary-800"
+                              : "border-transparent"
+                          }`}
+                        >
+                          {stamp.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="stamp-font-size"
+                      className="block text-sm font-medium text-slate-700 dark:text-dark-text mb-1.5"
+                    >
+                      Size: {fontSize}pt
+                    </label>
+                    <input
+                      id="stamp-font-size"
+                      type="range"
+                      min={24}
+                      max={120}
+                      value={fontSize}
+                      onChange={(e) => setFontSize(Number(e.target.value))}
+                      className="w-full accent-primary-600"
+                    />
+                  </div>
+
+                  <div>
+                    <label
+                      htmlFor="stamp-opacity"
+                      className="block text-sm font-medium text-slate-700 dark:text-dark-text mb-1.5"
+                    >
+                      Opacity: {Math.round(opacity * 100)}%
+                    </label>
+                    <input
+                      id="stamp-opacity"
+                      type="range"
+                      min={10}
+                      max={100}
+                      value={Math.round(opacity * 100)}
+                      onChange={(e) => setOpacity(Number(e.target.value) / 100)}
+                      className="w-full accent-primary-600"
+                    />
+                  </div>
+                </>
+              )}
 
               {thumbnails.length > 1 && (
                 <div className="space-y-3">
@@ -525,8 +632,24 @@ export default function StampPdf() {
                   <div
                     key={stampStyle}
                     className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                    style={
+                      stampStyle === "watermark"
+                        ? { transform: `rotate(${rotation}deg)` }
+                        : undefined
+                    }
                   >
-                    {stampStyle === "text" ? (
+                    {stampStyle === "watermark" ? (
+                      <span
+                        style={{
+                          fontSize: `${fontSize * previewScale}px`,
+                          color: rgbaColor(customColor, opacity),
+                          fontWeight: "bold",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {customText}
+                      </span>
+                    ) : stampStyle === "text" ? (
                       <span
                         style={{
                           transform: "rotate(-45deg)",
@@ -559,7 +682,11 @@ export default function StampPdf() {
             disabled={processing || !canApply}
             className="w-full bg-primary-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            {processing ? "Stamping..." : `Apply "${selectedStamp.label}" Stamp & Download`}
+            {processing
+              ? "Applying..."
+              : stampStyle === "watermark"
+                ? "Apply Watermark & Download"
+                : `Apply "${selectedStamp.label}" Stamp & Download`}
           </button>
         </>
       )}
