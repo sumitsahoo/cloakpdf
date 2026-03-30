@@ -79,6 +79,8 @@ function rgbaColor(c: { r: number; g: number; b: number }, a: number) {
   return `rgba(${c.r}, ${c.g}, ${c.b}, ${a})`;
 }
 
+let sealFilterCounter = 0;
+
 function SealPreview({
   label,
   color,
@@ -90,6 +92,7 @@ function SealPreview({
   fontSize: number;
   opacity: number;
 }) {
+  const [filterId] = useState(() => `stamp-grunge-${++sealFilterCounter}`);
   const textW = label.length * fontSize * 0.63;
   const pad = fontSize * 0.8;
   const innerR = textW / 2 + pad;
@@ -103,7 +106,6 @@ function SealPreview({
   const dot = fontSize * 0.12;
   const lineY = fontSize * 0.85;
   const lineW = innerR * 0.75;
-  const filterId = "stamp-grunge";
   const rotation = -12;
 
   return (
@@ -520,7 +522,10 @@ export default function StampPdf() {
                     alt={`Page ${selectedPage + 1}`}
                     className="w-full h-full object-contain"
                   />
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div
+                    key={stampStyle}
+                    className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                  >
                     {stampStyle === "text" ? (
                       <span
                         style={{
