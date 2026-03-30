@@ -75,6 +75,112 @@ const STAMPS: StampPreset[] = [
   },
 ];
 
+function rgbaColor(c: { r: number; g: number; b: number }, a: number) {
+  return `rgba(${c.r}, ${c.g}, ${c.b}, ${a})`;
+}
+
+function SealPreview({
+  label,
+  color,
+  fontSize,
+  opacity,
+}: {
+  label: string;
+  color: { r: number; g: number; b: number };
+  fontSize: number;
+  opacity: number;
+}) {
+  const textW = label.length * fontSize * 0.55;
+  const pad = fontSize * 0.8;
+  const innerR = textW / 2 + pad;
+  const outerR = innerR + fontSize * 0.6;
+  const stroke = fontSize * 0.15;
+  const c = rgbaColor(color, opacity);
+  const size = outerR * 2 + stroke;
+  const cx = size / 2;
+  const cy = size / 2;
+  const midR = (innerR + outerR) / 2;
+  const dot = fontSize * 0.12;
+  const lineY = fontSize * 0.55;
+  const lineW = innerR * 0.75;
+  const filterId = "stamp-grunge";
+
+  return (
+    <div style={{ transform: "rotate(-12deg)" }}>
+      <svg
+        width={size}
+        height={size}
+        viewBox={`0 0 ${size} ${size}`}
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <defs>
+          <filter id={filterId}>
+            <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="4" seed="2" />
+            <feDisplacementMap in="SourceGraphic" scale="2" />
+          </filter>
+        </defs>
+        <g filter={`url(#${filterId})`}>
+          {/* Outer circle */}
+          <circle cx={cx} cy={cy} r={outerR} fill="none" stroke={c} strokeWidth={stroke} />
+          {/* Inner circle */}
+          <circle cx={cx} cy={cy} r={innerR} fill="none" stroke={c} strokeWidth={stroke * 0.6} />
+          {/* Line above text */}
+          <line
+            x1={cx - lineW}
+            y1={cy - lineY}
+            x2={cx + lineW}
+            y2={cy - lineY}
+            stroke={c}
+            strokeWidth={stroke * 0.5}
+          />
+          {/* Line below text */}
+          <line
+            x1={cx - lineW}
+            y1={cy + lineY}
+            x2={cx + lineW}
+            y2={cy + lineY}
+            stroke={c}
+            strokeWidth={stroke * 0.5}
+          />
+          {/* Left dot */}
+          <circle cx={cx - midR} cy={cy} r={dot} fill={c} />
+          {/* Right dot */}
+          <circle cx={cx + midR} cy={cy} r={dot} fill={c} />
+          {/* Star at top */}
+          <polygon points={starPoints(cx, cy - midR, dot * 1.3, 5)} fill={c} />
+          {/* Star at bottom */}
+          <polygon points={starPoints(cx, cy + midR, dot * 1.3, 5)} fill={c} />
+          {/* Label */}
+          <text
+            x={cx}
+            y={cy}
+            textAnchor="middle"
+            dominantBaseline="central"
+            fill={c}
+            fontSize={fontSize}
+            fontWeight="bold"
+            letterSpacing="0.05em"
+            fontFamily="Helvetica, Arial, sans-serif"
+          >
+            {label}
+          </text>
+        </g>
+      </svg>
+    </div>
+  );
+}
+
+function starPoints(cx: number, cy: number, r: number, points: number) {
+  const inner = r * 0.4;
+  const pts: string[] = [];
+  for (let i = 0; i < points * 2; i++) {
+    const angle = (Math.PI / points) * i - Math.PI / 2;
+    const radius = i % 2 === 0 ? r : inner;
+    pts.push(`${cx + radius * Math.cos(angle)},${cy + radius * Math.sin(angle)}`);
+  }
+  return pts.join(" ");
+}
+
 export default function StampPdf() {
   const [file, setFile] = useState<File | null>(null);
   const [thumbnails, setThumbnails] = useState<string[]>([]);
@@ -415,15 +521,13 @@ export default function StampPdf() {
                     alt={`Page ${selectedPage + 1}`}
                     className="w-full h-full object-contain"
                   />
-                  {stampStyle === "text" ? (
-                    <div
-                      className="absolute inset-0 flex items-center justify-center pointer-events-none"
-                      style={{ transform: "rotate(-45deg)" }}
-                    >
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    {stampStyle === "text" ? (
                       <span
                         style={{
+                          transform: "rotate(-45deg)",
                           fontSize: `${fontSize * previewScale}px`,
-                          color: `rgba(${selectedStamp.color.r}, ${selectedStamp.color.g}, ${selectedStamp.color.b}, ${opacity})`,
+                          color: rgbaColor(selectedStamp.color, opacity),
                           fontWeight: "bold",
                           whiteSpace: "nowrap",
                           letterSpacing: "0.05em",
@@ -431,112 +535,15 @@ export default function StampPdf() {
                       >
                         {selectedStamp.label}
                       </span>
-                    </div>
-                  ) : (
-                    /* Seal-style preview */
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                      {(() => {
-                        const sealFontSize = fontSize * previewScale;
-                        const approxTextWidth = selectedStamp.label.length * sealFontSize * 0.55;
-                        const horizontalPad = sealFontSize * 0.8;
-                        const innerR = approxTextWidth / 2 + horizontalPad;
-                        const outerR = innerR + sealFontSize * 0.6;
-                        const border = sealFontSize * 0.15;
-                        const stampColor = `rgba(${selectedStamp.color.r}, ${selectedStamp.color.g}, ${selectedStamp.color.b}, ${opacity})`;
-                        const midR = (innerR + outerR) / 2;
-                        const dotSize = sealFontSize * 0.25;
-                        return (
-                          <div
-                            style={{ position: "relative", width: outerR * 2, height: outerR * 2 }}
-                          >
-                            {/* Outer circle */}
-                            <div
-                              style={{
-                                position: "absolute",
-                                inset: 0,
-                                borderRadius: "50%",
-                                border: `${border}px solid ${stampColor}`,
-                              }}
-                            />
-                            {/* Inner circle */}
-                            <div
-                              style={{
-                                position: "absolute",
-                                top: outerR - innerR,
-                                left: outerR - innerR,
-                                width: innerR * 2,
-                                height: innerR * 2,
-                                borderRadius: "50%",
-                                border: `${border * 0.7}px solid ${stampColor}`,
-                              }}
-                            />
-                            {/* Line above text */}
-                            <div
-                              style={{
-                                position: "absolute",
-                                top: outerR - sealFontSize * 0.65,
-                                left: outerR - innerR * 0.75,
-                                width: innerR * 1.5,
-                                height: border * 0.5,
-                                backgroundColor: stampColor,
-                              }}
-                            />
-                            {/* Line below text */}
-                            <div
-                              style={{
-                                position: "absolute",
-                                top: outerR + sealFontSize * 0.65,
-                                left: outerR - innerR * 0.75,
-                                width: innerR * 1.5,
-                                height: border * 0.5,
-                                backgroundColor: stampColor,
-                              }}
-                            />
-                            {/* Left dot (9 o'clock) */}
-                            <div
-                              style={{
-                                position: "absolute",
-                                top: outerR - dotSize / 2,
-                                left: outerR - midR - dotSize / 2,
-                                width: dotSize,
-                                height: dotSize,
-                                borderRadius: "50%",
-                                backgroundColor: stampColor,
-                              }}
-                            />
-                            {/* Right dot (3 o'clock) */}
-                            <div
-                              style={{
-                                position: "absolute",
-                                top: outerR - dotSize / 2,
-                                left: outerR + midR - dotSize / 2,
-                                width: dotSize,
-                                height: dotSize,
-                                borderRadius: "50%",
-                                backgroundColor: stampColor,
-                              }}
-                            />
-                            {/* Text */}
-                            <span
-                              style={{
-                                position: "absolute",
-                                top: "50%",
-                                left: "50%",
-                                transform: "translate(-50%, -50%)",
-                                fontSize: `${sealFontSize}px`,
-                                fontWeight: "bold",
-                                color: stampColor,
-                                whiteSpace: "nowrap",
-                                letterSpacing: "0.05em",
-                              }}
-                            >
-                              {selectedStamp.label}
-                            </span>
-                          </div>
-                        );
-                      })()}
-                    </div>
-                  )}
+                    ) : (
+                      <SealPreview
+                        label={selectedStamp.label}
+                        color={selectedStamp.color}
+                        fontSize={fontSize * previewScale}
+                        opacity={opacity}
+                      />
+                    )}
+                  </div>
                 </div>
               ) : null}
             </div>
