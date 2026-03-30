@@ -34,6 +34,14 @@ const HeaderFooter = lazy(() => import("./tools/HeaderFooter.tsx"));
 const CropPages = lazy(() => import("./tools/CropPages.tsx"));
 const PdfToImage = lazy(() => import("./tools/PdfToImage.tsx"));
 const FillPdfForm = lazy(() => import("./tools/FillPdfForm.tsx"));
+const ExtractPages = lazy(() => import("./tools/ExtractPages.tsx"));
+const ReversePages = lazy(() => import("./tools/ReversePages.tsx"));
+const RedactPdf = lazy(() => import("./tools/RedactPdf.tsx"));
+const StampPdf = lazy(() => import("./tools/StampPdf.tsx"));
+const AddBookmarks = lazy(() => import("./tools/AddBookmarks.tsx"));
+const PdfInspector = lazy(() => import("./tools/PdfInspector.tsx"));
+const RepairPdf = lazy(() => import("./tools/RepairPdf.tsx"));
+const PdfPermissions = lazy(() => import("./tools/PdfPermissions.tsx"));
 
 // ---- Tool metadata displayed on the home screen grid ----
 const tools: Tool[] = [
@@ -177,6 +185,62 @@ const tools: Tool[] = [
     icon: "📝",
     category: "annotate",
   },
+  {
+    id: "extract-pages",
+    title: "Extract Pages",
+    description: "Select specific pages and save them as a new PDF",
+    icon: "📤",
+    category: "organise",
+  },
+  {
+    id: "reverse-pages",
+    title: "Reverse Pages",
+    description: "Flip the page order of a PDF in one click",
+    icon: "🔃",
+    category: "organise",
+  },
+  {
+    id: "add-bookmarks",
+    title: "Add Bookmarks",
+    description: "Add a clickable outline for quick in-document navigation",
+    icon: "🔖",
+    category: "organise",
+  },
+  {
+    id: "stamp-pdf",
+    title: "Stamp PDF",
+    description: "Apply a pre-built stamp such as DRAFT, APPROVED, or CONFIDENTIAL",
+    icon: "🖊️",
+    category: "annotate",
+  },
+  {
+    id: "redact-pdf",
+    title: "Redact PDF",
+    description: "Permanently black out sensitive text and images",
+    icon: "⬛",
+    category: "annotate",
+  },
+  {
+    id: "repair-pdf",
+    title: "Repair PDF",
+    description: "Fix structural issues in corrupted or malformed PDFs",
+    icon: "🔧",
+    category: "transform",
+  },
+  {
+    id: "pdf-inspector",
+    title: "PDF Inspector",
+    description: "View version, page dimensions, metadata, and encryption status",
+    icon: "🔎",
+    category: "security",
+  },
+  {
+    id: "pdf-permissions",
+    title: "PDF Permissions",
+    description: "Encrypt a PDF and control print, copy, and edit rights",
+    icon: "🛡️",
+    category: "security",
+  },
 ];
 
 // ---- Category definitions for the home screen ----
@@ -229,6 +293,14 @@ const toolComponents: Record<string, React.LazyExoticComponent<React.ComponentTy
   "crop-pages": CropPages,
   "pdf-to-image": PdfToImage,
   "fill-pdf-form": FillPdfForm,
+  "extract-pages": ExtractPages,
+  "reverse-pages": ReversePages,
+  "redact-pdf": RedactPdf,
+  "stamp-pdf": StampPdf,
+  "add-bookmarks": AddBookmarks,
+  "pdf-inspector": PdfInspector,
+  "repair-pdf": RepairPdf,
+  "pdf-permissions": PdfPermissions,
 };
 
 /** Full-screen centred spinner shown while a tool component is loading. */

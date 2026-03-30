@@ -19,7 +19,7 @@
 
 ## ✨ Features
 
-BytePDF offers **20 powerful PDF tools**, all running 100% client-side:
+BytePDF offers **28 powerful PDF tools**, all running 100% client-side:
 
 ### 📄 Organise & Edit
 
@@ -34,6 +34,9 @@ _Rearrange, combine, and manage your PDF pages_
 | ↕️ **Reorder Pages**  | Drag and drop to rearrange page order with smooth animations                       |
 | 📄 **Add Blank Page** | Insert a blank page at any position — dimensions match the adjacent page           |
 | 📋 **Duplicate Page** | Copy any page and insert it at a chosen position in the document                   |
+| 📤 **Extract Pages**  | Select specific pages and save them as a new standalone PDF                        |
+| 🔃 **Reverse Pages**  | Flip the entire page order of a PDF in one click                                   |
+| 🔖 **Add Bookmarks**  | Add a clickable outline so readers can jump to any page instantly                  |
 
 ### 🔄 Transform & Convert
 
@@ -47,6 +50,7 @@ _Compress, convert, and extract content_
 | 📐 **Flatten PDF**   | Remove interactive form fields and annotations, making the PDF non-editable                                                        |
 | ✂️ **Crop Pages**    | Trim page margins by setting a crop box (mm input, uniform or per-side); also removes existing crop boxes to restore the full page |
 | 🖼️ **PDF to Image**  | Export pages as PNG or JPEG at 72 / 150 / 300 DPI — single file or ZIP                                                             |
+| 🔧 **Repair PDF**    | Fix structural issues in corrupted or malformed PDFs by re-parsing and rebuilding the file                                         |
 
 ### ✏️ Annotate & Sign
 
@@ -59,15 +63,19 @@ _Add watermarks, signatures, and overlays_
 | 🔢 **Add Page Numbers** | Insert page numbers with 6 position options, 4 formats, and custom styling                         |
 | 📝 **Header & Footer**  | Add repeating text (with `{{page}}` / `{{total}}` tokens) at the top and bottom of every page      |
 | 📝 **Fill PDF Form**    | Fill text fields, checkboxes, dropdowns, and radio groups in interactive PDF forms                 |
+| 🖊️ **Stamp PDF**        | Apply pre-built stamps — DRAFT, APPROVED, CONFIDENTIAL, REJECTED, VOID, and more                   |
+| ⬛ **Redact PDF**       | Draw black boxes over sensitive content to permanently remove it from the file                     |
 
 ### 🔐 Security & Properties
 
 _Protect your PDFs and manage metadata_
 
-| Tool                 | Description                                                                         |
-| -------------------- | ----------------------------------------------------------------------------------- |
-| 📋 **Edit Metadata** | View and edit document properties like title, author, subject, keywords, and dates  |
-| 🔐 **PDF Password**  | Add password protection to a PDF or remove encryption from a password-protected PDF |
+| Tool                   | Description                                                                             |
+| ---------------------- | --------------------------------------------------------------------------------------- |
+| 📋 **Edit Metadata**   | View and edit document properties like title, author, subject, keywords, and dates      |
+| 🔐 **PDF Password**    | Add password protection to a PDF or remove encryption from a password-protected PDF     |
+| 🛡️ **PDF Permissions** | Encrypt a PDF and restrict printing, copying, editing, and annotation rights            |
+| 🔎 **PDF Inspector**   | View version, page count, dimensions, metadata, and encryption status without modifying |
 
 ## 🔒 Privacy First
 

@@ -828,6 +828,7 @@ export async function protectPdf(
   file: File,
   userPassword: string,
   ownerPassword?: string,
+  permissions?: number,
 ): Promise<Uint8Array> {
   const arrayBuffer = await file.arrayBuffer();
   const pdfDoc = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
@@ -838,10 +839,11 @@ export async function protectPdf(
   }
   const ctx = pdfDoc.context;
 
+  const resolvedPermissions = permissions ?? ALL_PERMS;
   const { keyBytes, U, UE, O, OE, Perms } = await buildEncDataV5(
     userPassword,
     ownerPassword ?? userPassword,
-    ALL_PERMS,
+    resolvedPermissions,
   );
 
   // Pre-encrypt every stream in the document with the document encryption key.
@@ -867,7 +869,7 @@ export async function protectPdf(
   encDict.set(PDFName.of("V"), PDFNumber.of(5)); // algorithm version: AES-256
   encDict.set(PDFName.of("R"), PDFNumber.of(5)); // revision
   encDict.set(PDFName.of("Length"), PDFNumber.of(256)); // key length in bits
-  encDict.set(PDFName.of("P"), PDFNumber.of(ALL_PERMS)); // permissions flags
+  encDict.set(PDFName.of("P"), PDFNumber.of(resolvedPermissions)); // permissions flags
   encDict.set(PDFName.of("O"), PDFHexString.of(toHex(O)));
   encDict.set(PDFName.of("OE"), PDFHexString.of(toHex(OE)));
   encDict.set(PDFName.of("U"), PDFHexString.of(toHex(U)));

@@ -117,4 +117,12 @@ export type ToolId =
   | "header-footer"
   | "crop-pages"
   | "pdf-to-image"
-  | "fill-pdf-form";
+  | "fill-pdf-form"
+  | "extract-pages"
+  | "reverse-pages"
+  | "redact-pdf"
+  | "stamp-pdf"
+  | "add-bookmarks"
+  | "pdf-inspector"
+  | "repair-pdf"
+  | "pdf-permissions";
