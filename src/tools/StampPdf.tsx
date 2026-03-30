@@ -90,7 +90,7 @@ function SealPreview({
   fontSize: number;
   opacity: number;
 }) {
-  const textW = label.length * fontSize * 0.55;
+  const textW = label.length * fontSize * 0.63;
   const pad = fontSize * 0.8;
   const innerR = textW / 2 + pad;
   const outerR = innerR + fontSize * 0.6;
@@ -101,7 +101,7 @@ function SealPreview({
   const cy = size / 2;
   const midR = (innerR + outerR) / 2;
   const dot = fontSize * 0.12;
-  const lineY = fontSize * 0.55;
+  const lineY = fontSize * 0.85;
   const lineW = innerR * 0.75;
   const filterId = "stamp-grunge";
   const rotation = -12;
