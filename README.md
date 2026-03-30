@@ -28,13 +28,13 @@ _Rearrange, combine, and manage your PDF pages_
 | Tool                      | Description                                                                      |
 | ------------------------- | -------------------------------------------------------------------------------- |
 | 📑 **Merge PDFs**         | Combine multiple PDF files into a single document with drag-to-reorder support   |
-| 🔄 **Rotate Pages**       | Rotate individual pages by 90°, -90°, or 180° — or rotate all at once            |
+| � **Extract Pages**       | Select pages visually or by range (e.g., `1-3, 5, 7-9`) and save as a new PDF    |
 | 🗑️ **Delete Pages**       | Select and remove unwanted pages visually                                        |
 | ↕️ **Reorder Pages**      | Drag and drop to rearrange page order with smooth animations                     |
+| 🔄 **Rotate Pages**       | Rotate individual pages by 90°, -90°, or 180° — or rotate all at once            |
+| 🔃 **Reverse Pages**      | Flip the entire page order of a PDF in one click                                 |
 | 📄 **Add Blank Page**     | Insert a blank page at any position — dimensions match the adjacent page         |
 | 📋 **Duplicate Page**     | Copy any page and insert it at a chosen position in the document                 |
-| 📤 **Extract Pages**      | Select pages visually or by range (e.g., `1-3, 5, 7-9`) and save as a new PDF    |
-| 🔃 **Reverse Pages**      | Flip the entire page order of a PDF in one click                                 |
 | 🔖 **Add Bookmarks**      | Add a clickable outline so readers can jump to any page instantly                |
 | 🧹 **Remove Blank Pages** | Auto-detect and remove empty pages — adjustable sensitivity with manual override |
 
@@ -45,13 +45,13 @@ _Compress, convert, and extract content_
 | Tool                 | Description                                                                                                                        |
 | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
 | 🗜️ **Compress PDF**  | Reduce file size with 3 quality levels — Light, Balanced, and Maximum                                                              |
+| 🖼️ **PDF to Image**  | Export pages as PNG or JPEG at 72 / 150 / 300 DPI — single file or ZIP                                                             |
 | 🖼️ **Images to PDF** | Convert images (PNG, JPEG) to PDF with A4, Letter, or Fit-to-Image page sizes                                                      |
 | 🔍 **OCR PDF**       | Extract text from scanned or image-based PDFs using Tesseract.js OCR                                                               |
-| 📐 **Flatten PDF**   | Remove interactive form fields and annotations, making the PDF non-editable                                                        |
 | ✂️ **Crop Pages**    | Trim page margins by setting a crop box (mm input, uniform or per-side); also removes existing crop boxes to restore the full page |
-| 🖼️ **PDF to Image**  | Export pages as PNG or JPEG at 72 / 150 / 300 DPI — single file or ZIP                                                             |
-| 🔧 **Repair PDF**    | Fix structural issues in corrupted or malformed PDFs by re-parsing and rebuilding the file                                         |
+| 📐 **Flatten PDF**   | Remove interactive form fields and annotations, making the PDF non-editable                                                        |
 | 🔲 **N-up Pages**    | Arrange multiple pages onto a single sheet (2-up, 4-up, 9-up) for compact printing                                                 |
+| 🔧 **Repair PDF**    | Fix structural issues in corrupted or malformed PDFs by re-parsing and rebuilding the file                                         |
 
 ### ✏️ Annotate & Sign
 
@@ -60,11 +60,10 @@ _Add watermarks, signatures, and overlays_
 | Tool                     | Description                                                                                                                                                        |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | ✍️ **Add Signature**     | Draw or upload a custom signature image and place it on any page with adjustable size and position                                                                 |
-| 🔢 **Add Page Numbers**  | Insert page numbers with 6 position options, 4 formats, and custom styling                                                                                         |
-| 📝 **Header & Footer**   | Add repeating text (with `{{page}}` / `{{total}}` tokens) at the top and bottom of every page                                                                      |
 | 📝 **Fill PDF Form**     | Fill text fields, checkboxes, dropdowns, and radio groups in interactive PDF forms                                                                                 |
 | 🖊️ **Stamp & Watermark** | Apply pre-built stamps (DRAFT, APPROVED, CONFIDENTIAL, etc.) in text or seal style, or add a custom text watermark with configurable colour, rotation, and opacity |
-| ⬛ **Redact PDF**        | Draw black boxes over sensitive content to permanently remove it from the file                                                                                     |
+| 🔢 **Add Page Numbers**  | Insert page numbers with 6 position options, 4 formats, and custom styling                                                                                         |
+| 📝 **Header & Footer**   | Add repeating text (with `{{page}}` / `{{total}}` tokens) at the top and bottom of every page                                                                      |
 
 ### 🔐 Security & Properties
 
@@ -72,8 +71,9 @@ _Protect your PDFs and manage metadata_
 
 | Tool                 | Description                                                                             |
 | -------------------- | --------------------------------------------------------------------------------------- |
+| 🔒 **PDF Password**  | Add or remove a password and control print, copy, and edit rights                       |
+| ⬛ **Redact PDF**    | Permanently black out sensitive text and images                                         |
 | 📋 **Edit Metadata** | View and edit document properties like title, author, subject, keywords, and dates      |
-| 🔐 **PDF Password**  | Add or remove a password and control print, copy, and edit rights                       |
 | 🔎 **PDF Inspector** | View version, page count, dimensions, metadata, and encryption status without modifying |
 
 ## 🔒 Privacy First
