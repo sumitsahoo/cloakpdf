@@ -19,7 +19,7 @@
 
 ## ✨ Features
 
-BytePDF offers **29 powerful PDF tools**, all running 100% client-side:
+BytePDF offers **28 powerful PDF tools**, all running 100% client-side:
 
 ### 📄 Organise & Edit
 
@@ -71,12 +71,11 @@ _Add watermarks, signatures, and overlays_
 
 _Protect your PDFs and manage metadata_
 
-| Tool                   | Description                                                                             |
-| ---------------------- | --------------------------------------------------------------------------------------- |
-| 📋 **Edit Metadata**   | View and edit document properties like title, author, subject, keywords, and dates      |
-| 🔐 **PDF Password**    | Add password protection to a PDF or remove encryption from a password-protected PDF     |
-| 🛡️ **PDF Permissions** | Encrypt a PDF and restrict printing, copying, editing, and annotation rights            |
-| 🔎 **PDF Inspector**   | View version, page count, dimensions, metadata, and encryption status without modifying |
+| Tool                 | Description                                                                             |
+| -------------------- | --------------------------------------------------------------------------------------- |
+| 📋 **Edit Metadata** | View and edit document properties like title, author, subject, keywords, and dates      |
+| 🔐 **PDF Password**  | Add or remove a password and control print, copy, and edit rights                       |
+| 🔎 **PDF Inspector** | View version, page count, dimensions, metadata, and encryption status without modifying |
 
 ## 🔒 Privacy First
 

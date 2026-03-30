@@ -124,6 +124,5 @@ export type ToolId =
   | "add-bookmarks"
   | "pdf-inspector"
   | "repair-pdf"
-  | "pdf-permissions"
   | "nup-pages"
   | "remove-blank-pages";

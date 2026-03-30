@@ -40,7 +40,6 @@ const StampPdf = lazy(() => import("./tools/StampPdf.tsx"));
 const AddBookmarks = lazy(() => import("./tools/AddBookmarks.tsx"));
 const PdfInspector = lazy(() => import("./tools/PdfInspector.tsx"));
 const RepairPdf = lazy(() => import("./tools/RepairPdf.tsx"));
-const PdfPermissions = lazy(() => import("./tools/PdfPermissions.tsx"));
 const NupPages = lazy(() => import("./tools/NupPages.tsx"));
 const RemoveBlankPages = lazy(() => import("./tools/RemoveBlankPages.tsx"));
 
@@ -119,7 +118,7 @@ const tools: Tool[] = [
   {
     id: "pdf-password",
     title: "PDF Password",
-    description: "Add or remove a password from a PDF",
+    description: "Add or remove a password and control print, copy, and edit rights",
     icon: "🔒",
     category: "security",
   },
@@ -228,13 +227,7 @@ const tools: Tool[] = [
     icon: "🔎",
     category: "security",
   },
-  {
-    id: "pdf-permissions",
-    title: "PDF Permissions",
-    description: "Encrypt a PDF and control print, copy, and edit rights",
-    icon: "🛡️",
-    category: "security",
-  },
+
   {
     id: "nup-pages",
     title: "N-up Pages",
@@ -307,7 +300,6 @@ const toolComponents: Record<string, React.LazyExoticComponent<React.ComponentTy
   "add-bookmarks": AddBookmarks,
   "pdf-inspector": PdfInspector,
   "repair-pdf": RepairPdf,
-  "pdf-permissions": PdfPermissions,
   "nup-pages": NupPages,
   "remove-blank-pages": RemoveBlankPages,
 };

@@ -3,7 +3,8 @@
  *
  * Uploads a PDF, auto-detects whether it is encrypted, then shows the
  * appropriate form:
- *   - Unencrypted PDF → Add Password (protects with AES-256)
+ *   - Unencrypted PDF → Add Password (protects with AES-256) with optional
+ *     permission restrictions (print, copy, modify, annotate, fill forms).
  *   - Encrypted PDF   → Remove Password (decrypts using the supplied password)
  *
  * All processing happens entirely in the browser — no files are uploaded.
@@ -15,6 +16,55 @@ import { isPdfEncrypted, protectPdf, unlockPdf } from "../utils/pdf-security.ts"
 import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
 
 type PdfState = "idle" | "detecting" | "unencrypted" | "encrypted";
+
+// PDF permission bit masks (§7.6.3.2 Table 22)
+const PERM_PRINT = 0x004;
+const PERM_MODIFY = 0x008;
+const PERM_COPY = 0x010;
+const PERM_ANNOTATE = 0x020;
+const PERM_FILL_FORMS = 0x100;
+const PERM_PRINT_HQ = 0x800;
+
+interface Permissions {
+  print: boolean;
+  printHighQuality: boolean;
+  modify: boolean;
+  copy: boolean;
+  annotate: boolean;
+  fillForms: boolean;
+}
+
+function buildPermissionsMask(p: Permissions): number {
+  let mask = -4; // ALL_PERMS = 0xFFFFFFFC
+  if (!p.print) mask &= ~PERM_PRINT;
+  if (!p.printHighQuality) mask &= ~PERM_PRINT_HQ;
+  if (!p.modify) mask &= ~PERM_MODIFY;
+  if (!p.copy) mask &= ~PERM_COPY;
+  if (!p.annotate) mask &= ~PERM_ANNOTATE;
+  if (!p.fillForms) mask &= ~PERM_FILL_FORMS;
+  return mask;
+}
+
+const PERMISSION_ROWS: { key: keyof Permissions; label: string; description: string }[] = [
+  { key: "print", label: "Print", description: "Allow printing the document" },
+  {
+    key: "printHighQuality",
+    label: "Print (high quality)",
+    description: "Allow high-resolution printing",
+  },
+  { key: "copy", label: "Copy text & images", description: "Allow selecting and copying content" },
+  { key: "modify", label: "Modify content", description: "Allow editing document content" },
+  {
+    key: "annotate",
+    label: "Add / edit annotations",
+    description: "Allow adding comments and annotations",
+  },
+  {
+    key: "fillForms",
+    label: "Fill form fields",
+    description: "Allow filling interactive form fields",
+  },
+];
 
 // Eye icon (open)
 function IconEyeOpen() {
@@ -133,6 +183,17 @@ export default function PdfPassword() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [showCurrentPw, setShowCurrentPw] = useState(false);
 
+  // Permissions state (only used when adding a password)
+  const [showPerms, setShowPerms] = useState(false);
+  const [permissions, setPermissions] = useState<Permissions>({
+    print: true,
+    printHighQuality: true,
+    modify: false,
+    copy: false,
+    annotate: false,
+    fillForms: true,
+  });
+
   // Shared operation state
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -164,6 +225,11 @@ export default function PdfPassword() {
     setNewPassword("");
     setConfirmPassword("");
     setCurrentPassword("");
+    setShowPerms(false);
+  }, []);
+
+  const togglePermission = useCallback((key: keyof Permissions) => {
+    setPermissions((prev) => ({ ...prev, [key]: !prev[key] }));
   }, []);
 
   const handleAddPassword = useCallback(async () => {
@@ -181,7 +247,8 @@ export default function PdfPassword() {
     setError(null);
     setSuccess(false);
     try {
-      const bytes = await protectPdf(file, newPassword);
+      const permMask = showPerms ? buildPermissionsMask(permissions) : undefined;
+      const bytes = await protectPdf(file, newPassword, undefined, permMask);
       const baseName = file.name.replace(/\.pdf$/i, "");
       downloadPdf(bytes, `${baseName}_protected.pdf`);
       setSuccess(true);
@@ -190,7 +257,7 @@ export default function PdfPassword() {
     } finally {
       setProcessing(false);
     }
-  }, [file, newPassword, confirmPassword]);
+  }, [file, newPassword, confirmPassword, showPerms, permissions]);
 
   const handleRemovePassword = useCallback(async () => {
     if (!file) return;
@@ -282,6 +349,82 @@ export default function PdfPassword() {
             onToggleShow={() => setShowConfirmPw((v) => !v)}
           />
         </div>
+      )}
+
+      {/* Collapsible permissions section (only for Add Password) */}
+      {pdfState === "unencrypted" && (
+        <>
+          <button
+            type="button"
+            onClick={() => setShowPerms((v) => !v)}
+            className="flex items-center gap-2 text-sm font-medium text-slate-600 dark:text-dark-text-muted hover:text-slate-800 dark:hover:text-dark-text transition-colors"
+          >
+            <svg
+              className={`w-4 h-4 transition-transform ${showPerms ? "rotate-90" : ""}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+            Restrict permissions
+          </button>
+
+          {showPerms && (
+            <>
+              <div className="bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border divide-y divide-slate-100 dark:divide-dark-border">
+                <div className="px-4 py-2.5 bg-slate-50 dark:bg-dark-surface-alt rounded-t-xl">
+                  <p className="text-xs font-semibold text-slate-500 dark:text-dark-text-muted uppercase tracking-wide">
+                    Allowed Operations
+                  </p>
+                </div>
+                {PERMISSION_ROWS.map(({ key, label, description }) => (
+                  <label
+                    key={key}
+                    className="flex items-center justify-between gap-3 px-4 py-3 cursor-pointer hover:bg-slate-50 dark:hover:bg-dark-surface-alt transition-colors"
+                  >
+                    <div>
+                      <p className="text-sm font-medium text-slate-700 dark:text-dark-text">
+                        {label}
+                      </p>
+                      <p className="text-xs text-slate-400 dark:text-dark-text-muted">
+                        {description}
+                      </p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={permissions[key]}
+                      onChange={() => togglePermission(key)}
+                      className="accent-primary-600 w-4 h-4 rounded shrink-0"
+                    />
+                  </label>
+                ))}
+              </div>
+
+              <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-900/20">
+                <svg
+                  className="mt-0.5 h-4 w-4 shrink-0 text-amber-500 dark:text-amber-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
+                  />
+                </svg>
+                <p className="text-xs text-amber-700 dark:text-amber-300">
+                  Permission restrictions are enforced by Adobe Acrobat/Reader. Other viewers such
+                  as macOS Preview and Chrome may ignore them and allow all operations regardless.
+                </p>
+              </div>
+            </>
+          )}
+        </>
       )}
 
       {/* Panel: Remove Password (encrypted PDF) */}
