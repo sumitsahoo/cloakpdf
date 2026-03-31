@@ -2,7 +2,7 @@
  * Root application component.
  *
  * Manages the active tool state and renders either the home screen
- * (a grid of ToolCards) or the selected tool’s component. All tool
+ * (a grid of ToolCards) or the selected tool's component. All tool
  * components are lazy-loaded via `React.lazy` and wrapped in
  * `Suspense` with a spinning loader fallback.
  */
@@ -41,8 +41,11 @@ const PdfInspector = lazy(() => import("./tools/PdfInspector.tsx"));
 const RepairPdf = lazy(() => import("./tools/RepairPdf.tsx"));
 const NupPages = lazy(() => import("./tools/NupPages.tsx"));
 const RemoveBlankPages = lazy(() => import("./tools/RemoveBlankPages.tsx"));
+const BatesNumbering = lazy(() => import("./tools/BatesNumbering.tsx"));
+const ContactSheet = lazy(() => import("./tools/ContactSheet.tsx"));
 
 // ---- Tool metadata displayed on the home screen grid ----
+// Tools within each category are ordered by importance / frequency of use.
 const tools: Tool[] = [
   // ── Organise & Edit ──────────────────────────────────────
   {
@@ -60,13 +63,6 @@ const tools: Tool[] = [
     category: "organise",
   },
   {
-    id: "delete",
-    title: "Delete Pages",
-    description: "Remove unwanted pages from a PDF",
-    icon: "🗑️",
-    category: "organise",
-  },
-  {
     id: "reorder",
     title: "Reorder Pages",
     description: "Drag and drop to rearrange page order",
@@ -74,17 +70,17 @@ const tools: Tool[] = [
     category: "organise",
   },
   {
+    id: "delete",
+    title: "Delete Pages",
+    description: "Remove unwanted pages from a PDF",
+    icon: "🗑️",
+    category: "organise",
+  },
+  {
     id: "rotate",
     title: "Rotate Pages",
     description: "Rotate individual pages in any direction",
     icon: "🔄",
-    category: "organise",
-  },
-  {
-    id: "reverse-pages",
-    title: "Reverse Pages",
-    description: "Flip the page order of a PDF in one click",
-    icon: "🔃",
     category: "organise",
   },
   {
@@ -99,6 +95,13 @@ const tools: Tool[] = [
     title: "Duplicate Page",
     description: "Copy a page and insert it at any position",
     icon: "📋",
+    category: "organise",
+  },
+  {
+    id: "reverse-pages",
+    title: "Reverse Pages",
+    description: "Flip the page order of a PDF in one click",
+    icon: "🔃",
     category: "organise",
   },
   {
@@ -167,6 +170,13 @@ const tools: Tool[] = [
     category: "transform",
   },
   {
+    id: "contact-sheet",
+    title: "Contact Sheet",
+    description: "Render all pages as a thumbnail grid for quick visual review",
+    icon: "📇",
+    category: "transform",
+  },
+  {
     id: "repair-pdf",
     title: "Repair PDF",
     description: "Fix structural issues in corrupted or malformed PDFs",
@@ -201,6 +211,13 @@ const tools: Tool[] = [
     title: "Add Page Numbers",
     description: "Insert page numbers with custom position and format",
     icon: "🔢",
+    category: "annotate",
+  },
+  {
+    id: "bates-numbering",
+    title: "Bates Numbering",
+    description: "Stamp sequential identifiers for legal and compliance workflows",
+    icon: "⚖️",
     category: "annotate",
   },
   {
@@ -300,6 +317,8 @@ const toolComponents: Record<string, React.LazyExoticComponent<React.ComponentTy
   "repair-pdf": RepairPdf,
   "nup-pages": NupPages,
   "remove-blank-pages": RemoveBlankPages,
+  "bates-numbering": BatesNumbering,
+  "contact-sheet": ContactSheet,
 };
 
 /** Full-screen centred spinner shown while a tool component is loading. */

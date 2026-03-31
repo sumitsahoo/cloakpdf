@@ -1,0 +1,347 @@
+/**
+ * Contact Sheet tool.
+ *
+ * Renders all pages of a PDF as thumbnails arranged in a grid on a single
+ * image (PNG) or a single-page PDF. Useful for quickly reviewing a long
+ * document's structure at a glance — like a photographic contact sheet.
+ */
+
+import { useState, useCallback } from "react";
+import { FileDropZone } from "../components/FileDropZone.tsx";
+import { downloadBlob, formatFileSize } from "../utils/file-helpers.ts";
+
+type GridLayout = "2x2" | "3x3" | "4x4" | "5x5";
+type OutputFormat = "png" | "pdf";
+
+const GRID_OPTIONS: { value: GridLayout; label: string; pages: number }[] = [
+  { value: "2x2", label: "2 × 2", pages: 4 },
+  { value: "3x3", label: "3 × 3", pages: 9 },
+  { value: "4x4", label: "4 × 4", pages: 16 },
+  { value: "5x5", label: "5 × 5", pages: 25 },
+];
+
+export default function ContactSheet() {
+  const [file, setFile] = useState<File | null>(null);
+  const [pageCount, setPageCount] = useState(0);
+  const [grid, setGrid] = useState<GridLayout>("3x3");
+  const [output, setOutput] = useState<OutputFormat>("png");
+  const [showLabels, setShowLabels] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [processing, setProcessing] = useState(false);
+  const [progress, setProgress] = useState<{ current: number; total: number } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleFile = useCallback(async (files: File[]) => {
+    const pdf = files[0];
+    if (!pdf) return;
+    setFile(pdf);
+    setError(null);
+    setLoading(true);
+    try {
+      const { getPageCount } = await import("../utils/pdf-renderer.ts");
+      const count = await getPageCount(pdf);
+      setPageCount(count);
+    } catch (e) {
+      setError(
+        e instanceof Error
+          ? e.message
+          : "Failed to load PDF. The file may be corrupted or password-protected.",
+      );
+      setFile(null);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const handleGenerate = useCallback(async () => {
+    if (!file) return;
+    setProcessing(true);
+    setProgress({ current: 0, total: pageCount });
+    setError(null);
+
+    try {
+      const cols = Number(grid[0]);
+      const rows = cols;
+      const perSheet = cols * rows;
+      const totalSheets = Math.ceil(pageCount / perSheet);
+
+      // Render all pages via PDF.js
+      const workerModule = await import("pdfjs-dist/build/pdf.worker.min.mjs?worker&url");
+      const pdfjsLib = await import("pdfjs-dist");
+      pdfjsLib.GlobalWorkerOptions.workerSrc = workerModule.default;
+
+      const arrayBuffer = await file.arrayBuffer();
+      const pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+      // Decide thumbnail render scale based on grid density
+      const thumbScale = cols <= 2 ? 1.5 : cols <= 3 ? 1.0 : cols <= 4 ? 0.8 : 0.6;
+
+      // Sheet dimensions: A4-ish at 150 DPI
+      const sheetW = 2480;
+      const sheetH = 3508;
+      const pad = 40;
+      const labelH = showLabels ? 28 : 0;
+      const cellW = Math.floor((sheetW - pad * (cols + 1)) / cols);
+      const cellH = Math.floor((sheetH - pad * (rows + 1)) / rows);
+
+      const sheets: Blob[] = [];
+
+      for (let sheet = 0; sheet < totalSheets; sheet++) {
+        const canvas = document.createElement("canvas");
+        canvas.width = sheetW;
+        canvas.height = sheetH;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) throw new Error("Failed to create canvas context");
+
+        // White background
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, sheetW, sheetH);
+
+        for (let slot = 0; slot < perSheet; slot++) {
+          const pageIdx = sheet * perSheet + slot;
+          if (pageIdx >= pageCount) break;
+
+          const page = await pdfDoc.getPage(pageIdx + 1);
+          const viewport = page.getViewport({ scale: thumbScale });
+
+          // Render page to offscreen canvas
+          const thumbCanvas = document.createElement("canvas");
+          thumbCanvas.width = viewport.width;
+          thumbCanvas.height = viewport.height;
+          const thumbCtx = thumbCanvas.getContext("2d");
+          if (!thumbCtx) continue;
+
+          await page.render({ canvasContext: thumbCtx, viewport, canvas: thumbCanvas }).promise;
+
+          // Calculate cell position
+          const col = slot % cols;
+          const row = Math.floor(slot / cols);
+          const cellX = pad + col * (cellW + pad);
+          const cellY = pad + row * (cellH + pad);
+
+          // Scale thumbnail to fit cell while maintaining aspect ratio
+          const drawAreaH = cellH - labelH;
+          const scale = Math.min(cellW / viewport.width, drawAreaH / viewport.height);
+          const drawW = viewport.width * scale;
+          const drawH = viewport.height * scale;
+          const drawX = cellX + (cellW - drawW) / 2;
+          const drawY = cellY + (drawAreaH - drawH) / 2;
+
+          // Light border around the thumbnail
+          ctx.strokeStyle = "#e2e8f0";
+          ctx.lineWidth = 2;
+          ctx.strokeRect(drawX - 1, drawY - 1, drawW + 2, drawH + 2);
+
+          // Draw the thumbnail
+          ctx.drawImage(thumbCanvas, drawX, drawY, drawW, drawH);
+
+          // Page label
+          if (showLabels) {
+            ctx.fillStyle = "#64748b";
+            ctx.font = "bold 20px sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText(`Page ${pageIdx + 1}`, cellX + cellW / 2, cellY + cellH - 6);
+          }
+
+          // Release thumbnail canvas memory
+          thumbCanvas.width = 0;
+          thumbCanvas.height = 0;
+
+          setProgress({ current: pageIdx + 1, total: pageCount });
+        }
+
+        // Convert sheet canvas to blob
+        const blob = await new Promise<Blob>((resolve, reject) => {
+          canvas.toBlob((b) => {
+            if (b) resolve(b);
+            else reject(new Error("Failed to render contact sheet"));
+          }, "image/png");
+        });
+        sheets.push(blob);
+
+        canvas.width = 0;
+        canvas.height = 0;
+      }
+
+      void pdfDoc.destroy();
+
+      const baseName = file.name.replace(/\.pdf$/i, "");
+
+      if (output === "pdf") {
+        // Build a PDF containing each sheet as a page
+        const { PDFDocument } = await import("pdf-lib");
+        const pdfOut = await PDFDocument.create();
+
+        for (const sheetBlob of sheets) {
+          const bytes = new Uint8Array(await sheetBlob.arrayBuffer());
+          const img = await pdfOut.embedPng(bytes);
+          const page = pdfOut.addPage([img.width, img.height]);
+          page.drawImage(img, { x: 0, y: 0, width: img.width, height: img.height });
+        }
+
+        const pdfBytes = await pdfOut.save();
+        const pdfBlob = new Blob([pdfBytes as BlobPart], { type: "application/pdf" });
+        downloadBlob(pdfBlob, `${baseName}_contact_sheet.pdf`);
+      } else {
+        // PNG: single image or ZIP
+        if (sheets.length === 1) {
+          downloadBlob(sheets[0], `${baseName}_contact_sheet.png`);
+        } else {
+          const JSZip = (await import("jszip")).default;
+          const zip = new JSZip();
+          for (let i = 0; i < sheets.length; i++) {
+            const padded = String(i + 1).padStart(2, "0");
+            zip.file(`${baseName}_contact_sheet_${padded}.png`, sheets[i]);
+          }
+          const zipBlob = await zip.generateAsync({ type: "blob" });
+          downloadBlob(zipBlob, `${baseName}_contact_sheets.zip`);
+        }
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to generate contact sheet.");
+    } finally {
+      setProcessing(false);
+      setProgress(null);
+    }
+  }, [file, pageCount, grid, output, showLabels]);
+
+  const cols = Number(grid[0]);
+  const sheetsNeeded = pageCount > 0 ? Math.ceil(pageCount / (cols * cols)) : 0;
+
+  return (
+    <div className="space-y-6">
+      {!file ? (
+        <FileDropZone
+          accept=".pdf,application/pdf"
+          onFiles={handleFile}
+          label="Drop a PDF file here"
+          hint="All pages will be arranged into a visual thumbnail grid"
+        />
+      ) : (
+        <>
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-slate-600 dark:text-dark-text-muted">
+              <span className="font-medium">{file.name}</span>
+              {loading ? " — loading…" : ` — ${pageCount} pages`}
+              {!loading && pageCount > 0 && (
+                <span className="text-primary-600 ml-2">({formatFileSize(file.size)})</span>
+              )}
+            </p>
+            <button
+              onClick={() => {
+                setFile(null);
+                setPageCount(0);
+              }}
+              className="text-sm text-primary-600 hover:text-primary-700"
+            >
+              Change file
+            </button>
+          </div>
+
+          <div className="bg-slate-50 dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border p-4 space-y-4">
+            {/* Grid size */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-dark-text mb-1.5">
+                Grid Layout
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {GRID_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    onClick={() => setGrid(opt.value)}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                      grid === opt.value
+                        ? "bg-primary-600 text-white border-primary-600"
+                        : "border-slate-300 dark:border-dark-border text-slate-600 dark:text-dark-text-muted hover:border-primary-400"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+              {pageCount > 0 && (
+                <p className="text-xs text-slate-400 dark:text-dark-text-muted mt-1.5">
+                  {cols * cols} pages per sheet · {sheetsNeeded}{" "}
+                  {sheetsNeeded === 1 ? "sheet" : "sheets"} total
+                </p>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              {/* Output format */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-dark-text mb-1.5">
+                  Output Format
+                </label>
+                <div className="flex gap-2">
+                  {(["png", "pdf"] as const).map((f) => (
+                    <button
+                      key={f}
+                      onClick={() => setOutput(f)}
+                      className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                        output === f
+                          ? "bg-primary-600 text-white border-primary-600"
+                          : "border-slate-300 dark:border-dark-border text-slate-600 dark:text-dark-text-muted hover:border-primary-400"
+                      }`}
+                    >
+                      {f.toUpperCase()}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Page labels toggle */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-dark-text mb-1.5">
+                  Page Labels
+                </label>
+                <button
+                  onClick={() => setShowLabels(!showLabels)}
+                  className={`w-full py-2 rounded-lg text-sm font-medium border transition-colors ${
+                    showLabels
+                      ? "bg-primary-600 text-white border-primary-600"
+                      : "border-slate-300 dark:border-dark-border text-slate-600 dark:text-dark-text-muted hover:border-primary-400"
+                  }`}
+                >
+                  {showLabels ? "Showing labels" : "Hidden"}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Progress */}
+          {processing && progress && (
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm text-slate-600 dark:text-dark-text-muted">
+                <span>Rendering pages…</span>
+                <span>
+                  {progress.current} / {progress.total}
+                </span>
+              </div>
+              <div className="w-full bg-slate-200 dark:bg-dark-border rounded-full h-2">
+                <div
+                  className="bg-primary-600 h-2 rounded-full transition-all"
+                  style={{ width: `${(progress.current / progress.total) * 100}%` }}
+                />
+              </div>
+            </div>
+          )}
+
+          <button
+            onClick={handleGenerate}
+            disabled={processing || loading || pageCount === 0}
+            className="w-full bg-primary-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {processing ? "Generating…" : `Generate Contact Sheet${sheetsNeeded > 1 ? "s" : ""}`}
+          </button>
+        </>
+      )}
+
+      {error && (
+        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-4">
+          <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
+        </div>
+      )}
+    </div>
+  );
+}
