@@ -48,6 +48,7 @@ import type {
   PageNumberOptions,
   HeaderFooterOptions,
   CropMargins,
+  BatesNumberOptions,
 } from "../types.ts";
 /**
  * Merge multiple PDF files into a single document.
@@ -1647,4 +1648,58 @@ export async function nupPages(
   }
 
   return result.save();
+}
+
+/**
+ * Add Bates numbering to every page of a PDF.
+ *
+ * Stamps a sequential identifier (prefix + zero-padded number + suffix) at a
+ * configurable position on each page. Commonly used in legal and compliance
+ * workflows to uniquely identify every page in a disclosure set.
+ *
+ * @param file - The PDF file to number.
+ * @param options - Bates numbering configuration.
+ * @returns New PDF bytes with Bates numbers applied.
+ */
+export async function addBatesNumbers(
+  file: File,
+  options: BatesNumberOptions,
+): Promise<Uint8Array> {
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await PDFDocument.load(arrayBuffer);
+  const font = await pdf.embedFont(StandardFonts.Courier);
+
+  const pages = pdf.getPages();
+  const totalPages = pages.length;
+
+  for (let i = 0; i < totalPages; i++) {
+    const num = options.startNumber + i;
+    const padded = String(num).padStart(options.digits, "0");
+    const text = `${options.prefix}${padded}${options.suffix}`;
+
+    const page = pages[i];
+    const { width, height } = page.getSize();
+    const textWidth = font.widthOfTextAtSize(text, options.fontSize);
+    const { margin } = options;
+
+    const isLeft = options.position === "top-left" || options.position === "bottom-left";
+    const isRight = options.position === "top-right" || options.position === "bottom-right";
+    const isTop =
+      options.position === "top-left" ||
+      options.position === "top-center" ||
+      options.position === "top-right";
+
+    const x = isLeft ? margin : isRight ? width - textWidth - margin : (width - textWidth) / 2;
+    const y = isTop ? height - margin - options.fontSize : margin;
+
+    page.drawText(text, {
+      x,
+      y,
+      size: options.fontSize,
+      font,
+      color: rgb(options.color.r / 255, options.color.g / 255, options.color.b / 255),
+    });
+  }
+
+  return pdf.save();
 }
