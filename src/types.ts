@@ -96,6 +96,27 @@ export interface CropMargins {
   left: number;
 }
 
+/** Position of Bates numbers on the page. */
+export type BatesPosition =
+  | "top-left"
+  | "top-center"
+  | "top-right"
+  | "bottom-left"
+  | "bottom-center"
+  | "bottom-right";
+
+/** Configuration options for the Bates Numbering tool. */
+export interface BatesNumberOptions {
+  prefix: string;
+  suffix: string;
+  startNumber: number;
+  digits: number;
+  position: BatesPosition;
+  fontSize: number;
+  color: { r: number; g: number; b: number };
+  margin: number;
+}
+
 /** Union of all valid tool identifiers. */
 export type ToolId =
   | "merge"
@@ -125,4 +146,6 @@ export type ToolId =
   | "pdf-inspector"
   | "repair-pdf"
   | "nup-pages"
-  | "remove-blank-pages";
+  | "remove-blank-pages"
+  | "bates-numbering"
+  | "contact-sheet";
