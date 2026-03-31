@@ -1,18 +1,41 @@
 /**
- * Root application component.
+ * Root application module.
  *
- * Manages the active tool state and renders either the home screen
- * (a grid of ToolCards) or the selected tool's component. All tool
- * components are lazy-loaded via `React.lazy` and wrapped in
- * `Suspense` with a spinning loader fallback.
+ * Exports the `App` component which manages which tool (if any) is
+ * active and delegates rendering to either `HomeScreen` (categorised
+ * tool grid with live search) or `ToolView` (the selected tool).
+ *
+ * All tool components are lazy-loaded via `React.lazy` so that only
+ * the code for the active tool is fetched from the server.
+ *
+ * Key architectural decisions for performance:
+ *
+ *  - **Component extraction** – `HomeScreen` and `ToolView` are
+ *    defined at module level (not nested inside `App`), so React
+ *    never recreates them and their identity stays stable across
+ *    renders.
+ *
+ *  - **Isolated search state** – The search query lives exclusively
+ *    inside `HomeScreen`, meaning typing never re-renders the `App`
+ *    root or the `Layout` shell.  When the user navigates to a tool,
+ *    `HomeScreen` unmounts and its state is discarded; returning to
+ *    the home screen starts with a fresh (empty) search.
+ *
+ *  - **Stable callbacks** – `handleSelectTool` is wrapped in
+ *    `useCallback` so that every `ToolCard` (which is `React.memo`'d)
+ *    receives the same function reference and can bail out of
+ *    re-renders.
+ *
+ *  - **Memoised metadata lookup** – `activeMeta` uses `useMemo` to
+ *    avoid a redundant `Array.find` on every unrelated render.
  */
 
-import { useState, useCallback, lazy, Suspense } from "react";
+import { useState, useCallback, useMemo, useRef, useEffect, lazy, Suspense } from "react";
 import { Layout } from "./components/Layout.tsx";
 import { ToolCard } from "./components/ToolCard.tsx";
 import type { Tool, ToolId } from "./types.ts";
 
-// ---- Lazy-loaded tool components (code-split per tool) ----
+// ── Lazy-loaded tool components (code-split per tool) ────────────
 
 const MergePdf = lazy(() => import("./tools/MergePdf.tsx"));
 const CompressPdf = lazy(() => import("./tools/CompressPdf.tsx"));
@@ -44,8 +67,9 @@ const RemoveBlankPages = lazy(() => import("./tools/RemoveBlankPages.tsx"));
 const BatesNumbering = lazy(() => import("./tools/BatesNumbering.tsx"));
 const ContactSheet = lazy(() => import("./tools/ContactSheet.tsx"));
 
-// ---- Tool metadata displayed on the home screen grid ----
+// ── Tool metadata displayed on the home screen grid ──────────────
 // Tools within each category are ordered by importance / frequency of use.
+
 const tools: Tool[] = [
   // ── Organise & Edit ──────────────────────────────────────
   {
@@ -259,7 +283,8 @@ const tools: Tool[] = [
   },
 ];
 
-// ---- Category definitions for the home screen ----
+// ── Category definitions for the home screen ─────────────────────
+
 const categories = [
   {
     key: "organise",
@@ -287,7 +312,8 @@ const categories = [
   },
 ];
 
-// ---- Map tool IDs to their lazily-loaded components ----
+// ── Map tool IDs → lazy-loaded components ────────────────────────
+
 const toolComponents: Record<string, React.LazyExoticComponent<React.ComponentType>> = {
   merge: MergePdf,
   compress: CompressPdf,
@@ -295,7 +321,6 @@ const toolComponents: Record<string, React.LazyExoticComponent<React.ComponentTy
   delete: DeletePages,
   reorder: ReorderPages,
   "images-to-pdf": ImagesToPdf,
-  watermark: StampPdf,
   signature: AddSignature,
   metadata: EditMetadata,
   ocr: OcrPdf,
@@ -321,7 +346,17 @@ const toolComponents: Record<string, React.LazyExoticComponent<React.ComponentTy
   "contact-sheet": ContactSheet,
 };
 
-/** Full-screen centred spinner shown while a tool component is loading. */
+// ── Platform detection (module-level, computed once) ──────────────
+
+/** `true` when the client runs on an Apple platform (used for ⌘ vs Ctrl hints). */
+const isMac = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.userAgent);
+
+// ═══════════════════════════════════════════════════════════════════
+//  Sub-components (defined at module level per rerender-no-inline-
+//  components best practice)
+// ═══════════════════════════════════════════════════════════════════
+
+/** Full-screen centred spinner shown while a tool chunk is loading. */
 function LoadingSpinner() {
   return (
     <div className="flex items-center justify-center py-20">
@@ -330,78 +365,239 @@ function LoadingSpinner() {
   );
 }
 
+// ── ToolView ─────────────────────────────────────────────────────
+
+interface ToolViewProps {
+  /** Metadata for the currently active tool. */
+  tool: Tool;
+  /** The lazy-loaded component to render. */
+  Component: React.LazyExoticComponent<React.ComponentType>;
+}
+
+/**
+ * Renders the active tool's header (title + description) and its
+ * lazily-loaded component wrapped in a `Suspense` boundary.
+ */
+function ToolView({ tool, Component }: ToolViewProps) {
+  return (
+    <div>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-slate-800 dark:text-dark-text">{tool.title}</h1>
+        <p className="text-slate-500 dark:text-dark-text-muted mt-1">{tool.description}</p>
+      </div>
+      <Suspense fallback={<LoadingSpinner />}>
+        <Component />
+      </Suspense>
+    </div>
+  );
+}
+
+// ── HomeScreen ───────────────────────────────────────────────────
+
+interface HomeScreenProps {
+  /** Stable callback invoked with a tool ID when the user picks a tool. */
+  onSelectTool: (id: ToolId) => void;
+}
+
+/**
+ * Landing page showing the hero headline, a live-search bar with
+ * ⌘K / Ctrl+K shortcut, and a categorised grid of tool cards.
+ *
+ * Search state is local to this component so that typing never
+ * re-renders the parent `App` or the `Layout` shell. When the user
+ * navigates to a tool this component unmounts, naturally discarding
+ * the query; returning to the home screen starts with a fresh search.
+ */
+function HomeScreen({ onSelectTool }: HomeScreenProps) {
+  const [searchQuery, setSearchQuery] = useState("");
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // ⌘K / Ctrl+K → focus search; Escape → clear search
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+      if (e.key === "Escape" && searchQuery) {
+        setSearchQuery("");
+        searchInputRef.current?.blur();
+      }
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [searchQuery]);
+
+  /** Tools whose title or description matches the query (case-insensitive). */
+  const filteredTools = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return tools;
+    return tools.filter(
+      (t) => t.title.toLowerCase().includes(q) || t.description.toLowerCase().includes(q),
+    );
+  }, [searchQuery]);
+
+  return (
+    <div>
+      {/* ── Hero ────────────────────────────────────────── */}
+      <div className="text-center mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-slate-800 dark:text-dark-text mb-1.5">
+          All-in-One PDF Tools That Respect Your Privacy
+        </h1>
+        <p className="text-base text-slate-500 dark:text-dark-text-muted max-w-2xl mx-auto">
+          Edit, merge, sign, secure, and convert PDFs entirely in your browser. Your files never
+          leave your device.
+        </p>
+      </div>
+
+      {/* ── Search Bar ──────────────────────────────────── */}
+      <div className="max-w-xl mx-auto mb-10">
+        <div className="relative group">
+          {/* Search icon */}
+          <svg
+            className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 dark:text-dark-text-muted group-focus-within:text-primary-500 transition-colors duration-200"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            />
+          </svg>
+
+          <input
+            ref={searchInputRef}
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search tools…"
+            className="w-full pl-12 pr-24 py-3.5 rounded-2xl bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border text-slate-800 dark:text-dark-text placeholder-slate-400 dark:placeholder-dark-text-muted shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-400/50 focus:border-primary-300 dark:focus:border-primary-600 transition-all duration-200 text-base"
+            aria-label="Search PDF tools"
+          />
+
+          {/* Right side: clear button or keyboard shortcut hint */}
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+            {searchQuery ? (
+              <button
+                onClick={() => {
+                  setSearchQuery("");
+                  searchInputRef.current?.focus();
+                }}
+                className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-dark-surface-alt text-slate-400 dark:text-dark-text-muted hover:text-slate-600 dark:hover:text-dark-text transition-colors"
+                aria-label="Clear search"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            ) : (
+              <kbd className="hidden sm:inline-flex items-center gap-0.5 px-2 py-1 rounded-lg bg-slate-100 dark:bg-dark-surface-alt border border-slate-200 dark:border-dark-border text-xs text-slate-400 dark:text-dark-text-muted font-mono select-none">
+                {isMac ? "⌘" : "Ctrl"}K
+              </kbd>
+            )}
+          </div>
+        </div>
+
+        {/* Result count while filtering */}
+        {searchQuery && (
+          <p className="text-center text-sm text-slate-400 dark:text-dark-text-muted mt-2 animate-fade-in-up">
+            {filteredTools.length} {filteredTools.length === 1 ? "tool" : "tools"} found
+          </p>
+        )}
+      </div>
+
+      {/* ── Tool Grid / Empty State ─────────────────────── */}
+      {filteredTools.length === 0 ? (
+        <div className="text-center py-16 animate-fade-in-up">
+          <div className="text-5xl mb-4">🔍</div>
+          <h3 className="text-lg font-semibold text-slate-600 dark:text-dark-text mb-2">
+            No tools found
+          </h3>
+          <p className="text-sm text-slate-400 dark:text-dark-text-muted max-w-md mx-auto">
+            Try a different search term like &ldquo;merge&rdquo;, &ldquo;sign&rdquo;, or
+            &ldquo;compress&rdquo;
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-10">
+          {categories.map((cat, catIdx) => {
+            const catTools = filteredTools.filter((t) => t.category === cat.key);
+            if (catTools.length === 0) return null;
+            return (
+              <section
+                key={cat.key}
+                className="animate-fade-in-up"
+                style={{ animationDelay: `${catIdx * 80}ms` }}
+              >
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="text-2xl" aria-hidden="true">
+                    {cat.icon}
+                  </span>
+                  <div>
+                    <h2 className="text-lg font-semibold text-slate-800 dark:text-dark-text">
+                      {cat.label}
+                    </h2>
+                    <p className="text-sm text-slate-400 dark:text-dark-text-muted">
+                      {cat.description}
+                    </p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {catTools.map((tool) => (
+                    <ToolCard key={tool.id} tool={tool} onSelect={onSelectTool} />
+                  ))}
+                </div>
+              </section>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  Root component
+// ═══════════════════════════════════════════════════════════════════
+
+/**
+ * Root application component.
+ *
+ * Manages which tool (if any) is active and delegates rendering to
+ * either `HomeScreen` or `ToolView`. Keeps its own state minimal so
+ * that child-local state (e.g. search) doesn't bubble up unnecessarily.
+ */
 export function App() {
   const [activeTool, setActiveTool] = useState<ToolId | null>(null);
 
+  /** Navigate back to the home screen (clears the active tool). */
   const goHome = useCallback(() => setActiveTool(null), []);
 
-  const activeMeta = activeTool ? tools.find((t) => t.id === activeTool) : null;
+  /** Stable callback shared by every `ToolCard` via `React.memo`. */
+  const handleSelectTool = useCallback((id: ToolId) => setActiveTool(id), []);
+
+  /** Metadata for the active tool (memoised to avoid redundant lookups). */
+  const activeMeta = useMemo(
+    () => (activeTool ? (tools.find((t) => t.id === activeTool) ?? null) : null),
+    [activeTool],
+  );
+
   const ToolComponent = activeTool ? toolComponents[activeTool] : null;
 
   return (
     <Layout onHome={goHome} showBack={!!activeTool}>
-      {activeTool && ToolComponent ? (
-        <div>
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold text-slate-800 dark:text-dark-text">
-              {activeMeta?.title}
-            </h1>
-            <p className="text-slate-500 dark:text-dark-text-muted mt-1">
-              {activeMeta?.description}
-            </p>
-          </div>
-          <Suspense fallback={<LoadingSpinner />}>
-            <ToolComponent />
-          </Suspense>
-        </div>
+      {activeTool && ToolComponent && activeMeta ? (
+        <ToolView tool={activeMeta} Component={ToolComponent} />
       ) : (
-        <div>
-          <div className="text-center mb-8">
-            <h1 className="text-2xl sm:text-3xl font-bold text-slate-800 dark:text-dark-text mb-1.5">
-              All-in-One PDF Tools That Respect Your Privacy
-            </h1>
-            <p className="text-base text-slate-500 dark:text-dark-text-muted max-w-2xl mx-auto">
-              Edit, merge, sign, secure, and convert PDFs entirely in your browser. Your files never
-              leave your device.
-            </p>
-          </div>
-          <div className="space-y-10">
-            {categories.map((cat, catIdx) => {
-              const catTools = tools.filter((t) => t.category === cat.key);
-              if (catTools.length === 0) return null;
-              return (
-                <section
-                  key={cat.key}
-                  className="animate-fade-in-up"
-                  style={{ animationDelay: `${catIdx * 80}ms` }}
-                >
-                  <div className="flex items-center gap-3 mb-4">
-                    <span className="text-2xl" aria-hidden="true">
-                      {cat.icon}
-                    </span>
-                    <div>
-                      <h2 className="text-lg font-semibold text-slate-800 dark:text-dark-text">
-                        {cat.label}
-                      </h2>
-                      <p className="text-sm text-slate-400 dark:text-dark-text-muted">
-                        {cat.description}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {catTools.map((tool) => (
-                      <ToolCard
-                        key={tool.id}
-                        tool={tool}
-                        onClick={() => setActiveTool(tool.id as ToolId)}
-                      />
-                    ))}
-                  </div>
-                </section>
-              );
-            })}
-          </div>
-        </div>
+        <HomeScreen onSelectTool={handleSelectTool} />
       )}
     </Layout>
   );
