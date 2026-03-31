@@ -6,9 +6,10 @@
  * document's structure at a glance — like a photographic contact sheet.
  */
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { downloadBlob, formatFileSize } from "../utils/file-helpers.ts";
+import { renderAllThumbnails } from "../utils/pdf-renderer.ts";
 
 type GridLayout = "2x2" | "3x3" | "4x4" | "5x5";
 type OutputFormat = "png" | "pdf";
@@ -22,6 +23,7 @@ const GRID_OPTIONS: { value: GridLayout; label: string; pages: number }[] = [
 
 export default function ContactSheet() {
   const [file, setFile] = useState<File | null>(null);
+  const [thumbnails, setThumbnails] = useState<string[]>([]);
   const [pageCount, setPageCount] = useState(0);
   const [grid, setGrid] = useState<GridLayout>("3x3");
   const [output, setOutput] = useState<OutputFormat>("png");
@@ -30,6 +32,8 @@ export default function ContactSheet() {
   const [processing, setProcessing] = useState(false);
   const [progress, setProgress] = useState<{ current: number; total: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const previewRef = useRef<HTMLDivElement>(null);
+  const [previewWidth, setPreviewWidth] = useState(0);
 
   const handleFile = useCallback(async (files: File[]) => {
     const pdf = files[0];
@@ -38,9 +42,9 @@ export default function ContactSheet() {
     setError(null);
     setLoading(true);
     try {
-      const { getPageCount } = await import("../utils/pdf-renderer.ts");
-      const count = await getPageCount(pdf);
-      setPageCount(count);
+      const thumbs = await renderAllThumbnails(pdf, 0.5);
+      setThumbnails(thumbs);
+      setPageCount(thumbs.length);
     } catch (e) {
       setError(
         e instanceof Error
@@ -53,6 +57,34 @@ export default function ContactSheet() {
     }
   }, []);
 
+  // Track preview container width for responsive sizing
+  useEffect(() => {
+    if (!previewRef.current) return;
+    const el = previewRef.current;
+    const update = () => {
+      const rect = el.getBoundingClientRect();
+      if (rect.width) setPreviewWidth(rect.width);
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [thumbnails]);
+
+  const cols = Number(grid[0]);
+  const perSheet = cols * cols;
+  const sheetsNeeded = pageCount > 0 ? Math.ceil(pageCount / perSheet) : 0;
+
+  // Thumbnails for the first sheet preview (cap at perSheet)
+  const previewThumbs = useMemo(() => thumbnails.slice(0, perSheet), [thumbnails, perSheet]);
+
+  // Calculate cell dimensions for the preview grid
+  const previewPad = Math.max(4, Math.round(previewWidth * 0.015));
+  const cellSize =
+    previewWidth > 0 ? Math.floor((previewWidth - previewPad * (cols + 1)) / cols) : 0;
+  const labelFontSize = Math.max(8, Math.round(cellSize * 0.09));
+  const labelHeight = showLabels ? labelFontSize + 6 : 0;
+
   const handleGenerate = useCallback(async () => {
     if (!file) return;
     setProcessing(true);
@@ -60,9 +92,6 @@ export default function ContactSheet() {
     setError(null);
 
     try {
-      const cols = Number(grid[0]);
-      const rows = cols;
-      const perSheet = cols * rows;
       const totalSheets = Math.ceil(pageCount / perSheet);
 
       // Render all pages via PDF.js
@@ -80,9 +109,9 @@ export default function ContactSheet() {
       const sheetW = 2480;
       const sheetH = 3508;
       const pad = 40;
-      const labelH = showLabels ? 28 : 0;
-      const cellW = Math.floor((sheetW - pad * (cols + 1)) / cols);
-      const cellH = Math.floor((sheetH - pad * (rows + 1)) / rows);
+      const genLabelH = showLabels ? 28 : 0;
+      const genCellW = Math.floor((sheetW - pad * (cols + 1)) / cols);
+      const genCellH = Math.floor((sheetH - pad * (cols + 1)) / cols);
 
       const sheets: Blob[] = [];
 
@@ -111,20 +140,24 @@ export default function ContactSheet() {
           const thumbCtx = thumbCanvas.getContext("2d");
           if (!thumbCtx) continue;
 
-          await page.render({ canvasContext: thumbCtx, viewport, canvas: thumbCanvas }).promise;
+          await page.render({
+            canvasContext: thumbCtx,
+            viewport,
+            canvas: thumbCanvas,
+          }).promise;
 
           // Calculate cell position
           const col = slot % cols;
           const row = Math.floor(slot / cols);
-          const cellX = pad + col * (cellW + pad);
-          const cellY = pad + row * (cellH + pad);
+          const cellX = pad + col * (genCellW + pad);
+          const cellY = pad + row * (genCellH + pad);
 
           // Scale thumbnail to fit cell while maintaining aspect ratio
-          const drawAreaH = cellH - labelH;
-          const scale = Math.min(cellW / viewport.width, drawAreaH / viewport.height);
+          const drawAreaH = genCellH - genLabelH;
+          const scale = Math.min(genCellW / viewport.width, drawAreaH / viewport.height);
           const drawW = viewport.width * scale;
           const drawH = viewport.height * scale;
-          const drawX = cellX + (cellW - drawW) / 2;
+          const drawX = cellX + (genCellW - drawW) / 2;
           const drawY = cellY + (drawAreaH - drawH) / 2;
 
           // Light border around the thumbnail
@@ -140,7 +173,7 @@ export default function ContactSheet() {
             ctx.fillStyle = "#64748b";
             ctx.font = "bold 20px sans-serif";
             ctx.textAlign = "center";
-            ctx.fillText(`Page ${pageIdx + 1}`, cellX + cellW / 2, cellY + cellH - 6);
+            ctx.fillText(`Page ${pageIdx + 1}`, cellX + genCellW / 2, cellY + genCellH - 6);
           }
 
           // Release thumbnail canvas memory
@@ -203,10 +236,7 @@ export default function ContactSheet() {
       setProcessing(false);
       setProgress(null);
     }
-  }, [file, pageCount, grid, output, showLabels]);
-
-  const cols = Number(grid[0]);
-  const sheetsNeeded = pageCount > 0 ? Math.ceil(pageCount / (cols * cols)) : 0;
+  }, [file, pageCount, grid, output, showLabels, cols, perSheet]);
 
   return (
     <div className="space-y-6">
@@ -230,6 +260,7 @@ export default function ContactSheet() {
             <button
               onClick={() => {
                 setFile(null);
+                setThumbnails([]);
                 setPageCount(0);
               }}
               className="text-sm text-primary-600 hover:text-primary-700"
@@ -238,36 +269,37 @@ export default function ContactSheet() {
             </button>
           </div>
 
-          <div className="bg-slate-50 dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border p-4 space-y-4">
-            {/* Grid size */}
-            <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-dark-text mb-1.5">
-                Grid Layout
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {GRID_OPTIONS.map((opt) => (
-                  <button
-                    key={opt.value}
-                    onClick={() => setGrid(opt.value)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
-                      grid === opt.value
-                        ? "bg-primary-600 text-white border-primary-600"
-                        : "border-slate-300 dark:border-dark-border text-slate-600 dark:text-dark-text-muted hover:border-primary-400"
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
+          <div className="grid md:grid-cols-2 gap-6 items-start">
+            {/* Left column: controls */}
+            <div className="space-y-5">
+              {/* Grid size */}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-dark-text mb-1.5">
+                  Grid Layout
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {GRID_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      onClick={() => setGrid(opt.value)}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                        grid === opt.value
+                          ? "bg-primary-600 text-white border-primary-600"
+                          : "border-slate-300 dark:border-dark-border text-slate-600 dark:text-dark-text-muted hover:border-primary-400"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+                {pageCount > 0 && (
+                  <p className="text-xs text-slate-400 dark:text-dark-text-muted mt-1.5">
+                    {perSheet} pages per sheet · {sheetsNeeded}{" "}
+                    {sheetsNeeded === 1 ? "sheet" : "sheets"} total
+                  </p>
+                )}
               </div>
-              {pageCount > 0 && (
-                <p className="text-xs text-slate-400 dark:text-dark-text-muted mt-1.5">
-                  {cols * cols} pages per sheet · {sheetsNeeded}{" "}
-                  {sheetsNeeded === 1 ? "sheet" : "sheets"} total
-                </p>
-              )}
-            </div>
 
-            <div className="grid grid-cols-2 gap-4">
               {/* Output format */}
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-dark-text mb-1.5">
@@ -307,92 +339,90 @@ export default function ContactSheet() {
                 </button>
               </div>
             </div>
-          </div>
 
-          {/* Layout Preview */}
-          {pageCount > 0 && !processing && (
-            <div>
-              <p className="text-sm font-medium text-slate-700 dark:text-dark-text mb-2">
-                Layout Preview
-                <span className="text-xs font-normal text-slate-400 dark:text-dark-text-muted ml-2">
-                  Sheet 1 of {sheetsNeeded}
-                </span>
+            {/* Right column: live preview */}
+            <div className="sticky top-4">
+              <p className="text-sm font-medium text-slate-700 dark:text-dark-text mb-1.5">
+                Preview — Sheet 1{sheetsNeeded > 1 ? ` of ${sheetsNeeded}` : ""}
               </p>
-              <div className="flex justify-center">
+              {loading ? (
+                <div className="aspect-[7/10] bg-slate-100 dark:bg-dark-surface-alt rounded-lg flex items-center justify-center">
+                  <div className="w-8 h-8 border-3 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
+                </div>
+              ) : (
                 <div
-                  className="bg-white dark:bg-dark-surface-alt border border-slate-200 dark:border-dark-border rounded-lg shadow-sm overflow-hidden"
-                  style={{ width: 240, height: 340 }}
+                  ref={previewRef}
+                  className="relative bg-white dark:bg-dark-surface rounded-lg border border-slate-200 dark:border-dark-border overflow-hidden shadow-sm"
+                  style={{ aspectRatio: "7 / 10" }}
                 >
-                  <div
-                    className="w-full h-full p-2"
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: `repeat(${cols}, 1fr)`,
-                      gridTemplateRows: `repeat(${cols}, 1fr)`,
-                      gap: "4px",
-                    }}
-                  >
-                    {Array.from({ length: cols * cols }).map((_, idx) => {
-                      const isOccupied = idx < pageCount;
-                      return (
-                        <div
-                          key={idx}
-                          className={`rounded flex flex-col items-center justify-center transition-colors ${
-                            isOccupied
-                              ? "bg-primary-50 dark:bg-primary-900/30 border border-primary-200 dark:border-primary-800"
-                              : "border border-dashed border-slate-200 dark:border-dark-border"
-                          }`}
-                        >
-                          {isOccupied ? (
-                            <>
-                              <svg
-                                className="text-primary-400 dark:text-primary-500"
-                                style={{
-                                  width: cols <= 3 ? 20 : cols <= 4 ? 14 : 10,
-                                  height: cols <= 3 ? 20 : cols <= 4 ? 14 : 10,
-                                }}
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth={1.5}
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"
-                                />
-                              </svg>
-                              {showLabels && cols <= 4 && (
-                                <span
-                                  className="text-primary-500 dark:text-primary-400 font-medium leading-none mt-0.5"
-                                  style={{ fontSize: cols <= 3 ? 9 : 7 }}
+                  {/* Grid of actual page thumbnails */}
+                  <div className="absolute inset-0" style={{ padding: `${previewPad}px` }}>
+                    <div
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: `repeat(${cols}, 1fr)`,
+                        gridTemplateRows: `repeat(${cols}, 1fr)`,
+                        gap: `${previewPad}px`,
+                        width: "100%",
+                        height: "100%",
+                      }}
+                    >
+                      {Array.from({ length: perSheet }).map((_, idx) => {
+                        const thumb = previewThumbs[idx];
+                        const isOccupied = !!thumb;
+                        return (
+                          <div
+                            key={idx}
+                            className="flex flex-col items-center justify-center overflow-hidden"
+                            style={{ minHeight: 0 }}
+                          >
+                            {isOccupied ? (
+                              <>
+                                <div
+                                  className="relative flex-1 w-full flex items-center justify-center overflow-hidden"
+                                  style={{ minHeight: 0 }}
                                 >
-                                  {idx + 1}
-                                </span>
-                              )}
-                            </>
-                          ) : (
-                            <span
-                              className="text-slate-300 dark:text-dark-border"
-                              style={{ fontSize: cols <= 3 ? 10 : 7 }}
-                            >
-                              —
-                            </span>
-                          )}
-                        </div>
-                      );
-                    })}
+                                  <img
+                                    src={thumb}
+                                    alt={`Page ${idx + 1}`}
+                                    className="max-w-full max-h-full object-contain rounded-[2px]"
+                                    style={{
+                                      border: "1px solid #e2e8f0",
+                                      display: "block",
+                                    }}
+                                    draggable={false}
+                                  />
+                                </div>
+                                {showLabels && (
+                                  <span
+                                    className="text-slate-500 dark:text-dark-text-muted font-medium shrink-0 mt-0.5"
+                                    style={{
+                                      fontSize: `${labelFontSize}px`,
+                                      lineHeight: `${labelHeight}px`,
+                                    }}
+                                  >
+                                    {idx + 1}
+                                  </span>
+                                )}
+                              </>
+                            ) : (
+                              <div className="w-full h-full rounded border border-dashed border-slate-200 dark:border-dark-border" />
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
-              </div>
-              {sheetsNeeded > 1 && (
-                <p className="text-xs text-center text-slate-400 dark:text-dark-text-muted mt-2">
-                  {pageCount - cols * cols} more {pageCount - cols * cols === 1 ? "page" : "pages"}{" "}
-                  on {sheetsNeeded - 1} additional {sheetsNeeded - 1 === 1 ? "sheet" : "sheets"}
+              )}
+              {sheetsNeeded > 1 && !loading && (
+                <p className="text-xs text-slate-400 dark:text-dark-text-muted mt-2 text-center">
+                  {pageCount - perSheet} more {pageCount - perSheet === 1 ? "page" : "pages"} on{" "}
+                  {sheetsNeeded - 1} additional {sheetsNeeded - 1 === 1 ? "sheet" : "sheets"}
                 </p>
               )}
             </div>
-          )}
+          </div>
 
           {/* Progress */}
           {processing && progress && (
