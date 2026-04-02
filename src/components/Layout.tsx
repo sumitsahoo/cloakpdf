@@ -55,58 +55,7 @@ export function Layout({ children, onHome, showBack }: LayoutProps) {
             className="flex items-center gap-2.5 hover:opacity-80 transition-opacity"
           >
             <div className="w-12 h-12 flex items-center justify-center">
-              <svg className="w-12 h-12 drop-shadow-md" viewBox="0 0 48 48" fill="none">
-                <defs>
-                  <linearGradient
-                    id="shld"
-                    x1="0"
-                    y1="0"
-                    x2="48"
-                    y2="48"
-                    gradientUnits="userSpaceOnUse"
-                  >
-                    <stop offset="0%" stopColor="#60A5FA" />
-                    <stop offset="100%" stopColor="#1D4ED8" />
-                  </linearGradient>
-                </defs>
-                <path d="M24 2 L44 12 L44 28 Q44 42 24 47 Q4 42 4 28 L4 12 Z" fill="url(#shld)" />
-                <text
-                  x="24"
-                  y="18"
-                  fontFamily="ui-monospace,monospace"
-                  fontWeight="700"
-                  fontSize="8"
-                  fill="white"
-                  opacity="0.9"
-                  textAnchor="middle"
-                >
-                  1 0 1
-                </text>
-                <text
-                  x="24"
-                  y="28"
-                  fontFamily="ui-monospace,monospace"
-                  fontWeight="700"
-                  fontSize="8"
-                  fill="white"
-                  opacity="0.7"
-                  textAnchor="middle"
-                >
-                  0 1 0
-                </text>
-                <text
-                  x="24"
-                  y="38"
-                  fontFamily="ui-monospace,monospace"
-                  fontWeight="700"
-                  fontSize="8"
-                  fill="white"
-                  opacity="0.5"
-                  textAnchor="middle"
-                >
-                  1 0 1
-                </text>
-              </svg>
+              <img src="/icons/logo.svg" alt="BytePDF logo" className="w-12 h-12 drop-shadow-md" />
             </div>
             <span className="text-lg font-semibold text-slate-800 dark:text-dark-text">
               BytePDF
