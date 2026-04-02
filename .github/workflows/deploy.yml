@@ -33,7 +33,10 @@ jobs:
       - name: Build
         run: vp run build
         env:
-          VITE_APP_BASE_PATH: /bytepdf/
+          # Base path is "/" because a custom domain (bytepdf.app) is active.
+          # GitHub Pages automatically redirects sumitsahoo.github.io/bytepdf/ → bytepdf.app.
+          # If you ever remove the custom domain, revert this to /bytepdf/
+          VITE_APP_BASE_PATH: /
 
       # - name: Test
       #   run: vp run test
