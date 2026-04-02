@@ -114,19 +114,19 @@ export default function NupPages() {
           ) : (
             <>
               {/* Layout selector */}
-              <div className="bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border p-4">
-                <p className="text-sm font-medium text-slate-700 dark:text-dark-text mb-3">
-                  Choose layout
+              <div className="bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border shadow-sm p-4">
+                <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-dark-text-muted mb-3">
+                  Layout
                 </p>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {LAYOUTS.map((l) => (
                     <button
                       key={l.value}
                       onClick={() => setLayout(l.value)}
-                      className={`border rounded-lg p-3 text-center transition-colors ${
+                      className={`border-2 rounded-xl p-3 text-center transition-all duration-150 ${
                         layout === l.value
-                          ? "border-primary-500 bg-primary-50 dark:bg-primary-900/20"
-                          : "border-slate-200 dark:border-dark-border hover:border-slate-300 dark:hover:border-slate-500"
+                          ? "border-primary-500 bg-primary-50 dark:bg-primary-900/30 ring-1 ring-primary-300 dark:ring-primary-700"
+                          : "border-slate-200 dark:border-dark-border bg-white dark:bg-dark-surface hover:border-slate-300 dark:hover:border-slate-500 hover:bg-slate-50 dark:hover:bg-dark-surface-alt"
                       }`}
                     >
                       {/* Visual grid preview */}
@@ -142,10 +142,14 @@ export default function NupPages() {
                           <div key={i} className="bg-slate-300 dark:bg-slate-500 rounded-sm" />
                         ))}
                       </div>
-                      <p className="text-xs font-medium text-slate-700 dark:text-dark-text">
+                      <p
+                        className={`text-xs font-semibold ${layout === l.value ? "text-primary-700 dark:text-primary-300" : "text-slate-700 dark:text-dark-text"}`}
+                      >
                         {l.label}
                       </p>
-                      <p className="text-xs text-slate-400 dark:text-dark-text-muted">{l.desc}</p>
+                      <p className="text-xs text-slate-400 dark:text-dark-text-muted leading-snug">
+                        {l.desc}
+                      </p>
                     </button>
                   ))}
                 </div>

@@ -419,28 +419,38 @@ export default function AddSignature() {
               )}
 
               {/* ---- Signature Size ---- */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-dark-text mb-1.5">
+              <div className="bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border shadow-sm p-4 space-y-3">
+                <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-dark-text-muted">
                   Signature Size
-                </label>
+                </p>
                 <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs text-slate-500 dark:text-dark-text-muted">
-                      Width: {sigSize.width}px
-                    </label>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-slate-600 dark:text-dark-text-muted">
+                        Width
+                      </span>
+                      <span className="inline-flex items-center rounded-full bg-primary-100 dark:bg-primary-900/40 px-2 py-0.5 text-xs font-semibold text-primary-700 dark:text-primary-300 tabular-nums">
+                        {sigSize.width}px
+                      </span>
+                    </div>
                     <input
                       type="range"
                       min={50}
                       max={400}
                       value={sigSize.width}
                       onChange={(e) => setSigSize((s) => ({ ...s, width: Number(e.target.value) }))}
-                      className="w-full accent-primary-600"
+                      className="w-full accent-primary-600 cursor-pointer"
                     />
                   </div>
-                  <div>
-                    <label className="text-xs text-slate-500 dark:text-dark-text-muted">
-                      Height: {sigSize.height}px
-                    </label>
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-slate-600 dark:text-dark-text-muted">
+                        Height
+                      </span>
+                      <span className="inline-flex items-center rounded-full bg-primary-100 dark:bg-primary-900/40 px-2 py-0.5 text-xs font-semibold text-primary-700 dark:text-primary-300 tabular-nums">
+                        {sigSize.height}px
+                      </span>
+                    </div>
                     <input
                       type="range"
                       min={20}
@@ -449,7 +459,7 @@ export default function AddSignature() {
                       onChange={(e) =>
                         setSigSize((s) => ({ ...s, height: Number(e.target.value) }))
                       }
-                      className="w-full accent-primary-600"
+                      className="w-full accent-primary-600 cursor-pointer"
                     />
                   </div>
                 </div>
