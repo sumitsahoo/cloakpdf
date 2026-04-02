@@ -155,16 +155,14 @@ export default function ReorderPages() {
               setDragOverSlot(null);
             }}
             className={`shrink-0 pt-2 pr-2 flex flex-col items-center gap-1.5 cursor-grab active:cursor-grabbing select-none transition-all duration-200 ${
-              isSource
-                ? "ring-3 ring-primary-400 dark:ring-primary-500 rounded-xl scale-95 opacity-60 shadow-lg shadow-primary-200 dark:shadow-primary-900/40"
-                : "ring-0 scale-100 opacity-100"
+              isSource ? "scale-95 opacity-30" : "scale-100 opacity-100"
             }`}
           >
             <div className="relative">
               <div
                 className={`w-20 sm:w-24 md:w-28 aspect-[3/4] bg-white dark:bg-dark-surface rounded-lg overflow-hidden border-2 transition-colors shadow-sm ${
                   isSource
-                    ? "border-primary-400 dark:border-primary-500"
+                    ? "border-dashed border-slate-300 dark:border-dark-border"
                     : "border-slate-200 dark:border-dark-border hover:border-primary-300 dark:hover:border-primary-600"
                 }`}
               >
@@ -175,7 +173,11 @@ export default function ReorderPages() {
                   draggable={false}
                 />
               </div>
-              <div className="absolute -top-1.5 -right-1.5 bg-primary-600 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center shadow-md z-10">
+              <div
+                className={`absolute -top-1.5 -right-1.5 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center shadow-md z-10 transition-opacity duration-200 ${
+                  isSource ? "bg-slate-400 dark:bg-slate-600 opacity-50" : "bg-primary-600"
+                }`}
+              >
                 {originalIndex + 1}
               </div>
             </div>
@@ -238,18 +240,15 @@ export default function ReorderPages() {
                       className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 dark:text-dark-text-muted dark:hover:text-dark-text transition-colors"
                     >
                       <svg
-                        className="w-3.5 h-3.5"
-                        viewBox="0 0 16 16"
+                        className="w-4 h-4"
+                        viewBox="0 0 24 24"
                         fill="none"
                         stroke="currentColor"
-                        strokeWidth="1.5"
+                        strokeWidth={2}
                         strokeLinecap="round"
                         strokeLinejoin="round"
                       >
-                        <path d="M2 8a6 6 0 0 1 10.2-4.3" />
-                        <path d="M14 8a6 6 0 0 1-10.2 4.3" />
-                        <polyline points="2 2 2 5.5 5.5 5.5" />
-                        <polyline points="14 14 14 10.5 10.5 10.5" />
+                        <path d="M3 10h10a5 5 0 0 1 5 5v2M3 10l4-4m-4 4l4 4" />
                       </svg>
                       Reset order
                     </button>
