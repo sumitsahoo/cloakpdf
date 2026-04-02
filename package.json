@@ -10,9 +10,6 @@
     "prepare": "vp config"
   },
   "dependencies": {
-    "@dnd-kit/core": "^6.3.1",
-    "@dnd-kit/sortable": "^10.0.0",
-    "@dnd-kit/utilities": "^3.2.2",
     "@pdf-lib/fontkit": "^1.1.1",
     "jszip": "^3.10.1",
     "pdf-lib": "^1.17.1",
@@ -26,10 +23,10 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",
-    "@voidzero-dev/vite-plus-core": "^0.1.14",
+    "@voidzero-dev/vite-plus-core": "^0.1.15",
     "tailwindcss": "^4.2.2",
     "typescript": "^6.0.2",
-    "vite": "npm:@voidzero-dev/vite-plus-core@^0.1.14",
+    "vite": "npm:@voidzero-dev/vite-plus-core@^0.1.15",
     "vite-plugin-pwa": "^1.2.0",
     "vite-plus": "latest"
   },
