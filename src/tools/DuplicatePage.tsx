@@ -280,7 +280,7 @@ export default function DuplicatePage() {
           accept=".pdf,application/pdf"
           onFiles={handleFile}
           label="Drop a PDF file here"
-          hint="Click a page to duplicate it right after — drag copies to rearrange"
+          hint="Click a page to duplicate it right after and drag copies to rearrange"
         />
       ) : (
         <>
