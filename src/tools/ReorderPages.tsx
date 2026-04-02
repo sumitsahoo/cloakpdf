@@ -14,6 +14,7 @@ import { reorderPages } from "../utils/pdf-operations.ts";
 import { renderAllThumbnails } from "../utils/pdf-renderer.ts";
 import { downloadPdf } from "../utils/file-helpers.ts";
 import { useSortableDrag } from "../hooks/useSortableDrag.ts";
+import { Undo2 } from "lucide-react";
 
 export default function ReorderPages() {
   const [file, setFile] = useState<File | null>(null);
@@ -252,17 +253,7 @@ export default function ReorderPages() {
                       onClick={handleReset}
                       className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 dark:text-dark-text-muted dark:hover:text-dark-text transition-colors"
                     >
-                      <svg
-                        className="w-4 h-4"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth={2}
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M3 10h10a5 5 0 0 1 5 5v2M3 10l4-4m-4 4l4 4" />
-                      </svg>
+                      <Undo2 className="w-4 h-4" />
                       Reset order
                     </button>
                   )}

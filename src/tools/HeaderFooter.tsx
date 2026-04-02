@@ -8,6 +8,7 @@
  */
 
 import { useState, useCallback } from "react";
+import { PanelTop, PanelBottom } from "lucide-react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { ColorPicker, hexToRgb, rgbToHex } from "../components/ColorPicker.tsx";
 import { addHeaderFooter } from "../utils/pdf-operations.ts";
@@ -97,7 +98,8 @@ export default function HeaderFooter() {
           <div className="space-y-4">
             {/* Header row */}
             <div className="bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border shadow-sm p-4 space-y-2">
-              <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-dark-text-muted">
+              <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-dark-text-muted">
+                <PanelTop className="w-3.5 h-3.5" />
                 Header
               </p>
               <div className="grid grid-cols-3 gap-2">
@@ -127,7 +129,8 @@ export default function HeaderFooter() {
 
             {/* Footer row */}
             <div className="bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border shadow-sm p-4 space-y-2">
-              <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-dark-text-muted">
+              <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-dark-text-muted">
+                <PanelBottom className="w-3.5 h-3.5" />
                 Footer
               </p>
               <div className="grid grid-cols-3 gap-2">

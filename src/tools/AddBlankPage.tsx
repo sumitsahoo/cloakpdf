@@ -12,6 +12,7 @@ import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
 import { useSortableDrag } from "../hooks/useSortableDrag.ts";
 import { addBlankPages } from "../utils/pdf-operations.ts";
 import { renderAllThumbnails } from "../utils/pdf-renderer.ts";
+import { Undo2, Plus } from "lucide-react";
 
 type BlankItem = { type: "blank"; id: string };
 type OriginalItem = { type: "original"; index: number };
@@ -307,17 +308,7 @@ export default function AddBlankPage() {
                         onClick={handleReset}
                         className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 dark:text-dark-text-muted dark:hover:text-dark-text transition-colors"
                       >
-                        <svg
-                          className="w-4 h-4"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth={2}
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <path d="M3 10h10a5 5 0 0 1 5 5v2M3 10l4-4m-4 4l4 4" />
-                        </svg>
+                        <Undo2 className="w-4 h-4" />
                         Reset
                       </button>
                     )}
@@ -326,17 +317,7 @@ export default function AddBlankPage() {
                       onClick={handleAddBlank}
                       className="inline-flex items-center gap-1.5 text-sm text-primary-600 hover:text-primary-700 font-medium transition-colors"
                     >
-                      <svg
-                        className="w-4 h-4"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth={2}
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M12 5v14m-7-7h14" />
-                      </svg>
+                      <Plus className="w-4 h-4" />
                       Add blank page
                     </button>
                   </div>

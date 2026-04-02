@@ -7,6 +7,7 @@
  */
 
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
+import { Grid3X3, Image, Tag } from "lucide-react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { downloadBlob, formatFileSize } from "../utils/file-helpers.ts";
 import { renderAllThumbnails } from "../utils/pdf-renderer.ts";
@@ -274,7 +275,8 @@ export default function ContactSheet() {
             <div className="bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border shadow-sm p-4 space-y-5">
               {/* Grid size */}
               <div>
-                <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-dark-text-muted mb-2">
+                <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-dark-text-muted mb-2">
+                  <Grid3X3 className="w-3.5 h-3.5" />
                   Grid Layout
                 </p>
                 <div className="inline-flex w-full items-center gap-0.5 rounded-xl bg-slate-100 dark:bg-dark-bg p-1 border border-slate-200 dark:border-dark-border">
@@ -302,7 +304,8 @@ export default function ContactSheet() {
 
               {/* Output format */}
               <div>
-                <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-dark-text-muted mb-2">
+                <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-dark-text-muted mb-2">
+                  <Image className="w-3.5 h-3.5" />
                   Output Format
                 </p>
                 <div className="inline-flex w-full items-center gap-0.5 rounded-xl bg-slate-100 dark:bg-dark-bg p-1 border border-slate-200 dark:border-dark-border">
@@ -324,7 +327,8 @@ export default function ContactSheet() {
 
               {/* Page labels toggle */}
               <div>
-                <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-dark-text-muted mb-2">
+                <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-dark-text-muted mb-2">
+                  <Tag className="w-3.5 h-3.5" />
                   Page Labels
                 </p>
                 <div className="inline-flex w-full items-center gap-0.5 rounded-xl bg-slate-100 dark:bg-dark-bg p-1 border border-slate-200 dark:border-dark-border">

@@ -97,6 +97,7 @@ _Protect your PDFs and manage metadata_
 | 🖥️ PDF Rendering    | [PDF.js](https://mozilla.github.io/pdf.js/)                    |
 | 🔤 Font Support     | [@pdf-lib/fontkit](https://github.com/Hopding/fontkit)         |
 | 🖱️ Drag & Drop      | [dnd-kit](https://dndkit.com/)                                 |
+| 🎯 Icons            | [Lucide React](https://lucide.dev/)                            |
 | 🔍 OCR Engine       | [Tesseract.js](https://tesseract.projectnaptha.com/)           |
 | 🗜️ ZIP Export       | [JSZip](https://stuk.github.io/jszip/)                         |
 | 📦 Toolchain CLI    | [Vite+ (`vp`)](https://viteplus.dev/)                          |

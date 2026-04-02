@@ -7,6 +7,7 @@
  */
 
 import { useState, useCallback } from "react";
+import { Gauge } from "lucide-react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { compressPdf } from "../utils/pdf-operations.ts";
 import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
@@ -88,7 +89,8 @@ export default function CompressPdf() {
           {!result ? (
             <div className="space-y-4">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-dark-text-muted mb-2">
+                <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-dark-text-muted mb-2">
+                  <Gauge className="w-3.5 h-3.5" />
                   Compression Level
                 </p>
                 <div className="grid grid-cols-3 gap-3">

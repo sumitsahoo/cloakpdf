@@ -9,6 +9,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Check, Scissors } from "lucide-react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { PageThumbnail } from "../components/PageThumbnail.tsx";
 import { cropPages, uncropPages } from "../utils/pdf-operations.ts";
@@ -202,7 +203,8 @@ export default function CropPages() {
               <div className="space-y-4">
                 <div className="bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border shadow-sm p-4 space-y-3">
                   <div className="flex items-center justify-between">
-                    <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-dark-text-muted">
+                    <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-dark-text-muted">
+                      <Scissors className="w-3.5 h-3.5" />
                       Margins to hide (mm)
                     </p>
                     {/* Mode toggle */}
@@ -422,16 +424,7 @@ export default function CropPages() {
                             selectedPages.has(i) ? (
                               <div className="bg-primary-500/20 inset-0 absolute flex items-center justify-center">
                                 <div className="w-5 h-5 bg-primary-500 rounded-full flex items-center justify-center">
-                                  <svg
-                                    viewBox="0 0 12 12"
-                                    className="w-3 h-3 text-white"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth={2}
-                                    aria-hidden="true"
-                                  >
-                                    <path d="M2 6l3 3 5-5" />
-                                  </svg>
+                                  <Check className="w-3 h-3 text-white" strokeWidth={3} />
                                 </div>
                               </div>
                             ) : null

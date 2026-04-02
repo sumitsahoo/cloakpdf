@@ -8,6 +8,7 @@
  */
 
 import { useState, useRef, useCallback } from "react";
+import { CloudUpload } from "lucide-react";
 
 interface FileDropZoneProps {
   /** MIME type filter for the hidden file input (e.g. ".pdf,application/pdf"). */
@@ -75,19 +76,10 @@ export function FileDropZone({
         onChange={handleChange}
         className="hidden"
       />
-      <svg
+      <CloudUpload
         className={`w-10 h-10 mx-auto mb-3 transition-colors ${isDragOver ? "text-primary-500" : "text-slate-400 dark:text-dark-text-muted"}`}
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={1.5}
-          d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-        />
-      </svg>
+        strokeWidth={1.5}
+      />
       <p className="text-slate-600 dark:text-dark-text font-medium">{label}</p>
       {hint && <p className="text-sm text-slate-400 dark:text-dark-text-muted mt-1">{hint}</p>}
     </div>

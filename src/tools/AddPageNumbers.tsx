@@ -7,6 +7,7 @@
  */
 
 import { useState, useCallback } from "react";
+import { Move, Hash } from "lucide-react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { ColorPicker, hexToRgb, rgbToHex } from "../components/ColorPicker.tsx";
 import { addPageNumbers } from "../utils/pdf-operations.ts";
@@ -111,7 +112,8 @@ export default function AddPageNumbers() {
           <div className="space-y-5">
             {/* Position grid */}
             <div>
-              <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-dark-text-muted mb-2">
+              <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-dark-text-muted mb-2">
+                <Move className="w-3.5 h-3.5" />
                 Position
               </p>
               <div className="grid grid-cols-3 gap-2 max-w-[180px]">
@@ -134,7 +136,8 @@ export default function AddPageNumbers() {
 
             {/* Format */}
             <div>
-              <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-dark-text-muted mb-2">
+              <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-dark-text-muted mb-2">
+                <Hash className="w-3.5 h-3.5" />
                 Format
               </p>
               <div className="grid grid-cols-2 gap-2">

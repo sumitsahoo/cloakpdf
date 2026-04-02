@@ -17,6 +17,7 @@ import { ColorPicker, hexToRgb } from "../components/ColorPicker.tsx";
 import { addSignature } from "../utils/pdf-operations.ts";
 import { renderAllThumbnails } from "../utils/pdf-renderer.ts";
 import { downloadPdf } from "../utils/file-helpers.ts";
+import { PenLine, Upload, Move, Maximize2 } from "lucide-react";
 
 type SignatureMode = "draw" | "upload";
 
@@ -297,12 +298,13 @@ export default function AddSignature() {
                     setMode("draw");
                     setSignatureDataUrl("");
                   }}
-                  className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                  className={`flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
                     mode === "draw"
                       ? "bg-white dark:bg-dark-surface text-slate-900 dark:text-dark-text shadow-sm"
                       : "text-slate-500 dark:text-dark-text-muted hover:text-slate-700 dark:hover:text-dark-text"
                   }`}
                 >
+                  <PenLine className="w-3.5 h-3.5" />
                   Draw
                 </button>
                 <button
@@ -310,12 +312,13 @@ export default function AddSignature() {
                     setMode("upload");
                     setSignatureDataUrl(uploadedImageUrl);
                   }}
-                  className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                  className={`flex items-center gap-1.5 px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
                     mode === "upload"
                       ? "bg-white dark:bg-dark-surface text-slate-900 dark:text-dark-text shadow-sm"
                       : "text-slate-500 dark:text-dark-text-muted hover:text-slate-700 dark:hover:text-dark-text"
                   }`}
                 >
+                  <Upload className="w-3.5 h-3.5" />
                   Upload
                 </button>
               </div>
@@ -351,19 +354,7 @@ export default function AddSignature() {
                       onClick={() => uploadInputRef.current?.click()}
                       className="w-full flex flex-col items-center justify-center gap-2 py-8 border-2 border-dashed border-slate-300 dark:border-dark-border rounded-xl text-slate-500 dark:text-dark-text-muted hover:border-primary-400 hover:text-primary-600 transition-colors"
                     >
-                      <svg
-                        className="w-8 h-8"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth={1.5}
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"
-                        />
-                      </svg>
+                      <Upload className="w-8 h-8" strokeWidth={1.5} />
                       <span className="text-sm font-medium">Click to upload PNG or JPEG</span>
                       <span className="text-xs text-slate-400 dark:text-dark-text-muted">
                         Max 5 MB — transparent PNG recommended
@@ -420,7 +411,8 @@ export default function AddSignature() {
 
               {/* ---- Signature Size ---- */}
               <div className="bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border shadow-sm p-4 space-y-3">
-                <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-dark-text-muted">
+                <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-dark-text-muted flex items-center gap-1.5">
+                  <Maximize2 className="w-3.5 h-3.5" />
                   Signature Size
                 </p>
                 <div className="grid grid-cols-2 gap-3">
@@ -467,19 +459,7 @@ export default function AddSignature() {
 
               {signatureDataUrl && (
                 <div className="flex items-start gap-2 rounded-lg bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 px-3 py-2.5">
-                  <svg
-                    className="w-4 h-4 mt-0.5 text-primary-500 shrink-0"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M7 11.5V14m0 0v2.5m0-2.5h2.5M7 14H4.5m11-4L12 6.5m0 0L8.5 10M12 6.5V17"
-                    />
-                  </svg>
+                  <Move className="w-4 h-4 mt-0.5 text-primary-500 shrink-0" />
                   <p className="text-xs text-primary-700 dark:text-primary-300 leading-relaxed">
                     Drag the signature on the preview to reposition it
                   </p>
