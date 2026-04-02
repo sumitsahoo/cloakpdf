@@ -33,6 +33,7 @@
 import { useState, useCallback, useMemo, useRef, useEffect, lazy, Suspense } from "react";
 import { Layout } from "./components/Layout.tsx";
 import { ToolCard } from "./components/ToolCard.tsx";
+import { Search, X } from "lucide-react";
 import type { Tool, ToolId } from "./types.ts";
 
 // ── Lazy-loaded tool components (code-split per tool) ────────────
@@ -454,19 +455,7 @@ function HomeScreen({ onSelectTool }: HomeScreenProps) {
       <div className="max-w-xl mx-auto mb-10">
         <div className="relative group">
           {/* Search icon */}
-          <svg
-            className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 dark:text-dark-text-muted group-focus-within:text-primary-500 transition-colors duration-200"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-            />
-          </svg>
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 dark:text-dark-text-muted group-focus-within:text-primary-500 transition-colors duration-200" />
 
           <input
             ref={searchInputRef}
@@ -489,14 +478,7 @@ function HomeScreen({ onSelectTool }: HomeScreenProps) {
                 className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-dark-surface-alt text-slate-400 dark:text-dark-text-muted hover:text-slate-600 dark:hover:text-dark-text transition-colors"
                 aria-label="Clear search"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
+                <X className="w-4 h-4" />
               </button>
             ) : (
               <kbd className="hidden sm:inline-flex items-center gap-0.5 px-2 py-1 rounded-lg bg-slate-100 dark:bg-dark-surface-alt border border-slate-200 dark:border-dark-border text-xs text-slate-400 dark:text-dark-text-muted font-mono select-none">

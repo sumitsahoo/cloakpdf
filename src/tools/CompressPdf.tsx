@@ -7,6 +7,7 @@
  */
 
 import { useState, useCallback } from "react";
+import { Gauge } from "lucide-react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { compressPdf } from "../utils/pdf-operations.ts";
 import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
@@ -88,9 +89,10 @@ export default function CompressPdf() {
           {!result ? (
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-dark-text mb-2">
+                <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-dark-text-muted mb-2">
+                  <Gauge className="w-3.5 h-3.5" />
                   Compression Level
-                </label>
+                </p>
                 <div className="grid grid-cols-3 gap-3">
                   {[
                     {
@@ -112,10 +114,10 @@ export default function CompressPdf() {
                     <button
                       key={opt.value}
                       onClick={() => setQuality(opt.value)}
-                      className={`p-3 rounded-xl border-2 text-left transition-all ${
+                      className={`p-3 rounded-xl border-2 text-left transition-all duration-150 ${
                         quality === opt.value
-                          ? "border-primary-500 bg-primary-50 dark:bg-primary-900/40"
-                          : "border-slate-200 dark:border-dark-border hover:border-slate-300 dark:hover:border-slate-600"
+                          ? "border-primary-500 bg-primary-50 dark:bg-primary-900/30 ring-1 ring-primary-300 dark:ring-primary-700"
+                          : "border-slate-200 dark:border-dark-border bg-white dark:bg-dark-surface hover:border-slate-300 dark:hover:border-slate-500 hover:bg-slate-50 dark:hover:bg-dark-surface-alt"
                       }`}
                     >
                       <p
@@ -123,7 +125,7 @@ export default function CompressPdf() {
                       >
                         {opt.label}
                       </p>
-                      <p className="text-xs text-slate-500 dark:text-dark-text-muted mt-0.5">
+                      <p className="text-xs text-slate-500 dark:text-dark-text-muted mt-0.5 leading-snug">
                         {opt.desc}
                       </p>
                     </button>

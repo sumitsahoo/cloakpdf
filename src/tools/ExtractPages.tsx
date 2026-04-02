@@ -13,6 +13,7 @@ import { PageThumbnail } from "../components/PageThumbnail.tsx";
 import { extractPages } from "../utils/pdf-operations.ts";
 import { renderAllThumbnails } from "../utils/pdf-renderer.ts";
 import { downloadPdf } from "../utils/file-helpers.ts";
+import { Check } from "lucide-react";
 
 /** Parse a range string like "1-3, 5, 7-9" into sorted, unique 0-based page indices. */
 function parseRangeInput(input: string, pageCount: number): number[] {
@@ -194,19 +195,7 @@ export default function ExtractPages() {
                     selectedPages.has(i) ? (
                       <div className="bg-primary-600/20 inset-0 absolute flex items-center justify-center">
                         <div className="w-6 h-6 rounded-full bg-primary-600 flex items-center justify-center shadow">
-                          <svg
-                            className="w-3.5 h-3.5 text-white"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={3}
-                              d="M5 13l4 4L19 7"
-                            />
-                          </svg>
+                          <Check className="w-3.5 h-3.5 text-white" strokeWidth={3} />
                         </div>
                       </div>
                     ) : null

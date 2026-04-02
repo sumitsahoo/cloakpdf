@@ -10,6 +10,7 @@
 import { useState, useCallback } from "react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { PageThumbnail } from "../components/PageThumbnail.tsx";
+import { RotateCcw, RotateCw, FlipVertical2 } from "lucide-react";
 import { rotatePages } from "../utils/pdf-operations.ts";
 import { renderAllThumbnails } from "../utils/pdf-renderer.ts";
 import { downloadPdf } from "../utils/file-helpers.ts";
@@ -134,57 +135,21 @@ export default function RotatePages() {
                       className="p-1.5 rounded hover:bg-slate-100 dark:hover:bg-dark-surface-alt text-slate-500 dark:text-dark-text-muted transition-colors"
                       title="Rotate 90° left"
                     >
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M3 10h10a5 5 0 015 5v2M3 10l4-4m-4 4l4 4"
-                        />
-                      </svg>
+                      <RotateCcw className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => rotatePage(i, 90)}
                       className="p-1.5 rounded hover:bg-slate-100 dark:hover:bg-dark-surface-alt text-slate-500 dark:text-dark-text-muted transition-colors"
                       title="Rotate 90° right"
                     >
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M21 10H11a5 5 0 00-5 5v2m15-7l-4-4m4 4l-4 4"
-                        />
-                      </svg>
+                      <RotateCw className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => rotatePage(i, 180)}
                       className="p-1.5 rounded hover:bg-slate-100 dark:hover:bg-dark-surface-alt text-slate-500 dark:text-dark-text-muted transition-colors"
                       title="Rotate 180°"
                     >
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
-                        />
-                      </svg>
+                      <FlipVertical2 className="w-4 h-4" />
                     </button>
                   </div>
                 </div>

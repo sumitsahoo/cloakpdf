@@ -10,6 +10,7 @@ import { useState, useCallback, useEffect } from "react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { addPdfBookmarks } from "../utils/pdf-operations.ts";
 import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
+import { X, Plus } from "lucide-react";
 
 interface BookmarkEntry {
   id: number;
@@ -176,20 +177,7 @@ export default function AddBookmarks() {
                         className="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-red-500 disabled:opacity-30 transition-colors rounded"
                         aria-label="Remove bookmark"
                       >
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                          aria-hidden="true"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M6 18L18 6M6 6l12 12"
-                          />
-                        </svg>
+                        <X className="w-4 h-4" aria-hidden="true" />
                       </button>
                     </div>
                   ))}
@@ -201,20 +189,7 @@ export default function AddBookmarks() {
                 onClick={addRow}
                 className="flex items-center gap-2 text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 font-medium"
               >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  aria-hidden="true"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 4v16m8-8H4"
-                  />
-                </svg>
+                <Plus className="w-4 h-4" aria-hidden="true" />
                 Add bookmark
               </button>
 

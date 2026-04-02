@@ -11,6 +11,7 @@ import { useState, useCallback, useEffect } from "react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { imagesToPdf } from "../utils/pdf-operations.ts";
 import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
+import { ChevronUp, ChevronDown, X } from "lucide-react";
 
 /** Internal representation of a queued image with its preview URL. */
 interface ImageItem {
@@ -96,18 +97,18 @@ export default function ImagesToPdf() {
       {images.length > 0 && (
         <>
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-dark-text mb-2">
+            <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-dark-text-muted mb-2">
               Page Size
-            </label>
-            <div className="flex gap-2">
+            </p>
+            <div className="inline-flex w-full items-center gap-0.5 rounded-xl bg-slate-100 dark:bg-dark-bg p-1 border border-slate-200 dark:border-dark-border">
               {(["a4", "letter", "fit"] as const).map((size) => (
                 <button
                   key={size}
                   onClick={() => setPageSize(size)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  className={`flex-1 rounded-lg py-1.5 px-3 text-sm transition-all duration-150 ${
                     pageSize === size
-                      ? "bg-primary-600 text-white"
-                      : "bg-slate-100 dark:bg-dark-surface-alt text-slate-700 dark:text-dark-text hover:bg-slate-200 dark:hover:bg-dark-border"
+                      ? "font-semibold text-white bg-primary-600 shadow-sm"
+                      : "font-medium text-slate-500 dark:text-dark-text-muted hover:text-slate-700 dark:hover:text-dark-text hover:bg-white/60 dark:hover:bg-dark-surface-alt"
                   }`}
                 >
                   {size === "a4" ? "A4" : size === "letter" ? "Letter" : "Fit to Image"}
@@ -142,19 +143,7 @@ export default function ImagesToPdf() {
                     className="p-1.5 rounded hover:bg-slate-100 dark:hover:bg-dark-surface-alt disabled:opacity-30 transition-colors"
                     aria-label="Move up"
                   >
-                    <svg
-                      className="w-4 h-4 text-slate-500 dark:text-dark-text-muted"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M5 15l7-7 7 7"
-                      />
-                    </svg>
+                    <ChevronUp className="w-4 h-4 text-slate-500 dark:text-dark-text-muted" />
                   </button>
                   <button
                     onClick={() => moveImage(index, 1)}
@@ -162,38 +151,14 @@ export default function ImagesToPdf() {
                     className="p-1.5 rounded hover:bg-slate-100 dark:hover:bg-dark-surface-alt disabled:opacity-30 transition-colors"
                     aria-label="Move down"
                   >
-                    <svg
-                      className="w-4 h-4 text-slate-500 dark:text-dark-text-muted"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 9l-7 7-7-7"
-                      />
-                    </svg>
+                    <ChevronDown className="w-4 h-4 text-slate-500 dark:text-dark-text-muted" />
                   </button>
                   <button
                     onClick={() => removeImage(item.id)}
                     className="p-1.5 rounded hover:bg-red-50 transition-colors"
                     aria-label="Remove"
                   >
-                    <svg
-                      className="w-4 h-4 text-slate-400 dark:text-dark-text-muted hover:text-red-500"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M6 18L18 6M6 6l12 12"
-                      />
-                    </svg>
+                    <X className="w-4 h-4 text-slate-400 dark:text-dark-text-muted hover:text-red-500" />
                   </button>
                 </div>
               </div>

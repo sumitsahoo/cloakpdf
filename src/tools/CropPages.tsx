@@ -9,6 +9,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Check, Scissors } from "lucide-react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { PageThumbnail } from "../components/PageThumbnail.tsx";
 import { cropPages, uncropPages } from "../utils/pdf-operations.ts";
@@ -200,168 +201,171 @@ export default function CropPages() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Left: controls */}
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium text-slate-700 dark:text-dark-text">
-                    Margins to hide (mm)
-                  </p>
-                  {/* Mode toggle */}
-                  <div className="inline-flex rounded-lg border border-slate-200 dark:border-dark-border p-0.5 bg-slate-100 dark:bg-dark-surface-alt">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMarginMode("uniform");
-                        setAllSides(0);
-                        setMargins({ top: 0, right: 0, bottom: 0, left: 0 });
-                      }}
-                      className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
-                        marginMode === "uniform"
-                          ? "bg-white dark:bg-dark-surface text-slate-900 dark:text-dark-text shadow-sm"
-                          : "text-slate-500 dark:text-dark-text-muted hover:text-slate-700 dark:hover:text-dark-text"
-                      }`}
-                    >
-                      All Sides
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMarginMode("custom");
-                        setMargins({
-                          top: allSides,
-                          right: allSides,
-                          bottom: allSides,
-                          left: allSides,
-                        });
-                      }}
-                      className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
-                        marginMode === "custom"
-                          ? "bg-white dark:bg-dark-surface text-slate-900 dark:text-dark-text shadow-sm"
-                          : "text-slate-500 dark:text-dark-text-muted hover:text-slate-700 dark:hover:text-dark-text"
-                      }`}
-                    >
-                      Custom
-                    </button>
-                  </div>
-                </div>
-
-                {/* Uniform input */}
-                {marginMode === "uniform" && (
-                  <div>
-                    <label
-                      htmlFor="crop-all"
-                      className="flex justify-between text-sm text-slate-600 dark:text-dark-text-muted mb-1"
-                    >
-                      <span>All sides</span>
-                      <span>{allSides} mm</span>
-                    </label>
-                    <input
-                      id="crop-all"
-                      type="number"
-                      min={0}
-                      step={1}
-                      value={allSides}
-                      onChange={(e) => setUniformMargin(Number(e.target.value))}
-                      className={inputClass}
-                    />
-                  </div>
-                )}
-
-                {/* Custom inputs */}
-                {marginMode === "custom" && (
-                  <>
-                    {/* Top */}
-                    <div>
-                      <label
-                        htmlFor="crop-top"
-                        className="flex justify-between text-sm text-slate-600 dark:text-dark-text-muted mb-1"
-                      >
-                        <span>Top</span>
-                        <span>{margins.top} mm</span>
-                      </label>
-                      <input
-                        id="crop-top"
-                        type="number"
-                        min={0}
-                        step={1}
-                        value={margins.top}
-                        onChange={(e) => setMargin("top", Number(e.target.value))}
-                        className={inputClass}
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      {/* Left */}
-                      <div>
-                        <label
-                          htmlFor="crop-left"
-                          className="flex justify-between text-sm text-slate-600 dark:text-dark-text-muted mb-1"
-                        >
-                          <span>Left</span>
-                          <span>{margins.left} mm</span>
-                        </label>
-                        <input
-                          id="crop-left"
-                          type="number"
-                          min={0}
-                          step={1}
-                          value={margins.left}
-                          onChange={(e) => setMargin("left", Number(e.target.value))}
-                          className={inputClass}
-                        />
-                      </div>
-                      {/* Right */}
-                      <div>
-                        <label
-                          htmlFor="crop-right"
-                          className="flex justify-between text-sm text-slate-600 dark:text-dark-text-muted mb-1"
-                        >
-                          <span>Right</span>
-                          <span>{margins.right} mm</span>
-                        </label>
-                        <input
-                          id="crop-right"
-                          type="number"
-                          min={0}
-                          step={1}
-                          value={margins.right}
-                          onChange={(e) => setMargin("right", Number(e.target.value))}
-                          className={inputClass}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Bottom */}
-                    <div>
-                      <label
-                        htmlFor="crop-bottom"
-                        className="flex justify-between text-sm text-slate-600 dark:text-dark-text-muted mb-1"
-                      >
-                        <span>Bottom</span>
-                        <span>{margins.bottom} mm</span>
-                      </label>
-                      <input
-                        id="crop-bottom"
-                        type="number"
-                        min={0}
-                        step={1}
-                        value={margins.bottom}
-                        onChange={(e) => setMargin("bottom", Number(e.target.value))}
-                        className={inputClass}
-                      />
-                    </div>
-                  </>
-                )}
-
-                {!marginsValid &&
-                  (margins.top > 0 ||
-                    margins.right > 0 ||
-                    margins.bottom > 0 ||
-                    margins.left > 0) && (
-                    <p className="text-sm text-red-500">
-                      Margins exceed page dimensions — reduce them.
+                <div className="bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border shadow-sm p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-dark-text-muted">
+                      <Scissors className="w-3.5 h-3.5" />
+                      Margins to hide (mm)
                     </p>
+                    {/* Mode toggle */}
+                    <div className="inline-flex rounded-lg border border-slate-200 dark:border-dark-border p-0.5 bg-slate-100 dark:bg-dark-surface-alt">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMarginMode("uniform");
+                          setAllSides(0);
+                          setMargins({ top: 0, right: 0, bottom: 0, left: 0 });
+                        }}
+                        className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                          marginMode === "uniform"
+                            ? "bg-white dark:bg-dark-surface text-slate-900 dark:text-dark-text shadow-sm"
+                            : "text-slate-500 dark:text-dark-text-muted hover:text-slate-700 dark:hover:text-dark-text"
+                        }`}
+                      >
+                        All Sides
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMarginMode("custom");
+                          setMargins({
+                            top: allSides,
+                            right: allSides,
+                            bottom: allSides,
+                            left: allSides,
+                          });
+                        }}
+                        className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+                          marginMode === "custom"
+                            ? "bg-white dark:bg-dark-surface text-slate-900 dark:text-dark-text shadow-sm"
+                            : "text-slate-500 dark:text-dark-text-muted hover:text-slate-700 dark:hover:text-dark-text"
+                        }`}
+                      >
+                        Custom
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Uniform input */}
+                  {marginMode === "uniform" && (
+                    <div>
+                      <label
+                        htmlFor="crop-all"
+                        className="flex justify-between text-sm text-slate-600 dark:text-dark-text-muted mb-1"
+                      >
+                        <span>All sides</span>
+                        <span>{allSides} mm</span>
+                      </label>
+                      <input
+                        id="crop-all"
+                        type="number"
+                        min={0}
+                        step={1}
+                        value={allSides}
+                        onChange={(e) => setUniformMargin(Number(e.target.value))}
+                        className={inputClass}
+                      />
+                    </div>
                   )}
 
-                <div className="bg-slate-50 dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border p-3 space-y-1">
+                  {/* Custom inputs */}
+                  {marginMode === "custom" && (
+                    <>
+                      {/* Top */}
+                      <div>
+                        <label
+                          htmlFor="crop-top"
+                          className="flex justify-between text-sm text-slate-600 dark:text-dark-text-muted mb-1"
+                        >
+                          <span>Top</span>
+                          <span>{margins.top} mm</span>
+                        </label>
+                        <input
+                          id="crop-top"
+                          type="number"
+                          min={0}
+                          step={1}
+                          value={margins.top}
+                          onChange={(e) => setMargin("top", Number(e.target.value))}
+                          className={inputClass}
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        {/* Left */}
+                        <div>
+                          <label
+                            htmlFor="crop-left"
+                            className="flex justify-between text-sm text-slate-600 dark:text-dark-text-muted mb-1"
+                          >
+                            <span>Left</span>
+                            <span>{margins.left} mm</span>
+                          </label>
+                          <input
+                            id="crop-left"
+                            type="number"
+                            min={0}
+                            step={1}
+                            value={margins.left}
+                            onChange={(e) => setMargin("left", Number(e.target.value))}
+                            className={inputClass}
+                          />
+                        </div>
+                        {/* Right */}
+                        <div>
+                          <label
+                            htmlFor="crop-right"
+                            className="flex justify-between text-sm text-slate-600 dark:text-dark-text-muted mb-1"
+                          >
+                            <span>Right</span>
+                            <span>{margins.right} mm</span>
+                          </label>
+                          <input
+                            id="crop-right"
+                            type="number"
+                            min={0}
+                            step={1}
+                            value={margins.right}
+                            onChange={(e) => setMargin("right", Number(e.target.value))}
+                            className={inputClass}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Bottom */}
+                      <div>
+                        <label
+                          htmlFor="crop-bottom"
+                          className="flex justify-between text-sm text-slate-600 dark:text-dark-text-muted mb-1"
+                        >
+                          <span>Bottom</span>
+                          <span>{margins.bottom} mm</span>
+                        </label>
+                        <input
+                          id="crop-bottom"
+                          type="number"
+                          min={0}
+                          step={1}
+                          value={margins.bottom}
+                          onChange={(e) => setMargin("bottom", Number(e.target.value))}
+                          className={inputClass}
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  {!marginsValid &&
+                    (margins.top > 0 ||
+                      margins.right > 0 ||
+                      margins.bottom > 0 ||
+                      margins.left > 0) && (
+                      <p className="text-sm text-red-500">
+                        Margins exceed page dimensions — reduce them.
+                      </p>
+                    )}
+                </div>
+
+                <div className="bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border shadow-sm p-3 space-y-1">
                   <p className="text-xs text-slate-500 dark:text-dark-text-muted">
                     <strong>Crop</strong> sets a crop box that hides margins from view without
                     permanently removing them — the hidden content stays in the file.
@@ -420,16 +424,7 @@ export default function CropPages() {
                             selectedPages.has(i) ? (
                               <div className="bg-primary-500/20 inset-0 absolute flex items-center justify-center">
                                 <div className="w-5 h-5 bg-primary-500 rounded-full flex items-center justify-center">
-                                  <svg
-                                    viewBox="0 0 12 12"
-                                    className="w-3 h-3 text-white"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth={2}
-                                    aria-hidden="true"
-                                  >
-                                    <path d="M2 6l3 3 5-5" />
-                                  </svg>
+                                  <Check className="w-3 h-3 text-white" strokeWidth={3} />
                                 </div>
                               </div>
                             ) : null
