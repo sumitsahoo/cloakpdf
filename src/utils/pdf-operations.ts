@@ -923,6 +923,30 @@ export async function addBlankPage(file: File, position: number): Promise<Uint8A
 }
 
 /**
+ * Insert multiple blank pages into a PDF in a single pass.
+ *
+ * @param file - The source PDF file.
+ * @param positions - Sorted (ascending) array of 0-based insertion positions,
+ *   computed as if no blanks have been inserted yet.  Internally each position
+ *   is offset by the number of blanks already inserted so they land in the
+ *   correct spots.
+ * @returns New PDF bytes with all blank pages inserted.
+ */
+export async function addBlankPages(file: File, positions: number[]): Promise<Uint8Array> {
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await PDFDocument.load(arrayBuffer);
+  const pageCount = pdf.getPageCount();
+  const { width, height } = pageCount > 0 ? pdf.getPage(0).getSize() : { width: 595, height: 842 };
+
+  // Sort ascending so each offset is simply the loop index.
+  const sorted = [...positions].sort((a, b) => a - b);
+  for (let i = 0; i < sorted.length; i++) {
+    pdf.insertPage(sorted[i] + i, [width, height]);
+  }
+  return pdf.save();
+}
+
+/**
  * Duplicate a page in a PDF and insert the copy at a target position.
  *
  * The source page is copied from a fresh load of the same file to avoid
@@ -946,6 +970,36 @@ export async function duplicatePage(
   const [copiedPage] = await result.copyPages(source, [sourceIndex]);
   result.insertPage(targetPosition, copiedPage);
   clonePageFormFields(result, targetPosition);
+  return result.save();
+}
+
+/**
+ * Duplicate multiple pages in a PDF in a single pass.
+ *
+ * @param file - The source PDF file.
+ * @param copies - Array of `{ sourceIndex, position }` objects where `position`
+ *   is the 0-based insertion index relative to the *original* page list (before
+ *   any copies are inserted).  Internally each position is offset by the number
+ *   of copies already inserted so they land in the correct spots.
+ * @returns New PDF bytes with all copies inserted.
+ */
+export async function duplicatePages(
+  file: File,
+  copies: { sourceIndex: number; position: number }[],
+): Promise<Uint8Array> {
+  const arrayBuffer = await file.arrayBuffer();
+  const source = await PDFDocument.load(arrayBuffer);
+  const result = await PDFDocument.load(arrayBuffer);
+
+  // Sort ascending by position so each offset is simply the loop index.
+  const sorted = [...copies].sort((a, b) => a.position - b.position);
+  for (let i = 0; i < sorted.length; i++) {
+    const { sourceIndex, position } = sorted[i];
+    const adjustedPosition = position + i;
+    const [copiedPage] = await result.copyPages(source, [sourceIndex]);
+    result.insertPage(adjustedPosition, copiedPage);
+    clonePageFormFields(result, adjustedPosition);
+  }
   return result.save();
 }
 

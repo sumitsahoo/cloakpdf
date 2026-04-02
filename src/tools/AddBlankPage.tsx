@@ -1,29 +1,37 @@
 /**
  * Add Blank Page tool.
  *
- * Loads a PDF and displays its pages as thumbnails. The user drags the
- * blank page placeholder to the desired insertion position.
+ * Loads a PDF and displays its pages as thumbnails in a wrapping grid
+ * (matching the ReorderPages layout). The user can add one or more blank
+ * pages, drag any item to reorder, and download the result.
  */
 
 import { useState, useCallback } from "react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
-import { addBlankPage } from "../utils/pdf-operations.ts";
+import { addBlankPages } from "../utils/pdf-operations.ts";
 import { renderAllThumbnails } from "../utils/pdf-renderer.ts";
+
+type BlankItem = { type: "blank"; id: string };
+type OriginalItem = { type: "original"; index: number };
+type PageItem = BlankItem | OriginalItem;
+
+let blankCounter = 0;
+function nextBlankId() {
+  return `blank-${++blankCounter}-${Date.now()}`;
+}
 
 export default function AddBlankPage() {
   const [file, setFile] = useState<File | null>(null);
   const [thumbnails, setThumbnails] = useState<string[]>([]);
-  // Stable IDs for thumbnails to avoid index-based keys.
-  const [thumbnailIds, setThumbnailIds] = useState<string[]>([]);
-  // insertPosition is the 0-based index at which the blank page will be inserted.
-  // 0 = before page 1, thumbnails.length = after the last page.
-  const [insertPosition, setInsertPosition] = useState(0);
+  const [items, setItems] = useState<PageItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragOverPosition, setDragOverPosition] = useState<number | null>(null);
+
+  // Drag state
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dragOverSlot, setDragOverSlot] = useState<number | null>(null);
 
   const handleFile = useCallback(async (files: File[]) => {
     const pdf = files[0];
@@ -34,8 +42,9 @@ export default function AddBlankPage() {
     try {
       const thumbs = await renderAllThumbnails(pdf);
       setThumbnails(thumbs);
-      setThumbnailIds(thumbs.map((_, idx) => `thumb-${idx}-${Date.now()}`));
-      setInsertPosition(thumbs.length); // default: append at end
+      // Default: one blank page at the start
+      const originals: PageItem[] = thumbs.map((_, i) => ({ type: "original" as const, index: i }));
+      setItems([{ type: "blank", id: nextBlankId() }, ...originals]);
     } catch (e) {
       setError(
         e instanceof Error
@@ -48,116 +57,192 @@ export default function AddBlankPage() {
     }
   }, []);
 
-  const handleInsert = useCallback(async () => {
-    if (!file) return;
+  const hasBlankPages = items.some((it) => it.type === "blank");
+  const isDragging = dragIndex !== null;
+
+  const handleAddBlank = useCallback(() => {
+    setItems((prev) => [{ type: "blank", id: nextBlankId() }, ...prev]);
+  }, []);
+
+  const handleReset = useCallback(() => {
+    setItems((prev) => prev.filter((it) => it.type === "original"));
+    setDragIndex(null);
+    setDragOverSlot(null);
+  }, []);
+
+  const handleApply = useCallback(async () => {
+    if (!file || !hasBlankPages) return;
     setProcessing(true);
     setError(null);
     try {
-      const result = await addBlankPage(file, insertPosition);
+      // Compute the 0-based positions (relative to the original page list)
+      // where blank pages should be inserted.
+      const positions: number[] = [];
+      let originalsSeen = 0;
+      for (const it of items) {
+        if (it.type === "blank") {
+          positions.push(originalsSeen);
+        } else {
+          originalsSeen++;
+        }
+      }
+      const result = await addBlankPages(file, positions);
       const baseName = file.name.replace(/\.pdf$/i, "");
       downloadPdf(result, `${baseName}_blank_added.pdf`);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to insert blank page. Please try again.");
+      setError(e instanceof Error ? e.message : "Failed to insert blank pages. Please try again.");
     } finally {
       setProcessing(false);
     }
-  }, [file, insertPosition]);
+  }, [file, hasBlankPages, items]);
 
-  const positionLabel =
-    insertPosition === 0
-      ? "Before page 1 (at the beginning)"
-      : insertPosition === thumbnails.length
-        ? `After page ${thumbnails.length} (at the end)`
-        : `Before page ${insertPosition + 1}`;
+  const renderItems = () => {
+    const elements: React.ReactNode[] = [];
 
-  // Single stable layout: [dropzone_0] [page_0] [dropzone_1] [page_1] ... [page_N-1] [dropzone_N]
-  // The dropzone at insertPosition renders the draggable "New" card.
-  // Other dropzones are invisible gaps that expand into drop targets while dragging.
-  // Keeping the DOM structure stable prevents the drag from being cancelled when
-  // the draggable element would otherwise be removed on re-render.
-  const renderPageRow = () => {
-    const items: React.ReactNode[] = [];
+    for (let slot = 0; slot <= items.length; slot++) {
+      // ── Drop zone ──
+      const isAdjacentToDrag = dragIndex !== null && (slot === dragIndex || slot === dragIndex + 1);
 
-    for (let i = 0; i <= thumbnails.length; i++) {
-      const isInsertHere = i === insertPosition;
-      const isOver = dragOverPosition === i;
-      const dropId = thumbnailIds[i] ?? "drop-end";
-
-      if (isInsertHere) {
-        items.push(
-          <button
-            key="new-blank-page"
-            type="button"
-            draggable
-            onDragStart={(e) => {
-              e.dataTransfer.effectAllowed = "move";
-              setIsDragging(true);
-            }}
-            onDragEnd={() => {
-              setIsDragging(false);
-              setDragOverPosition(null);
-            }}
-            className="shrink-0 flex flex-col items-center gap-1 cursor-grab active:cursor-grabbing border-0 bg-transparent p-0"
-          >
-            <div className="w-16 aspect-3/4 rounded-lg border-2 border-dashed border-primary-400 bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center">
-              <span className="text-primary-500 text-xl font-light">+</span>
-            </div>
-            <span className="text-xs text-primary-500 font-medium">New</span>
-          </button>,
-        );
-      } else {
-        items.push(
-          <button
-            key={`drop-${dropId}`}
-            type="button"
-            aria-label={`Insert before page ${i + 1}`}
-            onDragOver={(e) => {
-              e.preventDefault();
-              setDragOverPosition(i);
-            }}
-            onDragLeave={(e) => {
-              if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-                setDragOverPosition(null);
-              }
-            }}
-            onDrop={(e) => {
-              e.preventDefault();
-              setInsertPosition(i);
-              setIsDragging(false);
-              setDragOverPosition(null);
-            }}
-            className={`shrink-0 self-stretch flex items-center justify-center rounded-lg transition-all duration-150 border-0 bg-transparent p-0 ${
-              isDragging ? (isOver ? "w-16 bg-primary-50 dark:bg-primary-900/20" : "w-4") : "w-1"
-            }`}
-          >
-            {isDragging && (
-              <div
-                className={`rounded-full transition-all duration-150 ${
-                  isOver
-                    ? "w-1 h-14 bg-primary-500"
-                    : "w-0.5 h-10 bg-primary-200 dark:bg-primary-800"
-                }`}
-              />
-            )}
-          </button>,
-        );
-      }
-
-      if (i < thumbnails.length) {
-        items.push(
-          <div key={thumbnailIds[i]} className="shrink-0 flex flex-col items-center gap-1">
-            <img
-              src={thumbnails[i]}
-              className="w-16 aspect-3/4 object-cover rounded-lg border border-slate-200 dark:border-dark-border"
-              alt={`Page ${i + 1}`}
+      elements.push(
+        <div
+          key={`drop-${slot}`}
+          onDragOver={(e) => {
+            if (isAdjacentToDrag) return;
+            e.preventDefault();
+            setDragOverSlot(slot);
+          }}
+          onDragLeave={(e) => {
+            if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+              if (dragOverSlot === slot) setDragOverSlot(null);
+            }
+          }}
+          onDrop={(e) => {
+            e.preventDefault();
+            if (dragIndex === null || isAdjacentToDrag) return;
+            setItems((prev) => {
+              const next = [...prev];
+              const [moved] = next.splice(dragIndex, 1);
+              const adjustedSlot = dragIndex < slot ? slot - 1 : slot;
+              next.splice(adjustedSlot, 0, moved);
+              return next;
+            });
+            setDragIndex(null);
+            setDragOverSlot(null);
+          }}
+          className={`self-stretch flex items-center justify-center rounded-lg transition-all duration-200 ${
+            isDragging && !isAdjacentToDrag
+              ? dragOverSlot === slot
+                ? "w-20 sm:w-24 bg-primary-50 dark:bg-primary-900/20"
+                : "w-3 sm:w-4"
+              : "w-0"
+          }`}
+        >
+          {isDragging && !isAdjacentToDrag && (
+            <div
+              className={`rounded-full transition-all duration-200 ${
+                dragOverSlot === slot
+                  ? "w-1 bg-primary-500"
+                  : "w-0.5 bg-primary-200 dark:bg-primary-800"
+              }`}
+              style={{ height: dragOverSlot === slot ? "80%" : "60%" }}
             />
-            <span className="text-xs text-slate-400 dark:text-dark-text-muted">{i + 1}</span>
-          </div>,
-        );
+          )}
+        </div>,
+      );
+
+      // ── Page card ──
+      if (slot < items.length) {
+        const item = items[slot];
+        const isSource = dragIndex === slot;
+
+        if (item.type === "blank") {
+          elements.push(
+            <div
+              key={item.id}
+              draggable
+              onDragStart={(e) => {
+                e.dataTransfer.effectAllowed = "move";
+                setDragIndex(slot);
+              }}
+              onDragEnd={() => {
+                setDragIndex(null);
+                setDragOverSlot(null);
+              }}
+              className={`shrink-0 pt-2 pr-2 flex flex-col items-center gap-1.5 cursor-grab active:cursor-grabbing select-none transition-all duration-200 ${
+                isSource ? "scale-95 opacity-30" : "scale-100 opacity-100"
+              }`}
+            >
+              <div className="relative">
+                <div
+                  className={`w-20 sm:w-24 md:w-28 aspect-[3/4] rounded-lg border-2 border-dashed flex items-center justify-center transition-colors shadow-sm ${
+                    isSource
+                      ? "border-slate-300 dark:border-dark-border bg-slate-50 dark:bg-dark-surface"
+                      : "border-primary-400 bg-primary-50 dark:bg-primary-900/20"
+                  }`}
+                >
+                  <span className="text-primary-500 text-2xl font-light">+</span>
+                </div>
+                <div
+                  className={`absolute -top-1.5 -right-1.5 text-white text-[10px] font-bold px-1.5 h-5 rounded-full flex items-center justify-center shadow-md z-10 transition-opacity duration-200 ${
+                    isSource ? "bg-slate-400 dark:bg-slate-600 opacity-50" : "bg-primary-600"
+                  }`}
+                >
+                  New
+                </div>
+              </div>
+              <span className="text-xs font-medium text-primary-500">Blank</span>
+            </div>,
+          );
+        } else {
+          elements.push(
+            <div
+              key={`page-${item.index}`}
+              draggable
+              onDragStart={(e) => {
+                e.dataTransfer.effectAllowed = "move";
+                setDragIndex(slot);
+              }}
+              onDragEnd={() => {
+                setDragIndex(null);
+                setDragOverSlot(null);
+              }}
+              className={`shrink-0 pt-2 pr-2 flex flex-col items-center gap-1.5 cursor-grab active:cursor-grabbing select-none transition-all duration-200 ${
+                isSource ? "scale-95 opacity-30" : "scale-100 opacity-100"
+              }`}
+            >
+              <div className="relative">
+                <div
+                  className={`w-20 sm:w-24 md:w-28 aspect-[3/4] bg-white dark:bg-dark-surface rounded-lg overflow-hidden border-2 transition-colors shadow-sm ${
+                    isSource
+                      ? "border-dashed border-slate-300 dark:border-dark-border"
+                      : "border-slate-200 dark:border-dark-border hover:border-primary-300 dark:hover:border-primary-600"
+                  }`}
+                >
+                  <img
+                    src={thumbnails[item.index]}
+                    className="w-full h-full object-contain"
+                    alt={`Page ${item.index + 1}`}
+                    draggable={false}
+                  />
+                </div>
+                <div
+                  className={`absolute -top-1.5 -right-1.5 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center shadow-md z-10 transition-opacity duration-200 ${
+                    isSource ? "bg-slate-400 dark:bg-slate-600 opacity-50" : "bg-primary-600"
+                  }`}
+                >
+                  {item.index + 1}
+                </div>
+              </div>
+              <span className="text-xs font-medium text-slate-500 dark:text-dark-text-muted">
+                Page {item.index + 1}
+              </span>
+            </div>,
+          );
+        }
       }
     }
 
-    return items;
+    return elements;
   };
 
   return (
@@ -167,7 +252,7 @@ export default function AddBlankPage() {
           accept=".pdf,application/pdf"
           onFiles={handleFile}
           label="Drop a PDF file here"
-          hint="A blank page will be inserted at your chosen position"
+          hint="Add one or more blank pages and drag to set their position"
         />
       ) : (
         <>
@@ -180,7 +265,7 @@ export default function AddBlankPage() {
               onClick={() => {
                 setFile(null);
                 setThumbnails([]);
-                setThumbnailIds([]);
+                setItems([]);
               }}
               className="text-sm text-primary-600 hover:text-primary-700"
             >
@@ -194,26 +279,77 @@ export default function AddBlankPage() {
             </div>
           ) : (
             <>
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-slate-700 dark:text-dark-text">
-                  {isDragging
-                    ? "Drop the page at the desired position"
-                    : "Drag the new page to set its position"}
-                </p>
-                <div className="flex items-end gap-2 overflow-x-auto pb-2 min-h-22">
-                  {renderPageRow()}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium text-slate-700 dark:text-dark-text">
+                    {isDragging
+                      ? "Drop the page at its new position"
+                      : "Drag pages to rearrange them"}
+                  </p>
+                  <div className="flex items-center gap-3">
+                    {hasBlankPages && (
+                      <button
+                        type="button"
+                        onClick={handleReset}
+                        className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 dark:text-dark-text-muted dark:hover:text-dark-text transition-colors"
+                      >
+                        <svg
+                          className="w-4 h-4"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M3 10h10a5 5 0 0 1 5 5v2M3 10l4-4m-4 4l4 4" />
+                        </svg>
+                        Reset
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={handleAddBlank}
+                      className="inline-flex items-center gap-1.5 text-sm text-primary-600 hover:text-primary-700 font-medium transition-colors"
+                    >
+                      <svg
+                        className="w-4 h-4"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M12 5v14m-7-7h14" />
+                      </svg>
+                      Add blank page
+                    </button>
+                  </div>
                 </div>
-                <p className="text-sm text-primary-600 font-medium">{positionLabel}</p>
+
+                <div className="flex flex-wrap items-end gap-y-6 overflow-x-auto pb-2 min-h-28">
+                  {renderItems()}
+                </div>
+
+                {hasBlankPages && (
+                  <p className="text-xs text-primary-600 dark:text-primary-400 font-medium">
+                    {items.filter((it) => it.type === "blank").length} blank page(s) added — click
+                    below to apply
+                  </p>
+                )}
               </div>
 
-              <button
-                type="button"
-                onClick={handleInsert}
-                disabled={processing}
-                className="w-full bg-primary-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                {processing ? "Inserting…" : "Insert Blank Page & Download"}
-              </button>
+              {hasBlankPages && (
+                <button
+                  type="button"
+                  onClick={handleApply}
+                  disabled={processing}
+                  className="w-full bg-primary-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {processing ? "Inserting…" : "Insert Blank Pages & Download"}
+                </button>
+              )}
             </>
           )}
         </>
