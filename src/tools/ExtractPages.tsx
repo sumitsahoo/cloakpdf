@@ -7,13 +7,13 @@
  * written to a new PDF and downloaded.
  */
 
-import { useState, useCallback } from "react";
+import { useCallback, useState } from "react";
+import { Check, CheckSquare, X } from "lucide-react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { PageThumbnail } from "../components/PageThumbnail.tsx";
+import { downloadPdf } from "../utils/file-helpers.ts";
 import { extractPages } from "../utils/pdf-operations.ts";
 import { renderAllThumbnails } from "../utils/pdf-renderer.ts";
-import { downloadPdf } from "../utils/file-helpers.ts";
-import { Check } from "lucide-react";
 
 /** Parse a range string like "1-3, 5, 7-9" into sorted, unique 0-based page indices. */
 function parseRangeInput(input: string, pageCount: number): number[] {
@@ -35,6 +35,7 @@ function parseRangeInput(input: string, pageCount: number): number[] {
 export default function ExtractPages() {
   const [file, setFile] = useState<File | null>(null);
   const [thumbnails, setThumbnails] = useState<string[]>([]);
+  const [pageIds, setPageIds] = useState<string[]>([]);
   const [selectedPages, setSelectedPages] = useState<Set<number>>(new Set());
   const [rangeInput, setRangeInput] = useState("");
   const [processing, setProcessing] = useState(false);
@@ -52,6 +53,7 @@ export default function ExtractPages() {
     try {
       const thumbs = await renderAllThumbnails(pdf);
       setThumbnails(thumbs);
+      setPageIds(thumbs.map((_, idx) => `${pdf.name}-${idx}`));
     } catch (e) {
       setError(
         e instanceof Error
@@ -122,8 +124,8 @@ export default function ExtractPages() {
         />
       ) : (
         <>
-          <div className="flex items-center justify-between flex-wrap gap-2">
-            <p className="text-sm text-slate-600 dark:text-dark-text-muted">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <p className="text-sm text-slate-600 dark:text-dark-text-muted break-all sm:break-normal">
               <span className="font-medium">{file.name}</span> — {thumbnails.length} pages
               {selectedPages.size > 0 && !rangeInput.trim() && (
                 <span className="text-primary-600 dark:text-primary-400 ml-2">
@@ -133,18 +135,23 @@ export default function ExtractPages() {
             </p>
             <div className="flex items-center gap-3">
               <button
+                type="button"
                 onClick={selectAll}
-                className="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400"
+                className="inline-flex items-center gap-1.5 text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 transition-colors"
               >
+                <CheckSquare className="w-4 h-4" />
                 Select all
               </button>
               <button
+                type="button"
                 onClick={clearAll}
-                className="text-sm text-slate-500 hover:text-slate-700 dark:text-dark-text-muted"
+                className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 dark:text-dark-text-muted dark:hover:text-dark-text transition-colors"
               >
+                <X className="w-4 h-4" />
                 Clear
               </button>
               <button
+                type="button"
                 onClick={() => {
                   setFile(null);
                   setThumbnails([]);
@@ -186,7 +193,7 @@ export default function ExtractPages() {
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
               {thumbnails.map((thumb, i) => (
                 <PageThumbnail
-                  key={i}
+                  key={pageIds[i]}
                   src={thumb}
                   pageNumber={i + 1}
                   selected={selectedPages.has(i)}
