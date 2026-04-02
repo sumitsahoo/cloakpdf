@@ -162,21 +162,21 @@ export default function PdfToImage() {
               </div>
 
               {/* Export options */}
-              <div className="bg-slate-50 dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border p-4 space-y-4">
+              <div className="bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border shadow-sm p-4 space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-dark-text mb-1.5">
+                    <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-dark-text-muted mb-2">
                       Format
-                    </label>
-                    <div className="flex gap-2">
+                    </p>
+                    <div className="inline-flex w-full items-center gap-0.5 rounded-xl bg-slate-100 dark:bg-dark-bg p-1 border border-slate-200 dark:border-dark-border">
                       {(["image/png", "image/jpeg"] as const).map((f) => (
                         <button
                           key={f}
                           onClick={() => setFormat(f)}
-                          className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                          className={`flex-1 rounded-lg py-1.5 px-3 text-sm transition-all duration-150 ${
                             format === f
-                              ? "bg-primary-600 text-white border-primary-600"
-                              : "border-slate-300 dark:border-dark-border text-slate-600 dark:text-dark-text-muted hover:border-primary-400"
+                              ? "font-semibold text-white bg-primary-600 shadow-sm"
+                              : "font-medium text-slate-500 dark:text-dark-text-muted hover:text-slate-700 dark:hover:text-dark-text hover:bg-white/60 dark:hover:bg-dark-surface-alt"
                           }`}
                         >
                           {f === "image/png" ? "PNG" : "JPEG"}
@@ -186,35 +186,35 @@ export default function PdfToImage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 dark:text-dark-text mb-1.5">
+                    <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-dark-text-muted mb-2">
                       Resolution
-                    </label>
-                    <div className="flex gap-2">
+                    </p>
+                    <div className="inline-flex w-full items-center gap-0.5 rounded-xl bg-slate-100 dark:bg-dark-bg p-1 border border-slate-200 dark:border-dark-border">
                       {([72, 150, 300] as const).map((d) => (
                         <button
                           key={d}
                           onClick={() => setDpi(d)}
-                          className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                          className={`flex-1 rounded-lg py-1.5 px-3 text-sm transition-all duration-150 ${
                             dpi === d
-                              ? "bg-primary-600 text-white border-primary-600"
-                              : "border-slate-300 dark:border-dark-border text-slate-600 dark:text-dark-text-muted hover:border-primary-400"
+                              ? "font-semibold text-white bg-primary-600 shadow-sm"
+                              : "font-medium text-slate-500 dark:text-dark-text-muted hover:text-slate-700 dark:hover:text-dark-text hover:bg-white/60 dark:hover:bg-dark-surface-alt"
                           }`}
                         >
                           {d}
                         </button>
                       ))}
                     </div>
-                    <p className="text-xs text-slate-400 dark:text-dark-text-muted mt-1">DPI</p>
+                    <p className="text-xs text-slate-400 dark:text-dark-text-muted mt-1.5">DPI</p>
                   </div>
                 </div>
 
                 {format === "image/jpeg" && (
-                  <div>
-                    <div className="flex justify-between mb-1.5">
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
                       <label className="text-sm font-medium text-slate-700 dark:text-dark-text">
                         JPEG Quality
                       </label>
-                      <span className="text-sm text-slate-500 dark:text-dark-text-muted">
+                      <span className="inline-flex items-center rounded-full bg-primary-100 dark:bg-primary-900/40 px-2 py-0.5 text-xs font-semibold text-primary-700 dark:text-primary-300 tabular-nums">
                         {quality}%
                       </span>
                     </div>
@@ -225,9 +225,9 @@ export default function PdfToImage() {
                       step={1}
                       value={quality}
                       onChange={(e) => setQuality(Number(e.target.value))}
-                      className="w-full accent-primary-600"
+                      className="w-full accent-primary-600 cursor-pointer"
                     />
-                    <div className="flex justify-between text-xs text-slate-400 dark:text-dark-text-muted mt-0.5">
+                    <div className="flex justify-between text-xs text-slate-400 dark:text-dark-text-muted">
                       <span>Smaller</span>
                       <span>Higher quality</span>
                     </div>

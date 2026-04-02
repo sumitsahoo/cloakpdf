@@ -111,19 +111,19 @@ export default function AddPageNumbers() {
           <div className="space-y-5">
             {/* Position grid */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-dark-text mb-2">
+              <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-dark-text-muted mb-2">
                 Position
-              </label>
+              </p>
               <div className="grid grid-cols-3 gap-2 max-w-[180px]">
                 {POSITIONS.map(({ value, label }) => (
                   <button
                     key={value}
                     onClick={() => setOpt("position", value)}
                     title={value.replace("-", " ")}
-                    className={`h-10 rounded-lg text-base font-bold border transition-colors ${
+                    className={`h-10 rounded-lg text-base font-bold border-2 transition-all duration-150 ${
                       options.position === value
-                        ? "bg-primary-600 text-white border-primary-600"
-                        : "border-slate-300 dark:border-dark-border text-slate-600 dark:text-dark-text-muted hover:border-primary-400"
+                        ? "border-primary-500 bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-300"
+                        : "border-slate-200 dark:border-dark-border text-slate-400 dark:text-dark-text-muted hover:border-slate-300 dark:hover:border-slate-500 bg-white dark:bg-dark-surface"
                     }`}
                   >
                     {label}
@@ -134,18 +134,18 @@ export default function AddPageNumbers() {
 
             {/* Format */}
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-dark-text mb-2">
+              <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-dark-text-muted mb-2">
                 Format
-              </label>
-              <div className="flex flex-wrap gap-2">
+              </p>
+              <div className="grid grid-cols-2 gap-2">
                 {FORMATS.map((f) => (
                   <button
                     key={f}
                     onClick={() => setOpt("format", f)}
-                    className={`px-3 py-1.5 rounded-lg text-sm font-medium border transition-colors ${
+                    className={`py-2 px-3 rounded-xl text-sm text-center border-2 transition-all duration-150 ${
                       options.format === f
-                        ? "bg-primary-600 text-white border-primary-600"
-                        : "border-slate-300 dark:border-dark-border text-slate-600 dark:text-dark-text-muted hover:border-primary-400"
+                        ? "font-semibold border-primary-500 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 ring-1 ring-primary-300 dark:ring-primary-700"
+                        : "font-medium border-slate-200 dark:border-dark-border bg-white dark:bg-dark-surface text-slate-600 dark:text-dark-text-muted hover:border-slate-300 dark:hover:border-slate-500"
                     }`}
                   >
                     {f}
@@ -156,12 +156,12 @@ export default function AddPageNumbers() {
 
             <div className="grid grid-cols-2 gap-4">
               {/* Font size */}
-              <div>
-                <div className="flex justify-between mb-1.5">
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
                   <label className="text-sm font-medium text-slate-700 dark:text-dark-text">
                     Font size
                   </label>
-                  <span className="text-sm text-slate-500 dark:text-dark-text-muted">
+                  <span className="inline-flex items-center rounded-full bg-primary-100 dark:bg-primary-900/40 px-2 py-0.5 text-xs font-semibold text-primary-700 dark:text-primary-300 tabular-nums">
                     {options.fontSize}pt
                   </span>
                 </div>
@@ -172,17 +172,17 @@ export default function AddPageNumbers() {
                   step={1}
                   value={options.fontSize}
                   onChange={(e) => setOpt("fontSize", Number(e.target.value))}
-                  className="w-full accent-primary-600"
+                  className="w-full accent-primary-600 cursor-pointer"
                 />
               </div>
 
               {/* Margin */}
-              <div>
-                <div className="flex justify-between mb-1.5">
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
                   <label className="text-sm font-medium text-slate-700 dark:text-dark-text">
                     Margin
                   </label>
-                  <span className="text-sm text-slate-500 dark:text-dark-text-muted">
+                  <span className="inline-flex items-center rounded-full bg-primary-100 dark:bg-primary-900/40 px-2 py-0.5 text-xs font-semibold text-primary-700 dark:text-primary-300 tabular-nums">
                     {options.margin}pt
                   </span>
                 </div>
@@ -193,7 +193,7 @@ export default function AddPageNumbers() {
                   step={1}
                   value={options.margin}
                   onChange={(e) => setOpt("margin", Number(e.target.value))}
-                  className="w-full accent-primary-600"
+                  className="w-full accent-primary-600 cursor-pointer"
                 />
               </div>
             </div>

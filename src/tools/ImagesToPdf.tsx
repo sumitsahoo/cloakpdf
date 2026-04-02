@@ -96,18 +96,18 @@ export default function ImagesToPdf() {
       {images.length > 0 && (
         <>
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-dark-text mb-2">
+            <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-dark-text-muted mb-2">
               Page Size
-            </label>
-            <div className="flex gap-2">
+            </p>
+            <div className="inline-flex w-full items-center gap-0.5 rounded-xl bg-slate-100 dark:bg-dark-bg p-1 border border-slate-200 dark:border-dark-border">
               {(["a4", "letter", "fit"] as const).map((size) => (
                 <button
                   key={size}
                   onClick={() => setPageSize(size)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  className={`flex-1 rounded-lg py-1.5 px-3 text-sm transition-all duration-150 ${
                     pageSize === size
-                      ? "bg-primary-600 text-white"
-                      : "bg-slate-100 dark:bg-dark-surface-alt text-slate-700 dark:text-dark-text hover:bg-slate-200 dark:hover:bg-dark-border"
+                      ? "font-semibold text-white bg-primary-600 shadow-sm"
+                      : "font-medium text-slate-500 dark:text-dark-text-muted hover:text-slate-700 dark:hover:text-dark-text hover:bg-white/60 dark:hover:bg-dark-surface-alt"
                   }`}
                 >
                   {size === "a4" ? "A4" : size === "letter" ? "Letter" : "Fit to Image"}
