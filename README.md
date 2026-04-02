@@ -3,7 +3,7 @@
   <h1>📄 BytePDF</h1>
   <p>A fast, modern, and privacy-focused PDF toolkit that runs entirely in your browser. No uploads, no servers, no tracking — your files never leave your device.
 
-🔗 **Try it here**: [https://sumitsahoo.github.io/bytepdf/](https://sumitsahoo.github.io/bytepdf/)
+🔗 **Try it here**: [http://bytepdf.app/](http://bytepdf.app/)
 
   </p>
 
