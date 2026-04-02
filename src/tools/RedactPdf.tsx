@@ -8,11 +8,12 @@
  * permanent filled black boxes via pdf-lib.
  */
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
+import { downloadPdf } from "../utils/file-helpers.ts";
 import { redactPdf } from "../utils/pdf-operations.ts";
 import { renderAllThumbnails } from "../utils/pdf-renderer.ts";
-import { downloadPdf } from "../utils/file-helpers.ts";
+import { Trash2, Undo2 } from "lucide-react";
 
 interface RedactionRect {
   xPct: number;
@@ -235,8 +236,8 @@ export default function RedactPdf() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <p className="text-sm text-slate-600 dark:text-dark-text-muted">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <p className="text-sm text-slate-600 dark:text-dark-text-muted break-all sm:break-normal">
           <span className="font-medium">{file.name}</span> — {thumbnails.length} pages
           {totalRedactions > 0 && (
             <span className="text-red-600 dark:text-red-400 ml-2">
@@ -283,16 +284,18 @@ export default function RedactPdf() {
                 type="button"
                 onClick={removeLastRect}
                 disabled={(redactions.get(editingPage) ?? []).length === 0}
-                className="text-sm text-slate-500 hover:text-slate-700 dark:text-dark-text-muted disabled:opacity-40"
+                className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 dark:text-dark-text-muted dark:hover:text-dark-text disabled:opacity-40 transition-colors"
               >
+                <Undo2 className="w-4 h-4" />
                 Undo last
               </button>
               <button
                 type="button"
                 onClick={clearPageRects}
                 disabled={(redactions.get(editingPage) ?? []).length === 0}
-                className="text-sm text-red-500 hover:text-red-700 disabled:opacity-40"
+                className="inline-flex items-center gap-1.5 text-sm text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 disabled:opacity-40 transition-colors"
               >
+                <Trash2 className="w-4 h-4" />
                 Clear page
               </button>
             </div>
