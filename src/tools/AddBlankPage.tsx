@@ -271,8 +271,8 @@ export default function AddBlankPage() {
         />
       ) : (
         <>
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-slate-600 dark:text-dark-text-muted">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <p className="text-sm text-slate-600 dark:text-dark-text-muted break-all sm:break-normal">
               <span className="font-medium">{file.name}</span> — {formatFileSize(file.size)}
             </p>
             <button
@@ -295,7 +295,7 @@ export default function AddBlankPage() {
           ) : (
             <>
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                   <p className="text-sm font-medium text-slate-700 dark:text-dark-text">
                     {isDragging
                       ? "Drop the page at its new position"

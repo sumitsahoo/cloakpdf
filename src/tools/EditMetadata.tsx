@@ -7,9 +7,10 @@
  */
 
 import { useState, useCallback, useEffect } from "react";
+import { DateTimeInput } from "../components/DateTimeInput.tsx";
 import { FileDropZone } from "../components/FileDropZone.tsx";
-import { getPdfMetadata, setPdfMetadata } from "../utils/pdf-operations.ts";
 import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
+import { getPdfMetadata, setPdfMetadata } from "../utils/pdf-operations.ts";
 import type { PdfMetadata } from "../types.ts";
 
 /** Field configuration for rendering the metadata form. */
@@ -80,13 +81,14 @@ export default function EditMetadata() {
   // Load metadata when a file is selected
   useEffect(() => {
     if (!file) return;
+    const currentFile = file;
     let cancelled = false;
 
     async function load() {
       setLoading(true);
       setError(null);
       try {
-        const meta = await getPdfMetadata(file!);
+        const meta = await getPdfMetadata(currentFile);
         if (!cancelled) setMetadata(meta);
       } catch (e) {
         if (!cancelled) {
@@ -139,11 +141,12 @@ export default function EditMetadata() {
         />
       ) : (
         <>
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-slate-600 dark:text-dark-text-muted">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <p className="text-sm text-slate-600 dark:text-dark-text-muted break-all sm:break-normal">
               <span className="font-medium">{file.name}</span> — {formatFileSize(file.size)}
             </p>
             <button
+              type="button"
               onClick={() => {
                 setFile(null);
                 setMetadata(null);
@@ -174,19 +177,28 @@ export default function EditMetadata() {
                       <span>{field.icon}</span>
                       {field.label}
                     </label>
-                    <input
-                      id={`meta-${field.key}`}
-                      type={field.type}
-                      value={metadata[field.key]}
-                      placeholder={field.placeholder}
-                      onChange={(e) => handleFieldChange(field.key, e.target.value)}
-                      className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-bg text-sm text-slate-800 dark:text-dark-text placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
-                    />
+                    {field.type === "datetime-local" ? (
+                      <DateTimeInput
+                        id={`meta-${field.key}`}
+                        value={metadata[field.key]}
+                        onChange={(v) => handleFieldChange(field.key, v)}
+                      />
+                    ) : (
+                      <input
+                        id={`meta-${field.key}`}
+                        type="text"
+                        value={metadata[field.key]}
+                        placeholder={field.placeholder}
+                        onChange={(e) => handleFieldChange(field.key, e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-bg text-sm text-slate-800 dark:text-dark-text placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+                      />
+                    )}
                   </div>
                 ))}
               </div>
 
               <button
+                type="button"
                 onClick={handleSave}
                 disabled={processing}
                 className="w-full bg-primary-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"

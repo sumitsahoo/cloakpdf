@@ -111,8 +111,8 @@ export default function PdfToImage() {
         />
       ) : (
         <>
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-slate-600 dark:text-dark-text-muted">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <p className="text-sm text-slate-600 dark:text-dark-text-muted break-all sm:break-normal">
               <span className="font-medium">{file.name}</span> — {formatFileSize(file.size)}
               {selectedPages.size > 0 && (
                 <span className="text-primary-600 ml-2">
@@ -138,7 +138,7 @@ export default function PdfToImage() {
             </div>
           ) : (
             <>
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <p className="text-sm font-medium text-slate-700 dark:text-dark-text">
                   Select pages to export
                 </p>

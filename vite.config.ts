@@ -12,7 +12,7 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon.svg", "apple-touch-icon.svg"],
+      includeAssets: ["favicon.svg", "favicon.ico", "apple-touch-icon.png"],
       manifest: {
         name: "BytePDF",
         short_name: "BytePDF",
@@ -26,9 +26,25 @@ export default defineConfig({
         start_url: process.env.VITE_APP_BASE_PATH || "/",
         icons: [
           {
-            src: "icons/logo.svg",
-            sizes: "any",
-            type: "image/svg+xml",
+            src: "icons/pwa-64x64.png",
+            sizes: "64x64",
+            type: "image/png",
+          },
+          {
+            src: "icons/pwa-192x192.png",
+            sizes: "192x192",
+            type: "image/png",
+          },
+          {
+            src: "icons/pwa-512x512.png",
+            sizes: "512x512",
+            type: "image/png",
+          },
+          {
+            src: "icons/maskable-icon-512x512.png",
+            sizes: "512x512",
+            type: "image/png",
+            purpose: "maskable",
           },
         ],
         screenshots: [

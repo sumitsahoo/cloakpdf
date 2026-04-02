@@ -7,7 +7,8 @@
     "dev": "vp dev",
     "build": "tsc && vp build",
     "preview": "vp preview",
-    "prepare": "vp config"
+    "prepare": "vp config",
+    "generate-icons": "pwa-assets-generator --preset minimal-2023 public/icons/logo.svg && mv public/icons/apple-touch-icon-180x180.png public/apple-touch-icon.png && mv public/icons/favicon.ico public/favicon.ico"
   },
   "dependencies": {
     "@pdf-lib/fontkit": "^1.1.1",
@@ -23,6 +24,7 @@
     "@tailwindcss/vite": "^4.2.2",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
+    "@vite-pwa/assets-generator": "^1.0.2",
     "@vitejs/plugin-react": "^6.0.1",
     "@voidzero-dev/vite-plus-core": "^0.1.15",
     "tailwindcss": "^4.2.2",
