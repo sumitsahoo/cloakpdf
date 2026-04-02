@@ -9,8 +9,10 @@
 import { useState, useCallback } from "react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
+import { useSortableDrag } from "../hooks/useSortableDrag.ts";
 import { addBlankPages } from "../utils/pdf-operations.ts";
 import { renderAllThumbnails } from "../utils/pdf-renderer.ts";
+import { Undo2, Plus } from "lucide-react";
 
 type BlankItem = { type: "blank"; id: string };
 type OriginalItem = { type: "original"; index: number };
@@ -29,9 +31,19 @@ export default function AddBlankPage() {
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Drag state
-  const [dragIndex, setDragIndex] = useState<number | null>(null);
-  const [dragOverSlot, setDragOverSlot] = useState<number | null>(null);
+  const handleMove = useCallback((fromIndex: number, toSlot: number) => {
+    setItems((prev) => {
+      const next = [...prev];
+      const [moved] = next.splice(fromIndex, 1);
+      const adjustedSlot = fromIndex < toSlot ? toSlot - 1 : toSlot;
+      next.splice(adjustedSlot, 0, moved);
+      return next;
+    });
+  }, []);
+
+  // Drag state (desktop + mobile touch)
+  const { dragIndex, dragOverSlot, setDragIndex, setDragOverSlot, getTouchHandlers } =
+    useSortableDrag(handleMove);
 
   const handleFile = useCallback(async (files: File[]) => {
     const pdf = files[0];
@@ -68,7 +80,7 @@ export default function AddBlankPage() {
     setItems((prev) => prev.filter((it) => it.type === "original"));
     setDragIndex(null);
     setDragOverSlot(null);
-  }, []);
+  }, [setDragIndex, setDragOverSlot]);
 
   const handleApply = useCallback(async () => {
     if (!file || !hasBlankPages) return;
@@ -106,6 +118,7 @@ export default function AddBlankPage() {
       elements.push(
         <div
           key={`drop-${slot}`}
+          data-drop-slot={slot}
           onDragOver={(e) => {
             if (isAdjacentToDrag) return;
             e.preventDefault();
@@ -168,6 +181,7 @@ export default function AddBlankPage() {
                 setDragIndex(null);
                 setDragOverSlot(null);
               }}
+              {...getTouchHandlers(slot)}
               className={`shrink-0 pt-2 pr-2 flex flex-col items-center gap-1.5 cursor-grab active:cursor-grabbing select-none transition-all duration-200 ${
                 isSource ? "scale-95 opacity-30" : "scale-100 opacity-100"
               }`}
@@ -206,6 +220,7 @@ export default function AddBlankPage() {
                 setDragIndex(null);
                 setDragOverSlot(null);
               }}
+              {...getTouchHandlers(slot)}
               className={`shrink-0 pt-2 pr-2 flex flex-col items-center gap-1.5 cursor-grab active:cursor-grabbing select-none transition-all duration-200 ${
                 isSource ? "scale-95 opacity-30" : "scale-100 opacity-100"
               }`}
@@ -293,17 +308,7 @@ export default function AddBlankPage() {
                         onClick={handleReset}
                         className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 dark:text-dark-text-muted dark:hover:text-dark-text transition-colors"
                       >
-                        <svg
-                          className="w-4 h-4"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth={2}
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <path d="M3 10h10a5 5 0 0 1 5 5v2M3 10l4-4m-4 4l4 4" />
-                        </svg>
+                        <Undo2 className="w-4 h-4" />
                         Reset
                       </button>
                     )}
@@ -312,17 +317,7 @@ export default function AddBlankPage() {
                       onClick={handleAddBlank}
                       className="inline-flex items-center gap-1.5 text-sm text-primary-600 hover:text-primary-700 font-medium transition-colors"
                     >
-                      <svg
-                        className="w-4 h-4"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth={2}
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M12 5v14m-7-7h14" />
-                      </svg>
+                      <Plus className="w-4 h-4" />
                       Add blank page
                     </button>
                   </div>

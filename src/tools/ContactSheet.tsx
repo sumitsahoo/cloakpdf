@@ -7,6 +7,7 @@
  */
 
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
+import { Grid3X3, Image, Tag } from "lucide-react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { downloadBlob, formatFileSize } from "../utils/file-helpers.ts";
 import { renderAllThumbnails } from "../utils/pdf-renderer.ts";
@@ -271,21 +272,22 @@ export default function ContactSheet() {
 
           <div className="grid md:grid-cols-2 gap-6 items-start">
             {/* Left column: controls */}
-            <div className="space-y-5">
+            <div className="bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border shadow-sm p-4 space-y-5">
               {/* Grid size */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-dark-text mb-1.5">
+                <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-dark-text-muted mb-2">
+                  <Grid3X3 className="w-3.5 h-3.5" />
                   Grid Layout
-                </label>
-                <div className="flex flex-wrap gap-2">
+                </p>
+                <div className="inline-flex w-full items-center gap-0.5 rounded-xl bg-slate-100 dark:bg-dark-bg p-1 border border-slate-200 dark:border-dark-border">
                   {GRID_OPTIONS.map((opt) => (
                     <button
                       key={opt.value}
                       onClick={() => setGrid(opt.value)}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                      className={`flex-1 rounded-lg py-1.5 px-3 text-sm transition-all duration-150 ${
                         grid === opt.value
-                          ? "bg-primary-600 text-white border-primary-600"
-                          : "border-slate-300 dark:border-dark-border text-slate-600 dark:text-dark-text-muted hover:border-primary-400"
+                          ? "font-semibold text-white bg-primary-600 shadow-sm"
+                          : "font-medium text-slate-500 dark:text-dark-text-muted hover:text-slate-700 dark:hover:text-dark-text hover:bg-white/60 dark:hover:bg-dark-surface-alt"
                       }`}
                     >
                       {opt.label}
@@ -302,18 +304,19 @@ export default function ContactSheet() {
 
               {/* Output format */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-dark-text mb-1.5">
+                <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-dark-text-muted mb-2">
+                  <Image className="w-3.5 h-3.5" />
                   Output Format
-                </label>
-                <div className="flex gap-2">
+                </p>
+                <div className="inline-flex w-full items-center gap-0.5 rounded-xl bg-slate-100 dark:bg-dark-bg p-1 border border-slate-200 dark:border-dark-border">
                   {(["png", "pdf"] as const).map((f) => (
                     <button
                       key={f}
                       onClick={() => setOutput(f)}
-                      className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                      className={`flex-1 rounded-lg py-1.5 px-3 text-sm transition-all duration-150 ${
                         output === f
-                          ? "bg-primary-600 text-white border-primary-600"
-                          : "border-slate-300 dark:border-dark-border text-slate-600 dark:text-dark-text-muted hover:border-primary-400"
+                          ? "font-semibold text-white bg-primary-600 shadow-sm"
+                          : "font-medium text-slate-500 dark:text-dark-text-muted hover:text-slate-700 dark:hover:text-dark-text hover:bg-white/60 dark:hover:bg-dark-surface-alt"
                       }`}
                     >
                       {f.toUpperCase()}
@@ -324,19 +327,25 @@ export default function ContactSheet() {
 
               {/* Page labels toggle */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-dark-text mb-1.5">
+                <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-dark-text-muted mb-2">
+                  <Tag className="w-3.5 h-3.5" />
                   Page Labels
-                </label>
-                <button
-                  onClick={() => setShowLabels(!showLabels)}
-                  className={`w-full py-2 rounded-lg text-sm font-medium border transition-colors ${
-                    showLabels
-                      ? "bg-primary-600 text-white border-primary-600"
-                      : "border-slate-300 dark:border-dark-border text-slate-600 dark:text-dark-text-muted hover:border-primary-400"
-                  }`}
-                >
-                  {showLabels ? "Showing labels" : "Hidden"}
-                </button>
+                </p>
+                <div className="inline-flex w-full items-center gap-0.5 rounded-xl bg-slate-100 dark:bg-dark-bg p-1 border border-slate-200 dark:border-dark-border">
+                  {([true, false] as const).map((val) => (
+                    <button
+                      key={String(val)}
+                      onClick={() => setShowLabels(val)}
+                      className={`flex-1 rounded-lg py-1.5 px-3 text-sm transition-all duration-150 ${
+                        showLabels === val
+                          ? "font-semibold text-white bg-primary-600 shadow-sm"
+                          : "font-medium text-slate-500 dark:text-dark-text-muted hover:text-slate-700 dark:hover:text-dark-text hover:bg-white/60 dark:hover:bg-dark-surface-alt"
+                      }`}
+                    >
+                      {val ? "Show labels" : "Hide labels"}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 

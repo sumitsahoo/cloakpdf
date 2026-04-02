@@ -10,6 +10,7 @@ import { useState, useCallback } from "react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { mergePdfs } from "../utils/pdf-operations.ts";
 import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
+import { ChevronUp, ChevronDown, X } from "lucide-react";
 
 /** Internal representation of a queued PDF file. */
 interface FileItem {
@@ -94,19 +95,7 @@ export default function MergePdf() {
                   className="p-1.5 rounded hover:bg-slate-100 dark:hover:bg-dark-surface-alt disabled:opacity-30 transition-colors"
                   aria-label="Move up"
                 >
-                  <svg
-                    className="w-4 h-4 text-slate-500 dark:text-dark-text-muted"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 15l7-7 7 7"
-                    />
-                  </svg>
+                  <ChevronUp className="w-4 h-4 text-slate-500 dark:text-dark-text-muted" />
                 </button>
                 <button
                   onClick={() => moveFile(index, 1)}
@@ -114,38 +103,14 @@ export default function MergePdf() {
                   className="p-1.5 rounded hover:bg-slate-100 dark:hover:bg-dark-surface-alt disabled:opacity-30 transition-colors"
                   aria-label="Move down"
                 >
-                  <svg
-                    className="w-4 h-4 text-slate-500 dark:text-dark-text-muted"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
+                  <ChevronDown className="w-4 h-4 text-slate-500 dark:text-dark-text-muted" />
                 </button>
                 <button
                   onClick={() => removeFile(item.id)}
                   className="p-1.5 rounded hover:bg-red-50 transition-colors"
                   aria-label="Remove file"
                 >
-                  <svg
-                    className="w-4 h-4 text-slate-400 dark:text-dark-text-muted hover:text-red-500"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
+                  <X className="w-4 h-4 text-slate-400 dark:text-dark-text-muted hover:text-red-500" />
                 </button>
               </div>
             </div>

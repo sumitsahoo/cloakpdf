@@ -8,6 +8,7 @@
  */
 
 import { useState, useCallback } from "react";
+import { PanelTop, PanelBottom } from "lucide-react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { ColorPicker, hexToRgb, rgbToHex } from "../components/ColorPicker.tsx";
 import { addHeaderFooter } from "../utils/pdf-operations.ts";
@@ -96,8 +97,9 @@ export default function HeaderFooter() {
 
           <div className="space-y-4">
             {/* Header row */}
-            <div className="bg-slate-50 dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border p-4 space-y-2">
-              <p className="text-xs font-semibold text-slate-500 dark:text-dark-text-muted uppercase tracking-wide">
+            <div className="bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border shadow-sm p-4 space-y-2">
+              <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-dark-text-muted">
+                <PanelTop className="w-3.5 h-3.5" />
                 Header
               </p>
               <div className="grid grid-cols-3 gap-2">
@@ -126,8 +128,9 @@ export default function HeaderFooter() {
             </div>
 
             {/* Footer row */}
-            <div className="bg-slate-50 dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border p-4 space-y-2">
-              <p className="text-xs font-semibold text-slate-500 dark:text-dark-text-muted uppercase tracking-wide">
+            <div className="bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border shadow-sm p-4 space-y-2">
+              <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-dark-text-muted">
+                <PanelBottom className="w-3.5 h-3.5" />
                 Footer
               </p>
               <div className="grid grid-cols-3 gap-2">
@@ -167,12 +170,12 @@ export default function HeaderFooter() {
 
             <div className="grid grid-cols-2 gap-4">
               {/* Font size */}
-              <div>
-                <div className="flex justify-between mb-1.5">
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
                   <label className="text-sm font-medium text-slate-700 dark:text-dark-text">
                     Font size
                   </label>
-                  <span className="text-sm text-slate-500 dark:text-dark-text-muted">
+                  <span className="inline-flex items-center rounded-full bg-primary-100 dark:bg-primary-900/40 px-2 py-0.5 text-xs font-semibold text-primary-700 dark:text-primary-300 tabular-nums">
                     {options.fontSize}pt
                   </span>
                 </div>
@@ -183,17 +186,17 @@ export default function HeaderFooter() {
                   step={1}
                   value={options.fontSize}
                   onChange={(e) => setOpt("fontSize", Number(e.target.value))}
-                  className="w-full accent-primary-600"
+                  className="w-full accent-primary-600 cursor-pointer"
                 />
               </div>
 
               {/* Margin */}
-              <div>
-                <div className="flex justify-between mb-1.5">
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
                   <label className="text-sm font-medium text-slate-700 dark:text-dark-text">
                     Margin
                   </label>
-                  <span className="text-sm text-slate-500 dark:text-dark-text-muted">
+                  <span className="inline-flex items-center rounded-full bg-primary-100 dark:bg-primary-900/40 px-2 py-0.5 text-xs font-semibold text-primary-700 dark:text-primary-300 tabular-nums">
                     {options.margin}pt
                   </span>
                 </div>
@@ -204,7 +207,7 @@ export default function HeaderFooter() {
                   step={1}
                   value={options.margin}
                   onChange={(e) => setOpt("margin", Number(e.target.value))}
-                  className="w-full accent-primary-600"
+                  className="w-full accent-primary-600 cursor-pointer"
                 />
               </div>
             </div>
@@ -224,18 +227,18 @@ export default function HeaderFooter() {
             </div>
 
             {/* Skip first page */}
-            <label className="flex items-center gap-3 cursor-pointer">
+            <label className="flex items-start gap-3 cursor-pointer select-none">
               <input
                 type="checkbox"
                 checked={options.skipFirstPage}
                 onChange={(e) => setOpt("skipFirstPage", e.target.checked)}
-                className="w-4 h-4 text-primary-600 rounded"
+                className="mt-0.5 h-4 w-4 shrink-0 rounded accent-primary-600 cursor-pointer"
               />
-              <div>
-                <p className="text-sm font-medium text-slate-700 dark:text-dark-text">
+              <div className="flex flex-col gap-0.5">
+                <p className="text-sm font-medium text-slate-700 dark:text-dark-text leading-snug">
                   Skip first page
                 </p>
-                <p className="text-xs text-slate-400 dark:text-dark-text-muted">
+                <p className="text-xs text-slate-400 dark:text-dark-text-muted leading-snug">
                   Useful when the first page is a cover or title page
                 </p>
               </div>

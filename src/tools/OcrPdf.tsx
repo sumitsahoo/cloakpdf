@@ -188,10 +188,10 @@ export default function OcrPdf() {
           {pages.length === 0 ? (
             <div className="space-y-4">
               {/* Language pill selector */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-dark-text mb-3">
+              <div className="bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border shadow-sm p-4">
+                <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-dark-text-muted mb-3">
                   OCR Language
-                </label>
+                </p>
                 <div className="flex flex-wrap gap-2">
                   {LANGUAGES.map((lang) => (
                     <button
@@ -201,7 +201,7 @@ export default function OcrPdf() {
                       className={`px-3.5 py-1.5 rounded-full text-sm font-medium transition-all ${
                         language === lang.code
                           ? "bg-primary-600 text-white shadow-sm"
-                          : "bg-slate-100 dark:bg-dark-surface text-slate-600 dark:text-dark-text-muted border border-slate-200 dark:border-dark-border hover:bg-slate-200 dark:hover:bg-dark-border"
+                          : "bg-slate-100 dark:bg-dark-bg text-slate-600 dark:text-dark-text-muted border border-slate-200 dark:border-dark-border hover:bg-slate-200 dark:hover:bg-dark-border"
                       } disabled:opacity-50 disabled:cursor-not-allowed`}
                     >
                       {lang.label}

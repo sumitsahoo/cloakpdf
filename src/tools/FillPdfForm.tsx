@@ -17,6 +17,7 @@
  */
 
 import { useState, useCallback } from "react";
+import { ChevronDown } from "lucide-react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { fillPdfForm, getFieldPageIndices } from "../utils/pdf-operations.ts";
 import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
@@ -357,18 +358,7 @@ export default function FillPdfForm() {
                                 ))}
                               </select>
                               <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 dark:text-dark-text-muted">
-                                <svg
-                                  className="w-4 h-4"
-                                  viewBox="0 0 16 16"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  strokeWidth="1.75"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  aria-hidden="true"
-                                >
-                                  <path d="M4 6l4 4 4-4" />
-                                </svg>
+                                <ChevronDown className="w-4 h-4" />
                               </div>
                             </div>
                           )}

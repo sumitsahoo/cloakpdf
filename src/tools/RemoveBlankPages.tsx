@@ -13,6 +13,7 @@ import { PageThumbnail } from "../components/PageThumbnail.tsx";
 import { deletePages } from "../utils/pdf-operations.ts";
 import { renderThumbnailsAndScores } from "../utils/pdf-renderer.ts";
 import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
+import { Trash2 } from "lucide-react";
 
 export default function RemoveBlankPages() {
   const [file, setFile] = useState<File | null>(null);
@@ -136,12 +137,12 @@ export default function RemoveBlankPages() {
           ) : (
             <>
               {/* Sensitivity slider */}
-              <div className="bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border p-4">
+              <div className="bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border shadow-sm p-4">
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-sm font-medium text-slate-700 dark:text-dark-text">
                     Detection sensitivity
                   </p>
-                  <span className="text-xs text-slate-500 dark:text-dark-text-muted">
+                  <span className="inline-flex items-center rounded-full bg-primary-100 dark:bg-primary-900/40 px-2 py-0.5 text-xs font-semibold text-primary-700 dark:text-primary-300 tabular-nums">
                     {Math.round(threshold * 100)}% white
                   </span>
                 </div>
@@ -152,7 +153,7 @@ export default function RemoveBlankPages() {
                   step={0.01}
                   value={threshold}
                   onChange={(e) => setThreshold(Number(e.target.value))}
-                  className="w-full accent-primary-600"
+                  className="w-full accent-primary-600 cursor-pointer"
                 />
                 <div className="flex justify-between text-xs text-slate-400 dark:text-dark-text-muted mt-1">
                   <span>Lenient (catch lightly filled pages)</span>
@@ -177,19 +178,7 @@ export default function RemoveBlankPages() {
                     overlay={
                       selectedPages.has(i) ? (
                         <div className="bg-amber-400/70 inset-0 absolute flex items-center justify-center">
-                          <svg
-                            className="w-8 h-8 text-white"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                            />
-                          </svg>
+                          <Trash2 className="w-8 h-8 text-white" />
                         </div>
                       ) : null
                     }
