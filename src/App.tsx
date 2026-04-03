@@ -70,6 +70,7 @@ import {
 } from "lucide-react";
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Layout } from "./components/Layout.tsx";
+import { PrivacyPolicy } from "./components/PrivacyPolicy.tsx";
 import { ToolCard } from "./components/ToolCard.tsx";
 import type { Tool, ToolId } from "./types.ts";
 
@@ -665,12 +666,24 @@ function HomeScreen({ onSelectTool }: HomeScreenProps) {
  */
 export function App() {
   const [activeTool, setActiveTool] = useState<ToolId | null>(null);
+  const [showPrivacy, setShowPrivacy] = useState(false);
 
-  /** Navigate back to the home screen (clears the active tool). */
-  const goHome = useCallback(() => setActiveTool(null), []);
+  /** Navigate back to the home screen (clears the active tool and privacy view). */
+  const goHome = useCallback(() => {
+    setActiveTool(null);
+    setShowPrivacy(false);
+  }, []);
 
   /** Stable callback shared by every `ToolCard` via `React.memo`. */
-  const handleSelectTool = useCallback((id: ToolId) => setActiveTool(id), []);
+  const handleSelectTool = useCallback((id: ToolId) => {
+    setShowPrivacy(false);
+    setActiveTool(id);
+  }, []);
+
+  const handlePrivacy = useCallback(() => {
+    setActiveTool(null);
+    setShowPrivacy(true);
+  }, []);
 
   /** Metadata for the active tool (memoised to avoid redundant lookups). */
   const activeMeta = useMemo(
@@ -681,9 +694,11 @@ export function App() {
   const ToolComponent = activeTool ? toolComponents[activeTool] : null;
 
   return (
-    <Layout onHome={goHome} showBack={!!activeTool}>
+    <Layout onHome={goHome} showBack={!!activeTool || showPrivacy} onPrivacy={handlePrivacy}>
       {activeTool && ToolComponent && activeMeta ? (
         <ToolView tool={activeMeta} Component={ToolComponent} />
+      ) : showPrivacy ? (
+        <PrivacyPolicy />
       ) : (
         <HomeScreen onSelectTool={handleSelectTool} />
       )}
