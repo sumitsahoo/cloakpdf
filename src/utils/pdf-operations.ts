@@ -196,6 +196,78 @@ export async function compressPdf(
 }
 
 /**
+ * Convert all pages of a PDF to grayscale.
+ *
+ * Each page is rendered at 2× via PDF.js, its pixels are converted to
+ * grayscale using the standard luminance formula (Y = 0.299R + 0.587G +
+ * 0.114B), and then re-embedded as a PNG in a new pdf-lib document.
+ * PNG is used (rather than JPEG) to avoid compression artefacts on text.
+ *
+ * @param file - The PDF file to convert.
+ * @returns Grayscale PDF bytes.
+ */
+export async function grayscalePdf(file: File): Promise<Uint8Array> {
+  const SCALE = 2.0;
+
+  const { default: workerSrc } = await import("pdfjs-dist/build/pdf.worker.min.mjs?worker&url");
+  const pdfjsLib = await import("pdfjs-dist");
+  pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
+
+  const arrayBuffer = await file.arrayBuffer();
+  const sourcePdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  const newPdf = await PDFDocument.create();
+
+  for (let i = 1; i <= sourcePdf.numPages; i++) {
+    const page = await sourcePdf.getPage(i);
+    const viewport = page.getViewport({ scale: SCALE });
+
+    const canvas = document.createElement("canvas");
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error(`Failed to acquire 2D canvas context for page ${i}`);
+
+    await page.render({ canvasContext: ctx, viewport, canvas }).promise;
+
+    // Convert pixels to grayscale in-place using luminance formula
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imageData.data;
+    for (let p = 0; p < data.length; p += 4) {
+      const gray = Math.round(0.299 * data[p] + 0.587 * data[p + 1] + 0.114 * data[p + 2]);
+      data[p] = gray;
+      data[p + 1] = gray;
+      data[p + 2] = gray;
+    }
+    ctx.putImageData(imageData, 0, 0);
+
+    const pngBytes = await new Promise<Uint8Array>((resolve, reject) => {
+      canvas.toBlob((blob) => {
+        if (!blob) return reject(new Error("Canvas toBlob returned null"));
+        blob.arrayBuffer().then((ab) => resolve(new Uint8Array(ab)), reject);
+      }, "image/png");
+    });
+
+    // Release canvas bitmap memory
+    canvas.width = 0;
+    canvas.height = 0;
+
+    const image = await newPdf.embedPng(pngBytes);
+    const origViewport = page.getViewport({ scale: 1.0 });
+    const newPage = newPdf.addPage([origViewport.width, origViewport.height]);
+    newPage.drawImage(image, {
+      x: 0,
+      y: 0,
+      width: origViewport.width,
+      height: origViewport.height,
+    });
+  }
+
+  void sourcePdf.destroy();
+
+  return newPdf.save({ useObjectStreams: true });
+}
+
+/**
  * Rotate specific pages of a PDF by the given angles.
  *
  * Rotation is additive — the angle is added to any existing page rotation.

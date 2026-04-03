@@ -150,4 +150,5 @@ export type ToolId =
   | "nup-pages"
   | "remove-blank-pages"
   | "bates-numbering"
-  | "contact-sheet";
+  | "contact-sheet"
+  | "grayscale";
