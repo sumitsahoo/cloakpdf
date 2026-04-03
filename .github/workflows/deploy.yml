@@ -37,7 +37,7 @@ jobs:
           VITE_APP_BASE_PATH: /
 
       # - name: Test
-      #   run: vp run test
+      #   run: vp test
 
       - name: Setup Pages
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
