@@ -10,9 +10,13 @@
   <p><strong>Try it here →</strong> <a href="http://bytepdf.app/">bytepdf.app</a></p>
 
   <p>
-    <img src="https://img.shields.io/github/actions/workflow/status/sumitsahoo/bytepdf/deploy.yml" alt="Build status" />
-    <img src="https://img.shields.io/github/deployments/sumitsahoo/bytepdf/github-pages" alt="Deployment" />
+    <img src="https://img.shields.io/github/actions/workflow/status/sumitsahoo/bytepdf/deploy.yml?label=build" alt="Build status" />
+    <img src="https://img.shields.io/github/deployments/sumitsahoo/bytepdf/github-pages?label=deploy" alt="Deployment" />
     <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="MIT License" /></a>
+  </p>
+  <p>
+    <img src="https://img.shields.io/github/actions/workflow/status/sumitsahoo/bytepdf/security.yml?label=security%20audit" alt="Security audit" />
+    <a href="https://securityscorecards.dev/viewer/?uri=github.com/sumitsahoo/bytepdf"><img src="https://api.securityscorecards.dev/projects/github.com/sumitsahoo/bytepdf/badge" alt="OpenSSF Scorecard" /></a>
   </p>
 
 </div>
