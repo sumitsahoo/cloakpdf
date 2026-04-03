@@ -410,6 +410,26 @@ function LoadingSpinner() {
   );
 }
 
+/** Per-category icon background and foreground colours (mirrors ToolCard theme). */
+const categoryAccent: Record<string, { iconBg: string; iconColor: string }> = {
+  organise: {
+    iconBg: "bg-blue-50 dark:bg-blue-900/30",
+    iconColor: "text-blue-600 dark:text-blue-400",
+  },
+  transform: {
+    iconBg: "bg-violet-50 dark:bg-violet-900/30",
+    iconColor: "text-violet-600 dark:text-violet-400",
+  },
+  annotate: {
+    iconBg: "bg-emerald-50 dark:bg-emerald-900/30",
+    iconColor: "text-emerald-600 dark:text-emerald-400",
+  },
+  security: {
+    iconBg: "bg-amber-50 dark:bg-amber-900/30",
+    iconColor: "text-amber-600 dark:text-amber-400",
+  },
+};
+
 // ── ToolView ─────────────────────────────────────────────────────
 
 interface ToolViewProps {
@@ -424,11 +444,20 @@ interface ToolViewProps {
  * lazily-loaded component wrapped in a `Suspense` boundary.
  */
 function ToolView({ tool, Component }: ToolViewProps) {
+  const accent = categoryAccent[tool.category ?? ""] ?? categoryAccent.organise;
+  const Icon = tool.icon;
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-800 dark:text-dark-text">{tool.title}</h1>
-        <p className="text-slate-500 dark:text-dark-text-muted mt-1">{tool.description}</p>
+      <div className="flex items-center gap-4 mb-6">
+        <div
+          className={`w-12 h-12 ${accent.iconBg} rounded-xl flex items-center justify-center shrink-0`}
+        >
+          <Icon className={`w-6 h-6 ${accent.iconColor}`} />
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold text-slate-800 dark:text-dark-text">{tool.title}</h1>
+          <p className="text-slate-500 dark:text-dark-text-muted mt-0.5">{tool.description}</p>
+        </div>
       </div>
       <Suspense fallback={<LoadingSpinner />}>
         <Component />
@@ -543,7 +572,9 @@ function HomeScreen({ onSelectTool }: HomeScreenProps) {
       {/* ── Tool Grid / Empty State ─────────────────────── */}
       {filteredTools.length === 0 ? (
         <div className="text-center py-16 animate-fade-in-up">
-          <div className="text-5xl mb-4">🔍</div>
+          <div className="w-16 h-16 bg-slate-100 dark:bg-dark-surface rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <Search className="w-8 h-8 text-slate-400 dark:text-dark-text-muted" />
+          </div>
           <h3 className="text-lg font-semibold text-slate-600 dark:text-dark-text mb-2">
             No tools found
           </h3>
@@ -570,10 +601,17 @@ function HomeScreen({ onSelectTool }: HomeScreenProps) {
                   >
                     <cat.icon className={`w-5 h-5 ${cat.iconColor}`} />
                   </div>
-                  <div>
-                    <h2 className="text-lg font-semibold text-slate-800 dark:text-dark-text">
-                      {cat.label}
-                    </h2>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-lg font-semibold text-slate-800 dark:text-dark-text">
+                        {cat.label}
+                      </h2>
+                      <span
+                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${cat.iconBg} ${cat.iconColor}`}
+                      >
+                        {catTools.length}
+                      </span>
+                    </div>
                     <p className="text-sm text-slate-400 dark:text-dark-text-muted">
                       {cat.description}
                     </p>
