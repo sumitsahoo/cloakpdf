@@ -33,11 +33,15 @@ export default function GrayscalePdf() {
   useEffect(() => {
     if (!file) return;
     let cancelled = false;
-    file.arrayBuffer().then((buf) =>
-      renderPageThumbnail(buf, 1, 0.6).then((url) => {
+    file
+      .arrayBuffer()
+      .then((buf) => renderPageThumbnail(buf, 1, 0.6))
+      .then((url) => {
         if (!cancelled) setPreview(url);
-      }),
-    );
+      })
+      .catch(() => {
+        // Preview is best-effort; a failure here doesn't block conversion
+      });
     return () => {
       cancelled = true;
     };
@@ -79,6 +83,7 @@ export default function GrayscalePdf() {
               <span className="font-medium">{file.name}</span> — {formatFileSize(file.size)}
             </p>
             <button
+              type="button"
               onClick={() => {
                 setFile(null);
                 setResult(null);
@@ -116,6 +121,7 @@ export default function GrayscalePdf() {
 
           {!result ? (
             <button
+              type="button"
               onClick={handleConvert}
               disabled={processing}
               className="w-full bg-primary-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
@@ -135,6 +141,7 @@ export default function GrayscalePdf() {
               </div>
 
               <button
+                type="button"
                 onClick={handleDownload}
                 className="w-full bg-primary-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-primary-700 transition-colors"
               >

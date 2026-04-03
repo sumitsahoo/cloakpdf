@@ -40,6 +40,23 @@ export interface PdfInfo {
 }
 import fontkit from "@pdf-lib/fontkit";
 import type { PDFDocumentProxy } from "pdfjs-dist";
+
+/**
+ * Lazily load PDF.js and configure its Web Worker exactly once.
+ * `compressPdf`, `grayscalePdf`, and `extractTextOcr` all need PDF.js
+ * but it is not imported at the top level to avoid loading the worker
+ * until one of these functions is actually called.
+ */
+let _pdfjsLib: typeof import("pdfjs-dist") | null = null;
+async function getPdfJs(): Promise<typeof import("pdfjs-dist")> {
+  if (!_pdfjsLib) {
+    const { default: workerSrc } = await import("pdfjs-dist/build/pdf.worker.min.mjs?worker&url");
+    _pdfjsLib = await import("pdfjs-dist");
+    _pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
+  }
+  return _pdfjsLib;
+}
+
 import type {
   PageRange,
   WatermarkOptions,
@@ -139,10 +156,7 @@ export async function compressPdf(
 
   const { scale, jpegQuality } = qualitySettings[quality];
 
-  // Dynamic import to avoid circular dependency
-  const { default: workerSrc } = await import("pdfjs-dist/build/pdf.worker.min.mjs?worker&url");
-  const pdfjsLib = await import("pdfjs-dist");
-  pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
+  const pdfjsLib = await getPdfJs();
   const arrayBuffer = await file.arrayBuffer();
   const sourcePdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
   const newPdf = await PDFDocument.create();
@@ -209,10 +223,7 @@ export async function compressPdf(
 export async function grayscalePdf(file: File): Promise<Uint8Array> {
   const SCALE = 2.0;
 
-  const { default: workerSrc } = await import("pdfjs-dist/build/pdf.worker.min.mjs?worker&url");
-  const pdfjsLib = await import("pdfjs-dist");
-  pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
-
+  const pdfjsLib = await getPdfJs();
   const arrayBuffer = await file.arrayBuffer();
   const sourcePdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
   const newPdf = await PDFDocument.create();
@@ -306,7 +317,8 @@ export async function deletePages(file: File, pageIndicesToDelete: number[]): Pr
   const source = await PDFDocument.load(arrayBuffer);
   const result = await PDFDocument.create();
 
-  const keepIndices = source.getPageIndices().filter((i) => !pageIndicesToDelete.includes(i));
+  const deleteSet = new Set(pageIndicesToDelete);
+  const keepIndices = source.getPageIndices().filter((i) => !deleteSet.has(i));
   if (keepIndices.length === 0)
     throw new Error("Cannot delete all pages — at least one page must remain.");
 
@@ -647,12 +659,9 @@ export async function addSignature(
   const commaIndex = signatureDataUrl.indexOf(",");
   if (commaIndex === -1) throw new Error("Invalid signature data URL: missing base64 payload.");
   const header = signatureDataUrl.slice(0, commaIndex);
-  const base64 = signatureDataUrl.slice(commaIndex + 1);
-  const binaryStr = atob(base64);
-  const signatureBytes = new Uint8Array(binaryStr.length);
-  for (let i = 0; i < binaryStr.length; i++) {
-    signatureBytes[i] = binaryStr.charCodeAt(i);
-  }
+  const signatureBytes = Uint8Array.from(atob(signatureDataUrl.slice(commaIndex + 1)), (c) =>
+    c.charCodeAt(0),
+  );
 
   const isJpeg = header.includes("image/jpeg") || header.includes("image/jpg");
   const signatureImage = isJpeg
@@ -835,12 +844,7 @@ export async function extractTextOcr(
   onProgress?: (current: number, total: number, status?: string) => void,
 ): Promise<string[]> {
   const { createWorker, PSM } = await import("tesseract.js");
-
-  // Dynamic import to match the pattern already used in compressPdf
-  const { default: workerSrc } = await import("pdfjs-dist/build/pdf.worker.min.mjs?worker&url");
-  const pdfjsLib = await import("pdfjs-dist");
-  pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
-
+  const pdfjsLib = await getPdfJs();
   const arrayBuffer = await file.arrayBuffer();
   const pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
   const totalPages = pdfDoc.numPages;

@@ -6,13 +6,43 @@
  * across the Split, Rotate, Delete, Reorder, Watermark, and Signature tools.
  */
 
-import workerSrc from "pdfjs-dist/build/pdf.worker.min.mjs?worker&url";
+import type { PDFDocumentProxy } from "pdfjs-dist";
 import * as pdfjsLib from "pdfjs-dist";
+import workerSrc from "pdfjs-dist/build/pdf.worker.min.mjs?worker&url";
 
 // PDF.js requires a Web Worker for parsing. The `?worker&url` Vite suffix
 // ensures the worker file is emitted as a standalone asset with the correct
 // base path, even when deployed under a subpath like /bytepdf/.
 pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
+
+/**
+ * Render a single PDF page (1-based) onto a canvas at the given scale.
+ * Returns both the canvas and its 2D context so callers can do pixel-level
+ * work (e.g. whiteness scoring) without a second getContext() call.
+ * The caller is responsible for zeroing canvas dimensions to release bitmap memory.
+ *
+ * @param pdf - An already-loaded PDFDocumentProxy.
+ * @param pageNum - 1-based page number to render.
+ * @param scale - Render scale factor.
+ * @returns `{ canvas, ctx }` ready for use.
+ */
+async function renderPage(
+  pdf: PDFDocumentProxy,
+  pageNum: number,
+  scale: number,
+): Promise<{ canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D }> {
+  const page = await pdf.getPage(pageNum);
+  const viewport = page.getViewport({ scale });
+
+  const canvas = document.createElement("canvas");
+  canvas.width = viewport.width;
+  canvas.height = viewport.height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error(`Failed to acquire 2D canvas context for page ${pageNum}`);
+
+  await page.render({ canvasContext: ctx, viewport, canvas }).promise;
+  return { canvas, ctx };
+}
 
 /**
  * Return the total number of pages in a PDF file.
@@ -31,9 +61,6 @@ export async function getPageCount(file: File): Promise<number> {
 /**
  * Render a single PDF page to a PNG data-URL thumbnail.
  *
- * An off-screen canvas is created, the page is rendered at the given scale,
- * and the canvas content is exported as a base-64 PNG data URL.
- *
  * @param data - Raw PDF bytes as an ArrayBuffer.
  * @param pageNum - 1-based page number to render.
  * @param scale - Render scale factor (default 0.5). Higher = better quality but slower.
@@ -45,24 +72,43 @@ export async function renderPageThumbnail(
   scale = 0.5,
 ): Promise<string> {
   const pdf = await pdfjsLib.getDocument({ data }).promise;
-  const page = await pdf.getPage(pageNum);
-  const viewport = page.getViewport({ scale });
-
-  const canvas = document.createElement("canvas");
-  canvas.width = viewport.width;
-  canvas.height = viewport.height;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("Failed to acquire 2D canvas context for thumbnail rendering");
-
-  await page.render({ canvasContext: ctx, viewport, canvas }).promise;
+  const { canvas } = await renderPage(pdf, pageNum, scale);
   const dataUrl = canvas.toDataURL("image/png");
-
-  // Release canvas bitmap memory before destroying the PDF document
   canvas.width = 0;
   canvas.height = 0;
-
   void pdf.destroy();
   return dataUrl;
+}
+
+/**
+ * Render specific pages of a PDF (1-based page numbers) from a single document
+ * load. Use this instead of calling `renderPageThumbnail` multiple times, which
+ * would fail because PDF.js transfers (detaches) the ArrayBuffer to its Web
+ * Worker on the first call.
+ *
+ * @param file - The PDF file to render from.
+ * @param pageNums - 1-based page numbers to render, in any order.
+ * @param scale - Render scale factor (default 0.4).
+ * @returns PNG data-URLs in the same order as `pageNums`.
+ */
+export async function renderSpecificThumbnails(
+  file: File,
+  pageNums: number[],
+  scale = 0.4,
+): Promise<string[]> {
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  const results: string[] = [];
+
+  for (const pageNum of pageNums) {
+    const { canvas } = await renderPage(pdf, pageNum, scale);
+    results.push(canvas.toDataURL("image/png"));
+    canvas.width = 0;
+    canvas.height = 0;
+  }
+
+  void pdf.destroy();
+  return results;
 }
 
 /**
@@ -94,16 +140,7 @@ export async function renderPagesToBlobs(
 
   for (let i = 0; i < pageIndices.length; i++) {
     const pageIndex = pageIndices[i];
-    const page = await pdf.getPage(pageIndex + 1); // PDF.js uses 1-based page numbers
-    const viewport = page.getViewport({ scale });
-
-    const canvas = document.createElement("canvas");
-    canvas.width = viewport.width;
-    canvas.height = viewport.height;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) throw new Error(`Failed to acquire 2D canvas context for page ${pageIndex + 1}`);
-
-    await page.render({ canvasContext: ctx, viewport, canvas }).promise;
+    const { canvas } = await renderPage(pdf, pageIndex + 1, scale);
 
     const blob = await new Promise<Blob>((resolve, reject) => {
       canvas.toBlob(
@@ -143,19 +180,8 @@ export async function renderAllThumbnails(file: File, scale = 0.4): Promise<stri
   const thumbnails: string[] = [];
 
   for (let i = 1; i <= pdf.numPages; i++) {
-    const page = await pdf.getPage(i);
-    const viewport = page.getViewport({ scale });
-
-    const canvas = document.createElement("canvas");
-    canvas.width = viewport.width;
-    canvas.height = viewport.height;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) throw new Error(`Failed to acquire 2D canvas context for page ${i}`);
-
-    await page.render({ canvasContext: ctx, viewport, canvas }).promise;
+    const { canvas } = await renderPage(pdf, i, scale);
     thumbnails.push(canvas.toDataURL("image/png"));
-
-    // Release canvas bitmap memory before moving to the next page
     canvas.width = 0;
     canvas.height = 0;
   }
@@ -185,22 +211,16 @@ export async function renderThumbnailsAndScores(
   const scores: number[] = [];
 
   for (let i = 1; i <= pdf.numPages; i++) {
-    const page = await pdf.getPage(i);
-    const viewport = page.getViewport({ scale });
-
-    const canvas = document.createElement("canvas");
-    canvas.width = viewport.width;
-    canvas.height = viewport.height;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) {
+    let canvas: HTMLCanvasElement;
+    let ctx: CanvasRenderingContext2D;
+    try {
+      ({ canvas, ctx } = await renderPage(pdf, i, scale));
+    } catch {
       thumbnails.push("");
       scores.push(0);
-      canvas.width = 0;
-      canvas.height = 0;
       continue;
     }
 
-    await page.render({ canvasContext: ctx, viewport, canvas }).promise;
     thumbnails.push(canvas.toDataURL("image/png"));
 
     // Count pixels where all channels are near-white (≥ 240)

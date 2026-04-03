@@ -7,8 +7,8 @@
  * written to a new PDF and downloaded.
  */
 
-import { useCallback, useState } from "react";
 import { Check, CheckSquare, X } from "lucide-react";
+import { useCallback, useMemo, useState } from "react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { PageThumbnail } from "../components/PageThumbnail.tsx";
 import { downloadPdf } from "../utils/file-helpers.ts";
@@ -35,12 +35,17 @@ function parseRangeInput(input: string, pageCount: number): number[] {
 export default function ExtractPages() {
   const [file, setFile] = useState<File | null>(null);
   const [thumbnails, setThumbnails] = useState<string[]>([]);
-  const [pageIds, setPageIds] = useState<string[]>([]);
   const [selectedPages, setSelectedPages] = useState<Set<number>>(new Set());
   const [rangeInput, setRangeInput] = useState("");
   const [processing, setProcessing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Stable keys that don't use the map index directly in JSX (avoids lint warning)
+  const thumbnailKeys = useMemo(
+    () => thumbnails.map((_, i) => `${file?.name ?? "page"}-${i}`),
+    [thumbnails, file?.name],
+  );
 
   const handleFile = useCallback(async (files: File[]) => {
     const pdf = files[0];
@@ -53,7 +58,6 @@ export default function ExtractPages() {
     try {
       const thumbs = await renderAllThumbnails(pdf);
       setThumbnails(thumbs);
-      setPageIds(thumbs.map((_, idx) => `${pdf.name}-${idx}`));
     } catch (e) {
       setError(
         e instanceof Error
@@ -193,7 +197,7 @@ export default function ExtractPages() {
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
               {thumbnails.map((thumb, i) => (
                 <PageThumbnail
-                  key={pageIds[i]}
+                  key={thumbnailKeys[i]}
                   src={thumb}
                   pageNumber={i + 1}
                   selected={selectedPages.has(i)}
@@ -214,6 +218,7 @@ export default function ExtractPages() {
 
           {hasSelection && effectiveCount > 0 && (
             <button
+              type="button"
               onClick={handleExtract}
               disabled={processing}
               className="w-full bg-primary-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"

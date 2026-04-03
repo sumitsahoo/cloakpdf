@@ -5,16 +5,23 @@
  * Shows a before/after preview of the first and last page thumbnails.
  */
 
-import { useState, useCallback } from "react";
-import { FileDropZone } from "../components/FileDropZone.tsx";
-import { reversePages } from "../utils/pdf-operations.ts";
-import { renderAllThumbnails } from "../utils/pdf-renderer.ts";
-import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
+import { useCallback, useState } from "react";
 import { ArrowRight } from "lucide-react";
+import { FileDropZone } from "../components/FileDropZone.tsx";
+import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
+import { reversePages } from "../utils/pdf-operations.ts";
+import { getPageCount, renderSpecificThumbnails } from "../utils/pdf-renderer.ts";
+
+/** Only the first and last page thumbnails are needed for the preview. */
+interface PreviewThumbs {
+  first: string;
+  last: string;
+  pageCount: number;
+}
 
 export default function ReversePages() {
   const [file, setFile] = useState<File | null>(null);
-  const [thumbnails, setThumbnails] = useState<string[]>([]);
+  const [preview, setPreview] = useState<PreviewThumbs | null>(null);
   const [processing, setProcessing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -28,8 +35,14 @@ export default function ReversePages() {
     setLoading(true);
     setError(null);
     try {
-      const thumbs = await renderAllThumbnails(pdf);
-      setThumbnails(thumbs);
+      // getPageCount loads the PDF briefly to read numPages, then destroys it.
+      // renderSpecificThumbnails then loads it again and renders pages sequentially
+      // from a single document — avoids the ArrayBuffer-detach error that happens
+      // when the same buffer is transferred to the PDF.js Worker twice in parallel.
+      const count = await getPageCount(pdf);
+      const pageNums = count > 1 ? [1, count] : [1];
+      const thumbs = await renderSpecificThumbnails(pdf, pageNums, 0.4);
+      setPreview({ first: thumbs[0], last: thumbs[1] ?? "", pageCount: count });
     } catch (e) {
       setError(
         e instanceof Error
@@ -59,7 +72,7 @@ export default function ReversePages() {
     }
   }, [file]);
 
-  const pageCount = thumbnails.length;
+  const pageCount = preview?.pageCount ?? 0;
 
   return (
     <div className="space-y-6">
@@ -78,9 +91,10 @@ export default function ReversePages() {
               {pageCount} pages
             </p>
             <button
+              type="button"
               onClick={() => {
                 setFile(null);
-                setThumbnails([]);
+                setPreview(null);
                 setDone(false);
               }}
               className="text-sm text-primary-600 hover:text-primary-700"
@@ -93,7 +107,7 @@ export default function ReversePages() {
             <div className="flex items-center justify-center py-12">
               <div className="w-8 h-8 border-3 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
             </div>
-          ) : pageCount > 0 ? (
+          ) : preview ? (
             <div className="bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border p-4">
               <p className="text-sm font-medium text-slate-700 dark:text-dark-text mb-3">
                 Page order preview
@@ -102,7 +116,7 @@ export default function ReversePages() {
                 <div className="flex items-center gap-2 flex-1 min-w-0">
                   <div className="text-center shrink-0">
                     <img
-                      src={thumbnails[0]}
+                      src={preview.first}
                       alt="First page"
                       className="w-16 h-auto rounded border border-slate-200 dark:border-dark-border"
                     />
@@ -116,7 +130,7 @@ export default function ReversePages() {
                   {pageCount > 1 && (
                     <div className="text-center shrink-0">
                       <img
-                        src={thumbnails[pageCount - 1]}
+                        src={preview.last}
                         alt="Last page"
                         className="w-16 h-auto rounded border border-slate-200 dark:border-dark-border"
                       />
@@ -133,7 +147,7 @@ export default function ReversePages() {
                   {pageCount > 1 && (
                     <div className="text-center shrink-0">
                       <img
-                        src={thumbnails[pageCount - 1]}
+                        src={preview.last}
                         alt="Was last, now first"
                         className="w-16 h-auto rounded border border-slate-200 dark:border-dark-border"
                       />
@@ -149,7 +163,7 @@ export default function ReversePages() {
                   )}
                   <div className="text-center shrink-0">
                     <img
-                      src={thumbnails[0]}
+                      src={preview.first}
                       alt="Was first, now last"
                       className="w-16 h-auto rounded border border-slate-200 dark:border-dark-border"
                     />
@@ -163,6 +177,7 @@ export default function ReversePages() {
           ) : null}
 
           <button
+            type="button"
             onClick={handleReverse}
             disabled={processing || pageCount < 2}
             className="w-full bg-primary-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
