@@ -1,15 +1,19 @@
 <div align="center">
 
+  <img src="public/icons/logo.svg" alt="BytePDF Logo" width="80" height="80" />
+
   <h1>BytePDF</h1>
-  <p>A fast, modern, and privacy-focused PDF toolkit that runs entirely in your browser. No uploads, no servers, no tracking — your files never leave your device.
 
-**Try it here**: [http://bytepdf.app/](http://bytepdf.app/)
+  <p>A fast, modern, and privacy-focused PDF toolkit that runs entirely in your browser.<br>
+  No uploads, no servers, no tracking — your files never leave your device.</p>
 
+  <p><strong>Try it here →</strong> <a href="http://bytepdf.app/">bytepdf.app</a></p>
+
+  <p>
+    <img src="https://img.shields.io/github/actions/workflow/status/sumitsahoo/bytepdf/deploy.yml" alt="Build status" />
+    <img src="https://img.shields.io/github/deployments/sumitsahoo/bytepdf/github-pages" alt="Deployment" />
+    <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="MIT License" /></a>
   </p>
-
-![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/sumitsahoo/bytepdf/deploy.yml)
-![GitHub deployments](https://img.shields.io/github/deployments/sumitsahoo/bytepdf/github-pages)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 </div>
 
@@ -17,11 +21,13 @@
   <img src="public/screenshots/iPad.png" alt="BytePDF Interface" width="800">
 </p>
 
-## Features
+---
+
+## ✨ Features
 
 BytePDF offers **30 powerful PDF tools**, all running 100% client-side:
 
-### Organise & Edit
+### 🗂️ Organise & Edit
 
 _Rearrange, combine, and manage your PDF pages_
 
@@ -38,7 +44,7 @@ _Rearrange, combine, and manage your PDF pages_
 | **Add Bookmarks**      | Add a clickable outline so readers can jump to any page instantly                |
 | **Remove Blank Pages** | Auto-detect and remove empty pages — adjustable sensitivity with manual override |
 
-### Transform & Convert
+### ⚡ Transform & Convert
 
 _Compress, convert, and extract content_
 
@@ -55,7 +61,7 @@ _Compress, convert, and extract content_
 | **Repair PDF**    | Fix structural issues in corrupted or malformed PDFs by re-parsing and rebuilding the file                                         |
 | **Grayscale PDF** | Convert all pages to grayscale — useful for print cost savings and black-and-white output                                          |
 
-### Annotate & Sign
+### ✍️ Annotate & Sign
 
 _Add watermarks, signatures, and overlays_
 
@@ -68,7 +74,7 @@ _Add watermarks, signatures, and overlays_
 | **Bates Numbering**   | Stamp sequential identifiers (prefix + zero-padded number + suffix) for legal and compliance workflows                                                             |
 | **Header & Footer**   | Add repeating text (with `{{page}}` / `{{total}}` tokens) at the top and bottom of every page                                                                      |
 
-### Security & Properties
+### 🔐 Security & Properties
 
 _Protect your PDFs and manage metadata_
 
@@ -79,14 +85,20 @@ _Protect your PDFs and manage metadata_
 | **Edit Metadata** | View and edit document properties like title, author, subject, keywords, and dates      |
 | **PDF Inspector** | View version, page count, dimensions, metadata, and encryption status without modifying |
 
-## Privacy First
+---
 
-- **No file uploads** — everything is processed locally in your browser
-- **No server-side processing** — zero network requests for your files
-- **No data collection** — no analytics, no tracking, no cookies
-- **Fully offline capable** — works without an internet connection after initial load
+## 🔒 Privacy First
 
-## Tech Stack
+|                               |                                                         |
+| ----------------------------- | ------------------------------------------------------- |
+| **No file uploads**           | Everything is processed locally in your browser         |
+| **No server-side processing** | Zero network requests for your files                    |
+| **No data collection**        | No analytics, no tracking, no cookies                   |
+| **Fully offline capable**     | Works without an internet connection after initial load |
+
+---
+
+## 🛠️ Tech Stack
 
 | Category         | Technology                                                     |
 | ---------------- | -------------------------------------------------------------- |
@@ -103,7 +115,9 @@ _Protect your PDFs and manage metadata_
 | ZIP Export       | [JSZip](https://stuk.github.io/jszip/)                         |
 | Toolchain CLI    | [Vite+ (`vp`)](https://viteplus.dev/)                          |
 
-## Getting Started
+---
+
+## 🚀 Getting Started
 
 ### Prerequisites
 
@@ -134,7 +148,9 @@ vp dev
 | `vp check`   | Run format, lint, and type checks         |
 | `vp test`    | Run tests                                 |
 
-## Project Structure
+---
+
+## 📁 Project Structure
 
 ```
 bytepdf/
@@ -155,7 +171,9 @@ bytepdf/
 └── package.json
 ```
 
-## How It Works
+---
+
+## ⚙️ How It Works
 
 BytePDF leverages two complementary libraries for full PDF support:
 
@@ -164,7 +182,9 @@ BytePDF leverages two complementary libraries for full PDF support:
 
 All operations happen in-memory using the browser's `FileReader` API and `ArrayBuffer`s. Processed files are delivered as downloadable blobs — no data ever touches a remote server.
 
-## Deployment
+---
+
+## 🚢 Deployment
 
 BytePDF is deployed to **GitHub Pages** via a CI/CD workflow on every push to `main`.
 
@@ -175,7 +195,9 @@ The deployment pipeline:
 3. Builds the production bundle with Vite
 4. Deploys the `dist/` folder to GitHub Pages
 
-## Contributing
+---
+
+## 🤝 Contributing
 
 Contributions are welcome! Here's how to get started:
 
@@ -185,10 +207,14 @@ Contributions are welcome! Here's how to get started:
 4. **Push** to the branch (`git push origin feature/amazing-feature`)
 5. **Open** a Pull Request
 
-## License
+---
+
+## 📄 License
 
 This project is licensed under the **MIT License** — feel free to use it for both personal and commercial purposes. See the [LICENSE](LICENSE) file for details.
 
+---
+
 <p align="center">
-  Built with love for privacy-conscious users everywhere
+  Built with ❤️ by <a href="https://github.com/sumitsahoo">Sumit Sahoo</a>
 </p>
