@@ -30,14 +30,13 @@
  *    avoid a redundant `Array.find` on every unrelated render.
  */
 
-import { useState, useCallback, useMemo, useRef, useEffect, lazy, Suspense } from "react";
 import {
   AlignCenter,
   Archive,
-  Contrast,
   ArrowUpDown,
   BookMarked,
   ClipboardList,
+  Contrast,
   Copy,
   Crop,
   EyeOff,
@@ -69,6 +68,7 @@ import {
   X,
   Zap,
 } from "lucide-react";
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Layout } from "./components/Layout.tsx";
 import { ToolCard } from "./components/ToolCard.tsx";
 import type { Tool, ToolId } from "./types.ts";
@@ -524,8 +524,8 @@ function HomeScreen({ onSelectTool }: HomeScreenProps) {
   return (
     <div>
       {/* ── Hero ────────────────────────────────────────── */}
-      <div className="text-center mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold text-slate-800 dark:text-dark-text mb-1.5">
+      <div className="text-center mb-10">
+        <h1 className="text-3xl sm:text-4xl font-bold animate-gradient-text mb-2 leading-tight">
           All-in-One PDF Tools That Respect Your Privacy
         </h1>
         <p className="text-base text-slate-500 dark:text-dark-text-muted max-w-2xl mx-auto">
@@ -554,6 +554,7 @@ function HomeScreen({ onSelectTool }: HomeScreenProps) {
           <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
             {searchQuery ? (
               <button
+                type="button"
                 onClick={() => {
                   setSearchQuery("");
                   searchInputRef.current?.focus();

@@ -66,3 +66,48 @@ body {
 .animate-fade-in-up {
   animation: fade-in-up 0.45s ease-out both;
 }
+
+@keyframes gradient-flow {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+/* Animated gradient text using the four category accent colours */
+.animate-gradient-text {
+  background: linear-gradient(
+    270deg,
+    #2563eb,
+    /* blue – organise */ #7c3aed,
+    /* violet – transform */ #10b981,
+    /* emerald – annotate */ #f59e0b,
+    /* amber – security */ #2563eb
+  );
+  background-size: 300% 300%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: gradient-flow 35s ease infinite;
+}
+
+@media (prefers-color-scheme: dark) {
+  .animate-gradient-text {
+    background: linear-gradient(
+      270deg,
+      #60a5fa,
+      /* blue-400 */ #a78bfa,
+      /* violet-400 */ #34d399,
+      /* emerald-400 */ #fbbf24,
+      /* amber-400 */ #60a5fa
+    );
+    background-size: 300% 300%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: gradient-flow 35s ease infinite;
+  }
+}

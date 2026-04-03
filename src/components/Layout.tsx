@@ -6,8 +6,8 @@
  * All pages/tools are rendered inside `children`.
  */
 
-import { useState, useEffect, useRef, type ReactNode } from "react";
 import { ChevronLeft, Lock } from "lucide-react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 
 interface LayoutProps {
   /** Content to render in the main area. */
@@ -38,8 +38,8 @@ export function Layout({ children, onHome, showBack }: LayoutProps) {
   }, [showTooltip]);
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-slate-50 to-primary-50/30 dark:from-dark-bg dark:to-dark-bg flex flex-col">
-      <header className="bg-white/80 dark:bg-dark-surface/80 backdrop-blur-sm border-b border-slate-200 dark:border-dark-border sticky top-0 z-50">
+    <div className="min-h-screen bg-linear-to-br from-slate-50 via-white to-primary-50/40 dark:from-dark-bg dark:via-dark-bg dark:to-dark-surface/60 flex flex-col">
+      <header className="bg-white/85 dark:bg-dark-surface/85 backdrop-blur-md border-b border-slate-200/80 dark:border-dark-border sticky top-0 z-50 shadow-sm shadow-slate-100/50 dark:shadow-black/20">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center gap-3">
           {showBack && (
             <button
