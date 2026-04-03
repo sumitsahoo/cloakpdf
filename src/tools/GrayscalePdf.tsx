@@ -7,16 +7,18 @@
  * black-and-white documents.
  */
 
-import { useState, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
-import { grayscalePdf } from "../utils/pdf-operations.ts";
 import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
+import { grayscalePdf } from "../utils/pdf-operations.ts";
+import { renderPageThumbnail } from "../utils/pdf-renderer.ts";
 
 export default function GrayscalePdf() {
   const [file, setFile] = useState<File | null>(null);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<Uint8Array | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
 
   const handleFile = useCallback((files: File[]) => {
     const pdf = files[0];
@@ -24,7 +26,22 @@ export default function GrayscalePdf() {
     setFile(pdf);
     setResult(null);
     setError(null);
+    setPreview(null);
   }, []);
+
+  // Render first page thumbnail whenever a file is selected
+  useEffect(() => {
+    if (!file) return;
+    let cancelled = false;
+    file.arrayBuffer().then((buf) =>
+      renderPageThumbnail(buf, 1, 0.6).then((url) => {
+        if (!cancelled) setPreview(url);
+      }),
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [file]);
 
   const handleConvert = useCallback(async () => {
     if (!file) return;
@@ -71,6 +88,31 @@ export default function GrayscalePdf() {
               Change file
             </button>
           </div>
+
+          {/* Before / After preview */}
+          {preview && (
+            <div className="grid grid-cols-2 gap-4">
+              {(["Before", "After"] as const).map((label) => (
+                <div
+                  key={label}
+                  className="bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border overflow-hidden"
+                >
+                  <div className="px-3 py-2 border-b border-slate-100 dark:border-dark-border">
+                    <p className="text-xs font-semibold text-slate-500 dark:text-dark-text-muted uppercase tracking-widest">
+                      {label}
+                    </p>
+                  </div>
+                  <div className="p-2 flex items-center justify-center bg-slate-50 dark:bg-dark-surface-alt">
+                    <img
+                      src={preview}
+                      alt={`${label} — page 1`}
+                      className={`max-h-52 w-auto rounded shadow-sm${label === "After" ? " grayscale" : ""}`}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
 
           {!result ? (
             <button
