@@ -85,8 +85,24 @@ export function Layout({ children, onHome, showBack }: LayoutProps) {
       <main className="flex-1 max-w-6xl mx-auto px-4 sm:px-6 py-8 w-full">{children}</main>
 
       <footer className="border-t border-slate-200 dark:border-dark-border bg-white/50 dark:bg-dark-surface/50">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 text-center text-sm text-slate-400 dark:text-dark-text-muted">
-          All processing happens in your browser. No files are uploaded to any server.
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-3">
+          {/* Brand + copyright */}
+          <div className="flex items-center gap-2">
+            <img src="/icons/logo.svg" alt="" aria-hidden="true" className="w-5 h-5 opacity-60" />
+            <span className="text-xs font-medium text-slate-500 dark:text-dark-text-muted">
+              BytePDF
+            </span>
+            <span className="text-slate-300 dark:text-dark-border text-xs">·</span>
+            <span className="text-xs text-slate-400 dark:text-dark-text-muted">
+              © {new Date().getFullYear()} Sumit Sahoo
+            </span>
+          </div>
+
+          {/* Privacy note */}
+          <div className="flex items-center gap-1.5 text-xs text-slate-400 dark:text-dark-text-muted">
+            <Lock className="w-3.5 h-3.5 shrink-0" />
+            <span>All processing is done in your browser — files never leave your device.</span>
+          </div>
         </div>
       </footer>
     </div>
