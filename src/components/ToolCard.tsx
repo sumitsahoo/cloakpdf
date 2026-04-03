@@ -21,33 +21,88 @@ interface ToolCardProps {
   onSelect: (id: ToolId) => void;
 }
 
+const categoryTheme: Record<
+  string,
+  {
+    iconBg: string;
+    iconColor: string;
+    hoverBg: string;
+    glow: string;
+    border: string;
+    shadow: string;
+  }
+> = {
+  organise: {
+    iconBg: "bg-blue-50 dark:bg-blue-900/30",
+    iconColor: "text-blue-600 dark:text-blue-400",
+    hoverBg: "group-hover:bg-blue-100 dark:group-hover:bg-blue-900/50",
+    glow: "rgba(37,99,235,0.09)",
+    border: "hover:border-blue-300 dark:hover:border-blue-600",
+    shadow: "hover:shadow-blue-100/60 dark:hover:shadow-blue-900/30",
+  },
+  transform: {
+    iconBg: "bg-violet-50 dark:bg-violet-900/30",
+    iconColor: "text-violet-600 dark:text-violet-400",
+    hoverBg: "group-hover:bg-violet-100 dark:group-hover:bg-violet-900/50",
+    glow: "rgba(124,58,237,0.09)",
+    border: "hover:border-violet-300 dark:hover:border-violet-600",
+    shadow: "hover:shadow-violet-100/60 dark:hover:shadow-violet-900/30",
+  },
+  annotate: {
+    iconBg: "bg-emerald-50 dark:bg-emerald-900/30",
+    iconColor: "text-emerald-600 dark:text-emerald-400",
+    hoverBg: "group-hover:bg-emerald-100 dark:group-hover:bg-emerald-900/50",
+    glow: "rgba(16,185,129,0.09)",
+    border: "hover:border-emerald-300 dark:hover:border-emerald-600",
+    shadow: "hover:shadow-emerald-100/60 dark:hover:shadow-emerald-900/30",
+  },
+  security: {
+    iconBg: "bg-amber-50 dark:bg-amber-900/30",
+    iconColor: "text-amber-600 dark:text-amber-400",
+    hoverBg: "group-hover:bg-amber-100 dark:group-hover:bg-amber-900/50",
+    glow: "rgba(245,158,11,0.09)",
+    border: "hover:border-amber-300 dark:hover:border-amber-600",
+    shadow: "hover:shadow-amber-100/60 dark:hover:shadow-amber-900/30",
+  },
+};
+
+const fallbackTheme = categoryTheme.organise;
+
 export const ToolCard = memo(function ToolCard({ tool, onSelect }: ToolCardProps) {
   const cardRef = useRef<HTMLButtonElement>(null);
   const [glowStyle, setGlowStyle] = useState<React.CSSProperties>({ opacity: 0 });
 
-  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
-    const card = cardRef.current;
-    if (!card) return;
-    const rect = card.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    setGlowStyle({
-      opacity: 1,
-      background: `radial-gradient(300px circle at ${x}px ${y}px, rgba(37,99,235,0.08), transparent 70%)`,
-    });
-  }, []);
+  const theme = categoryTheme[tool.category ?? ""] ?? fallbackTheme;
+
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent<HTMLButtonElement>) => {
+      const card = cardRef.current;
+      if (!card) return;
+      const rect = card.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      setGlowStyle({
+        opacity: 1,
+        background: `radial-gradient(300px circle at ${x}px ${y}px, ${theme.glow}, transparent 70%)`,
+      });
+    },
+    [theme.glow],
+  );
 
   const handleMouseLeave = useCallback(() => {
     setGlowStyle({ opacity: 0 });
   }, []);
 
+  const Icon = tool.icon;
+
   return (
     <button
+      type="button"
       ref={cardRef}
       onClick={() => onSelect(tool.id as ToolId)}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
-      className="group relative overflow-hidden bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border p-6 text-left hover:border-primary-300 dark:hover:border-primary-600 hover:shadow-lg hover:shadow-primary-100/50 dark:hover:shadow-primary-900/30 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer"
+      className={`group relative overflow-hidden bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border p-6 text-left hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 cursor-pointer ${theme.border} ${theme.shadow}`}
     >
       {/* Cursor spotlight glow */}
       <div
@@ -55,8 +110,10 @@ export const ToolCard = memo(function ToolCard({ tool, onSelect }: ToolCardProps
         style={glowStyle}
       />
 
-      <div className="relative z-10 w-12 h-12 bg-primary-50 dark:bg-primary-900/40 group-hover:bg-primary-100 dark:group-hover:bg-primary-900/60 group-hover:scale-110 group-hover:-translate-y-0.5 rounded-xl flex items-center justify-center mb-4 transition-all duration-200 text-2xl">
-        {tool.icon}
+      <div
+        className={`relative z-10 w-12 h-12 ${theme.iconBg} ${theme.hoverBg} group-hover:scale-110 group-hover:-translate-y-0.5 rounded-xl flex items-center justify-center mb-4 transition-all duration-200`}
+      >
+        <Icon className={`w-6 h-6 ${theme.iconColor}`} />
       </div>
       <h3 className="relative z-10 font-semibold text-slate-800 dark:text-dark-text mb-1">
         {tool.title}

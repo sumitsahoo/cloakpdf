@@ -31,9 +31,45 @@
  */
 
 import { useState, useCallback, useMemo, useRef, useEffect, lazy, Suspense } from "react";
+import {
+  AlignCenter,
+  Archive,
+  ArrowUpDown,
+  BookMarked,
+  ClipboardList,
+  Copy,
+  Crop,
+  EyeOff,
+  FileImage,
+  FileOutput,
+  FileSearch,
+  FilePlus,
+  FileText,
+  FileX,
+  FolderOpen,
+  GitMerge,
+  Hash,
+  Images,
+  Layers,
+  LayoutDashboard,
+  LayoutGrid,
+  Lock,
+  Pencil,
+  PenTool,
+  Repeat2,
+  RotateCw,
+  Scale,
+  ScanText,
+  Search,
+  Shield,
+  Stamp,
+  Trash2,
+  Wrench,
+  X,
+  Zap,
+} from "lucide-react";
 import { Layout } from "./components/Layout.tsx";
 import { ToolCard } from "./components/ToolCard.tsx";
-import { Search, X } from "lucide-react";
 import type { Tool, ToolId } from "./types.ts";
 
 // ── Lazy-loaded tool components (code-split per tool) ────────────
@@ -77,70 +113,70 @@ const tools: Tool[] = [
     id: "merge",
     title: "Merge PDFs",
     description: "Combine multiple PDF files into one document",
-    icon: "📑",
+    icon: GitMerge,
     category: "organise",
   },
   {
     id: "extract-pages",
     title: "Extract Pages",
     description: "Select specific pages and save them as a new PDF",
-    icon: "📤",
+    icon: FileOutput,
     category: "organise",
   },
   {
     id: "reorder",
     title: "Reorder Pages",
     description: "Drag and drop to rearrange page order",
-    icon: "↕️",
+    icon: ArrowUpDown,
     category: "organise",
   },
   {
     id: "delete",
     title: "Delete Pages",
     description: "Remove unwanted pages from a PDF",
-    icon: "🗑️",
+    icon: Trash2,
     category: "organise",
   },
   {
     id: "rotate",
     title: "Rotate Pages",
     description: "Rotate individual pages in any direction",
-    icon: "🔄",
+    icon: RotateCw,
     category: "organise",
   },
   {
     id: "add-blank-page",
     title: "Add Blank Page",
     description: "Insert a blank page at any position in the document",
-    icon: "📄",
+    icon: FilePlus,
     category: "organise",
   },
   {
     id: "duplicate-page",
     title: "Duplicate Page",
     description: "Copy a page and insert it at any position",
-    icon: "📋",
+    icon: Copy,
     category: "organise",
   },
   {
     id: "reverse-pages",
     title: "Reverse Pages",
     description: "Flip the page order of a PDF in one click",
-    icon: "🔃",
+    icon: Repeat2,
     category: "organise",
   },
   {
     id: "add-bookmarks",
     title: "Add Bookmarks",
     description: "Add a clickable outline for quick in-document navigation",
-    icon: "🔖",
+    icon: BookMarked,
     category: "organise",
   },
   {
     id: "remove-blank-pages",
     title: "Remove Blank Pages",
     description: "Auto-detect and remove empty pages from a PDF",
-    icon: "🧹",
+    icon: FileX,
     category: "organise",
   },
 
@@ -149,63 +185,63 @@ const tools: Tool[] = [
     id: "compress",
     title: "Compress PDF",
     description: "Reduce PDF file size for easier sharing",
-    icon: "🗜️",
+    icon: Archive,
     category: "transform",
   },
   {
     id: "pdf-to-image",
     title: "PDF to Image",
     description: "Export pages as PNG or JPEG images",
-    icon: "🖼️",
+    icon: FileImage,
     category: "transform",
   },
   {
     id: "images-to-pdf",
     title: "Images to PDF",
     description: "Convert images into a PDF document",
-    icon: "🖼️",
+    icon: Images,
     category: "transform",
   },
   {
     id: "ocr",
     title: "OCR PDF",
     description: "Extract text from scanned PDFs using OCR",
-    icon: "🔍",
+    icon: ScanText,
     category: "transform",
   },
   {
     id: "crop-pages",
     title: "Crop Pages",
     description: "Trim page margins by adjusting the visible area",
-    icon: "✂️",
+    icon: Crop,
     category: "transform",
   },
   {
     id: "flatten",
     title: "Flatten PDF",
     description: "Remove form fields and annotations, making the PDF non-editable",
-    icon: "📐",
+    icon: Layers,
     category: "transform",
   },
   {
     id: "nup-pages",
     title: "N-up Pages",
     description: "Arrange multiple pages onto a single sheet for compact printing",
-    icon: "🔲",
+    icon: LayoutGrid,
     category: "transform",
   },
   {
     id: "contact-sheet",
     title: "Contact Sheet",
     description: "Render all pages as a thumbnail grid for quick visual review",
-    icon: "📇",
+    icon: LayoutDashboard,
     category: "transform",
   },
   {
     id: "repair-pdf",
     title: "Repair PDF",
     description: "Fix structural issues in corrupted or malformed PDFs",
-    icon: "🔧",
+    icon: Wrench,
     category: "transform",
   },
 
@@ -214,42 +250,42 @@ const tools: Tool[] = [
     id: "signature",
     title: "Add Signature",
     description: "Draw or upload a custom signature image and place it on a page",
-    icon: "✍️",
+    icon: PenTool,
     category: "annotate",
   },
   {
     id: "fill-pdf-form",
     title: "Fill PDF Form",
     description: "Fill interactive form fields in existing PDFs",
-    icon: "📝",
+    icon: ClipboardList,
     category: "annotate",
   },
   {
     id: "stamp-pdf",
     title: "Stamp & Watermark",
     description: "Apply pre-built stamps or custom text watermarks with configurable style",
-    icon: "🖊️",
+    icon: Stamp,
     category: "annotate",
   },
   {
     id: "add-page-numbers",
     title: "Add Page Numbers",
     description: "Insert page numbers with custom position and format",
-    icon: "🔢",
+    icon: Hash,
     category: "annotate",
   },
   {
     id: "bates-numbering",
     title: "Bates Numbering",
     description: "Stamp sequential identifiers for legal and compliance workflows",
-    icon: "⚖️",
+    icon: Scale,
     category: "annotate",
   },
   {
     id: "header-footer",
     title: "Header & Footer",
     description: "Add repeating text at the top and/or bottom of every page",
-    icon: "📝",
+    icon: AlignCenter,
     category: "annotate",
   },
 
@@ -258,28 +294,28 @@ const tools: Tool[] = [
     id: "pdf-password",
     title: "PDF Password",
     description: "Add or remove a password and control print, copy, and edit rights",
-    icon: "🔒",
+    icon: Lock,
     category: "security",
   },
   {
     id: "redact-pdf",
     title: "Redact PDF",
     description: "Permanently black out sensitive text and images",
-    icon: "⬛",
+    icon: EyeOff,
     category: "security",
   },
   {
     id: "metadata",
     title: "Edit Metadata",
     description: "View and edit PDF document properties",
-    icon: "📋",
+    icon: FileText,
     category: "security",
   },
   {
     id: "pdf-inspector",
     title: "PDF Inspector",
     description: "View version, page dimensions, metadata, and encryption status",
-    icon: "🔎",
+    icon: FileSearch,
     category: "security",
   },
 ];
@@ -291,25 +327,33 @@ const categories = [
     key: "organise",
     label: "Organise & Edit",
     description: "Rearrange, combine, and manage your PDF pages",
-    icon: "📄",
+    icon: FolderOpen,
+    iconBg: "bg-blue-50 dark:bg-blue-900/30",
+    iconColor: "text-blue-600 dark:text-blue-400",
   },
   {
     key: "transform",
     label: "Transform & Convert",
     description: "Compress, convert, and extract content",
-    icon: "🔄",
+    icon: Zap,
+    iconBg: "bg-violet-50 dark:bg-violet-900/30",
+    iconColor: "text-violet-600 dark:text-violet-400",
   },
   {
     key: "annotate",
     label: "Annotate & Sign",
     description: "Add watermarks, signatures, and overlays",
-    icon: "✏️",
+    icon: Pencil,
+    iconBg: "bg-emerald-50 dark:bg-emerald-900/30",
+    iconColor: "text-emerald-600 dark:text-emerald-400",
   },
   {
     key: "security",
     label: "Security & Properties",
     description: "Protect your PDFs and manage metadata",
-    icon: "🔐",
+    icon: Shield,
+    iconBg: "bg-amber-50 dark:bg-amber-900/30",
+    iconColor: "text-amber-600 dark:text-amber-400",
   },
 ];
 
@@ -520,9 +564,12 @@ function HomeScreen({ onSelectTool }: HomeScreenProps) {
                 style={{ animationDelay: `${catIdx * 80}ms` }}
               >
                 <div className="flex items-center gap-3 mb-4">
-                  <span className="text-2xl" aria-hidden="true">
-                    {cat.icon}
-                  </span>
+                  <div
+                    className={`w-10 h-10 ${cat.iconBg} rounded-xl flex items-center justify-center shrink-0`}
+                    aria-hidden="true"
+                  >
+                    <cat.icon className={`w-5 h-5 ${cat.iconColor}`} />
+                  </div>
                   <div>
                     <h2 className="text-lg font-semibold text-slate-800 dark:text-dark-text">
                       {cat.label}
