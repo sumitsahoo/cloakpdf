@@ -2,6 +2,8 @@
  * Shared TypeScript type definitions used across the application.
  */
 
+import type { ComponentType } from "react";
+
 /** A 1-based inclusive page range used by the Split PDF tool. */
 export interface PageRange {
   start: number;
@@ -47,7 +49,7 @@ export interface Tool {
   id: string;
   title: string;
   description: string;
-  icon: string;
+  icon: ComponentType<{ className?: string }>;
   category?: string;
 }
 
