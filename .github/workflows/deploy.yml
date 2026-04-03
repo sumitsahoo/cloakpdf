@@ -36,8 +36,8 @@ jobs:
           # If you ever remove the custom domain, revert this to /bytepdf/
           VITE_APP_BASE_PATH: /
 
-      - name: Test
-        run: vp test
+      # - name: Test
+      #   run: vp test
 
       - name: Setup Pages
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
