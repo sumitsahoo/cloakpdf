@@ -34,6 +34,7 @@ import { useState, useCallback, useMemo, useRef, useEffect, lazy, Suspense } fro
 import {
   AlignCenter,
   Archive,
+  Contrast,
   ArrowUpDown,
   BookMarked,
   ClipboardList,
@@ -103,6 +104,7 @@ const NupPages = lazy(() => import("./tools/NupPages.tsx"));
 const RemoveBlankPages = lazy(() => import("./tools/RemoveBlankPages.tsx"));
 const BatesNumbering = lazy(() => import("./tools/BatesNumbering.tsx"));
 const ContactSheet = lazy(() => import("./tools/ContactSheet.tsx"));
+const GrayscalePdf = lazy(() => import("./tools/GrayscalePdf.tsx"));
 
 // ── Tool metadata displayed on the home screen grid ──────────────
 // Tools within each category are ordered by importance / frequency of use.
@@ -242,6 +244,13 @@ const tools: Tool[] = [
     title: "Repair PDF",
     description: "Fix structural issues in corrupted or malformed PDFs",
     icon: Wrench,
+    category: "transform",
+  },
+  {
+    id: "grayscale",
+    title: "Grayscale PDF",
+    description: "Convert all pages to grayscale, removing all colour information",
+    icon: Contrast,
     category: "transform",
   },
 
@@ -389,6 +398,7 @@ const toolComponents: Record<string, React.LazyExoticComponent<React.ComponentTy
   "remove-blank-pages": RemoveBlankPages,
   "bates-numbering": BatesNumbering,
   "contact-sheet": ContactSheet,
+  grayscale: GrayscalePdf,
 };
 
 // ── Platform detection (module-level, computed once) ──────────────
