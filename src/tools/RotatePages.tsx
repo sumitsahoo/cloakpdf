@@ -7,13 +7,13 @@
  * modified on save.
  */
 
-import { useState, useCallback } from "react";
+import { useCallback, useState } from "react";
+import { FlipVertical2, RotateCcw, RotateCw, Undo2 } from "lucide-react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { PageThumbnail } from "../components/PageThumbnail.tsx";
-import { RotateCcw, RotateCw, FlipVertical2 } from "lucide-react";
+import { downloadPdf } from "../utils/file-helpers.ts";
 import { rotatePages } from "../utils/pdf-operations.ts";
 import { renderAllThumbnails } from "../utils/pdf-renderer.ts";
-import { downloadPdf } from "../utils/file-helpers.ts";
 
 export default function RotatePages() {
   const [file, setFile] = useState<File | null>(null);
@@ -70,6 +70,10 @@ export default function RotatePages() {
     [thumbnails.length],
   );
 
+  const handleReset = useCallback(() => {
+    setRotations(new Map());
+  }, []);
+
   const handleApply = useCallback(async () => {
     if (!file || rotations.size === 0) return;
     setProcessing(true);
@@ -125,36 +129,57 @@ export default function RotatePages() {
               <div className="w-8 h-8 border-3 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-              {thumbnails.map((thumb, i) => (
-                <div key={i} className="space-y-2">
-                  <PageThumbnail src={thumb} pageNumber={i + 1} rotation={rotations.get(i) ?? 0} />
-                  <div className="flex justify-center gap-1">
-                    <button
-                      onClick={() => rotatePage(i, -90)}
-                      className="p-1.5 rounded hover:bg-slate-100 dark:hover:bg-dark-surface-alt text-slate-500 dark:text-dark-text-muted transition-colors"
-                      title="Rotate 90° left"
-                    >
-                      <RotateCcw className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => rotatePage(i, 90)}
-                      className="p-1.5 rounded hover:bg-slate-100 dark:hover:bg-dark-surface-alt text-slate-500 dark:text-dark-text-muted transition-colors"
-                      title="Rotate 90° right"
-                    >
-                      <RotateCw className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => rotatePage(i, 180)}
-                      className="p-1.5 rounded hover:bg-slate-100 dark:hover:bg-dark-surface-alt text-slate-500 dark:text-dark-text-muted transition-colors"
-                      title="Rotate 180°"
-                    >
-                      <FlipVertical2 className="w-4 h-4" />
-                    </button>
+            <>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <p className="text-sm font-medium text-slate-700 dark:text-dark-text">
+                  Click rotation buttons on each page to adjust
+                </p>
+                {rotations.size > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleReset}
+                    className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 dark:text-dark-text-muted dark:hover:text-dark-text transition-colors"
+                  >
+                    <Undo2 className="w-4 h-4" />
+                    Reset
+                  </button>
+                )}
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                {thumbnails.map((thumb, i) => (
+                  <div key={i} className="space-y-2">
+                    <PageThumbnail
+                      src={thumb}
+                      pageNumber={i + 1}
+                      rotation={rotations.get(i) ?? 0}
+                    />
+                    <div className="flex justify-center gap-1">
+                      <button
+                        onClick={() => rotatePage(i, -90)}
+                        className="p-1.5 rounded hover:bg-slate-100 dark:hover:bg-dark-surface-alt text-slate-500 dark:text-dark-text-muted transition-colors"
+                        title="Rotate 90° left"
+                      >
+                        <RotateCcw className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => rotatePage(i, 90)}
+                        className="p-1.5 rounded hover:bg-slate-100 dark:hover:bg-dark-surface-alt text-slate-500 dark:text-dark-text-muted transition-colors"
+                        title="Rotate 90° right"
+                      >
+                        <RotateCw className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => rotatePage(i, 180)}
+                        className="p-1.5 rounded hover:bg-slate-100 dark:hover:bg-dark-surface-alt text-slate-500 dark:text-dark-text-muted transition-colors"
+                        title="Rotate 180°"
+                      >
+                        <FlipVertical2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            </>
           )}
 
           {rotations.size > 0 && (

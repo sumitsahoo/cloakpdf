@@ -188,35 +188,36 @@ export function ColorPicker({ value, onChange }: ColorPickerProps) {
 
   return (
     <div className="relative" ref={popoverRef}>
-      <div className="flex items-center gap-2">
-        <span className="text-xs text-slate-400 dark:text-dark-text-muted">Color:</span>
+      <div className="flex items-center gap-2.5">
+        <span className="text-xs text-slate-400 dark:text-dark-text-muted shrink-0">Color:</span>
 
         {PRESETS.map((p) => (
           <button
             key={p.hex}
-            title={p.label}
+            aria-label={`${p.label} color${value === p.hex ? " (selected)" : ""}`}
             onClick={() => {
               onChange(p.hex);
               setOpen(false);
             }}
-            className={`w-5 h-5 rounded-full border-2 transition-transform ${
+            className={`relative w-6 h-6 sm:w-5 sm:h-5 rounded-full border-2 touch-manipulation motion-safe:transition-transform ${
               value === p.hex
                 ? "border-primary-500 scale-125"
                 : "border-slate-300 dark:border-dark-border hover:scale-110"
-            }`}
+            } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-1`}
             style={{ backgroundColor: p.hex }}
           />
         ))}
 
         {/* Custom colour trigger */}
         <button
-          title="Custom color"
+          aria-label={`Custom color${!isPreset ? ` (${value})` : ""}${open ? " — picker open" : ""}`}
+          aria-expanded={open}
           onClick={toggleOpen}
-          className={`w-5 h-5 rounded-full border-2 transition-transform flex items-center justify-center ${
+          className={`relative w-6 h-6 sm:w-5 sm:h-5 rounded-full border-2 touch-manipulation motion-safe:transition-transform flex items-center justify-center ${
             open || !isPreset
               ? "border-primary-500 scale-125"
               : "border-slate-300 dark:border-dark-border hover:scale-110"
-          }`}
+          } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-1`}
           style={{
             background: !isPreset
               ? value
@@ -224,18 +225,25 @@ export function ColorPicker({ value, onChange }: ColorPickerProps) {
           }}
         >
           {isPreset && (
-            <span className="text-white text-[9px] font-bold drop-shadow-sm leading-none">+</span>
+            <span
+              className="text-white text-[9px] font-bold drop-shadow-sm leading-none"
+              aria-hidden="true"
+            >
+              +
+            </span>
           )}
         </button>
       </div>
 
       {/* ---- Popover ---- */}
       {open && (
-        <div className="absolute left-0 z-50 mt-2 w-56 rounded-xl border border-slate-200 dark:border-dark-border bg-white dark:bg-dark-surface shadow-lg p-3 space-y-3">
+        <div className="absolute left-0 z-50 mt-2 w-64 max-w-[calc(100vw-1rem)] rounded-xl border border-slate-200 dark:border-dark-border bg-white dark:bg-dark-surface shadow-xl p-3 space-y-3">
           {/* Saturation / Brightness area */}
           <div
             ref={svAreaRef}
-            className="relative w-full h-32 rounded-lg cursor-crosshair touch-none select-none"
+            role="presentation"
+            aria-label="Saturation and brightness picker"
+            className="relative w-full h-40 sm:h-36 rounded-lg cursor-crosshair touch-none select-none"
             style={{
               background: `linear-gradient(to top, #000, transparent), linear-gradient(to right, #fff, ${hueColor})`,
             }}
@@ -245,7 +253,7 @@ export function ColorPicker({ value, onChange }: ColorPickerProps) {
           >
             {/* Indicator */}
             <div
-              className="absolute w-3.5 h-3.5 rounded-full border-2 border-white shadow-md pointer-events-none -translate-x-1/2 -translate-y-1/2"
+              className="absolute w-4 h-4 rounded-full border-2 border-white shadow-md pointer-events-none -translate-x-1/2 -translate-y-1/2"
               style={{
                 left: `${hsv.s * 100}%`,
                 top: `${(1 - hsv.v) * 100}%`,
@@ -257,11 +265,12 @@ export function ColorPicker({ value, onChange }: ColorPickerProps) {
           {/* Hue slider */}
           <input
             type="range"
+            aria-label="Hue"
             min={0}
             max={360}
             value={Math.round(hsv.h)}
             onChange={handleHueChange}
-            className="w-full h-2.5 rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-slate-300 [&::-webkit-slider-thumb]:shadow-md [&::-moz-range-thumb]:w-3.5 [&::-moz-range-thumb]:h-3.5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-slate-300 [&::-moz-range-thumb]:shadow-md"
+            className="w-full h-3 rounded-full appearance-none cursor-pointer touch-manipulation [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-slate-300 [&::-webkit-slider-thumb]:shadow-md [&::-moz-range-thumb]:w-5 [&::-moz-range-thumb]:h-5 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:bg-white [&::-moz-range-thumb]:border-2 [&::-moz-range-thumb]:border-slate-300 [&::-moz-range-thumb]:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-1"
             style={{
               background: "linear-gradient(to right, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00)",
             }}
@@ -270,16 +279,21 @@ export function ColorPicker({ value, onChange }: ColorPickerProps) {
           {/* Hex input + preview */}
           <div className="flex items-center gap-2">
             <div
-              className="w-7 h-7 rounded-md border border-slate-200 dark:border-dark-border shrink-0"
+              className="w-8 h-8 rounded-md border border-slate-200 dark:border-dark-border shrink-0"
               style={{ backgroundColor: value }}
+              aria-hidden="true"
             />
             <input
               type="text"
+              aria-label="Hex color value"
+              name="hex-color"
+              autoComplete="off"
               value={hexInput}
               onChange={handleHexInput}
               maxLength={7}
               spellCheck={false}
-              className="flex-1 px-2 py-1 text-xs font-mono border border-slate-300 dark:border-dark-border dark:bg-dark-surface-alt dark:text-dark-text rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500"
+              inputMode="text"
+              className="flex-1 min-w-0 px-2 py-1.5 text-sm sm:text-xs font-mono border border-slate-300 dark:border-dark-border dark:bg-dark-surface-alt dark:text-dark-text rounded-md focus:outline-none focus-visible:ring-1 focus-visible:ring-primary-500"
             />
           </div>
         </div>

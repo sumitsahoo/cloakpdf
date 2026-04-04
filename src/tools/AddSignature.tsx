@@ -14,10 +14,11 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { SignaturePad } from "../components/SignaturePad.tsx";
 import { ColorPicker, hexToRgb } from "../components/ColorPicker.tsx";
+import { PageThumbnail } from "../components/PageThumbnail.tsx";
 import { addSignature } from "../utils/pdf-operations.ts";
 import { renderAllThumbnails } from "../utils/pdf-renderer.ts";
 import { downloadPdf } from "../utils/file-helpers.ts";
-import { PenLine, Upload, Move, Maximize2 } from "lucide-react";
+import { PenLine, Upload, Move, Maximize2, Check, CheckSquare, X } from "lucide-react";
 
 type SignatureMode = "draw" | "upload";
 
@@ -79,6 +80,7 @@ export default function AddSignature() {
   const [file, setFile] = useState<File | null>(null);
   const [thumbnails, setThumbnails] = useState<string[]>([]);
   const [selectedPage, setSelectedPage] = useState(0);
+  const [selectedPages, setSelectedPages] = useState<Set<number>>(new Set());
   const [signatureDataUrl, setSignatureDataUrl] = useState("");
   const [processing, setProcessing] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -167,12 +169,24 @@ export default function AddSignature() {
     };
   }, []);
 
+  /* ---- page toggle for multi-select ---- */
+  const togglePage = useCallback((index: number) => {
+    setSelectedPages((prev) => {
+      const next = new Set(prev);
+      if (next.has(index)) next.delete(index);
+      else next.add(index);
+      return next;
+    });
+    setSelectedPage(index);
+  }, []);
+
   /* ---- file handlers ---- */
   const handleFile = useCallback(async (files: File[]) => {
     const pdf = files[0];
     if (!pdf) return;
     setFile(pdf);
     setSelectedPage(0);
+    setSelectedPages(new Set());
     setLoading(true);
     setError(null);
     try {
@@ -236,7 +250,7 @@ export default function AddSignature() {
 
       const pageIndices = applyToAllPages
         ? Array.from({ length: pdfDoc.getPageCount() }, (_, i) => i)
-        : [selectedPage];
+        : [...selectedPages].sort((a, b) => a - b);
 
       const result = await addSignature(file, signatureDataUrl, pageIndices, {
         x: Math.max(0, x),
@@ -252,7 +266,7 @@ export default function AddSignature() {
     } finally {
       setProcessing(false);
     }
-  }, [file, signatureDataUrl, selectedPage, position, sigSize, applyToAllPages]);
+  }, [file, signatureDataUrl, selectedPage, position, sigSize, applyToAllPages, selectedPages]);
 
   return (
     <div className="space-y-6">
@@ -275,6 +289,7 @@ export default function AddSignature() {
                 setThumbnails([]);
                 setSignatureDataUrl("");
                 setUploadedImageUrl("");
+                setSelectedPages(new Set());
               }}
               className="text-sm text-primary-600 hover:text-primary-700"
             >
@@ -472,7 +487,10 @@ export default function AddSignature() {
                     <input
                       type="checkbox"
                       checked={applyToAllPages}
-                      onChange={(e) => setApplyToAllPages(e.target.checked)}
+                      onChange={(e) => {
+                        setApplyToAllPages(e.target.checked);
+                        if (e.target.checked) setSelectedPages(new Set());
+                      }}
                       className="accent-primary-600 w-4 h-4 rounded"
                     />
                     <span className="text-sm font-medium text-slate-700 dark:text-dark-text">
@@ -481,18 +499,64 @@ export default function AddSignature() {
                   </label>
 
                   {!applyToAllPages && (
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 dark:text-dark-text mb-1.5">
-                        Select Page ({selectedPage + 1} of {thumbnails.length})
-                      </label>
-                      <input
-                        type="range"
-                        min={0}
-                        max={thumbnails.length - 1}
-                        value={selectedPage}
-                        onChange={(e) => setSelectedPage(Number(e.target.value))}
-                        className="w-full accent-primary-600"
-                      />
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-medium text-slate-700 dark:text-dark-text">
+                          Select pages
+                          {selectedPages.size > 0 && (
+                            <span className="text-primary-600 dark:text-primary-400 ml-1.5">
+                              ({selectedPages.size} selected)
+                            </span>
+                          )}
+                        </p>
+                        <div className="flex items-center gap-3">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedPages(new Set(thumbnails.map((_, i) => i)));
+                              setSelectedPage(0);
+                            }}
+                            className="inline-flex items-center gap-1.5 text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 transition-colors"
+                          >
+                            <CheckSquare className="w-4 h-4" />
+                            Select all
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedPages(new Set())}
+                            className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 dark:text-dark-text-muted dark:hover:text-dark-text transition-colors"
+                          >
+                            <X className="w-4 h-4" />
+                            Clear
+                          </button>
+                        </div>
+                      </div>
+                      {loading ? (
+                        <div className="flex items-center justify-center py-8">
+                          <div className="w-6 h-6 border-2 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-3 gap-2">
+                          {thumbnails.map((thumb, i) => (
+                            <PageThumbnail
+                              key={i + 1}
+                              src={thumb}
+                              pageNumber={i + 1}
+                              selected={selectedPages.has(i)}
+                              onClick={() => togglePage(i)}
+                              overlay={
+                                selectedPages.has(i) ? (
+                                  <div className="bg-primary-600/20 inset-0 absolute flex items-center justify-center">
+                                    <div className="w-5 h-5 rounded-full bg-primary-600 flex items-center justify-center shadow">
+                                      <Check className="w-3 h-3 text-white" strokeWidth={3} />
+                                    </div>
+                                  </div>
+                                ) : null
+                              }
+                            />
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -549,7 +613,11 @@ export default function AddSignature() {
 
           <button
             onClick={handleApply}
-            disabled={processing || !signatureDataUrl}
+            disabled={
+              processing ||
+              !signatureDataUrl ||
+              (!applyToAllPages && thumbnails.length > 1 && selectedPages.size === 0)
+            }
             className="w-full bg-primary-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {processing ? "Applying..." : "Apply Signature & Download"}

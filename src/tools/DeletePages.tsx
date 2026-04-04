@@ -6,13 +6,13 @@
  * must remain. On confirmation, a new PDF is created with the remaining pages.
  */
 
-import { useState, useCallback } from "react";
+import { useCallback, useState } from "react";
+import { Trash2, Undo2 } from "lucide-react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { PageThumbnail } from "../components/PageThumbnail.tsx";
-import { deletePages } from "../utils/pdf-operations.ts";
-import { Trash2 } from "lucide-react";
-import { renderAllThumbnails } from "../utils/pdf-renderer.ts";
 import { downloadPdf } from "../utils/file-helpers.ts";
+import { deletePages } from "../utils/pdf-operations.ts";
+import { renderAllThumbnails } from "../utils/pdf-renderer.ts";
 
 export default function DeletePages() {
   const [file, setFile] = useState<File | null>(null);
@@ -52,6 +52,10 @@ export default function DeletePages() {
       else next.add(pageIndex);
       return next;
     });
+  }, []);
+
+  const handleReset = useCallback(() => {
+    setSelectedPages(new Set());
   }, []);
 
   /** Create a new PDF excluding all selected pages, then trigger download. */
@@ -108,24 +112,41 @@ export default function DeletePages() {
               <div className="w-8 h-8 border-3 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
             </div>
           ) : (
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
-              {thumbnails.map((thumb, i) => (
-                <PageThumbnail
-                  key={i}
-                  src={thumb}
-                  pageNumber={i + 1}
-                  selected={selectedPages.has(i)}
-                  onClick={() => togglePage(i)}
-                  overlay={
-                    selectedPages.has(i) ? (
-                      <div className="bg-red-500/70 inset-0 absolute flex items-center justify-center">
-                        <Trash2 className="w-8 h-8 text-white" />
-                      </div>
-                    ) : null
-                  }
-                />
-              ))}
-            </div>
+            <>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <p className="text-sm font-medium text-slate-700 dark:text-dark-text">
+                  Click pages to mark them for deletion
+                </p>
+                {selectedPages.size > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleReset}
+                    className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 dark:text-dark-text-muted dark:hover:text-dark-text transition-colors"
+                  >
+                    <Undo2 className="w-4 h-4" />
+                    Reset
+                  </button>
+                )}
+              </div>
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+                {thumbnails.map((thumb, i) => (
+                  <PageThumbnail
+                    key={i}
+                    src={thumb}
+                    pageNumber={i + 1}
+                    selected={selectedPages.has(i)}
+                    onClick={() => togglePage(i)}
+                    overlay={
+                      selectedPages.has(i) ? (
+                        <div className="bg-red-500/70 inset-0 absolute flex items-center justify-center">
+                          <Trash2 className="w-8 h-8 text-white" />
+                        </div>
+                      ) : null
+                    }
+                  />
+                ))}
+              </div>
+            </>
           )}
 
           {selectedPages.size > 0 && selectedPages.size < thumbnails.length && (

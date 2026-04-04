@@ -1,12 +1,14 @@
 /**
  * Custom datetime input that replaces the native `datetime-local` picker
- * with a fully styled popover matching the app's design system.
+ * with a compact calendar grid popover matching the app's design system.
  *
  * Accepts/emits values in "YYYY-MM-DDTHH:mm" format (same as datetime-local)
  * so it's a drop-in replacement wherever that format is used.
+ *
+ * Future dates are not allowed.
  */
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 const MONTHS = [
   "January",
@@ -23,8 +25,14 @@ const MONTHS = [
   "December",
 ];
 
+const DAYS_SHORT = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+
 function getDaysInMonth(year: number, month: number): number {
   return new Date(year, month + 1, 0).getDate();
+}
+
+function getFirstDayOfWeek(year: number, month: number): number {
+  return new Date(year, month, 1).getDay();
 }
 
 function parseValue(value: string) {
@@ -71,14 +79,33 @@ interface DateTimeInputProps {
   onChange: (value: string) => void;
 }
 
-const selectClass =
-  "px-2 py-1.5 rounded-lg border border-slate-200 dark:border-dark-border bg-white dark:bg-dark-bg text-sm text-slate-800 dark:text-dark-text focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all appearance-none cursor-pointer";
+const timeSelectClass =
+  "px-2 py-1 rounded-md border border-slate-200 dark:border-dark-border bg-white dark:bg-dark-bg text-xs text-slate-800 dark:text-dark-text focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all appearance-none cursor-pointer";
 
 export function DateTimeInput({ id, value, onChange }: DateTimeInputProps) {
   const [open, setOpen] = useState(false);
+  const [showYearPicker, setShowYearPicker] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Close on outside click
+  const parsed = useMemo(() => parseValue(value), [value]);
+  const today = useMemo(() => new Date(), []);
+  const todayYear = today.getFullYear();
+  const todayMonth = today.getMonth();
+  const todayDay = today.getDate();
+
+  // Calendar view state
+  const [viewYear, setViewYear] = useState(parsed?.year ?? todayYear);
+  const [viewMonth, setViewMonth] = useState(parsed?.month ?? todayMonth);
+
+  // Sync view when value changes externally
+  useEffect(() => {
+    if (parsed) {
+      setViewYear(parsed.year);
+      setViewMonth(parsed.month);
+    }
+  }, [parsed, parsed?.year, parsed?.month]);
+
+  // Close on outside click / Escape
   useEffect(() => {
     if (!open) return;
     function handleClick(e: MouseEvent) {
@@ -97,11 +124,65 @@ export function DateTimeInput({ id, value, onChange }: DateTimeInputProps) {
     };
   }, [open]);
 
-  const parsed = parseValue(value);
-  const currentYear = new Date().getFullYear();
+  const isDateFuture = useCallback(
+    (year: number, month: number, day: number) => {
+      if (year > todayYear) return true;
+      if (year < todayYear) return false;
+      if (month > todayMonth) return true;
+      if (month < todayMonth) return false;
+      return day > todayDay;
+    },
+    [todayYear, todayMonth, todayDay],
+  );
 
-  const handlePart = useCallback(
-    (part: "year" | "month" | "day" | "hour" | "minute", val: number) => {
+  const canGoPrev = viewYear > todayYear - 30;
+  const canGoNext = useMemo(() => {
+    const nextMonth = viewMonth === 11 ? 0 : viewMonth + 1;
+    const nextYear = viewMonth === 11 ? viewYear + 1 : viewYear;
+    return nextYear < todayYear || (nextYear === todayYear && nextMonth <= todayMonth);
+  }, [viewMonth, viewYear, todayYear, todayMonth]);
+
+  const handlePrevMonth = () => {
+    if (!canGoPrev) return;
+    if (viewMonth === 0) {
+      setViewMonth(11);
+      setViewYear((y) => y - 1);
+    } else {
+      setViewMonth((m) => m - 1);
+    }
+  };
+
+  const handleNextMonth = () => {
+    if (!canGoNext) return;
+    if (viewMonth === 11) {
+      setViewMonth(0);
+      setViewYear((y) => y + 1);
+    } else {
+      setViewMonth((m) => m + 1);
+    }
+  };
+
+  const handleYearSelect = (year: number) => {
+    setViewYear(year);
+    // If the new year is the current year and the current viewMonth is in the future, clamp to today's month
+    if (year === todayYear && viewMonth > todayMonth) {
+      setViewMonth(todayMonth);
+    }
+    setShowYearPicker(false);
+  };
+
+  const handleDayClick = useCallback(
+    (day: number) => {
+      if (isDateFuture(viewYear, viewMonth, day)) return;
+      const now = new Date();
+      const base = parsed ?? { hour: now.getHours(), minute: now.getMinutes() };
+      onChange(buildValue(viewYear, viewMonth, day, base.hour, base.minute));
+    },
+    [viewYear, viewMonth, parsed, onChange, isDateFuture],
+  );
+
+  const handleTimePart = useCallback(
+    (part: "hour" | "minute", val: number) => {
       const now = new Date();
       const base = parsed ?? {
         year: now.getFullYear(),
@@ -111,9 +192,6 @@ export function DateTimeInput({ id, value, onChange }: DateTimeInputProps) {
         minute: 0,
       };
       const updated = { ...base, [part]: val };
-      // Clamp day to valid range when month/year changes
-      const maxDay = getDaysInMonth(updated.year, updated.month);
-      updated.day = Math.min(updated.day, maxDay);
       onChange(buildValue(updated.year, updated.month, updated.day, updated.hour, updated.minute));
     },
     [parsed, onChange],
@@ -124,12 +202,12 @@ export function DateTimeInput({ id, value, onChange }: DateTimeInputProps) {
       if (!parsed) return;
       const isCurrentlyPm = parsed.hour >= 12;
       if (ampm === "PM" && !isCurrentlyPm) {
-        handlePart("hour", parsed.hour + 12);
+        handleTimePart("hour", parsed.hour + 12);
       } else if (ampm === "AM" && isCurrentlyPm) {
-        handlePart("hour", parsed.hour - 12);
+        handleTimePart("hour", parsed.hour - 12);
       }
     },
-    [parsed, handlePart],
+    [parsed, handleTimePart],
   );
 
   const handleHour12Change = useCallback(
@@ -137,12 +215,12 @@ export function DateTimeInput({ id, value, onChange }: DateTimeInputProps) {
       if (!parsed) return;
       const isPm = parsed.hour >= 12;
       const h24 = isPm ? (h12 === 12 ? 12 : h12 + 12) : h12 === 12 ? 0 : h12;
-      handlePart("hour", h24);
+      handleTimePart("hour", h24);
     },
-    [parsed, handlePart],
+    [parsed, handleTimePart],
   );
 
-  const setToday = useCallback(() => {
+  const setToNow = useCallback(() => {
     const now = new Date();
     onChange(
       buildValue(
@@ -153,12 +231,24 @@ export function DateTimeInput({ id, value, onChange }: DateTimeInputProps) {
         now.getMinutes(),
       ),
     );
+    setViewYear(now.getFullYear());
+    setViewMonth(now.getMonth());
+    setShowYearPicker(false);
   }, [onChange]);
 
-  const daysInMonth = parsed ? getDaysInMonth(parsed.year, parsed.month) : 31;
   const hour12 = parsed ? parsed.hour % 12 || 12 : 12;
   const isPm = parsed ? parsed.hour >= 12 : false;
   const displayText = formatDisplay(value);
+
+  // Build calendar grid cells: negative = empty spacer, positive = day number
+  const daysInMonth = getDaysInMonth(viewYear, viewMonth);
+  const firstDayOfWeek = getFirstDayOfWeek(viewYear, viewMonth);
+  const cells: number[] = [];
+  for (let i = 0; i < firstDayOfWeek; i++) cells.push(-(i + 1));
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+
+  // Year range for the year picker
+  const yearList = Array.from({ length: 31 }, (_, i) => todayYear - 30 + i).reverse();
 
   return (
     <div ref={containerRef} className="relative w-full">
@@ -166,7 +256,10 @@ export function DateTimeInput({ id, value, onChange }: DateTimeInputProps) {
       <button
         id={id}
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          setOpen((v) => !v);
+          setShowYearPicker(false);
+        }}
         className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-bg text-sm text-left focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all flex items-center justify-between gap-2"
       >
         <span
@@ -192,69 +285,175 @@ export function DateTimeInput({ id, value, onChange }: DateTimeInputProps) {
         </svg>
       </button>
 
-      {/* Popover panel */}
+      {/* Popover panel — fixed width so it stays compact on wide triggers */}
       {open && (
-        <div className="absolute left-0 right-0 z-50 mt-1 p-4 bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border shadow-xl space-y-3">
-          {/* Date row */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs font-medium text-slate-500 dark:text-dark-text-muted w-8">
-              Date
-            </span>
-
-            {/* Day */}
-            <select
-              value={parsed?.day ?? ""}
-              onChange={(e) => handlePart("day", parseInt(e.target.value, 10))}
-              className={selectClass}
+        <div className="absolute left-0 z-50 mt-1 w-72 p-3 bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border shadow-xl space-y-2">
+          {/* Month/year navigation header */}
+          <div className="flex items-center justify-between gap-1">
+            <button
+              type="button"
+              onClick={handlePrevMonth}
+              disabled={!canGoPrev || showYearPicker}
+              aria-label="Previous month"
+              className={`p-1 rounded-md transition-colors ${
+                canGoPrev && !showYearPicker
+                  ? "hover:bg-slate-100 dark:hover:bg-dark-surface-alt text-slate-500 dark:text-dark-text-muted"
+                  : "text-slate-300 dark:text-slate-600 cursor-not-allowed"
+              }`}
             >
-              {!parsed && <option value="">—</option>}
-              {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((d) => (
-                <option key={d} value={d}>
-                  {d}
-                </option>
-              ))}
-            </select>
+              <svg
+                className="w-3.5 h-3.5"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </button>
 
-            {/* Month */}
-            <select
-              value={parsed?.month ?? ""}
-              onChange={(e) => handlePart("month", parseInt(e.target.value, 10))}
-              className={selectClass}
-            >
-              {!parsed && <option value="">—</option>}
-              {MONTHS.map((m, i) => (
-                <option key={m} value={i}>
-                  {m}
-                </option>
-              ))}
-            </select>
+            <div className="flex items-center gap-1 flex-1 justify-center">
+              <span className="text-xs font-semibold text-slate-700 dark:text-dark-text select-none">
+                {MONTHS[viewMonth].slice(0, 3)}
+              </span>
+              {/* Clickable year — toggles the year picker */}
+              <button
+                type="button"
+                onClick={() => setShowYearPicker((v) => !v)}
+                className={`flex items-center gap-0.5 text-xs font-semibold rounded px-1 py-0.5 transition-colors select-none ${
+                  showYearPicker
+                    ? "bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400"
+                    : "text-slate-700 dark:text-dark-text hover:bg-slate-100 dark:hover:bg-dark-surface-alt"
+                }`}
+                aria-label="Select year"
+              >
+                {viewYear}
+                <svg
+                  className={`w-3 h-3 transition-transform ${showYearPicker ? "rotate-180" : ""}`}
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  aria-hidden="true"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </button>
+            </div>
 
-            {/* Year */}
-            <select
-              value={parsed?.year ?? ""}
-              onChange={(e) => handlePart("year", parseInt(e.target.value, 10))}
-              className={selectClass}
+            <button
+              type="button"
+              onClick={handleNextMonth}
+              disabled={!canGoNext || showYearPicker}
+              aria-label="Next month"
+              className={`p-1 rounded-md transition-colors ${
+                canGoNext && !showYearPicker
+                  ? "hover:bg-slate-100 dark:hover:bg-dark-surface-alt text-slate-500 dark:text-dark-text-muted"
+                  : "text-slate-300 dark:text-slate-600 cursor-not-allowed"
+              }`}
             >
-              {!parsed && <option value="">—</option>}
-              {Array.from({ length: 50 }, (_, i) => currentYear - 30 + i).map((y) => (
-                <option key={y} value={y}>
-                  {y}
-                </option>
-              ))}
-            </select>
+              <svg
+                className="w-3.5 h-3.5"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </button>
           </div>
 
+          {/* Year picker grid */}
+          {showYearPicker ? (
+            <div className="grid grid-cols-4 gap-1 max-h-44 overflow-y-auto py-0.5">
+              {yearList.map((year) => (
+                <button
+                  key={year}
+                  type="button"
+                  onClick={() => handleYearSelect(year)}
+                  className={`py-1.5 rounded-md text-xs font-medium transition-colors ${
+                    year === viewYear
+                      ? "bg-primary-600 text-white"
+                      : year === todayYear
+                        ? "border border-primary-300 dark:border-primary-700 text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20"
+                        : "text-slate-700 dark:text-dark-text hover:bg-slate-100 dark:hover:bg-dark-surface-alt"
+                  }`}
+                >
+                  {year}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <>
+              {/* Day-of-week headers */}
+              <div className="grid grid-cols-7">
+                {DAYS_SHORT.map((d) => (
+                  <div
+                    key={d}
+                    className="text-center text-[10px] font-medium text-slate-400 dark:text-slate-500 pb-0.5 select-none"
+                  >
+                    {d}
+                  </div>
+                ))}
+
+                {/* Calendar day cells: negative values are empty spacers */}
+                {cells.map((cell) => {
+                  if (cell < 0) {
+                    return <div key={cell} />;
+                  }
+                  const day = cell;
+                  const isFuture = isDateFuture(viewYear, viewMonth, day);
+                  const isSelected =
+                    parsed?.day === day && parsed?.month === viewMonth && parsed?.year === viewYear;
+                  const isToday =
+                    day === todayDay && viewMonth === todayMonth && viewYear === todayYear;
+
+                  return (
+                    <button
+                      key={day}
+                      type="button"
+                      onClick={() => handleDayClick(day)}
+                      disabled={isFuture}
+                      className={`
+                        h-8 flex items-center justify-center rounded-md text-xs transition-colors select-none
+                        ${
+                          isSelected
+                            ? "bg-primary-600 text-white font-semibold"
+                            : isFuture
+                              ? "text-slate-300 dark:text-slate-600 cursor-not-allowed"
+                              : isToday
+                                ? "border border-primary-300 dark:border-primary-700 text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 font-medium"
+                                : "text-slate-700 dark:text-dark-text hover:bg-slate-100 dark:hover:bg-dark-surface-alt"
+                        }
+                      `}
+                    >
+                      {day}
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          )}
+
           {/* Time row */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs font-medium text-slate-500 dark:text-dark-text-muted w-8">
+          <div className="flex items-center gap-1.5 pt-2 border-t border-slate-100 dark:border-dark-border flex-wrap">
+            <span className="text-[10px] font-medium text-slate-500 dark:text-dark-text-muted">
               Time
             </span>
 
-            {/* Hour */}
             <select
               value={parsed ? hour12 : ""}
               onChange={(e) => handleHour12Change(parseInt(e.target.value, 10))}
-              className={selectClass}
+              className={timeSelectClass}
             >
               {!parsed && <option value="">—</option>}
               {Array.from({ length: 12 }, (_, i) => i + 1).map((h) => (
@@ -264,13 +463,12 @@ export function DateTimeInput({ id, value, onChange }: DateTimeInputProps) {
               ))}
             </select>
 
-            <span className="text-slate-400 font-medium text-sm">:</span>
+            <span className="text-slate-400 font-medium text-xs select-none">:</span>
 
-            {/* Minute */}
             <select
               value={parsed?.minute ?? ""}
-              onChange={(e) => handlePart("minute", parseInt(e.target.value, 10))}
-              className={selectClass}
+              onChange={(e) => handleTimePart("minute", parseInt(e.target.value, 10))}
+              className={timeSelectClass}
             >
               {!parsed && <option value="">—</option>}
               {Array.from({ length: 60 }, (_, i) => i).map((m) => (
@@ -281,13 +479,13 @@ export function DateTimeInput({ id, value, onChange }: DateTimeInputProps) {
             </select>
 
             {/* AM/PM toggle */}
-            <div className="flex rounded-lg border border-slate-200 dark:border-dark-border overflow-hidden text-sm">
+            <div className="flex rounded-md border border-slate-200 dark:border-dark-border overflow-hidden text-xs">
               {(["AM", "PM"] as const).map((period) => (
                 <button
                   key={period}
                   type="button"
                   onClick={() => handleAmPm(period)}
-                  className={`px-3 py-1.5 transition-colors ${
+                  className={`px-2 py-1 transition-colors ${
                     parsed && (period === "PM") === isPm
                       ? "bg-primary-600 text-white font-medium"
                       : "bg-white dark:bg-dark-bg text-slate-600 dark:text-dark-text-muted hover:bg-slate-50 dark:hover:bg-dark-surface-alt"
@@ -314,7 +512,7 @@ export function DateTimeInput({ id, value, onChange }: DateTimeInputProps) {
             <div className="flex gap-2">
               <button
                 type="button"
-                onClick={setToday}
+                onClick={setToNow}
                 className="text-xs text-primary-600 dark:text-primary-400 hover:text-primary-700 transition-colors"
               >
                 Now

@@ -6,8 +6,8 @@
  * workflows to uniquely label each page in a document set.
  */
 
-import { useState, useCallback } from "react";
-import { Move } from "lucide-react";
+import { useCallback, useState } from "react";
+import { Move, Undo2 } from "lucide-react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { ColorPicker, hexToRgb, rgbToHex } from "../components/ColorPicker.tsx";
 import { addBatesNumbers } from "../utils/pdf-operations.ts";
@@ -23,19 +23,21 @@ const POSITIONS: { value: BatesPosition; label: string }[] = [
   { value: "bottom-right", label: "↘" },
 ];
 
+const DEFAULT_OPTIONS: BatesNumberOptions = {
+  prefix: "BATES-",
+  suffix: "",
+  startNumber: 1,
+  digits: 6,
+  position: "bottom-right",
+  fontSize: 10,
+  color: { r: 30, g: 41, b: 59 },
+  margin: 20,
+};
+
 export default function BatesNumbering() {
   const [file, setFile] = useState<File | null>(null);
   const [pageCount, setPageCount] = useState(0);
-  const [options, setOptions] = useState<BatesNumberOptions>({
-    prefix: "BATES-",
-    suffix: "",
-    startNumber: 1,
-    digits: 6,
-    position: "bottom-right",
-    fontSize: 10,
-    color: { r: 30, g: 41, b: 59 },
-    margin: 20,
-  });
+  const [options, setOptions] = useState<BatesNumberOptions>(DEFAULT_OPTIONS);
   const [processing, setProcessing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -61,6 +63,12 @@ export default function BatesNumbering() {
       setLoading(false);
     }
   }, []);
+
+  const handleReset = useCallback(() => {
+    setOptions(DEFAULT_OPTIONS);
+  }, []);
+
+  const isDirty = JSON.stringify(options) !== JSON.stringify(DEFAULT_OPTIONS);
 
   const setOpt = useCallback(
     <K extends keyof BatesNumberOptions>(key: K, value: BatesNumberOptions[K]) => {
@@ -113,6 +121,22 @@ export default function BatesNumbering() {
             >
               Change file
             </button>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <p className="text-sm font-medium text-slate-700 dark:text-dark-text">
+              Configure Bates number format and position below
+            </p>
+            {isDirty && (
+              <button
+                type="button"
+                onClick={handleReset}
+                className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 dark:text-dark-text-muted dark:hover:text-dark-text transition-colors"
+              >
+                <Undo2 className="w-4 h-4" />
+                Reset
+              </button>
+            )}
           </div>
 
           {/* Live preview */}

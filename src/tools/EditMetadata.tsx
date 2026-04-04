@@ -6,12 +6,13 @@
  * and modification date. The modified PDF can be downloaded.
  */
 
-import { useState, useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { Undo2 } from "lucide-react";
 import { DateTimeInput } from "../components/DateTimeInput.tsx";
 import { FileDropZone } from "../components/FileDropZone.tsx";
+import type { PdfMetadata } from "../types.ts";
 import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
 import { getPdfMetadata, setPdfMetadata } from "../utils/pdf-operations.ts";
-import type { PdfMetadata } from "../types.ts";
 
 /** Field configuration for rendering the metadata form. */
 const METADATA_FIELDS: {
@@ -63,6 +64,7 @@ const METADATA_FIELDS: {
 
 export default function EditMetadata() {
   const [file, setFile] = useState<File | null>(null);
+  const [originalMetadata, setOriginalMetadata] = useState<PdfMetadata | null>(null);
   const [metadata, setMetadata] = useState<PdfMetadata | null>(null);
   const [processing, setProcessing] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -73,6 +75,7 @@ export default function EditMetadata() {
     const pdf = files[0];
     if (!pdf) return;
     setFile(pdf);
+    setOriginalMetadata(null);
     setMetadata(null);
     setSaved(false);
     setError(null);
@@ -89,7 +92,10 @@ export default function EditMetadata() {
       setError(null);
       try {
         const meta = await getPdfMetadata(currentFile);
-        if (!cancelled) setMetadata(meta);
+        if (!cancelled) {
+          setOriginalMetadata(meta);
+          setMetadata(meta);
+        }
       } catch (e) {
         if (!cancelled) {
           setError(e instanceof Error ? e.message : "Failed to read metadata.");
@@ -114,6 +120,12 @@ export default function EditMetadata() {
     [metadata],
   );
 
+  const handleReset = useCallback(() => {
+    if (!originalMetadata) return;
+    setMetadata(originalMetadata);
+    setSaved(false);
+  }, [originalMetadata]);
+
   const handleSave = useCallback(async () => {
     if (!file || !metadata) return;
     setProcessing(true);
@@ -129,6 +141,11 @@ export default function EditMetadata() {
       setProcessing(false);
     }
   }, [file, metadata]);
+
+  const isDirty =
+    metadata !== null &&
+    originalMetadata !== null &&
+    METADATA_FIELDS.some((f) => metadata[f.key] !== originalMetadata[f.key]);
 
   return (
     <div className="space-y-6">
@@ -149,6 +166,7 @@ export default function EditMetadata() {
               type="button"
               onClick={() => {
                 setFile(null);
+                setOriginalMetadata(null);
                 setMetadata(null);
                 setSaved(false);
               }}
@@ -164,6 +182,21 @@ export default function EditMetadata() {
             </div>
           ) : metadata ? (
             <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <p className="text-sm font-medium text-slate-700 dark:text-dark-text">
+                  Edit document properties below
+                </p>
+                {isDirty && (
+                  <button
+                    type="button"
+                    onClick={handleReset}
+                    className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 dark:text-dark-text-muted dark:hover:text-dark-text transition-colors"
+                  >
+                    <Undo2 className="w-4 h-4" />
+                    Reset
+                  </button>
+                )}
+              </div>
               <div className="bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border divide-y divide-slate-100 dark:divide-dark-border">
                 {METADATA_FIELDS.map((field) => (
                   <div

@@ -6,8 +6,8 @@
  * is downloaded immediately after processing.
  */
 
-import { useState, useCallback } from "react";
-import { Move, Hash } from "lucide-react";
+import { useCallback, useState } from "react";
+import { Hash, Move, Undo2 } from "lucide-react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { ColorPicker, hexToRgb, rgbToHex } from "../components/ColorPicker.tsx";
 import { addPageNumbers } from "../utils/pdf-operations.ts";
@@ -25,18 +25,20 @@ const POSITIONS: { value: PageNumberPosition; label: string }[] = [
 
 const FORMATS: PageNumberFormat[] = ["1", "Page 1", "1 / N", "Page 1 of N"];
 
+const DEFAULT_OPTIONS: PageNumberOptions = {
+  position: "bottom-center",
+  format: "1",
+  fontSize: 12,
+  color: { r: 30, g: 41, b: 59 },
+  margin: 20,
+  startNumber: 1,
+  firstPage: 1,
+};
+
 export default function AddPageNumbers() {
   const [file, setFile] = useState<File | null>(null);
   const [pageCount, setPageCount] = useState(0);
-  const [options, setOptions] = useState<PageNumberOptions>({
-    position: "bottom-center",
-    format: "1",
-    fontSize: 12,
-    color: { r: 30, g: 41, b: 59 },
-    margin: 20,
-    startNumber: 1,
-    firstPage: 1,
-  });
+  const [options, setOptions] = useState<PageNumberOptions>(DEFAULT_OPTIONS);
   const [processing, setProcessing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -62,6 +64,12 @@ export default function AddPageNumbers() {
       setLoading(false);
     }
   }, []);
+
+  const handleReset = useCallback(() => {
+    setOptions(DEFAULT_OPTIONS);
+  }, []);
+
+  const isDirty = JSON.stringify(options) !== JSON.stringify(DEFAULT_OPTIONS);
 
   const setOpt = useCallback(
     <K extends keyof PageNumberOptions>(key: K, value: PageNumberOptions[K]) => {
@@ -107,6 +115,22 @@ export default function AddPageNumbers() {
             >
               Change file
             </button>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <p className="text-sm font-medium text-slate-700 dark:text-dark-text">
+              Configure page number style and position below
+            </p>
+            {isDirty && (
+              <button
+                type="button"
+                onClick={handleReset}
+                className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 dark:text-dark-text-muted dark:hover:text-dark-text transition-colors"
+              >
+                <Undo2 className="w-4 h-4" />
+                Reset
+              </button>
+            )}
           </div>
 
           <div className="space-y-5">

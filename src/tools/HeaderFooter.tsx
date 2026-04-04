@@ -7,30 +7,38 @@
  * the first page (e.g. for cover pages or title pages).
  */
 
-import { useState, useCallback } from "react";
-import { PanelTop, PanelBottom } from "lucide-react";
+import { useCallback, useState } from "react";
+import { PanelBottom, PanelTop, Undo2 } from "lucide-react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { ColorPicker, hexToRgb, rgbToHex } from "../components/ColorPicker.tsx";
 import { addHeaderFooter } from "../utils/pdf-operations.ts";
 import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
 import type { HeaderFooterOptions } from "../types.ts";
 
+const DEFAULT_OPTIONS: HeaderFooterOptions = {
+  headerLeft: "",
+  headerCenter: "",
+  headerRight: "",
+  footerLeft: "",
+  footerCenter: "{{page}}",
+  footerRight: "",
+  fontSize: 10,
+  color: { r: 100, g: 116, b: 139 },
+  margin: 20,
+  skipFirstPage: false,
+};
+
 export default function HeaderFooter() {
   const [file, setFile] = useState<File | null>(null);
-  const [options, setOptions] = useState<HeaderFooterOptions>({
-    headerLeft: "",
-    headerCenter: "",
-    headerRight: "",
-    footerLeft: "",
-    footerCenter: "{{page}}",
-    footerRight: "",
-    fontSize: 10,
-    color: { r: 100, g: 116, b: 139 },
-    margin: 20,
-    skipFirstPage: false,
-  });
+  const [options, setOptions] = useState<HeaderFooterOptions>(DEFAULT_OPTIONS);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const handleReset = useCallback(() => {
+    setOptions(DEFAULT_OPTIONS);
+  }, []);
+
+  const isDirty = JSON.stringify(options) !== JSON.stringify(DEFAULT_OPTIONS);
 
   const setOpt = useCallback(
     <K extends keyof HeaderFooterOptions>(key: K, value: HeaderFooterOptions[K]) => {
@@ -93,6 +101,22 @@ export default function HeaderFooter() {
             >
               Change file
             </button>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <p className="text-sm font-medium text-slate-700 dark:text-dark-text">
+              Configure header and footer text below
+            </p>
+            {isDirty && (
+              <button
+                type="button"
+                onClick={handleReset}
+                className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 dark:text-dark-text-muted dark:hover:text-dark-text transition-colors"
+              >
+                <Undo2 className="w-4 h-4" />
+                Reset
+              </button>
+            )}
           </div>
 
           <div className="space-y-4">
