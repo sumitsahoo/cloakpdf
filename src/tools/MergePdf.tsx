@@ -8,6 +8,7 @@
 
 import { useState, useCallback } from "react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
+import { categoryGlow } from "../config/theme.ts";
 import { mergePdfs } from "../utils/pdf-operations.ts";
 import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
 import { ChevronUp, ChevronDown, X } from "lucide-react";
@@ -66,6 +67,7 @@ export default function MergePdf() {
   return (
     <div className="space-y-6">
       <FileDropZone
+        glowColor={categoryGlow.organise}
         accept=".pdf,application/pdf"
         multiple
         onFiles={handleFiles}

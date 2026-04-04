@@ -10,6 +10,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
+import { categoryGlow } from "../config/theme.ts";
 import { downloadPdf } from "../utils/file-helpers.ts";
 import { redactPdf } from "../utils/pdf-operations.ts";
 import { renderAllThumbnails } from "../utils/pdf-renderer.ts";
@@ -225,6 +226,7 @@ export default function RedactPdf() {
     return (
       <div className="space-y-6">
         <FileDropZone
+          glowColor={categoryGlow.security}
           accept=".pdf,application/pdf"
           onFiles={handleFile}
           label="Drop a PDF file here"

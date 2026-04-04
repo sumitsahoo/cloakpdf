@@ -8,6 +8,7 @@
 import { useCallback, useState } from "react";
 import { ArrowRight } from "lucide-react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
+import { categoryGlow } from "../config/theme.ts";
 import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
 import { reversePages } from "../utils/pdf-operations.ts";
 import { getPageCount, renderSpecificThumbnails } from "../utils/pdf-renderer.ts";
@@ -78,6 +79,7 @@ export default function ReversePages() {
     <div className="space-y-6">
       {!file ? (
         <FileDropZone
+          glowColor={categoryGlow.organise}
           accept=".pdf,application/pdf"
           onFiles={handleFile}
           label="Drop a PDF file here"

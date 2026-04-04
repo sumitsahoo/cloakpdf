@@ -19,6 +19,7 @@
 
 import { ChevronRight } from "lucide-react";
 import { memo, useCallback, useRef, useState } from "react";
+import { categoryGlow } from "../config/theme.ts";
 import type { Tool, ToolId } from "../types.ts";
 
 interface ToolCardProps {
@@ -44,7 +45,7 @@ const categoryTheme: Record<
     iconColor: "text-blue-600 dark:text-blue-400",
     hoverBg:
       "group-hover:bg-blue-100 dark:group-hover:bg-blue-900/50 group-active:bg-blue-100 dark:group-active:bg-blue-900/50",
-    glow: "rgba(37,99,235,0.14)",
+    glow: categoryGlow.organise,
     border:
       "hover:border-blue-300 dark:hover:border-blue-600 active:border-blue-300 dark:active:border-blue-600",
     shadow:
@@ -55,7 +56,7 @@ const categoryTheme: Record<
     iconColor: "text-violet-600 dark:text-violet-400",
     hoverBg:
       "group-hover:bg-violet-100 dark:group-hover:bg-violet-900/50 group-active:bg-violet-100 dark:group-active:bg-violet-900/50",
-    glow: "rgba(124,58,237,0.14)",
+    glow: categoryGlow.transform,
     border:
       "hover:border-violet-300 dark:hover:border-violet-600 active:border-violet-300 dark:active:border-violet-600",
     shadow:
@@ -66,7 +67,7 @@ const categoryTheme: Record<
     iconColor: "text-emerald-600 dark:text-emerald-400",
     hoverBg:
       "group-hover:bg-emerald-100 dark:group-hover:bg-emerald-900/50 group-active:bg-emerald-100 dark:group-active:bg-emerald-900/50",
-    glow: "rgba(16,185,129,0.14)",
+    glow: categoryGlow.annotate,
     border:
       "hover:border-emerald-300 dark:hover:border-emerald-600 active:border-emerald-300 dark:active:border-emerald-600",
     shadow:
@@ -77,7 +78,7 @@ const categoryTheme: Record<
     iconColor: "text-amber-600 dark:text-amber-400",
     hoverBg:
       "group-hover:bg-amber-100 dark:group-hover:bg-amber-900/50 group-active:bg-amber-100 dark:group-active:bg-amber-900/50",
-    glow: "rgba(245,158,11,0.14)",
+    glow: categoryGlow.security,
     border:
       "hover:border-amber-300 dark:hover:border-amber-600 active:border-amber-300 dark:active:border-amber-600",
     shadow:

@@ -8,6 +8,7 @@
 
 import { useState, useCallback } from "react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
+import { categoryGlow } from "../config/theme.ts";
 import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
 import { useSortableDrag } from "../hooks/useSortableDrag.ts";
 import { addBlankPages } from "../utils/pdf-operations.ts";
@@ -264,6 +265,7 @@ export default function AddBlankPage() {
     <div className="space-y-6">
       {!file ? (
         <FileDropZone
+          glowColor={categoryGlow.organise}
           accept=".pdf,application/pdf"
           onFiles={handleFile}
           label="Drop a PDF file here"

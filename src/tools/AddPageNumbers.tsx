@@ -9,6 +9,7 @@
 import { useCallback, useState } from "react";
 import { Hash, Move, Undo2 } from "lucide-react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
+import { categoryGlow } from "../config/theme.ts";
 import { ColorPicker, hexToRgb, rgbToHex } from "../components/ColorPicker.tsx";
 import { addPageNumbers } from "../utils/pdf-operations.ts";
 import { downloadPdf } from "../utils/file-helpers.ts";
@@ -97,6 +98,7 @@ export default function AddPageNumbers() {
     <div className="space-y-6">
       {!file ? (
         <FileDropZone
+          glowColor={categoryGlow.annotate}
           accept=".pdf,application/pdf"
           onFiles={handleFile}
           label="Drop a PDF file here"

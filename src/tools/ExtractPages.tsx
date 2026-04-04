@@ -10,6 +10,7 @@
 import { Check, CheckSquare, X } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
+import { categoryGlow } from "../config/theme.ts";
 import { PageThumbnail } from "../components/PageThumbnail.tsx";
 import { downloadPdf } from "../utils/file-helpers.ts";
 import { extractPages } from "../utils/pdf-operations.ts";
@@ -121,6 +122,7 @@ export default function ExtractPages() {
     <div className="space-y-6">
       {!file ? (
         <FileDropZone
+          glowColor={categoryGlow.organise}
           accept=".pdf,application/pdf"
           onFiles={handleFile}
           label="Drop a PDF file here"
