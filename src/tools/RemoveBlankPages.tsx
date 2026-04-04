@@ -9,6 +9,7 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
+import { categoryGlow } from "../config/theme.ts";
 import { PageThumbnail } from "../components/PageThumbnail.tsx";
 import { deletePages } from "../utils/pdf-operations.ts";
 import { renderThumbnailsAndScores } from "../utils/pdf-renderer.ts";
@@ -93,6 +94,7 @@ export default function RemoveBlankPages() {
     <div className="space-y-6">
       {!file ? (
         <FileDropZone
+          glowColor={categoryGlow.organise}
           accept=".pdf,application/pdf"
           onFiles={handleFile}
           label="Drop a PDF file here"

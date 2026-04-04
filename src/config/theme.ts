@@ -6,6 +6,14 @@
  * registered via `@theme` in index.css.  Import from here only when you need
  * raw hex values (e.g. inline SVG fills).
  */
+/** Spotlight glow color per tool category, used by FileDropZone and ToolCard. */
+export const categoryGlow = {
+  organise: "rgba(37,99,235,0.18)",
+  transform: "rgba(124,58,237,0.18)",
+  annotate: "rgba(16,185,129,0.18)",
+  security: "rgba(245,158,11,0.18)",
+} as const;
+
 export const colors = {
   primary: {
     50: "#EFF4FF",
