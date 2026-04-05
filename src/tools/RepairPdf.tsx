@@ -9,7 +9,7 @@
 
 import { useState, useCallback } from "react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
-import { categoryGlow } from "../config/theme.ts";
+import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { repairPdf } from "../utils/pdf-operations.ts";
 import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
 
@@ -57,6 +57,7 @@ export default function RepairPdf() {
     <div className="space-y-6">
       <FileDropZone
         glowColor={categoryGlow.transform}
+        iconColor={categoryAccent.transform}
         accept=".pdf,application/pdf"
         onFiles={handleFile}
         label="Drop a PDF file here"

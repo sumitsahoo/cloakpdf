@@ -19,7 +19,7 @@
 import { useState, useCallback } from "react";
 import { ChevronDown } from "lucide-react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
-import { categoryGlow } from "../config/theme.ts";
+import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { fillPdfForm, getFieldPageIndices } from "../utils/pdf-operations.ts";
 import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
 import { renderAllThumbnails } from "../utils/pdf-renderer.ts";
@@ -182,6 +182,7 @@ export default function FillPdfForm() {
       {!file ? (
         <FileDropZone
           glowColor={categoryGlow.annotate}
+          iconColor={categoryAccent.annotate}
           accept=".pdf,application/pdf"
           onFiles={handleFile}
           label="Drop a PDF file here"

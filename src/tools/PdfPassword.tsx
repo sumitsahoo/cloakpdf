@@ -13,7 +13,7 @@
 import { useState, useCallback } from "react";
 import { Eye, EyeOff, ChevronRight, AlertTriangle } from "lucide-react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
-import { categoryGlow } from "../config/theme.ts";
+import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { isPdfEncrypted, protectPdf, unlockPdf } from "../utils/pdf-security.ts";
 import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
 
@@ -249,6 +249,7 @@ export default function PdfPassword() {
       {!file ? (
         <FileDropZone
           glowColor={categoryGlow.security}
+          iconColor={categoryAccent.security}
           accept=".pdf,application/pdf"
           onFiles={handleFile}
           label="Drop a PDF file here"

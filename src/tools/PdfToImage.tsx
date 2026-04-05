@@ -9,7 +9,7 @@
 import { useState, useCallback } from "react";
 import { Image, ScanLine } from "lucide-react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
-import { categoryGlow } from "../config/theme.ts";
+import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { PageThumbnail } from "../components/PageThumbnail.tsx";
 import { renderPagesToBlobs } from "../utils/pdf-renderer.ts";
 import { downloadBlob, formatFileSize } from "../utils/file-helpers.ts";
@@ -106,6 +106,7 @@ export default function PdfToImage() {
       {!file ? (
         <FileDropZone
           glowColor={categoryGlow.transform}
+          iconColor={categoryAccent.transform}
           accept=".pdf,application/pdf"
           onFiles={handleFile}
           label="Drop a PDF file here"
