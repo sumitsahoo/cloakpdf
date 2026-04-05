@@ -7,14 +7,15 @@
  * the first page (e.g. for cover pages or title pages).
  */
 
-import { useCallback, useState } from "react";
-import { PanelBottom, PanelTop, Undo2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, PanelBottom, PanelTop, Undo2 } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { ColorPicker, hexToRgb, rgbToHex } from "../components/ColorPicker.tsx";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
-import { ColorPicker, hexToRgb, rgbToHex } from "../components/ColorPicker.tsx";
-import { addHeaderFooter } from "../utils/pdf-operations.ts";
-import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
 import type { HeaderFooterOptions } from "../types.ts";
+import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
+import { addHeaderFooter } from "../utils/pdf-operations.ts";
+import { renderAllThumbnails } from "../utils/pdf-renderer.ts";
 
 const DEFAULT_OPTIONS: HeaderFooterOptions = {
   headerLeft: "",
@@ -29,11 +30,76 @@ const DEFAULT_OPTIONS: HeaderFooterOptions = {
   skipFirstPage: false,
 };
 
+const TOKENS = [
+  { token: "{{page}}", label: "{{page}}", description: "Current page number" },
+  { token: "{{total}}", label: "{{total}}", description: "Total page count" },
+];
+
+/** Resolve tokens for preview display */
+function resolveTokens(text: string, page: number, total: number): string {
+  return text.replace(/\{\{page\}\}/g, String(page)).replace(/\{\{total\}\}/g, String(total));
+}
+
 export default function HeaderFooter() {
   const [file, setFile] = useState<File | null>(null);
+  const [thumbnails, setThumbnails] = useState<string[]>([]);
+  const [pageDims, setPageDims] = useState<{ width: number; height: number }[]>([]);
+  const [selectedPage, setSelectedPage] = useState(0);
+  const [loading, setLoading] = useState(false);
   const [options, setOptions] = useState<HeaderFooterOptions>(DEFAULT_OPTIONS);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Scale factor: preview px / page pt — used to size the font overlay correctly
+  const [previewScale, setPreviewScale] = useState(0.5);
+  const previewContainerRef = useRef<HTMLDivElement>(null);
+
+  // Track the last focused text input for token insertion
+  const lastFocusedRef = useRef<{
+    field: keyof HeaderFooterOptions;
+    el: HTMLInputElement;
+  } | null>(null);
+
+  /* Keep preview font scale in sync with the container's rendered width */
+  useEffect(() => {
+    const el = previewContainerRef.current;
+    const dim = pageDims[selectedPage];
+    if (!el || !dim) return;
+    const update = () => {
+      setPreviewScale(el.getBoundingClientRect().width / dim.width);
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [selectedPage, pageDims]);
+
+  const handleFile = useCallback(async (files: File[]) => {
+    const pdf = files[0];
+    if (!pdf) return;
+    setFile(pdf);
+    setSelectedPage(0);
+    setError(null);
+    setLoading(true);
+    try {
+      const [thumbs, { PDFDocument }] = await Promise.all([
+        renderAllThumbnails(pdf),
+        import("pdf-lib"),
+      ]);
+      setThumbnails(thumbs);
+      const pdfDoc = await PDFDocument.load(await pdf.arrayBuffer());
+      setPageDims(pdfDoc.getPages().map((p) => p.getSize()));
+    } catch (e) {
+      setError(
+        e instanceof Error
+          ? e.message
+          : "Failed to load PDF. The file may be corrupted or password-protected.",
+      );
+      setFile(null);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   const handleReset = useCallback(() => {
     setOptions(DEFAULT_OPTIONS);
@@ -46,6 +112,22 @@ export default function HeaderFooter() {
       setOptions((prev) => ({ ...prev, [key]: value }));
     },
     [],
+  );
+
+  const insertToken = useCallback(
+    (token: string) => {
+      if (!lastFocusedRef.current) return;
+      const { field, el } = lastFocusedRef.current;
+      const start = el.selectionStart ?? el.value.length;
+      const end = el.selectionEnd ?? el.value.length;
+      const newValue = el.value.slice(0, start) + token + el.value.slice(end);
+      setOpt(field as keyof HeaderFooterOptions, newValue as HeaderFooterOptions[typeof field]);
+      requestAnimationFrame(() => {
+        el.focus();
+        el.setSelectionRange(start + token.length, start + token.length);
+      });
+    },
+    [setOpt],
   );
 
   const handleApply = useCallback(async () => {
@@ -76,7 +158,29 @@ export default function HeaderFooter() {
   }, [file, options]);
 
   const slotClass =
-    "w-full border border-slate-300 dark:border-dark-border rounded-lg px-2.5 py-1.5 text-sm bg-white dark:bg-dark-surface text-slate-800 dark:text-dark-text focus:outline-none focus:ring-2 focus:ring-primary-500 placeholder:text-slate-300 dark:placeholder:text-dark-text-muted";
+    "w-full border border-slate-300 dark:border-dark-border rounded-lg px-2.5 py-1.5 text-sm bg-white dark:bg-dark-surface text-slate-800 dark:text-dark-text focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 placeholder:text-slate-300 dark:placeholder:text-dark-text-muted transition-colors";
+
+  const makeInputProps = (field: keyof HeaderFooterOptions) => ({
+    onFocus: (e: React.FocusEvent<HTMLInputElement>) => {
+      lastFocusedRef.current = { field, el: e.currentTarget };
+    },
+  });
+
+  const pageCount = thumbnails.length;
+  const pageDim = pageDims[selectedPage];
+
+  // Whether the selected page has header/footer applied
+  const isSkipped = options.skipFirstPage && selectedPage === 0;
+
+  // Resolved page number shown in preview (accounts for skipFirstPage — skipped page shows nothing)
+  const previewPageNum = isSkipped ? null : selectedPage + 1;
+  const previewTotal = pageCount || 5;
+
+  // CSS percentage values for overlay positioning
+  const mV = pageDim ? `${(options.margin / pageDim.height) * 100}%` : "3%";
+  const mH = pageDim ? `${(options.margin / pageDim.width) * 100}%` : "3%";
+  const displayFontSize = Math.max(6, Math.round(options.fontSize * previewScale));
+  const textColor = `rgb(${options.color.r},${options.color.g},${options.color.b})`;
 
   return (
     <div className="space-y-6">
@@ -85,10 +189,7 @@ export default function HeaderFooter() {
           glowColor={categoryGlow.annotate}
           iconColor={categoryAccent.annotate}
           accept=".pdf,application/pdf"
-          onFiles={(files) => {
-            setFile(files[0] ?? null);
-            setError(null);
-          }}
+          onFiles={handleFile}
           label="Drop a PDF file here"
           hint="Header and footer text will be added to every page"
         />
@@ -96,185 +197,370 @@ export default function HeaderFooter() {
         <>
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <p className="text-sm text-slate-600 dark:text-dark-text-muted break-all sm:break-normal">
-              <span className="font-medium">{file.name}</span> — {formatFileSize(file.size)}
+              <span className="font-medium">{file.name}</span>
+              {loading ? " — loading…" : ` — ${formatFileSize(file.size)}`}
             </p>
             <button
-              onClick={() => setFile(null)}
+              type="button"
+              onClick={() => {
+                setFile(null);
+                setThumbnails([]);
+                setPageDims([]);
+              }}
               className="text-sm text-primary-600 hover:text-primary-700"
             >
               Change file
             </button>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <p className="text-sm font-medium text-slate-700 dark:text-dark-text">
-              Configure header and footer text below
-            </p>
-            {isDirty && (
-              <button
-                type="button"
-                onClick={handleReset}
-                className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 dark:text-dark-text-muted dark:hover:text-dark-text transition-colors"
-              >
-                <Undo2 className="w-4 h-4" />
-                Reset
-              </button>
-            )}
-          </div>
-
-          <div className="space-y-4">
-            {/* Header row */}
-            <div className="bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border shadow-sm p-4 space-y-2">
-              <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-dark-text-muted">
-                <PanelTop className="w-3.5 h-3.5" />
-                Header
-              </p>
-              <div className="grid grid-cols-3 gap-2">
-                <input
-                  type="text"
-                  placeholder="Left"
-                  value={options.headerLeft}
-                  onChange={(e) => setOpt("headerLeft", e.target.value)}
-                  className={slotClass}
-                />
-                <input
-                  type="text"
-                  placeholder="Centre"
-                  value={options.headerCenter}
-                  onChange={(e) => setOpt("headerCenter", e.target.value)}
-                  className={slotClass}
-                />
-                <input
-                  type="text"
-                  placeholder="Right"
-                  value={options.headerRight}
-                  onChange={(e) => setOpt("headerRight", e.target.value)}
-                  className={slotClass}
-                />
+          <div className="grid md:grid-cols-2 gap-6 items-start">
+            {/* ── Left column: controls ── */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-slate-700 dark:text-dark-text">
+                  Configure header and footer text below
+                </p>
+                {isDirty && (
+                  <button
+                    type="button"
+                    onClick={handleReset}
+                    className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 dark:text-dark-text-muted dark:hover:text-dark-text transition-colors"
+                  >
+                    <Undo2 className="w-4 h-4" />
+                    Reset
+                  </button>
+                )}
               </div>
-            </div>
 
-            {/* Footer row */}
-            <div className="bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border shadow-sm p-4 space-y-2">
-              <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-dark-text-muted">
-                <PanelBottom className="w-3.5 h-3.5" />
-                Footer
-              </p>
-              <div className="grid grid-cols-3 gap-2">
-                <input
-                  type="text"
-                  placeholder="Left"
-                  value={options.footerLeft}
-                  onChange={(e) => setOpt("footerLeft", e.target.value)}
-                  className={slotClass}
-                />
-                <input
-                  type="text"
-                  placeholder="Centre"
-                  value={options.footerCenter}
-                  onChange={(e) => setOpt("footerCenter", e.target.value)}
-                  className={slotClass}
-                />
-                <input
-                  type="text"
-                  placeholder="Right"
-                  value={options.footerRight}
-                  onChange={(e) => setOpt("footerRight", e.target.value)}
-                  className={slotClass}
-                />
-              </div>
-            </div>
-
-            <div className="bg-slate-50 dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border p-3">
-              <p className="text-xs text-slate-500 dark:text-dark-text-muted">
-                <span className="font-semibold">Tokens:</span>{" "}
-                <code className="bg-slate-200 dark:bg-dark-border px-1 rounded">{"{{page}}"}</code>{" "}
-                inserts the current page number,{" "}
-                <code className="bg-slate-200 dark:bg-dark-border px-1 rounded">{"{{total}}"}</code>{" "}
-                inserts the total page count.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              {/* Font size */}
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium text-slate-700 dark:text-dark-text">
-                    Font size
-                  </label>
-                  <span className="inline-flex items-center rounded-full bg-primary-100 dark:bg-primary-900/40 px-2 py-0.5 text-xs font-semibold text-primary-700 dark:text-primary-300 tabular-nums">
-                    {options.fontSize}pt
-                  </span>
+              {/* Header row */}
+              <div className="bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border shadow-sm overflow-hidden">
+                <div className="flex items-center gap-2 px-4 py-2.5 bg-emerald-50 dark:bg-emerald-900/20 border-b border-emerald-100 dark:border-emerald-800/40">
+                  <PanelTop className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                  <p className="text-xs font-semibold uppercase tracking-widest text-emerald-700 dark:text-emerald-400">
+                    Header
+                  </p>
                 </div>
-                <input
-                  type="range"
-                  min={7}
-                  max={20}
-                  step={1}
-                  value={options.fontSize}
-                  onChange={(e) => setOpt("fontSize", Number(e.target.value))}
-                  className="w-full accent-primary-600 cursor-pointer"
-                />
-              </div>
-
-              {/* Margin */}
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium text-slate-700 dark:text-dark-text">
-                    Margin
-                  </label>
-                  <span className="inline-flex items-center rounded-full bg-primary-100 dark:bg-primary-900/40 px-2 py-0.5 text-xs font-semibold text-primary-700 dark:text-primary-300 tabular-nums">
-                    {options.margin}pt
-                  </span>
+                <div className="p-4">
+                  <div className="grid grid-cols-3 gap-2">
+                    <input
+                      type="text"
+                      placeholder="Left"
+                      value={options.headerLeft}
+                      onChange={(e) => setOpt("headerLeft", e.target.value)}
+                      className={slotClass}
+                      {...makeInputProps("headerLeft")}
+                    />
+                    <input
+                      type="text"
+                      placeholder="Centre"
+                      value={options.headerCenter}
+                      onChange={(e) => setOpt("headerCenter", e.target.value)}
+                      className={slotClass}
+                      {...makeInputProps("headerCenter")}
+                    />
+                    <input
+                      type="text"
+                      placeholder="Right"
+                      value={options.headerRight}
+                      onChange={(e) => setOpt("headerRight", e.target.value)}
+                      className={slotClass}
+                      {...makeInputProps("headerRight")}
+                    />
+                  </div>
                 </div>
-                <input
-                  type="range"
-                  min={5}
-                  max={72}
-                  step={1}
-                  value={options.margin}
-                  onChange={(e) => setOpt("margin", Number(e.target.value))}
-                  className="w-full accent-primary-600 cursor-pointer"
+              </div>
+
+              {/* Footer row */}
+              <div className="bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border shadow-sm overflow-hidden">
+                <div className="flex items-center gap-2 px-4 py-2.5 bg-emerald-50 dark:bg-emerald-900/20 border-b border-emerald-100 dark:border-emerald-800/40">
+                  <PanelBottom className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                  <p className="text-xs font-semibold uppercase tracking-widest text-emerald-700 dark:text-emerald-400">
+                    Footer
+                  </p>
+                </div>
+                <div className="p-4">
+                  <div className="grid grid-cols-3 gap-2">
+                    <input
+                      type="text"
+                      placeholder="Left"
+                      value={options.footerLeft}
+                      onChange={(e) => setOpt("footerLeft", e.target.value)}
+                      className={slotClass}
+                      {...makeInputProps("footerLeft")}
+                    />
+                    <input
+                      type="text"
+                      placeholder="Centre"
+                      value={options.footerCenter}
+                      onChange={(e) => setOpt("footerCenter", e.target.value)}
+                      className={slotClass}
+                      {...makeInputProps("footerCenter")}
+                    />
+                    <input
+                      type="text"
+                      placeholder="Right"
+                      value={options.footerRight}
+                      onChange={(e) => setOpt("footerRight", e.target.value)}
+                      className={slotClass}
+                      {...makeInputProps("footerRight")}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Token insert pills */}
+              <div className="bg-slate-50 dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border p-3 flex flex-wrap items-center gap-2">
+                <span className="text-xs font-semibold text-slate-500 dark:text-dark-text-muted">
+                  Insert token:
+                </span>
+                {TOKENS.map(({ token, label, description }) => (
+                  <button
+                    key={token}
+                    type="button"
+                    title={description}
+                    onClick={() => insertToken(token)}
+                    className="inline-flex items-center gap-1 rounded-md bg-white dark:bg-dark-surface border border-slate-300 dark:border-dark-border px-2 py-0.5 text-xs font-mono text-slate-700 dark:text-dark-text hover:border-emerald-400 hover:text-emerald-700 dark:hover:border-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors cursor-pointer shadow-sm"
+                  >
+                    {label}
+                  </button>
+                ))}
+                <span className="text-xs text-slate-400 dark:text-dark-text-muted">
+                  — click a token to insert at cursor
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                {/* Font size */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label
+                      htmlFor="hf-font-size"
+                      className="text-sm font-medium text-slate-700 dark:text-dark-text"
+                    >
+                      Font size
+                    </label>
+                    <span className="inline-flex items-center rounded-full bg-primary-100 dark:bg-primary-900/40 px-2 py-0.5 text-xs font-semibold text-primary-700 dark:text-primary-300 tabular-nums">
+                      {options.fontSize}pt
+                    </span>
+                  </div>
+                  <input
+                    id="hf-font-size"
+                    type="range"
+                    min={7}
+                    max={20}
+                    step={1}
+                    value={options.fontSize}
+                    onChange={(e) => setOpt("fontSize", Number(e.target.value))}
+                    className="w-full accent-emerald-600 cursor-pointer"
+                  />
+                </div>
+
+                {/* Margin */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <label
+                      htmlFor="hf-margin"
+                      className="text-sm font-medium text-slate-700 dark:text-dark-text"
+                    >
+                      Margin
+                    </label>
+                    <span className="inline-flex items-center rounded-full bg-primary-100 dark:bg-primary-900/40 px-2 py-0.5 text-xs font-semibold text-primary-700 dark:text-primary-300 tabular-nums">
+                      {options.margin}pt
+                    </span>
+                  </div>
+                  <input
+                    id="hf-margin"
+                    type="range"
+                    min={5}
+                    max={72}
+                    step={1}
+                    value={options.margin}
+                    onChange={(e) => setOpt("margin", Number(e.target.value))}
+                    className="w-full accent-emerald-600 cursor-pointer"
+                  />
+                </div>
+              </div>
+
+              {/* Colour */}
+              <div>
+                <p className="text-sm font-medium text-slate-700 dark:text-dark-text mb-2">
+                  Colour
+                </p>
+                <ColorPicker
+                  value={rgbToHex(options.color.r, options.color.g, options.color.b)}
+                  onChange={(hex) => {
+                    const { r, g, b } = hexToRgb(hex);
+                    setOpt("color", { r, g, b });
+                  }}
                 />
               </div>
-            </div>
 
-            {/* Colour */}
-            <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-dark-text mb-2">
-                Colour
+              {/* Skip first page */}
+              <label className="flex items-start gap-3 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={options.skipFirstPage}
+                  onChange={(e) => setOpt("skipFirstPage", e.target.checked)}
+                  className="mt-0.5 h-4 w-4 shrink-0 rounded accent-emerald-600 cursor-pointer"
+                />
+                <div className="flex flex-col gap-0.5">
+                  <p className="text-sm font-medium text-slate-700 dark:text-dark-text leading-snug">
+                    Skip first page
+                  </p>
+                  <p className="text-xs text-slate-400 dark:text-dark-text-muted leading-snug">
+                    Useful when the first page is a cover or title page
+                  </p>
+                </div>
               </label>
-              <ColorPicker
-                value={rgbToHex(options.color.r, options.color.g, options.color.b)}
-                onChange={(hex) => {
-                  const { r, g, b } = hexToRgb(hex);
-                  setOpt("color", { r, g, b });
-                }}
-              />
             </div>
 
-            {/* Skip first page */}
-            <label className="flex items-start gap-3 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={options.skipFirstPage}
-                onChange={(e) => setOpt("skipFirstPage", e.target.checked)}
-                className="mt-0.5 h-4 w-4 shrink-0 rounded accent-primary-600 cursor-pointer"
-              />
-              <div className="flex flex-col gap-0.5">
-                <p className="text-sm font-medium text-slate-700 dark:text-dark-text leading-snug">
-                  Skip first page
+            {/* ── Right column: live page preview ── */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <p className="text-sm font-medium text-slate-700 dark:text-dark-text">
+                  {isSkipped
+                    ? `Preview — Page ${selectedPage + 1} (skipped)`
+                    : `Preview — Page ${selectedPage + 1}`}
                 </p>
-                <p className="text-xs text-slate-400 dark:text-dark-text-muted leading-snug">
-                  Useful when the first page is a cover or title page
-                </p>
+                {pageCount > 1 && (
+                  <div className="flex items-center gap-0.5">
+                    <button
+                      type="button"
+                      disabled={selectedPage === 0}
+                      onClick={() => setSelectedPage((p) => p - 1)}
+                      className="p-1 rounded text-slate-400 hover:text-slate-600 dark:hover:text-dark-text disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <span className="text-xs text-slate-400 dark:text-dark-text-muted tabular-nums px-1">
+                      {selectedPage + 1} / {pageCount}
+                    </span>
+                    <button
+                      type="button"
+                      disabled={selectedPage === pageCount - 1}
+                      onClick={() => setSelectedPage((p) => p + 1)}
+                      className="p-1 rounded text-slate-400 hover:text-slate-600 dark:hover:text-dark-text disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
               </div>
-            </label>
+
+              {loading ? (
+                <div className="aspect-3/4 bg-slate-100 dark:bg-dark-surface-alt rounded-lg flex items-center justify-center">
+                  <div className="w-8 h-8 border-2 border-emerald-200 border-t-emerald-600 rounded-full animate-spin" />
+                </div>
+              ) : thumbnails[selectedPage] ? (
+                <div
+                  ref={previewContainerRef}
+                  className="relative aspect-3/4 bg-white dark:bg-dark-surface rounded-lg border border-slate-200 dark:border-dark-border overflow-hidden"
+                >
+                  <img
+                    src={thumbnails[selectedPage]}
+                    alt={`Page ${selectedPage + 1}`}
+                    className="w-full h-full object-contain"
+                  />
+
+                  {!isSkipped && (
+                    <>
+                      {/* Header overlays */}
+                      {options.headerLeft.trim() && (
+                        <span
+                          className="absolute font-medium leading-none pointer-events-none whitespace-nowrap"
+                          style={{ top: mV, left: mH, color: textColor, fontSize: displayFontSize }}
+                        >
+                          {resolveTokens(options.headerLeft, previewPageNum ?? 1, previewTotal)}
+                        </span>
+                      )}
+                      {options.headerCenter.trim() && (
+                        <span
+                          className="absolute font-medium leading-none pointer-events-none whitespace-nowrap"
+                          style={{
+                            top: mV,
+                            left: "50%",
+                            transform: "translateX(-50%)",
+                            color: textColor,
+                            fontSize: displayFontSize,
+                          }}
+                        >
+                          {resolveTokens(options.headerCenter, previewPageNum ?? 1, previewTotal)}
+                        </span>
+                      )}
+                      {options.headerRight.trim() && (
+                        <span
+                          className="absolute font-medium leading-none pointer-events-none whitespace-nowrap"
+                          style={{
+                            top: mV,
+                            right: mH,
+                            color: textColor,
+                            fontSize: displayFontSize,
+                          }}
+                        >
+                          {resolveTokens(options.headerRight, previewPageNum ?? 1, previewTotal)}
+                        </span>
+                      )}
+
+                      {/* Footer overlays */}
+                      {options.footerLeft.trim() && (
+                        <span
+                          className="absolute font-medium leading-none pointer-events-none whitespace-nowrap"
+                          style={{
+                            bottom: mV,
+                            left: mH,
+                            color: textColor,
+                            fontSize: displayFontSize,
+                          }}
+                        >
+                          {resolveTokens(options.footerLeft, previewPageNum ?? 1, previewTotal)}
+                        </span>
+                      )}
+                      {options.footerCenter.trim() && (
+                        <span
+                          className="absolute font-medium leading-none pointer-events-none whitespace-nowrap"
+                          style={{
+                            bottom: mV,
+                            left: "50%",
+                            transform: "translateX(-50%)",
+                            color: textColor,
+                            fontSize: displayFontSize,
+                          }}
+                        >
+                          {resolveTokens(options.footerCenter, previewPageNum ?? 1, previewTotal)}
+                        </span>
+                      )}
+                      {options.footerRight.trim() && (
+                        <span
+                          className="absolute font-medium leading-none pointer-events-none whitespace-nowrap"
+                          style={{
+                            bottom: mV,
+                            right: mH,
+                            color: textColor,
+                            fontSize: displayFontSize,
+                          }}
+                        >
+                          {resolveTokens(options.footerRight, previewPageNum ?? 1, previewTotal)}
+                        </span>
+                      )}
+                    </>
+                  )}
+
+                  {isSkipped && (
+                    <div className="absolute inset-x-0 bottom-2 flex justify-center pointer-events-none">
+                      <span className="text-[10px] bg-slate-800/60 text-white rounded px-1.5 py-0.5">
+                        skipped
+                      </span>
+                    </div>
+                  )}
+                </div>
+              ) : null}
+            </div>
           </div>
 
           <button
+            type="button"
             onClick={handleApply}
-            disabled={processing}
+            disabled={processing || loading}
             className="w-full bg-primary-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {processing ? "Applying…" : "Apply Header & Footer & Download"}
