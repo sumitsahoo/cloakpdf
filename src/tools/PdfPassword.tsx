@@ -11,7 +11,20 @@
  */
 
 import { useState, useCallback } from "react";
-import { Eye, EyeOff, ChevronRight, AlertTriangle } from "lucide-react";
+import {
+  AlertTriangle,
+  ChevronRight,
+  ClipboardList,
+  Copy,
+  Eye,
+  EyeOff,
+  Lock,
+  LockOpen,
+  MessageSquare,
+  Pencil,
+  Printer,
+  type LucideIcon,
+} from "lucide-react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { isPdfEncrypted, protectPdf, unlockPdf } from "../utils/pdf-security.ts";
@@ -47,22 +60,40 @@ function buildPermissionsMask(p: Permissions): number {
   return mask;
 }
 
-const PERMISSION_ROWS: { key: keyof Permissions; label: string; description: string }[] = [
-  { key: "print", label: "Print", description: "Allow printing the document" },
+const PERMISSION_ROWS: {
+  key: keyof Permissions;
+  label: string;
+  description: string;
+  icon: LucideIcon;
+}[] = [
+  { key: "print", icon: Printer, label: "Print", description: "Allow printing the document" },
   {
     key: "printHighQuality",
+    icon: Printer,
     label: "Print (high quality)",
     description: "Allow high-resolution printing",
   },
-  { key: "copy", label: "Copy text & images", description: "Allow selecting and copying content" },
-  { key: "modify", label: "Modify content", description: "Allow editing document content" },
+  {
+    key: "copy",
+    icon: Copy,
+    label: "Copy text & images",
+    description: "Allow selecting and copying content",
+  },
+  {
+    key: "modify",
+    icon: Pencil,
+    label: "Modify content",
+    description: "Allow editing document content",
+  },
   {
     key: "annotate",
+    icon: MessageSquare,
     label: "Add / edit annotations",
     description: "Allow adding comments and annotations",
   },
   {
     key: "fillForms",
+    icon: ClipboardList,
     label: "Fill form fields",
     description: "Allow filling interactive form fields",
   },
@@ -285,6 +316,19 @@ export default function PdfPassword() {
       {/* Panel: Add Password (unencrypted PDF) */}
       {pdfState === "unencrypted" && (
         <div className="bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border divide-y divide-slate-100 dark:divide-dark-border">
+          <div className="flex items-center gap-3 px-4 py-3 bg-amber-50 dark:bg-amber-900/20 rounded-t-xl">
+            <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-amber-100 dark:bg-amber-900/40">
+              <Lock className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+                Add Password
+              </p>
+              <p className="text-xs text-amber-600/80 dark:text-amber-400/70">
+                Encrypt with AES-256
+              </p>
+            </div>
+          </div>
           <PasswordField
             id="new-password"
             label="New password"
@@ -331,24 +375,29 @@ export default function PdfPassword() {
                     Allowed Operations
                   </p>
                 </div>
-                {PERMISSION_ROWS.map(({ key, label, description }) => (
+                {PERMISSION_ROWS.map(({ key, icon: Icon, label, description }) => (
                   <label
                     key={key}
                     className="flex items-center justify-between gap-3 px-4 py-3 cursor-pointer hover:bg-slate-50 dark:hover:bg-dark-surface-alt transition-colors"
                   >
-                    <div>
-                      <p className="text-sm font-medium text-slate-700 dark:text-dark-text">
-                        {label}
-                      </p>
-                      <p className="text-xs text-slate-400 dark:text-dark-text-muted">
-                        {description}
-                      </p>
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-amber-50 dark:bg-amber-900/20 shrink-0">
+                        <Icon className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-slate-700 dark:text-dark-text">
+                          {label}
+                        </p>
+                        <p className="text-xs text-slate-400 dark:text-dark-text-muted">
+                          {description}
+                        </p>
+                      </div>
                     </div>
                     <input
                       type="checkbox"
                       checked={permissions[key]}
                       onChange={() => togglePermission(key)}
-                      className="accent-primary-600 w-4 h-4 rounded shrink-0"
+                      className="accent-amber-500 w-4 h-4 rounded shrink-0"
                     />
                   </label>
                 ))}
@@ -369,6 +418,19 @@ export default function PdfPassword() {
       {/* Panel: Remove Password (encrypted PDF) */}
       {pdfState === "encrypted" && (
         <div className="bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border divide-y divide-slate-100 dark:divide-dark-border">
+          <div className="flex items-center gap-3 px-4 py-3 bg-amber-50 dark:bg-amber-900/20 rounded-t-xl">
+            <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-amber-100 dark:bg-amber-900/40">
+              <LockOpen className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+                Remove Password
+              </p>
+              <p className="text-xs text-amber-600/80 dark:text-amber-400/70">
+                Decrypt and save an unlocked copy
+              </p>
+            </div>
+          </div>
           <PasswordField
             id="current-password"
             label="Current password"
