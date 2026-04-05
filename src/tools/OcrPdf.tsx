@@ -234,7 +234,7 @@ export default function OcrPdf() {
               {/* Initializing spinner */}
               {processing && (!progress || progress.total === 0) && (
                 <div className="flex items-center gap-3 py-4">
-                  <div className="w-5 h-5 border-2 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
+                  <div className="w-5 h-5 border-2 border-violet-200 border-t-violet-600 rounded-full animate-spin" />
                   <span className="text-sm text-slate-600 dark:text-dark-text-muted">
                     {progressStatus || "Initializing OCR engine…"}
                   </span>

@@ -602,7 +602,7 @@ export default function StampPdf() {
                       </div>
                       {loading ? (
                         <div className="flex items-center justify-center py-8">
-                          <div className="w-6 h-6 border-2 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
+                          <div className="w-6 h-6 border-2 border-emerald-200 border-t-emerald-600 rounded-full animate-spin" />
                         </div>
                       ) : (
                         <div className="grid grid-cols-3 gap-2">
@@ -642,7 +642,7 @@ export default function StampPdf() {
               </p>
               {loading ? (
                 <div className="aspect-3/4 bg-slate-100 dark:bg-dark-surface-alt rounded-lg flex items-center justify-center">
-                  <div className="w-8 h-8 border-3 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
+                  <div className="w-8 h-8 border-3 border-emerald-200 border-t-emerald-600 rounded-full animate-spin" />
                 </div>
               ) : thumbnails[selectedPage] ? (
                 <div
