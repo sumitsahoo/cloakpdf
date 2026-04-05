@@ -12,6 +12,7 @@
  */
 
 import { useRef, useEffect, useState, useCallback } from "react";
+import { Trash2 } from "lucide-react";
 
 interface SignaturePadProps {
   /** Called with the PNG data-URL every time the user finishes a stroke. Empty string on clear. */
@@ -102,6 +103,11 @@ export function SignaturePad({ onSignature, color, width = 500, height = 200 }: 
       e.preventDefault();
       const ctx = canvasRef.current?.getContext("2d");
       if (!ctx) return;
+      // Always sync the current color before a new stroke
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
       const pos = getPos(e);
       ctx.beginPath();
       ctx.moveTo(pos.x, pos.y);
@@ -109,7 +115,7 @@ export function SignaturePad({ onSignature, color, width = 500, height = 200 }: 
       setIsDrawing(true);
       setHasContent(true);
     },
-    [getPos],
+    [getPos, color],
   );
 
   const draw = useCallback(
@@ -151,13 +157,20 @@ export function SignaturePad({ onSignature, color, width = 500, height = 200 }: 
   }, [onSignature]);
 
   return (
-    <div className="space-y-2">
-      <div className="border border-slate-300 dark:border-dark-border rounded-lg overflow-hidden bg-white dark:bg-dark-surface">
+    <div className="space-y-1.5">
+      <div
+        className={`relative border rounded-xl overflow-hidden bg-white dark:bg-dark-surface motion-safe:transition-[border-color,box-shadow] duration-200 ${
+          isDrawing
+            ? "border-primary-400 dark:border-primary-500 shadow-[0_0_0_3px_rgba(99,102,241,0.15)]"
+            : "border-slate-300 dark:border-dark-border hover:border-slate-400 dark:hover:border-slate-600"
+        }`}
+      >
         <canvas
           ref={canvasRef}
           width={width}
           height={height}
-          className="w-full cursor-crosshair touch-none"
+          aria-label="Signature drawing area — draw with mouse or touch"
+          className="w-full cursor-crosshair touch-none block"
           onMouseDown={startDrawing}
           onMouseMove={draw}
           onMouseUp={stopDrawing}
@@ -166,13 +179,26 @@ export function SignaturePad({ onSignature, color, width = 500, height = 200 }: 
           onTouchMove={draw}
           onTouchEnd={stopDrawing}
         />
+
+        {/* Empty-state hint — hidden once drawing starts */}
+        {!hasContent && (
+          <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-end pb-7 gap-2 select-none">
+            <p className="text-sm text-slate-300 dark:text-slate-600 font-medium tracking-wide">
+              Sign here
+            </p>
+            <div className="w-2/3 border-b border-dashed border-slate-200 dark:border-slate-700" />
+          </div>
+        )}
       </div>
+
       {hasContent && (
         <div className="flex justify-end">
           <button
             onClick={clear}
-            className="text-xs text-slate-500 hover:text-red-500 transition-colors"
+            aria-label="Clear signature"
+            className="flex items-center gap-1.5 text-xs text-slate-400 dark:text-dark-text-muted hover:text-red-500 dark:hover:text-red-400 motion-safe:transition-colors duration-150 rounded px-1.5 py-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-1"
           >
+            <Trash2 className="w-3 h-3" aria-hidden="true" />
             Clear
           </button>
         </div>
