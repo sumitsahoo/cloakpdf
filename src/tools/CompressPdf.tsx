@@ -102,16 +102,19 @@ export default function CompressPdf() {
                       value: "low" as const,
                       label: "Light",
                       desc: "Best quality, less compression",
+                      blur: "blur(0px)",
                     },
                     {
                       value: "medium" as const,
                       label: "Balanced",
                       desc: "Good balance of size & quality",
+                      blur: "blur(0.4px)",
                     },
                     {
                       value: "high" as const,
                       label: "Maximum",
                       desc: "Smallest file, lower quality",
+                      blur: "blur(0.9px)",
                     },
                   ].map((opt) => (
                     <button
@@ -123,6 +126,37 @@ export default function CompressPdf() {
                           : "border-slate-200 dark:border-dark-border bg-white dark:bg-dark-surface hover:border-slate-300 dark:hover:border-slate-500 hover:bg-slate-50 dark:hover:bg-dark-surface-alt"
                       }`}
                     >
+                      {/* Mini document preview showing sharpness */}
+                      <div className="mb-2.5 rounded-md overflow-hidden border border-violet-100 dark:border-violet-900/50 bg-violet-50/40 dark:bg-violet-950/20 w-full aspect-video flex flex-col p-1.5 gap-1">
+                        <div
+                          className="w-full h-1.5 rounded-full bg-violet-700 dark:bg-violet-300"
+                          style={{ filter: opt.blur }}
+                        />
+                        <div
+                          className="w-4/5 h-1.5 rounded-full bg-violet-400 dark:bg-violet-500"
+                          style={{ filter: opt.blur }}
+                        />
+                        <div
+                          className="w-full h-1.5 rounded-full bg-violet-200 dark:bg-violet-700"
+                          style={{ filter: opt.blur }}
+                        />
+                        <div
+                          className="w-3/5 h-1.5 rounded-full bg-violet-200 dark:bg-violet-700"
+                          style={{ filter: opt.blur }}
+                        />
+                        <div
+                          className="mt-0.5 w-full h-5 rounded bg-violet-100 dark:bg-violet-900/50"
+                          style={{ filter: opt.blur }}
+                        />
+                        <div
+                          className="w-full h-1.5 rounded-full bg-violet-200 dark:bg-violet-700"
+                          style={{ filter: opt.blur }}
+                        />
+                        <div
+                          className="w-2/3 h-1.5 rounded-full bg-violet-200 dark:bg-violet-700"
+                          style={{ filter: opt.blur }}
+                        />
+                      </div>
                       <p
                         className={`text-sm font-semibold ${quality === opt.value ? "text-primary-700 dark:text-primary-300" : "text-slate-700 dark:text-dark-text"}`}
                       >
