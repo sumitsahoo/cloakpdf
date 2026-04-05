@@ -17,6 +17,7 @@
   <p>
     <img src="https://img.shields.io/github/actions/workflow/status/sumitsahoo/bytepdf/security.yml?label=security%20audit" alt="Security audit" />
     <a href="https://securityscorecards.dev/viewer/?uri=github.com/sumitsahoo/bytepdf"><img src="https://api.securityscorecards.dev/projects/github.com/sumitsahoo/bytepdf/badge" alt="OpenSSF Scorecard" /></a>
+    <img src="https://img.shields.io/badge/platform-Web%20%7C%20PWA-blue" alt="Platform: Web & PWA" />
   </p>
 
 </div>
