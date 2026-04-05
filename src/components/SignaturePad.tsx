@@ -27,12 +27,40 @@ interface SignaturePadProps {
 
 type Point = { x: number; y: number };
 
+/** Draws a stroke as a smooth quadratic Bézier curve using the midpoint technique. */
+function drawSmooth(ctx: CanvasRenderingContext2D, points: Point[]) {
+  if (points.length < 2) {
+    // Single tap — draw a small filled circle
+    ctx.beginPath();
+    ctx.arc(points[0].x, points[0].y, ctx.lineWidth / 2, 0, Math.PI * 2);
+    ctx.fillStyle = ctx.strokeStyle as string;
+    ctx.fill();
+    return;
+  }
+  ctx.beginPath();
+  ctx.moveTo(points[0].x, points[0].y);
+  for (let i = 1; i < points.length - 1; i++) {
+    const mid = {
+      x: (points[i].x + points[i + 1].x) / 2,
+      y: (points[i].y + points[i + 1].y) / 2,
+    };
+    // Control point = points[i], end point = midpoint between points[i] and points[i+1]
+    ctx.quadraticCurveTo(points[i].x, points[i].y, mid.x, mid.y);
+  }
+  // Draw to the final point
+  const last = points[points.length - 1];
+  ctx.lineTo(last.x, last.y);
+  ctx.stroke();
+}
+
 export function SignaturePad({ onSignature, color, width = 500, height = 200 }: SignaturePadProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [hasContent, setHasContent] = useState(false);
   const strokesRef = useRef<Point[][]>([]);
   const currentStrokeRef = useRef<Point[]>([]);
+  // Tracks the last drawn midpoint so each frame only adds one smooth segment
+  const lastMidRef = useRef<Point | null>(null);
 
   /** Replay all stored strokes onto the canvas in the given colour. */
   const replayStrokes = useCallback((strokeColor: string) => {
@@ -45,13 +73,8 @@ export function SignaturePad({ onSignature, color, width = 500, height = 200 }: 
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     for (const stroke of strokesRef.current) {
-      if (stroke.length < 2) continue;
-      ctx.beginPath();
-      ctx.moveTo(stroke[0].x, stroke[0].y);
-      for (let i = 1; i < stroke.length; i++) {
-        ctx.lineTo(stroke[i].x, stroke[i].y);
-      }
-      ctx.stroke();
+      if (stroke.length === 0) continue;
+      drawSmooth(ctx, stroke);
     }
   }, []);
 
@@ -109,9 +132,8 @@ export function SignaturePad({ onSignature, color, width = 500, height = 200 }: 
       ctx.lineCap = "round";
       ctx.lineJoin = "round";
       const pos = getPos(e);
-      ctx.beginPath();
-      ctx.moveTo(pos.x, pos.y);
       currentStrokeRef.current = [pos];
+      lastMidRef.current = pos;
       setIsDrawing(true);
       setHasContent(true);
     },
@@ -125,9 +147,18 @@ export function SignaturePad({ onSignature, color, width = 500, height = 200 }: 
       const ctx = canvasRef.current?.getContext("2d");
       if (!ctx) return;
       const pos = getPos(e);
-      ctx.lineTo(pos.x, pos.y);
-      ctx.stroke();
+      const prev = currentStrokeRef.current[currentStrokeRef.current.length - 1];
       currentStrokeRef.current.push(pos);
+
+      // Draw one smooth quadratic segment from the last midpoint to the new midpoint,
+      // using the previous raw point as the Bézier control point.
+      const mid = { x: (prev.x + pos.x) / 2, y: (prev.y + pos.y) / 2 };
+      ctx.beginPath();
+      const from = lastMidRef.current ?? prev;
+      ctx.moveTo(from.x, from.y);
+      ctx.quadraticCurveTo(prev.x, prev.y, mid.x, mid.y);
+      ctx.stroke();
+      lastMidRef.current = mid;
     },
     [isDrawing, getPos],
   );
