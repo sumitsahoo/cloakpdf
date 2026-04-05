@@ -7,7 +7,7 @@
  * each selection so the same file can be picked again if needed.
  */
 
-import { CloudUpload } from "lucide-react";
+import { FileUp } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 
 interface FileDropZoneProps {
@@ -26,6 +26,11 @@ interface FileDropZoneProps {
    * Defaults to a neutral blue matching the primary palette.
    */
   glowColor?: string;
+  /**
+   * CSS color for the icon tint (e.g. "rgb(37,99,235)").
+   * Should match the tool's category accent. Defaults to slate.
+   */
+  iconColor?: string;
 }
 
 export function FileDropZone({
@@ -35,6 +40,7 @@ export function FileDropZone({
   label = "Drop files here or click to browse",
   hint,
   glowColor = "rgba(99,102,241,0.14)",
+  iconColor,
 }: FileDropZoneProps) {
   const [isDragOver, setIsDragOver] = useState(false);
   const zoneRef = useRef<HTMLButtonElement>(null);
@@ -116,11 +122,15 @@ export function FileDropZone({
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
       onTouchCancel={handleTouchEnd}
-      className={`relative w-full overflow-hidden border-2 border-dashed rounded-xl p-10 text-center cursor-pointer transition-all duration-200 ${
-        isDragOver
-          ? "border-primary-400 bg-primary-50/50 dark:bg-primary-900/30"
-          : "border-slate-300 dark:border-dark-border hover:border-primary-300 hover:bg-slate-50 dark:hover:bg-dark-surface active:border-primary-300 active:bg-slate-50 dark:active:bg-dark-surface"
-      }`}
+      style={{ touchAction: "manipulation" }}
+      className={`group relative w-full overflow-hidden border-2 border-dashed rounded-xl p-10 text-center cursor-pointer
+        transition-[border-color,background-color,transform] duration-200
+        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 focus-visible:ring-offset-2
+        ${
+          isDragOver
+            ? "border-primary-400 bg-primary-50/50 dark:bg-primary-900/30 scale-[1.005]"
+            : "border-slate-300 dark:border-dark-border hover:border-primary-300 hover:bg-slate-50 dark:hover:bg-dark-surface active:border-primary-300 active:bg-slate-50 dark:active:bg-dark-surface"
+        }`}
     >
       {/* Cursor / touch spotlight glow */}
       <div
@@ -134,13 +144,41 @@ export function FileDropZone({
         accept={accept}
         multiple={multiple}
         onChange={handleChange}
+        aria-label={label}
         className="hidden"
       />
-      <CloudUpload
-        className={`relative z-10 w-10 h-10 mx-auto mb-3 transition-colors ${isDragOver ? "text-primary-500" : "text-slate-400 dark:text-dark-text-muted"}`}
-        strokeWidth={1.5}
-      />
-      <p className="relative z-10 text-slate-600 dark:text-dark-text font-medium">{label}</p>
+
+      {/* Icon container */}
+      <div
+        className={`relative z-10 w-16 h-16 mx-auto mb-4 rounded-2xl flex items-center justify-center
+          transition-[background-color,transform] duration-200
+          motion-safe:group-hover:-translate-y-1 motion-safe:[&:has(~*)]:translate-y-0
+          ${
+            isDragOver
+              ? "bg-primary-100 dark:bg-primary-900/50 motion-safe:-translate-y-1"
+              : "bg-slate-100 dark:bg-dark-surface group-hover:bg-primary-50 dark:group-hover:bg-primary-900/30"
+          }`}
+      >
+        <FileUp
+          className={`w-8 h-8 transition-[color,opacity] duration-200 ${
+            iconColor
+              ? isDragOver
+                ? "opacity-100"
+                : "opacity-50 group-hover:opacity-100"
+              : isDragOver
+                ? "text-primary-500"
+                : "text-slate-400 dark:text-dark-text-muted group-hover:text-primary-400"
+          }`}
+          style={iconColor ? { color: iconColor } : undefined}
+          strokeWidth={1.5}
+        />
+      </div>
+
+      <p
+        className={`relative z-10 font-medium transition-colors duration-200 ${isDragOver ? "text-primary-600 dark:text-primary-400" : "text-slate-600 dark:text-dark-text"}`}
+      >
+        {label}
+      </p>
       {hint && (
         <p className="relative z-10 text-sm text-slate-400 dark:text-dark-text-muted mt-1">
           {hint}

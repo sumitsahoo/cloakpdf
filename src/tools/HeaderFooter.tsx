@@ -10,7 +10,7 @@
 import { useCallback, useState } from "react";
 import { PanelBottom, PanelTop, Undo2 } from "lucide-react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
-import { categoryGlow } from "../config/theme.ts";
+import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { ColorPicker, hexToRgb, rgbToHex } from "../components/ColorPicker.tsx";
 import { addHeaderFooter } from "../utils/pdf-operations.ts";
 import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
@@ -83,6 +83,7 @@ export default function HeaderFooter() {
       {!file ? (
         <FileDropZone
           glowColor={categoryGlow.annotate}
+          iconColor={categoryAccent.annotate}
           accept=".pdf,application/pdf"
           onFiles={(files) => {
             setFile(files[0] ?? null);

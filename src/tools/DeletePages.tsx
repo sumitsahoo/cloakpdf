@@ -9,7 +9,7 @@
 import { useCallback, useState } from "react";
 import { Trash2, Undo2 } from "lucide-react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
-import { categoryGlow } from "../config/theme.ts";
+import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { PageThumbnail } from "../components/PageThumbnail.tsx";
 import { downloadPdf } from "../utils/file-helpers.ts";
 import { deletePages } from "../utils/pdf-operations.ts";
@@ -81,6 +81,7 @@ export default function DeletePages() {
       {!file ? (
         <FileDropZone
           glowColor={categoryGlow.organise}
+          iconColor={categoryAccent.organise}
           accept=".pdf,application/pdf"
           onFiles={handleFile}
           label="Drop a PDF file here"

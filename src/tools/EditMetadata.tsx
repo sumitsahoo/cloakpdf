@@ -10,7 +10,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Undo2 } from "lucide-react";
 import { DateTimeInput } from "../components/DateTimeInput.tsx";
 import { FileDropZone } from "../components/FileDropZone.tsx";
-import { categoryGlow } from "../config/theme.ts";
+import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import type { PdfMetadata } from "../types.ts";
 import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
 import { getPdfMetadata, setPdfMetadata } from "../utils/pdf-operations.ts";
@@ -153,6 +153,7 @@ export default function EditMetadata() {
       {!file ? (
         <FileDropZone
           glowColor={categoryGlow.security}
+          iconColor={categoryAccent.security}
           accept=".pdf,application/pdf"
           onFiles={handleFile}
           label="Drop a PDF file here"

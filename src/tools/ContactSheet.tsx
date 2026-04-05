@@ -9,7 +9,7 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { Grid3X3, Image, Tag } from "lucide-react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
-import { categoryGlow } from "../config/theme.ts";
+import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { downloadBlob, formatFileSize } from "../utils/file-helpers.ts";
 import { renderAllThumbnails } from "../utils/pdf-renderer.ts";
 
@@ -245,6 +245,7 @@ export default function ContactSheet() {
       {!file ? (
         <FileDropZone
           glowColor={categoryGlow.transform}
+          iconColor={categoryAccent.transform}
           accept=".pdf,application/pdf"
           onFiles={handleFile}
           label="Drop a PDF file here"

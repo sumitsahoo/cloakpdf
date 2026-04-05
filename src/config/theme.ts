@@ -72,6 +72,14 @@ export const categoryGlow = {
   security: "rgba(245,158,11,0.18)",
 } as const;
 
+/** Solid accent color per tool category, used for icon tints in FileDropZone. */
+export const categoryAccent = {
+  organise: "rgb(37,99,235)",
+  transform: "rgb(124,58,237)",
+  annotate: "rgb(16,185,129)",
+  security: "rgb(245,158,11)",
+} as const;
+
 export const colors = {
   primary: {
     50: "#EFF4FF",
