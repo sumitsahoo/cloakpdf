@@ -110,7 +110,7 @@ export default function RemoveBlankPages() {
                 <>
                   , {pageCount} pages
                   {selectedPages.size > 0 && (
-                    <span className="text-amber-600 dark:text-amber-400 ml-2">
+                    <span className="text-primary-600 dark:text-primary-400 ml-2">
                       ({selectedPages.size} blank page{selectedPages.size !== 1 ? "s" : ""}{" "}
                       detected)
                     </span>
@@ -180,7 +180,7 @@ export default function RemoveBlankPages() {
                     onClick={() => togglePage(i)}
                     overlay={
                       selectedPages.has(i) ? (
-                        <div className="bg-amber-400/70 inset-0 absolute flex items-center justify-center">
+                        <div className="bg-primary-600/70 inset-0 absolute flex items-center justify-center">
                           <Trash2 className="w-8 h-8 text-white" />
                         </div>
                       ) : null
