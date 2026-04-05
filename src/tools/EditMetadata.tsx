@@ -7,7 +7,18 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { Undo2 } from "lucide-react";
+import {
+  Bookmark,
+  Building2,
+  CalendarClock,
+  CalendarPlus,
+  FileText,
+  Tag,
+  Undo2,
+  User,
+  Wrench,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { DateTimeInput } from "../components/DateTimeInput.tsx";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
@@ -21,45 +32,51 @@ const METADATA_FIELDS: {
   label: string;
   type: "text" | "datetime-local";
   placeholder: string;
-  icon: string;
+  icon: LucideIcon;
 }[] = [
-  { key: "title", label: "Title", type: "text", placeholder: "Document title", icon: "📌" },
-  { key: "author", label: "Author", type: "text", placeholder: "Author name", icon: "👤" },
-  { key: "subject", label: "Subject", type: "text", placeholder: "Document subject", icon: "📝" },
+  { key: "title", label: "Title", type: "text", placeholder: "Document title", icon: Bookmark },
+  { key: "author", label: "Author", type: "text", placeholder: "Author name", icon: User },
+  {
+    key: "subject",
+    label: "Subject",
+    type: "text",
+    placeholder: "Document subject",
+    icon: FileText,
+  },
   {
     key: "keywords",
     label: "Keywords",
     type: "text",
     placeholder: "Comma-separated keywords",
-    icon: "🏷️",
+    icon: Tag,
   },
   {
     key: "creator",
     label: "Creator",
     type: "text",
     placeholder: "Creating application",
-    icon: "🛠️",
+    icon: Wrench,
   },
   {
     key: "producer",
     label: "Producer",
     type: "text",
     placeholder: "PDF producer software",
-    icon: "🏭",
+    icon: Building2,
   },
   {
     key: "creationDate",
     label: "Creation Date",
     type: "datetime-local",
     placeholder: "",
-    icon: "📅",
+    icon: CalendarPlus,
   },
   {
     key: "modificationDate",
     label: "Modification Date",
     type: "datetime-local",
     placeholder: "",
-    icon: "🔄",
+    icon: CalendarClock,
   },
 ];
 
@@ -210,7 +227,7 @@ export default function EditMetadata() {
                       htmlFor={`meta-${field.key}`}
                       className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-dark-text sm:w-44 shrink-0"
                     >
-                      <span>{field.icon}</span>
+                      <field.icon className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                       {field.label}
                     </label>
                     {field.type === "datetime-local" ? (
