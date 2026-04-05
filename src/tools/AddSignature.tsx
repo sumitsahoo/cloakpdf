@@ -12,6 +12,7 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
+import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { SignaturePad } from "../components/SignaturePad.tsx";
 import { ColorPicker, hexToRgb } from "../components/ColorPicker.tsx";
 import { PageThumbnail } from "../components/PageThumbnail.tsx";
@@ -272,6 +273,8 @@ export default function AddSignature() {
     <div className="space-y-6">
       {!file ? (
         <FileDropZone
+          glowColor={categoryGlow.annotate}
+          iconColor={categoryAccent.annotate}
           accept=".pdf,application/pdf"
           onFiles={handleFile}
           label="Drop a PDF file here"

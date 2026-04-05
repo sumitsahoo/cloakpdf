@@ -9,6 +9,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
+import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
 import { grayscalePdf } from "../utils/pdf-operations.ts";
 import { renderPageThumbnail } from "../utils/pdf-renderer.ts";
@@ -71,6 +72,8 @@ export default function GrayscalePdf() {
     <div className="space-y-6">
       {!file ? (
         <FileDropZone
+          glowColor={categoryGlow.transform}
+          iconColor={categoryAccent.transform}
           accept=".pdf,application/pdf"
           onFiles={handleFile}
           label="Drop a PDF file here"

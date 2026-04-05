@@ -9,6 +9,7 @@
 import { useState, useCallback } from "react";
 import { Gauge } from "lucide-react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
+import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { compressPdf } from "../utils/pdf-operations.ts";
 import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
 
@@ -64,6 +65,8 @@ export default function CompressPdf() {
     <div className="space-y-6">
       {!file ? (
         <FileDropZone
+          glowColor={categoryGlow.transform}
+          iconColor={categoryAccent.transform}
           accept=".pdf,application/pdf"
           onFiles={handleFile}
           label="Drop a PDF file here"

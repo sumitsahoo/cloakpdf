@@ -8,6 +8,7 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
+import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { addPdfBookmarks } from "../utils/pdf-operations.ts";
 import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
 import { X, Plus } from "lucide-react";
@@ -105,6 +106,8 @@ export default function AddBookmarks() {
     <div className="space-y-6">
       {!file ? (
         <FileDropZone
+          glowColor={categoryGlow.organise}
+          iconColor={categoryAccent.organise}
           accept=".pdf,application/pdf"
           onFiles={handleFile}
           label="Drop a PDF file here"

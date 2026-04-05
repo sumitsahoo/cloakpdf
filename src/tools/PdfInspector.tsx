@@ -8,6 +8,7 @@
 
 import { useState, useCallback } from "react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
+import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { getPdfInfo } from "../utils/pdf-operations.ts";
 import { formatFileSize } from "../utils/file-helpers.ts";
 import type { PdfInfo } from "../utils/pdf-operations.ts";
@@ -51,6 +52,8 @@ export default function PdfInspector() {
   return (
     <div className="space-y-6">
       <FileDropZone
+        glowColor={categoryGlow.security}
+        iconColor={categoryAccent.security}
         accept=".pdf,application/pdf"
         onFiles={handleFile}
         label="Drop a PDF file here"

@@ -11,6 +11,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Check, Scissors, Undo2 } from "lucide-react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
+import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { PageThumbnail } from "../components/PageThumbnail.tsx";
 import { cropPages, uncropPages } from "../utils/pdf-operations.ts";
 import { renderAllThumbnails } from "../utils/pdf-renderer.ts";
@@ -189,6 +190,8 @@ export default function CropPages() {
     <div className="space-y-6">
       {!file ? (
         <FileDropZone
+          glowColor={categoryGlow.transform}
+          iconColor={categoryAccent.transform}
           accept=".pdf,application/pdf"
           onFiles={handleFile}
           label="Drop a PDF file here"

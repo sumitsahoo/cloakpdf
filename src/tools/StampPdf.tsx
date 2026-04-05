@@ -11,6 +11,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Check, Stamp, CircleDot, Droplets } from "lucide-react";
 import { ColorPicker, hexToRgb, rgbToHex } from "../components/ColorPicker.tsx";
 import { FileDropZone } from "../components/FileDropZone.tsx";
+import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { PageThumbnail } from "../components/PageThumbnail.tsx";
 import type { WatermarkOptions } from "../types.ts";
 import { downloadPdf } from "../utils/file-helpers.ts";
@@ -319,6 +320,8 @@ export default function StampPdf() {
     <div className="space-y-6">
       {!file ? (
         <FileDropZone
+          glowColor={categoryGlow.annotate}
+          iconColor={categoryAccent.annotate}
           accept=".pdf,application/pdf"
           onFiles={handleFile}
           label="Drop a PDF file here"

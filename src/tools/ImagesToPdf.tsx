@@ -9,6 +9,7 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
+import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { imagesToPdf } from "../utils/pdf-operations.ts";
 import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
 import { ChevronUp, ChevronDown, X } from "lucide-react";
@@ -87,6 +88,8 @@ export default function ImagesToPdf() {
   return (
     <div className="space-y-6">
       <FileDropZone
+        glowColor={categoryGlow.transform}
+        iconColor={categoryAccent.transform}
         accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
         multiple
         onFiles={handleFiles}
