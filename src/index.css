@@ -82,6 +82,58 @@ body {
   animation: scale-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
+@keyframes popover-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-popover-in {
+  animation: popover-in 0.15s ease-out both;
+  transform-origin: top center;
+}
+
+@keyframes popover-in-above {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-popover-in-above {
+  animation: popover-in-above 0.15s ease-out both;
+  transform-origin: bottom center;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.12s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-popover-in,
+  .animate-fade-in {
+    animation: none;
+  }
+}
+
 @keyframes focus-ring-pulse {
   0% {
     box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.35);

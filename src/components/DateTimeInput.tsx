@@ -85,17 +85,33 @@ const timeSelectClass =
 export function DateTimeInput({ id, value, onChange }: DateTimeInputProps) {
   const [open, setOpen] = useState(false);
   const [showYearPicker, setShowYearPicker] = useState(false);
+  // Keyboard-nav roving focus within the calendar grid
+  const [focusedDay, setFocusedDay] = useState<number | null>(null);
+  // Popover flip state: computed on open based on available viewport space
+  const [popoverAbove, setPopoverAbove] = useState(false);
+  const [popoverAlignRight, setPopoverAlignRight] = useState(false);
+
   const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
+  const selectedYearRef = useRef<HTMLButtonElement>(null);
 
   const parsed = useMemo(() => parseValue(value), [value]);
-  const today = useMemo(() => new Date(), []);
-  const todayYear = today.getFullYear();
-  const todayMonth = today.getMonth();
-  const todayDay = today.getDate();
+
+  // Computed fresh each render — avoids stale "today" if the component lives across midnight
+  const _now = new Date();
+  const todayYear = _now.getFullYear();
+  const todayMonth = _now.getMonth();
+  const todayDay = _now.getDate();
 
   // Calendar view state
   const [viewYear, setViewYear] = useState(parsed?.year ?? todayYear);
   const [viewMonth, setViewMonth] = useState(parsed?.month ?? todayMonth);
+
+  // Ref snapshot of current state — lets the open-seed effect read fresh values
+  // without listing them as deps (it must only run when `open` toggles)
+  const snapRef = useRef({ parsed, viewYear, viewMonth, todayYear, todayMonth, todayDay });
+  snapRef.current = { parsed, viewYear, viewMonth, todayYear, todayMonth, todayDay };
 
   // Sync view when value changes externally
   useEffect(() => {
@@ -103,9 +119,55 @@ export function DateTimeInput({ id, value, onChange }: DateTimeInputProps) {
       setViewYear(parsed.year);
       setViewMonth(parsed.month);
     }
-  }, [parsed, parsed?.year, parsed?.month]);
+  }, [parsed]);
 
-  // Close on outside click / Escape
+  // Compute popover placement on open to avoid viewport overflow
+  useEffect(() => {
+    if (!open || !containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const POPOVER_HEIGHT = 340;
+    const POPOVER_WIDTH = 288; // w-72
+    setPopoverAbove(rect.bottom + POPOVER_HEIGHT > window.innerHeight && rect.top > POPOVER_HEIGHT);
+    setPopoverAlignRight(rect.left + POPOVER_WIDTH > window.innerWidth);
+  }, [open]);
+
+  // Auto-scroll year picker so the selected year is centred on open
+  useEffect(() => {
+    if (showYearPicker && selectedYearRef.current) {
+      selectedYearRef.current.scrollIntoView({ block: "center", behavior: "instant" });
+    }
+  }, [showYearPicker]);
+
+  // When the popover opens, seed the roving focus to the selected/today day.
+  // Uses snapRef so this effect legitimately only needs to re-run when `open` changes.
+  useEffect(() => {
+    if (!open) {
+      setFocusedDay(null);
+      return;
+    }
+    const raf = requestAnimationFrame(() => {
+      const { parsed, viewYear, viewMonth, todayYear, todayMonth, todayDay } = snapRef.current;
+      const target =
+        parsed?.year === viewYear && parsed?.month === viewMonth
+          ? parsed.day
+          : viewYear === todayYear && viewMonth === todayMonth
+            ? todayDay
+            : 1;
+      setFocusedDay(target);
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [open]);
+
+  // Imperatively focus the roving-focus day button after state updates.
+  // viewMonth/viewYear are intentionally omitted: focusedDay always changes
+  // alongside them (via handleCalendarKeyDown), so it's a sufficient trigger.
+  useEffect(() => {
+    if (!open || focusedDay === null || showYearPicker) return;
+    const btn = popoverRef.current?.querySelector<HTMLButtonElement>(`[data-day="${focusedDay}"]`);
+    btn?.focus();
+  }, [focusedDay, open, showYearPicker]);
+
+  // Close on outside click / Escape; return focus to trigger on close
   useEffect(() => {
     if (!open) return;
     function handleClick(e: MouseEvent) {
@@ -114,7 +176,10 @@ export function DateTimeInput({ id, value, onChange }: DateTimeInputProps) {
       }
     }
     function handleKey(e: KeyboardEvent) {
-      if (e.key === "Escape") setOpen(false);
+      if (e.key === "Escape") {
+        setOpen(false);
+        triggerRef.current?.focus();
+      }
     }
     document.addEventListener("mousedown", handleClick);
     document.addEventListener("keydown", handleKey);
@@ -142,7 +207,7 @@ export function DateTimeInput({ id, value, onChange }: DateTimeInputProps) {
     return nextYear < todayYear || (nextYear === todayYear && nextMonth <= todayMonth);
   }, [viewMonth, viewYear, todayYear, todayMonth]);
 
-  const handlePrevMonth = () => {
+  const handlePrevMonth = useCallback(() => {
     if (!canGoPrev) return;
     if (viewMonth === 0) {
       setViewMonth(11);
@@ -150,9 +215,9 @@ export function DateTimeInput({ id, value, onChange }: DateTimeInputProps) {
     } else {
       setViewMonth((m) => m - 1);
     }
-  };
+  }, [canGoPrev, viewMonth]);
 
-  const handleNextMonth = () => {
+  const handleNextMonth = useCallback(() => {
     if (!canGoNext) return;
     if (viewMonth === 11) {
       setViewMonth(0);
@@ -160,16 +225,18 @@ export function DateTimeInput({ id, value, onChange }: DateTimeInputProps) {
     } else {
       setViewMonth((m) => m + 1);
     }
-  };
+  }, [canGoNext, viewMonth]);
 
-  const handleYearSelect = (year: number) => {
-    setViewYear(year);
-    // If the new year is the current year and the current viewMonth is in the future, clamp to today's month
-    if (year === todayYear && viewMonth > todayMonth) {
-      setViewMonth(todayMonth);
-    }
-    setShowYearPicker(false);
-  };
+  const handleYearSelect = useCallback(
+    (year: number) => {
+      setViewYear(year);
+      if (year === todayYear && viewMonth > todayMonth) {
+        setViewMonth(todayMonth);
+      }
+      setShowYearPicker(false);
+    },
+    [todayYear, todayMonth, viewMonth],
+  );
 
   const handleDayClick = useCallback(
     (day: number) => {
@@ -236,26 +303,66 @@ export function DateTimeInput({ id, value, onChange }: DateTimeInputProps) {
     setShowYearPicker(false);
   }, [onChange]);
 
+  // Arrow-key navigation within the calendar grid (roving tabindex pattern)
+  const handleCalendarKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (focusedDay === null) return;
+      const delta: Partial<Record<string, number>> = {
+        ArrowLeft: -1,
+        ArrowRight: 1,
+        ArrowUp: -7,
+        ArrowDown: 7,
+      };
+      const d = delta[e.key];
+      if (d !== undefined) {
+        e.preventDefault();
+        // new Date handles day-of-month overflow/underflow across months automatically
+        const next = new Date(viewYear, viewMonth, focusedDay + d);
+        if (isDateFuture(next.getFullYear(), next.getMonth(), next.getDate())) return;
+        if (next.getFullYear() < todayYear - 30) return;
+        setViewYear(next.getFullYear());
+        setViewMonth(next.getMonth());
+        setFocusedDay(next.getDate());
+      }
+    },
+    [focusedDay, viewYear, viewMonth, isDateFuture, todayYear],
+  );
+
   const hour12 = parsed ? parsed.hour % 12 || 12 : 12;
   const isPm = parsed ? parsed.hour >= 12 : false;
   const displayText = formatDisplay(value);
 
-  // Build calendar grid cells: negative = empty spacer, positive = day number
+  // Build flat cell list: negative = empty spacer, positive = day number
   const daysInMonth = getDaysInMonth(viewYear, viewMonth);
   const firstDayOfWeek = getFirstDayOfWeek(viewYear, viewMonth);
   const cells: number[] = [];
   for (let i = 0; i < firstDayOfWeek; i++) cells.push(-(i + 1));
   for (let d = 1; d <= daysInMonth; d++) cells.push(d);
 
+  // Chunk into rows of 7 for the <table> structure, padding the last row
+  const rows: number[][] = [];
+  for (let i = 0; i < cells.length; i += 7) {
+    const row = cells.slice(i, i + 7);
+    while (row.length < 7) row.push(-(100 + i + row.length));
+    rows.push(row);
+  }
+
   // Year range for the year picker
   const yearList = Array.from({ length: 31 }, (_, i) => todayYear - 30 + i).reverse();
+
+  const popoverPositionClass = `${popoverAbove ? "bottom-full mb-1" : "top-full mt-1"} ${popoverAlignRight ? "right-0" : "left-0"}`;
+  const popoverAnimClass = popoverAbove ? "animate-popover-in-above" : "animate-popover-in";
 
   return (
     <div ref={containerRef} className="relative w-full">
       {/* Trigger button */}
       <button
+        ref={triggerRef}
         id={id}
         type="button"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        aria-label={displayText ? `Date and time: ${displayText}` : "Select date and time"}
         onClick={() => {
           setOpen((v) => !v);
           setShowYearPicker(false);
@@ -285,9 +392,15 @@ export function DateTimeInput({ id, value, onChange }: DateTimeInputProps) {
         </svg>
       </button>
 
-      {/* Popover panel — fixed width so it stays compact on wide triggers */}
+      {/* Popover panel */}
       {open && (
-        <div className="absolute left-0 z-50 mt-1 w-72 p-3 bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border shadow-xl space-y-2">
+        <div
+          ref={popoverRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Date and time picker"
+          className={`${popoverAnimClass} absolute z-50 w-72 p-3 bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border shadow-xl space-y-2 ${popoverPositionClass}`}
+        >
           {/* Month/year navigation header */}
           <div className="flex items-center justify-between gap-1">
             <button
@@ -295,7 +408,7 @@ export function DateTimeInput({ id, value, onChange }: DateTimeInputProps) {
               onClick={handlePrevMonth}
               disabled={!canGoPrev || showYearPicker}
               aria-label="Previous month"
-              className={`p-1 rounded-md transition-colors ${
+              className={`p-1 rounded-md transition-[colors,transform] active:scale-90 ${
                 canGoPrev && !showYearPicker
                   ? "hover:bg-slate-100 dark:hover:bg-dark-surface-alt text-slate-500 dark:text-dark-text-muted"
                   : "text-slate-300 dark:text-slate-600 cursor-not-allowed"
@@ -323,12 +436,13 @@ export function DateTimeInput({ id, value, onChange }: DateTimeInputProps) {
               <button
                 type="button"
                 onClick={() => setShowYearPicker((v) => !v)}
+                aria-expanded={showYearPicker}
+                aria-label="Select year"
                 className={`flex items-center gap-0.5 text-xs font-semibold rounded px-1 py-0.5 transition-colors select-none ${
                   showYearPicker
                     ? "bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400"
                     : "text-slate-700 dark:text-dark-text hover:bg-slate-100 dark:hover:bg-dark-surface-alt"
                 }`}
-                aria-label="Select year"
               >
                 {viewYear}
                 <svg
@@ -351,7 +465,7 @@ export function DateTimeInput({ id, value, onChange }: DateTimeInputProps) {
               onClick={handleNextMonth}
               disabled={!canGoNext || showYearPicker}
               aria-label="Next month"
-              className={`p-1 rounded-md transition-colors ${
+              className={`p-1 rounded-md transition-[colors,transform] active:scale-90 ${
                 canGoNext && !showYearPicker
                   ? "hover:bg-slate-100 dark:hover:bg-dark-surface-alt text-slate-500 dark:text-dark-text-muted"
                   : "text-slate-300 dark:text-slate-600 cursor-not-allowed"
@@ -374,10 +488,11 @@ export function DateTimeInput({ id, value, onChange }: DateTimeInputProps) {
 
           {/* Year picker grid */}
           {showYearPicker ? (
-            <div className="grid grid-cols-4 gap-1 max-h-44 overflow-y-auto py-0.5">
+            <div className="animate-fade-in grid grid-cols-4 gap-1 max-h-44 overflow-y-auto py-0.5">
               {yearList.map((year) => (
                 <button
                   key={year}
+                  ref={year === viewYear ? selectedYearRef : undefined}
                   type="button"
                   onClick={() => handleYearSelect(year)}
                   className={`py-1.5 rounded-md text-xs font-medium transition-colors ${
@@ -393,55 +508,78 @@ export function DateTimeInput({ id, value, onChange }: DateTimeInputProps) {
               ))}
             </div>
           ) : (
-            <>
-              {/* Day-of-week headers */}
-              <div className="grid grid-cols-7">
-                {DAYS_SHORT.map((d) => (
-                  <div
-                    key={d}
-                    className="text-center text-[10px] font-medium text-slate-400 dark:text-slate-500 pb-0.5 select-none"
-                  >
-                    {d}
-                  </div>
-                ))}
-
-                {/* Calendar day cells: negative values are empty spacers */}
-                {cells.map((cell) => {
-                  if (cell < 0) {
-                    return <div key={cell} />;
-                  }
-                  const day = cell;
-                  const isFuture = isDateFuture(viewYear, viewMonth, day);
-                  const isSelected =
-                    parsed?.day === day && parsed?.month === viewMonth && parsed?.year === viewYear;
-                  const isToday =
-                    day === todayDay && viewMonth === todayMonth && viewYear === todayYear;
-
-                  return (
-                    <button
-                      key={day}
-                      type="button"
-                      onClick={() => handleDayClick(day)}
-                      disabled={isFuture}
-                      className={`
-                        h-8 flex items-center justify-center rounded-md text-xs transition-colors select-none
-                        ${
-                          isSelected
-                            ? "bg-primary-600 text-white font-semibold"
-                            : isFuture
-                              ? "text-slate-300 dark:text-slate-600 cursor-not-allowed"
-                              : isToday
-                                ? "border border-primary-300 dark:border-primary-700 text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 font-medium"
-                                : "text-slate-700 dark:text-dark-text hover:bg-slate-100 dark:hover:bg-dark-surface-alt"
-                        }
-                      `}
+            /* Calendar grid — use a real <table> so ARIA grid/columnheader/gridcell
+               roles are correctly implied by native HTML semantics */
+            <table
+              aria-label={`${MONTHS[viewMonth]} ${viewYear}`}
+              onKeyDown={handleCalendarKeyDown}
+              className="w-full table-fixed animate-fade-in"
+            >
+              <thead>
+                <tr>
+                  {DAYS_SHORT.map((d) => (
+                    <th
+                      key={d}
+                      scope="col"
+                      className="text-center text-[10px] font-medium text-slate-400 dark:text-slate-500 pb-0.5 select-none"
                     >
-                      {day}
-                    </button>
-                  );
-                })}
-              </div>
-            </>
+                      {d}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row) => (
+                  <tr key={row[0]}>
+                    {row.map((cell) => {
+                      if (cell < 0) {
+                        return <td key={cell} />;
+                      }
+                      const day = cell;
+                      const isFuture = isDateFuture(viewYear, viewMonth, day);
+                      const isSelected =
+                        parsed?.day === day &&
+                        parsed?.month === viewMonth &&
+                        parsed?.year === viewYear;
+                      const isToday =
+                        day === todayDay && viewMonth === todayMonth && viewYear === todayYear;
+                      // Roving tabindex: only the focused day (or fallback to selected/today) is tabbable
+                      const isFocusTarget =
+                        focusedDay !== null ? focusedDay === day : isSelected || isToday;
+
+                      return (
+                        <td key={day}>
+                          <button
+                            type="button"
+                            data-day={day}
+                            onClick={() => handleDayClick(day)}
+                            onFocus={() => setFocusedDay(day)}
+                            disabled={isFuture}
+                            tabIndex={isFocusTarget ? 0 : -1}
+                            aria-label={`${day} ${MONTHS[viewMonth]} ${viewYear}${isSelected ? ", selected" : ""}${isToday ? ", today" : ""}`}
+                            aria-pressed={isSelected}
+                            className={`
+                              h-8 w-full flex items-center justify-center rounded-md text-xs transition-[colors,transform] select-none active:scale-90
+                              ${
+                                isSelected
+                                  ? "bg-primary-600 text-white font-semibold"
+                                  : isFuture
+                                    ? "text-slate-300 dark:text-slate-600 cursor-not-allowed"
+                                    : isToday
+                                      ? "border border-primary-300 dark:border-primary-700 text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 font-medium"
+                                      : "text-slate-700 dark:text-dark-text hover:bg-slate-100 dark:hover:bg-dark-surface-alt"
+                              }
+                            `}
+                          >
+                            {day}
+                          </button>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           )}
 
           {/* Time row */}
@@ -453,6 +591,7 @@ export function DateTimeInput({ id, value, onChange }: DateTimeInputProps) {
             <select
               value={parsed ? hour12 : ""}
               onChange={(e) => handleHour12Change(parseInt(e.target.value, 10))}
+              aria-label="Hour"
               className={timeSelectClass}
             >
               {!parsed && <option value="">—</option>}
@@ -463,11 +602,14 @@ export function DateTimeInput({ id, value, onChange }: DateTimeInputProps) {
               ))}
             </select>
 
-            <span className="text-slate-400 font-medium text-xs select-none">:</span>
+            <span className="text-slate-400 font-medium text-xs select-none" aria-hidden="true">
+              :
+            </span>
 
             <select
               value={parsed?.minute ?? ""}
               onChange={(e) => handleTimePart("minute", parseInt(e.target.value, 10))}
+              aria-label="Minute"
               className={timeSelectClass}
             >
               {!parsed && <option value="">—</option>}
@@ -478,13 +620,15 @@ export function DateTimeInput({ id, value, onChange }: DateTimeInputProps) {
               ))}
             </select>
 
-            {/* AM/PM toggle */}
-            <div className="flex rounded-md border border-slate-200 dark:border-dark-border overflow-hidden text-xs">
+            {/* AM/PM toggle — <fieldset> gives implicit role="group" */}
+            <fieldset className="flex m-0 p-0 rounded-md border border-slate-200 dark:border-dark-border overflow-hidden text-xs">
+              <legend className="sr-only">AM or PM</legend>
               {(["AM", "PM"] as const).map((period) => (
                 <button
                   key={period}
                   type="button"
                   onClick={() => handleAmPm(period)}
+                  aria-pressed={(period === "PM") === isPm}
                   className={`px-2 py-1 transition-colors ${
                     parsed && (period === "PM") === isPm
                       ? "bg-primary-600 text-white font-medium"
@@ -494,7 +638,7 @@ export function DateTimeInput({ id, value, onChange }: DateTimeInputProps) {
                   {period}
                 </button>
               ))}
-            </div>
+            </fieldset>
           </div>
 
           {/* Actions */}
@@ -504,6 +648,7 @@ export function DateTimeInput({ id, value, onChange }: DateTimeInputProps) {
               onClick={() => {
                 onChange("");
                 setOpen(false);
+                triggerRef.current?.focus();
               }}
               className="text-xs text-slate-500 dark:text-dark-text-muted hover:text-red-500 dark:hover:text-red-400 transition-colors"
             >
@@ -519,7 +664,10 @@ export function DateTimeInput({ id, value, onChange }: DateTimeInputProps) {
               </button>
               <button
                 type="button"
-                onClick={() => setOpen(false)}
+                onClick={() => {
+                  setOpen(false);
+                  triggerRef.current?.focus();
+                }}
                 className="text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 px-3 py-1 rounded-lg transition-colors"
               >
                 Done
