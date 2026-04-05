@@ -36,6 +36,9 @@ export default function RedactPdf() {
   // Map of pageIndex → list of redaction rects (fraction coords)
   const [redactions, setRedactions] = useState<Map<number, RedactionRect[]>>(new Map());
 
+  // Global undo history — each entry is the full redactions map before a rect was added
+  const [undoHistory, setUndoHistory] = useState<Map<number, RedactionRect[]>[]>([]);
+
   // Canvas drawing state
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -46,6 +49,7 @@ export default function RedactPdf() {
     if (!pdf) return;
     setFile(pdf);
     setRedactions(new Map());
+    setUndoHistory([]);
     setEditingPage(null);
     setLoading(true);
     setError(null);
@@ -150,6 +154,7 @@ export default function RedactPdf() {
       // Only save rects that are at least 1% of the page in each dimension
       if (r.wPct > 0.01 && r.hPct > 0.01) {
         setRedactions((prev) => {
+          setUndoHistory((h) => [...h, prev]);
           const next = new Map(prev);
           const existing = next.get(editingPage) ?? [];
           next.set(editingPage, [...existing, r]);
@@ -172,6 +177,20 @@ export default function RedactPdf() {
       return next;
     });
   }, [editingPage]);
+
+  const globalUndo = useCallback(() => {
+    setUndoHistory((prev) => {
+      if (prev.length === 0) return prev;
+      const next = prev.slice(0, -1);
+      setRedactions(prev[prev.length - 1]);
+      return next;
+    });
+  }, []);
+
+  const clearAllRects = useCallback(() => {
+    setRedactions(new Map());
+    setUndoHistory([]);
+  }, []);
 
   const clearPageRects = useCallback(() => {
     if (editingPage === null) return;
@@ -340,9 +359,32 @@ export default function RedactPdf() {
       ) : (
         // ── Page thumbnail grid ───────────────────────────────────────────────
         <>
-          <p className="text-sm text-slate-500 dark:text-dark-text-muted">
-            Click a page to open the redaction editor for it.
-          </p>
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-slate-500 dark:text-dark-text-muted">
+              Click a page to open the redaction editor for it.
+            </p>
+            {totalRedactions > 0 && (
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={globalUndo}
+                  disabled={undoHistory.length === 0}
+                  className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 dark:text-dark-text-muted dark:hover:text-dark-text disabled:opacity-40 transition-colors"
+                >
+                  <Undo2 className="w-4 h-4" />
+                  Undo last
+                </button>
+                <button
+                  type="button"
+                  onClick={clearAllRects}
+                  className="inline-flex items-center gap-1.5 text-sm text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Clear all
+                </button>
+              </div>
+            )}
+          </div>
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
             {thumbnails.map((thumb, i) => {
               const count = (redactions.get(i) ?? []).length;
