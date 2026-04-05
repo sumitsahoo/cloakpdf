@@ -7,7 +7,18 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { Undo2 } from "lucide-react";
+import {
+  Bookmark,
+  Building2,
+  CalendarClock,
+  CalendarPlus,
+  FileText,
+  Tag,
+  Undo2,
+  User,
+  Wrench,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { DateTimeInput } from "../components/DateTimeInput.tsx";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
@@ -21,45 +32,51 @@ const METADATA_FIELDS: {
   label: string;
   type: "text" | "datetime-local";
   placeholder: string;
-  icon: string;
+  icon: LucideIcon;
 }[] = [
-  { key: "title", label: "Title", type: "text", placeholder: "Document title", icon: "📌" },
-  { key: "author", label: "Author", type: "text", placeholder: "Author name", icon: "👤" },
-  { key: "subject", label: "Subject", type: "text", placeholder: "Document subject", icon: "📝" },
+  { key: "title", label: "Title", type: "text", placeholder: "Document title", icon: Bookmark },
+  { key: "author", label: "Author", type: "text", placeholder: "Author name", icon: User },
+  {
+    key: "subject",
+    label: "Subject",
+    type: "text",
+    placeholder: "Document subject",
+    icon: FileText,
+  },
   {
     key: "keywords",
     label: "Keywords",
     type: "text",
     placeholder: "Comma-separated keywords",
-    icon: "🏷️",
+    icon: Tag,
   },
   {
     key: "creator",
     label: "Creator",
     type: "text",
     placeholder: "Creating application",
-    icon: "🛠️",
+    icon: Wrench,
   },
   {
     key: "producer",
     label: "Producer",
     type: "text",
     placeholder: "PDF producer software",
-    icon: "🏭",
+    icon: Building2,
   },
   {
     key: "creationDate",
     label: "Creation Date",
     type: "datetime-local",
     placeholder: "",
-    icon: "📅",
+    icon: CalendarPlus,
   },
   {
     key: "modificationDate",
     label: "Modification Date",
     type: "datetime-local",
     placeholder: "",
-    icon: "🔄",
+    icon: CalendarClock,
   },
 ];
 
@@ -181,7 +198,7 @@ export default function EditMetadata() {
 
           {loading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="w-8 h-8 border-3 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
+              <div className="w-8 h-8 border-3 border-amber-200 border-t-amber-600 rounded-full animate-spin" />
             </div>
           ) : metadata ? (
             <div className="space-y-4">
@@ -201,43 +218,53 @@ export default function EditMetadata() {
                 )}
               </div>
               <div className="bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border divide-y divide-slate-100 dark:divide-dark-border">
-                {METADATA_FIELDS.map((field) => (
-                  <div
-                    key={field.key}
-                    className="p-4 flex flex-col sm:flex-row sm:items-center gap-2"
-                  >
-                    <label
-                      htmlFor={`meta-${field.key}`}
-                      className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-dark-text sm:w-44 shrink-0"
+                {METADATA_FIELDS.map((field) => {
+                  const isFieldDirty =
+                    originalMetadata !== null &&
+                    metadata[field.key] !== originalMetadata[field.key];
+                  return (
+                    <div
+                      key={field.key}
+                      className={`p-4 flex flex-col sm:flex-row sm:items-center gap-2 transition-colors ${isFieldDirty ? "bg-amber-50/60 dark:bg-amber-900/10" : ""}`}
                     >
-                      <span>{field.icon}</span>
-                      {field.label}
-                    </label>
-                    {field.type === "datetime-local" ? (
-                      <DateTimeInput
-                        id={`meta-${field.key}`}
-                        value={metadata[field.key]}
-                        onChange={(v) => handleFieldChange(field.key, v)}
-                      />
-                    ) : (
-                      <input
-                        id={`meta-${field.key}`}
-                        type="text"
-                        value={metadata[field.key]}
-                        placeholder={field.placeholder}
-                        onChange={(e) => handleFieldChange(field.key, e.target.value)}
-                        className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-bg text-sm text-slate-800 dark:text-dark-text placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
-                      />
-                    )}
-                  </div>
-                ))}
+                      <label
+                        htmlFor={`meta-${field.key}`}
+                        className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-dark-text sm:w-44 shrink-0"
+                      >
+                        <field.icon
+                          className={`w-4 h-4 transition-colors ${isFieldDirty ? "text-amber-500 dark:text-amber-400" : "text-amber-600 dark:text-amber-400"}`}
+                        />
+                        {field.label}
+                        {isFieldDirty && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 dark:bg-amber-400 ml-auto" />
+                        )}
+                      </label>
+                      {field.type === "datetime-local" ? (
+                        <DateTimeInput
+                          id={`meta-${field.key}`}
+                          value={metadata[field.key]}
+                          onChange={(v) => handleFieldChange(field.key, v)}
+                        />
+                      ) : (
+                        <input
+                          id={`meta-${field.key}`}
+                          type="text"
+                          value={metadata[field.key]}
+                          placeholder={field.placeholder}
+                          onChange={(e) => handleFieldChange(field.key, e.target.value)}
+                          className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-bg text-sm text-slate-800 dark:text-dark-text placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+                        />
+                      )}
+                    </div>
+                  );
+                })}
               </div>
 
               <button
                 type="button"
                 onClick={handleSave}
-                disabled={processing}
-                className="w-full bg-primary-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                disabled={processing || !isDirty}
+                className="w-full bg-amber-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {processing ? "Saving..." : "Save & Download PDF"}
               </button>

@@ -7,6 +7,18 @@
  */
 
 import { useState, useCallback } from "react";
+import {
+  FileText,
+  HardDrive,
+  FileCode2,
+  BookOpen,
+  Lock,
+  LockOpen,
+  Tag,
+  Info,
+  Ruler,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { getPdfInfo } from "../utils/pdf-operations.ts";
@@ -15,10 +27,19 @@ import type { PdfInfo } from "../utils/pdf-operations.ts";
 
 const PT_TO_MM = 0.352778;
 
-function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
+function InfoRow({
+  label,
+  value,
+  icon: Icon,
+}: {
+  label: string;
+  value: React.ReactNode;
+  icon?: LucideIcon;
+}) {
   return (
     <div className="flex flex-col sm:flex-row sm:items-center gap-1 py-3 px-4">
-      <span className="text-sm font-medium text-slate-500 dark:text-dark-text-muted sm:w-40 shrink-0">
+      <span className="text-sm font-medium text-slate-500 dark:text-dark-text-muted sm:w-40 shrink-0 flex items-center gap-1.5">
+        {Icon && <Icon className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400 shrink-0" />}
         {label}
       </span>
       <span className="text-sm text-slate-800 dark:text-dark-text break-all">{value}</span>
@@ -62,7 +83,7 @@ export default function PdfInspector() {
 
       {loading && (
         <div className="flex items-center justify-center py-12">
-          <div className="w-8 h-8 border-3 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
+          <div className="w-8 h-8 border-3 border-amber-200 border-t-amber-600 rounded-full animate-spin" />
         </div>
       )}
 
@@ -70,16 +91,18 @@ export default function PdfInspector() {
         <div className="space-y-4">
           {/* Document summary */}
           <div className="bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border divide-y divide-slate-100 dark:divide-dark-border">
-            <div className="px-4 py-2.5 bg-slate-50 dark:bg-dark-surface-alt rounded-t-xl">
+            <div className="px-4 py-2.5 bg-slate-50 dark:bg-dark-surface-alt rounded-t-xl flex items-center gap-1.5">
+              <FileText className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
               <p className="text-xs font-semibold text-slate-500 dark:text-dark-text-muted uppercase tracking-wide">
                 Document
               </p>
             </div>
-            <InfoRow label="File name" value={fileName} />
-            <InfoRow label="File size" value={formatFileSize(info.fileSize)} />
-            <InfoRow label="PDF version" value={info.version} />
-            <InfoRow label="Page count" value={info.pageCount} />
+            <InfoRow icon={FileText} label="File name" value={fileName} />
+            <InfoRow icon={HardDrive} label="File size" value={formatFileSize(info.fileSize)} />
+            <InfoRow icon={FileCode2} label="PDF version" value={info.version} />
+            <InfoRow icon={BookOpen} label="Page count" value={info.pageCount} />
             <InfoRow
+              icon={info.isEncrypted ? Lock : LockOpen}
               label="Encrypted"
               value={
                 info.isEncrypted ? (
@@ -96,23 +119,25 @@ export default function PdfInspector() {
           {/* Metadata */}
           {(info.title || info.author || info.subject || info.creator || info.producer) && (
             <div className="bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border divide-y divide-slate-100 dark:divide-dark-border">
-              <div className="px-4 py-2.5 bg-slate-50 dark:bg-dark-surface-alt rounded-t-xl">
+              <div className="px-4 py-2.5 bg-slate-50 dark:bg-dark-surface-alt rounded-t-xl flex items-center gap-1.5">
+                <Tag className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
                 <p className="text-xs font-semibold text-slate-500 dark:text-dark-text-muted uppercase tracking-wide">
                   Metadata
                 </p>
               </div>
-              {info.title && <InfoRow label="Title" value={info.title} />}
-              {info.author && <InfoRow label="Author" value={info.author} />}
-              {info.subject && <InfoRow label="Subject" value={info.subject} />}
-              {info.creator && <InfoRow label="Creator" value={info.creator} />}
-              {info.producer && <InfoRow label="Producer" value={info.producer} />}
+              {info.title && <InfoRow icon={Info} label="Title" value={info.title} />}
+              {info.author && <InfoRow icon={Info} label="Author" value={info.author} />}
+              {info.subject && <InfoRow icon={Info} label="Subject" value={info.subject} />}
+              {info.creator && <InfoRow icon={Info} label="Creator" value={info.creator} />}
+              {info.producer && <InfoRow icon={Info} label="Producer" value={info.producer} />}
             </div>
           )}
 
           {/* Page dimensions */}
           {info.pages.length > 0 && (
             <div className="bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border overflow-hidden">
-              <div className="px-4 py-2.5 bg-slate-50 dark:bg-dark-surface-alt">
+              <div className="px-4 py-2.5 bg-slate-50 dark:bg-dark-surface-alt flex items-center gap-1.5">
+                <Ruler className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
                 <p className="text-xs font-semibold text-slate-500 dark:text-dark-text-muted uppercase tracking-wide">
                   Page Dimensions
                 </p>
@@ -120,7 +145,8 @@ export default function PdfInspector() {
               <div className="max-h-64 overflow-y-auto divide-y divide-slate-100 dark:divide-dark-border">
                 {info.pages.map((dim, i) => (
                   <div key={i} className="flex items-center justify-between px-4 py-2.5">
-                    <span className="text-sm text-slate-500 dark:text-dark-text-muted">
+                    <span className="text-sm text-slate-500 dark:text-dark-text-muted flex items-center gap-1.5">
+                      <FileText className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400 shrink-0" />
                       Page {i + 1}
                     </span>
                     <span className="text-sm text-slate-800 dark:text-dark-text font-mono">

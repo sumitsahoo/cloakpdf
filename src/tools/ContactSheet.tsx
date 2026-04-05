@@ -289,7 +289,7 @@ export default function ContactSheet() {
                       onClick={() => setGrid(opt.value)}
                       className={`flex-1 rounded-lg py-1.5 px-3 text-sm transition-all duration-150 ${
                         grid === opt.value
-                          ? "font-semibold text-white bg-primary-600 shadow-sm"
+                          ? "font-semibold text-white bg-violet-600 shadow-sm"
                           : "font-medium text-slate-500 dark:text-dark-text-muted hover:text-slate-700 dark:hover:text-dark-text hover:bg-white/60 dark:hover:bg-dark-surface-alt"
                       }`}
                     >
@@ -318,7 +318,7 @@ export default function ContactSheet() {
                       onClick={() => setOutput(f)}
                       className={`flex-1 rounded-lg py-1.5 px-3 text-sm transition-all duration-150 ${
                         output === f
-                          ? "font-semibold text-white bg-primary-600 shadow-sm"
+                          ? "font-semibold text-white bg-violet-600 shadow-sm"
                           : "font-medium text-slate-500 dark:text-dark-text-muted hover:text-slate-700 dark:hover:text-dark-text hover:bg-white/60 dark:hover:bg-dark-surface-alt"
                       }`}
                     >
@@ -341,7 +341,7 @@ export default function ContactSheet() {
                       onClick={() => setShowLabels(val)}
                       className={`flex-1 rounded-lg py-1.5 px-3 text-sm transition-all duration-150 ${
                         showLabels === val
-                          ? "font-semibold text-white bg-primary-600 shadow-sm"
+                          ? "font-semibold text-white bg-violet-600 shadow-sm"
                           : "font-medium text-slate-500 dark:text-dark-text-muted hover:text-slate-700 dark:hover:text-dark-text hover:bg-white/60 dark:hover:bg-dark-surface-alt"
                       }`}
                     >
@@ -359,7 +359,7 @@ export default function ContactSheet() {
               </p>
               {loading ? (
                 <div className="aspect-[7/10] bg-slate-100 dark:bg-dark-surface-alt rounded-lg flex items-center justify-center">
-                  <div className="w-8 h-8 border-3 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
+                  <div className="w-8 h-8 border-3 border-violet-200 border-t-violet-600 rounded-full animate-spin" />
                 </div>
               ) : (
                 <div
@@ -447,7 +447,7 @@ export default function ContactSheet() {
               </div>
               <div className="w-full bg-slate-200 dark:bg-dark-border rounded-full h-2">
                 <div
-                  className="bg-primary-600 h-2 rounded-full transition-all"
+                  className="bg-violet-600 h-2 rounded-full transition-all"
                   style={{ width: `${(progress.current / progress.total) * 100}%` }}
                 />
               </div>
@@ -457,7 +457,7 @@ export default function ContactSheet() {
           <button
             onClick={handleGenerate}
             disabled={processing || loading || pageCount === 0}
-            className="w-full bg-primary-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="w-full bg-violet-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {processing ? "Generating…" : `Generate Contact Sheet${sheetsNeeded > 1 ? "s" : ""}`}
           </button>

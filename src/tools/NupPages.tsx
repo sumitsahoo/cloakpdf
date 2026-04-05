@@ -113,7 +113,7 @@ export default function NupPages() {
 
           {loading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="w-8 h-8 border-3 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
+              <div className="w-8 h-8 border-3 border-violet-200 border-t-violet-600 rounded-full animate-spin" />
             </div>
           ) : (
             <>
@@ -170,7 +170,7 @@ export default function NupPages() {
               <button
                 onClick={handleProcess}
                 disabled={processing || pageCount === 0}
-                className="w-full bg-primary-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="w-full bg-violet-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {processing ? "Processing..." : `Create ${selected.label} PDF`}
               </button>
