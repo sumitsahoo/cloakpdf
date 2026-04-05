@@ -30,12 +30,16 @@ export function PageThumbnail({
   overlay,
 }: PageThumbnailProps) {
   return (
-    <div
+    <button
+      type="button"
       onClick={onClick}
-      className={`relative group rounded-lg overflow-hidden border-2 transition-all cursor-pointer ${
+      aria-label={`Page ${pageNumber}${selected ? ", selected" : ""}`}
+      aria-pressed={selected}
+      style={{ touchAction: "manipulation" }}
+      className={`relative group rounded-lg overflow-hidden border-2 transition-[border-color,box-shadow] cursor-pointer text-left w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 ${
         selected
           ? "border-primary-500 ring-2 ring-primary-200 dark:ring-primary-800"
-          : "border-slate-200 dark:border-dark-border hover:border-slate-300 dark:hover:border-slate-600"
+          : "border-slate-200 dark:border-dark-border hover:border-primary-300 dark:hover:border-primary-600"
       }`}
     >
       <div className="aspect-[3/4] bg-white dark:bg-dark-surface flex items-center justify-center overflow-hidden">
@@ -52,6 +56,6 @@ export function PageThumbnail({
       {overlay && (
         <div className="absolute inset-0 flex items-center justify-center">{overlay}</div>
       )}
-    </div>
+    </button>
   );
 }
