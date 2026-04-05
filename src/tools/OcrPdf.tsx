@@ -203,7 +203,7 @@ export default function OcrPdf() {
                       disabled={processing}
                       className={`px-3.5 py-1.5 rounded-full text-sm font-medium transition-all ${
                         language === lang.code
-                          ? "bg-primary-600 text-white shadow-sm"
+                          ? "bg-violet-600 text-white shadow-sm"
                           : "bg-slate-100 dark:bg-dark-bg text-slate-600 dark:text-dark-text-muted border border-slate-200 dark:border-dark-border hover:bg-slate-200 dark:hover:bg-dark-border"
                       } disabled:opacity-50 disabled:cursor-not-allowed`}
                     >
@@ -224,7 +224,7 @@ export default function OcrPdf() {
                   </div>
                   <div className="w-full bg-slate-200 dark:bg-dark-border rounded-full h-2.5 overflow-hidden">
                     <div
-                      className="bg-primary-600 h-full rounded-full transition-all duration-300"
+                      className="bg-violet-600 h-full rounded-full transition-all duration-300"
                       style={{ width: `${progressPercent}%` }}
                     />
                   </div>
@@ -244,7 +244,7 @@ export default function OcrPdf() {
               <button
                 onClick={handleExtract}
                 disabled={processing}
-                className="w-full bg-primary-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="w-full bg-violet-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {processing ? "Extracting Text..." : "Extract Text"}
               </button>
@@ -360,7 +360,7 @@ export default function OcrPdf() {
                 <button
                   onClick={handleDownloadSearchablePdf}
                   disabled={creatingPdf}
-                  className="bg-primary-600 text-white py-3 px-4 rounded-xl font-medium hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
+                  className="bg-violet-600 text-white py-3 px-4 rounded-xl font-medium hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
                 >
                   {creatingPdf ? "Creating…" : "📄 Searchable PDF"}
                 </button>

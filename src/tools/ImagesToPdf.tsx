@@ -110,7 +110,7 @@ export default function ImagesToPdf() {
                   onClick={() => setPageSize(size)}
                   className={`flex-1 rounded-lg py-1.5 px-3 text-sm transition-all duration-150 ${
                     pageSize === size
-                      ? "font-semibold text-white bg-primary-600 shadow-sm"
+                      ? "font-semibold text-white bg-violet-600 shadow-sm"
                       : "font-medium text-slate-500 dark:text-dark-text-muted hover:text-slate-700 dark:hover:text-dark-text hover:bg-white/60 dark:hover:bg-dark-surface-alt"
                   }`}
                 >
@@ -171,7 +171,7 @@ export default function ImagesToPdf() {
           <button
             onClick={handleConvert}
             disabled={processing}
-            className="w-full bg-primary-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="w-full bg-violet-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {processing
               ? "Creating PDF..."

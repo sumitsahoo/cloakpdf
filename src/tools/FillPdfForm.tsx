@@ -254,7 +254,7 @@ export default function FillPdfForm() {
                               alt={`Page ${i + 1}`}
                             />
                             {count > 0 && (
-                              <span className="absolute top-0.5 right-0.5 bg-primary-600 text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center leading-none">
+                              <span className="absolute top-0.5 right-0.5 bg-emerald-600 text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center leading-none">
                                 {count}
                               </span>
                             )}
@@ -419,7 +419,7 @@ export default function FillPdfForm() {
                     type="button"
                     onClick={handleFill}
                     disabled={processing}
-                    className="w-full bg-primary-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="w-full bg-emerald-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     {processing ? "Filling…" : "Fill & Download PDF"}
                   </button>

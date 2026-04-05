@@ -465,7 +465,7 @@ export default function AddPageNumbers() {
           <button
             onClick={handleApply}
             disabled={processing || loading}
-            className="w-full bg-primary-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="w-full bg-emerald-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {processing ? "Adding numbers…" : "Add Page Numbers & Download"}
           </button>

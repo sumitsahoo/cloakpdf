@@ -205,7 +205,7 @@ export default function FlattenPdf() {
                 type="button"
                 onClick={handleFlatten}
                 disabled={processing}
-                className="w-full bg-primary-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="w-full bg-violet-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {processing ? "Flattening..." : "Flatten PDF"}
               </button>
@@ -221,7 +221,7 @@ export default function FlattenPdf() {
               <button
                 type="button"
                 onClick={handleDownload}
-                className="w-full bg-primary-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-primary-700 transition-colors"
+                className="w-full bg-violet-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-violet-700 transition-colors"
               >
                 Download Flattened PDF
               </button>
