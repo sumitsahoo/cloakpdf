@@ -190,7 +190,7 @@ export function SignaturePad({ onSignature, color, width = 500, height = 200 }: 
   return (
     <div className="space-y-1.5">
       <div
-        className={`relative border rounded-xl overflow-hidden bg-white dark:bg-dark-surface motion-safe:transition-[border-color,box-shadow] duration-200 ${
+        className={`relative border rounded-xl overflow-hidden bg-white motion-safe:transition-[border-color,box-shadow] duration-200 ${
           isDrawing
             ? "border-primary-400 dark:border-primary-500 shadow-[0_0_0_3px_rgba(99,102,241,0.15)]"
             : "border-slate-300 dark:border-dark-border hover:border-slate-400 dark:hover:border-slate-600"
