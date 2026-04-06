@@ -380,7 +380,7 @@ export default function AddSignature() {
                     </button>
                   ) : (
                     <div className="flex items-center gap-3">
-                      <div className="w-24 h-12 rounded-md border border-slate-200 dark:border-dark-border bg-white dark:bg-dark-surface flex items-center justify-center overflow-hidden">
+                      <div className="w-24 h-12 rounded-md border border-slate-200 dark:border-dark-border bg-white flex items-center justify-center overflow-hidden">
                         <img
                           src={signatureDataUrl || uploadedImageUrl}
                           alt="Uploaded signature"
