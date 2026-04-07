@@ -1,7 +1,7 @@
 /**
  * Privacy Policy page.
  *
- * Describes how BytePDF handles (or rather, does not handle) user data.
+ * Describes how CloakPDF handles (or rather, does not handle) user data.
  * All processing is client-side, so the policy is intentionally brief.
  */
 
@@ -28,7 +28,7 @@ export function PrivacyPolicy() {
             Overview
           </h2>
           <p>
-            BytePDF is a free, open-source PDF toolkit that runs entirely in your web browser. We
+            CloakPDF is a free, open-source PDF toolkit that runs entirely in your web browser. We
             are committed to your privacy. This policy explains what data we collect (spoiler: none)
             and how the application works.
           </p>
@@ -64,7 +64,7 @@ export function PrivacyPolicy() {
             No Cookies or Tracking
           </h2>
           <p>
-            BytePDF does not use cookies, local storage for tracking purposes, or any third-party
+            CloakPDF does not use cookies, local storage for tracking purposes, or any third-party
             analytics or advertising scripts. The application may use your browser&apos;s cache and
             a Service Worker to enable offline use after the first visit; this data is stored only
             on your device and is never sent anywhere.
@@ -76,7 +76,7 @@ export function PrivacyPolicy() {
             Third-Party Services
           </h2>
           <p>
-            BytePDF does not integrate any third-party analytics, advertising, or data-collection
+            CloakPDF does not integrate any third-party analytics, advertising, or data-collection
             services. The application is hosted as a static site; standard web-server access logs
             (IP address, requested path, timestamp) may be retained by the hosting provider for
             security and operational purposes, subject to the hosting provider&apos;s own privacy
@@ -89,14 +89,14 @@ export function PrivacyPolicy() {
             Open Source
           </h2>
           <p>
-            BytePDF is open source. You can inspect the full source code at{" "}
+            CloakPDF is open source. You can inspect the full source code at{" "}
             <a
-              href="https://github.com/sumitsahoo/bytepdf"
+              href="https://github.com/sumitsahoo/cloakpdf"
               target="_blank"
               rel="noopener noreferrer"
               className="text-primary-600 dark:text-primary-400 hover:underline"
             >
-              github.com/sumitsahoo/bytepdf
+              github.com/sumitsahoo/cloakpdf
             </a>{" "}
             to verify these claims independently.
           </p>
@@ -111,7 +111,7 @@ export function PrivacyPolicy() {
             correct, or delete on your behalf. If you have questions about this policy, you can
             reach out via{" "}
             <a
-              href="https://github.com/sumitsahoo/bytepdf/issues"
+              href="https://github.com/sumitsahoo/cloakpdf/issues"
               target="_blank"
               rel="noopener noreferrer"
               className="text-primary-600 dark:text-primary-400 hover:underline"

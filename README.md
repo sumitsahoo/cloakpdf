@@ -1,36 +1,36 @@
 <div align="center">
 
-  <img src="public/icons/logo.svg" alt="BytePDF Logo" width="80" height="80" />
+  <img src="public/icons/logo.svg" alt="CloakPDF Logo" width="80" height="80" />
 
-  <h1>BytePDF</h1>
+  <h1>CloakPDF</h1>
 
   <p>A fast, modern, and privacy-focused PDF toolkit that runs entirely in your browser.<br>
   No uploads, no servers, no tracking — your files never leave your device.</p>
 
-  <p><strong>Try it here →</strong> <a href="http://bytepdf.app/">bytepdf.app</a></p>
+  <p><strong>Try it here →</strong> <a href="http://cloakpdf.app/">cloakpdf.app</a></p>
 
   <p>
-    <img src="https://img.shields.io/github/actions/workflow/status/sumitsahoo/bytepdf/deploy.yml?label=build" alt="Build status" />
-    <img src="https://img.shields.io/github/deployments/sumitsahoo/bytepdf/github-pages?label=deploy" alt="Deployment" />
+    <img src="https://img.shields.io/github/actions/workflow/status/sumitsahoo/cloakpdf/deploy.yml?label=build" alt="Build status" />
+    <img src="https://img.shields.io/github/deployments/sumitsahoo/cloakpdf/github-pages?label=deploy" alt="Deployment" />
     <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/license-MIT-yellow.svg" alt="MIT License" /></a>
   </p>
   <p>
-    <img src="https://img.shields.io/github/actions/workflow/status/sumitsahoo/bytepdf/security.yml?label=security%20audit" alt="Security audit" />
-    <a href="https://securityscorecards.dev/viewer/?uri=github.com/sumitsahoo/bytepdf"><img src="https://api.securityscorecards.dev/projects/github.com/sumitsahoo/bytepdf/badge" alt="OpenSSF Scorecard" /></a>
+    <img src="https://img.shields.io/github/actions/workflow/status/sumitsahoo/cloakpdf/security.yml?label=security%20audit" alt="Security audit" />
+    <a href="https://securityscorecards.dev/viewer/?uri=github.com/sumitsahoo/cloakpdf"><img src="https://api.securityscorecards.dev/projects/github.com/sumitsahoo/cloakpdf/badge" alt="OpenSSF Scorecard" /></a>
     <img src="https://img.shields.io/badge/platform-Web%20%7C%20PWA-blue" alt="Platform: Web & PWA" />
   </p>
 
 </div>
 
 <p align="center">
-  <img src="public/screenshots/iPad.png" alt="BytePDF Interface" width="800">
+  <img src="public/screenshots/iPad.png" alt="CloakPDF Interface" width="800">
 </p>
 
 ---
 
 ## ✨ Features
 
-BytePDF offers **30 powerful PDF tools**, all running 100% client-side:
+CloakPDF offers **30 powerful PDF tools**, all running 100% client-side:
 
 ### 🗂️ Organise & Edit
 
@@ -133,8 +133,8 @@ _Protect your PDFs and manage metadata_
 
 ```bash
 # Clone the repository
-git clone https://github.com/sumitsahoo/bytepdf.git
-cd bytepdf
+git clone https://github.com/sumitsahoo/cloakpdf.git
+cd cloakpdf
 
 # Install dependencies
 vp install
@@ -158,7 +158,7 @@ vp dev
 ## 📁 Project Structure
 
 ```
-bytepdf/
+cloakpdf/
 ├── public/                 # Static assets
 ├── src/
 │   ├── main.tsx            # App entry point
@@ -180,7 +180,7 @@ bytepdf/
 
 ## ⚙️ How It Works
 
-BytePDF leverages two complementary libraries for full PDF support:
+CloakPDF leverages two complementary libraries for full PDF support:
 
 - **[pdf-lib](https://pdf-lib.js.org/)** — Handles all PDF manipulation: merging, splitting, rotation, page deletion, watermarking, signature embedding, image-to-PDF conversion, and metadata editing.
 - **[PDF.js](https://mozilla.github.io/pdf.js/)** — Renders PDF pages to canvas for visual previews and thumbnail generation.
@@ -191,7 +191,7 @@ All operations happen in-memory using the browser's `FileReader` API and `ArrayB
 
 ## 🚢 Deployment
 
-BytePDF is deployed to **GitHub Pages** via a CI/CD workflow on every push to `main`.
+CloakPDF is deployed to **GitHub Pages** via a CI/CD workflow on every push to `main`.
 
 The deployment pipeline:
 

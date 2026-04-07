@@ -12,7 +12,7 @@ import workerSrc from "pdfjs-dist/build/pdf.worker.min.mjs?worker&url";
 
 // PDF.js requires a Web Worker for parsing. The `?worker&url` Vite suffix
 // ensures the worker file is emitted as a standalone asset with the correct
-// base path, even when deployed under a subpath like /bytepdf/.
+// base path, even when deployed under a subpath like /cloakpdf/.
 pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
 
 /**
