@@ -1,9 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#0F172A" />
-      <stop offset="50%" stop-color="#1E293B" />
-      <stop offset="100%" stop-color="#0F172A" />
+      <stop offset="0%" stop-color="#F8FAFC" />
+      <stop offset="50%" stop-color="#EEF2FF" />
+      <stop offset="100%" stop-color="#F8FAFC" />
     </linearGradient>
     <linearGradient id="shieldGrad" x1="0" y1="4" x2="0" y2="44">
       <stop offset="0%" stop-color="#3B82F6" />
@@ -21,9 +21,9 @@
       <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.20" />
       <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0" />
     </linearGradient>
-    <radialGradient id="glow" cx="50%" cy="45%" r="40%">
-      <stop offset="0%" stop-color="#3B82F6" stop-opacity="0.15" />
-      <stop offset="100%" stop-color="#3B82F6" stop-opacity="0" />
+    <radialGradient id="glow" cx="50%" cy="40%" r="45%">
+      <stop offset="0%" stop-color="#818CF8" stop-opacity="0.08" />
+      <stop offset="100%" stop-color="#818CF8" stop-opacity="0" />
     </radialGradient>
   </defs>
 
@@ -31,14 +31,8 @@
   <rect width="1200" height="630" fill="url(#bg)" />
   <rect width="1200" height="630" fill="url(#glow)" />
 
-  <!-- Subtle grid pattern -->
-  <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-    <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#334155" stroke-width="0.5" stroke-opacity="0.3" />
-  </pattern>
-  <rect width="1200" height="630" fill="url(#grid)" />
-
-  <!-- Logo (scaled 2.5x, centered above text) -->
-  <g transform="translate(540, 140) scale(2.5)">
+  <!-- Logo (scaled 4x, centered) -->
+  <g transform="translate(504, 60) scale(4)">
     <!-- OUTER SHIELD -->
     <path d="M24 2 L42 9.5 V25.5 C42 37 33 43 24 46 C15 43 6 37 6 25.5 V9.5 L24 2Z" fill="url(#shieldGrad)" stroke="rgba(255,255,255,0.10)" stroke-width="0.6" />
     <!-- INNER GLOW -->
@@ -65,32 +59,37 @@
   </g>
 
   <!-- App name -->
-  <text x="600" y="410" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="64" font-weight="700" fill="#F8FAFC" letter-spacing="-1">CloakPDF</text>
+  <text x="600" y="345" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="72" font-weight="700" fill="#1E293B" letter-spacing="-1.5">CloakPDF</text>
 
   <!-- Tagline -->
-  <text x="600" y="460" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="24" font-weight="400" fill="#94A3B8">Free Offline PDF Toolkit</text>
+  <text x="600" y="400" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="26" font-weight="400" fill="#6366F1">All-in-One PDF Tools That Respect Your Privacy</text>
 
   <!-- Feature pills -->
   <g font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="16" font-weight="500">
-    <rect x="240" y="500" width="100" height="32" rx="16" fill="#1E3A8A" fill-opacity="0.6" stroke="#3B82F6" stroke-opacity="0.4" stroke-width="1" />
-    <text x="290" y="521" text-anchor="middle" fill="#93C5FD">Merge</text>
+    <rect x="220" y="450" width="100" height="34" rx="17" fill="#EEF2FF" stroke="#C7D2FE" stroke-width="1" />
+    <text x="270" y="472" text-anchor="middle" fill="#4338CA">Merge</text>
 
-    <rect x="360" y="500" width="90" height="32" rx="16" fill="#1E3A8A" fill-opacity="0.6" stroke="#3B82F6" stroke-opacity="0.4" stroke-width="1" />
-    <text x="405" y="521" text-anchor="middle" fill="#93C5FD">Split</text>
+    <rect x="340" y="450" width="90" height="34" rx="17" fill="#EEF2FF" stroke="#C7D2FE" stroke-width="1" />
+    <text x="385" y="472" text-anchor="middle" fill="#4338CA">Split</text>
 
-    <rect x="470" y="500" width="120" height="32" rx="16" fill="#1E3A8A" fill-opacity="0.6" stroke="#3B82F6" stroke-opacity="0.4" stroke-width="1" />
-    <text x="530" y="521" text-anchor="middle" fill="#93C5FD">Compress</text>
+    <rect x="450" y="450" width="120" height="34" rx="17" fill="#EEF2FF" stroke="#C7D2FE" stroke-width="1" />
+    <text x="510" y="472" text-anchor="middle" fill="#4338CA">Compress</text>
 
-    <rect x="610" y="500" width="100" height="32" rx="16" fill="#1E3A8A" fill-opacity="0.6" stroke="#3B82F6" stroke-opacity="0.4" stroke-width="1" />
-    <text x="660" y="521" text-anchor="middle" fill="#93C5FD">Rotate</text>
+    <rect x="590" y="450" width="100" height="34" rx="17" fill="#EEF2FF" stroke="#C7D2FE" stroke-width="1" />
+    <text x="640" y="472" text-anchor="middle" fill="#4338CA">Rotate</text>
 
-    <rect x="730" y="500" width="90" height="32" rx="16" fill="#1E3A8A" fill-opacity="0.6" stroke="#3B82F6" stroke-opacity="0.4" stroke-width="1" />
-    <text x="775" y="521" text-anchor="middle" fill="#93C5FD">Sign</text>
+    <rect x="710" y="450" width="90" height="34" rx="17" fill="#EEF2FF" stroke="#C7D2FE" stroke-width="1" />
+    <text x="755" y="472" text-anchor="middle" fill="#4338CA">Sign</text>
 
-    <rect x="840" y="500" width="120" height="32" rx="16" fill="#1E3A8A" fill-opacity="0.6" stroke="#3B82F6" stroke-opacity="0.4" stroke-width="1" />
-    <text x="900" y="521" text-anchor="middle" fill="#93C5FD">&amp; More</text>
+    <rect x="820" y="450" width="160" height="34" rx="17" fill="#EEF2FF" stroke="#C7D2FE" stroke-width="1" />
+    <text x="900" y="472" text-anchor="middle" fill="#4338CA">Watermark</text>
   </g>
 
-  <!-- Privacy badge -->
-  <text x="600" y="585" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="15" font-weight="400" fill="#64748B">No uploads · 100% browser-based · Completely private</text>
+  <!-- Privacy line -->
+  <g transform="translate(600, 535)">
+    <text x="0" y="0" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="16" font-weight="500" fill="#64748B">No uploads  ·  100% browser-based  ·  Completely private  ·  Open source</text>
+  </g>
+
+  <!-- Bottom accent line -->
+  <rect x="450" y="575" width="300" height="3" rx="1.5" fill="#818CF8" fill-opacity="0.3" />
 </svg>
