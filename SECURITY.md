@@ -22,7 +22,7 @@ You can expect:
 
 CloakPDF is a **client-side only** application — all PDF processing happens in your browser. No files or data are transmitted to any server. The attack surface is limited to:
 
-- Third-party npm dependencies (monitored via `pnpm audit` in CI and Dependabot)
+- Third-party npm dependencies (monitored via automated CI security audits and Dependabot)
 - Browser sandbox escape (out of scope — report to the browser vendor)
 
 ## Dependency Vulnerabilities
