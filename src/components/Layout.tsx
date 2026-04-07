@@ -43,10 +43,10 @@ export function Layout({ children, onHome, showBack, onPrivacy }: LayoutProps) {
             className="flex items-center gap-2.5 hover:opacity-80 transition-opacity"
           >
             <div className="w-10 h-10 flex items-center justify-center">
-              <img src="/icons/logo.svg" alt="BytePDF logo" className="w-10 h-10 drop-shadow-md" />
+              <img src="/icons/logo.svg" alt="CloakPDF logo" className="w-10 h-10 drop-shadow-md" />
             </div>
             <span className="text-lg font-semibold text-slate-800 dark:text-dark-text">
-              BytePDF
+              CloakPDF
             </span>
           </button>
 
@@ -64,7 +64,7 @@ export function Layout({ children, onHome, showBack, onPrivacy }: LayoutProps) {
 
             {/* GitHub link */}
             <a
-              href="https://github.com/sumitsahoo/bytepdf"
+              href="https://github.com/sumitsahoo/cloakpdf"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border border-slate-200 dark:border-dark-border hover:bg-slate-100 dark:hover:bg-dark-surface-alt hover:border-slate-300 dark:hover:border-dark-border transition-all duration-200 text-slate-600 dark:text-dark-text-muted hover:text-slate-900 dark:hover:text-dark-text"
@@ -92,7 +92,7 @@ export function Layout({ children, onHome, showBack, onPrivacy }: LayoutProps) {
           <div className="flex items-center gap-2">
             <img src="/icons/logo.svg" alt="" aria-hidden="true" className="w-5 h-5 opacity-60" />
             <span className="text-xs font-medium text-slate-500 dark:text-dark-text-muted">
-              BytePDF
+              CloakPDF
             </span>
             <span className="text-slate-300 dark:text-dark-border text-xs" aria-hidden="true">
               ·

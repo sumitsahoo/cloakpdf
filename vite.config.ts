@@ -17,8 +17,8 @@ export default defineConfig({
       registerType: "autoUpdate",
       includeAssets: ["icons/favicon.svg", "icons/favicon.ico", "icons/apple-touch-icon.png"],
       manifest: {
-        name: "BytePDF",
-        short_name: "BytePDF",
+        name: "CloakPDF",
+        short_name: "CloakPDF",
         description:
           "Free, private, browser-based PDF toolkit — merge, split, compress, rotate, reorder, delete pages, add watermarks & signatures.",
         theme_color: "#2563EB",
@@ -58,7 +58,7 @@ export default defineConfig({
             sizes: "1290x2796",
             type: "image/png",
             form_factor: "narrow",
-            label: "BytePDF App on iPhone 14 Pro Max",
+            label: "CloakPDF App on iPhone 14 Pro Max",
           },
           // iPad Pro (Landscape)
           {
@@ -66,7 +66,7 @@ export default defineConfig({
             sizes: "2732x2048",
             type: "image/png",
             form_factor: "wide",
-            label: "BytePDF App on iPad Pro Landscape",
+            label: "CloakPDF App on iPad Pro Landscape",
           },
         ],
       },

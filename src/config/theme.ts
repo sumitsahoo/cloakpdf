@@ -1,5 +1,5 @@
 /**
- * Centralized color palette for BytePDF — "Ocean Blue" theme.
+ * Centralized color palette for CloakPDF — "Ocean Blue" theme.
  *
  * The primary scale is derived from #2563EB.
  * Use Tailwind classes (`primary-500`, `primary-600`, …) in markup — they are
