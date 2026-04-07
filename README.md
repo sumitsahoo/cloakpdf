@@ -7,7 +7,7 @@
   <p>A fast, modern, and privacy-focused PDF toolkit that runs entirely in your browser.<br>
   No uploads, no servers, no tracking — your files never leave your device.</p>
 
-  <p><strong>Try it here →</strong> <a href="http://cloakpdf.app/">cloakpdf.app</a></p>
+  <p><strong>Try it here →</strong> <a href="https://cloakpdf.app/">cloakpdf.app</a></p>
 
   <p>
     <img src="https://img.shields.io/github/actions/workflow/status/sumitsahoo/cloakpdf/deploy.yml?label=build" alt="Build status" />
