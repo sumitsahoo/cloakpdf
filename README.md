@@ -1,13 +1,11 @@
 <div align="center">
 
-  <img src="public/icons/logo.svg" alt="CloakPDF Logo" width="80" height="80" />
-
-  <h1>CloakPDF</h1>
+  <img src="public/icons/og-image.svg" alt="CloakPDF — Free Offline PDF Toolkit" width="800" />
 
   <p>A fast, modern, and privacy-focused PDF toolkit that runs entirely in your browser.<br>
   No uploads, no servers, no tracking — your files never leave your device.</p>
 
-  <p><strong>Try it here →</strong> <a href="http://cloakpdf.app/">cloakpdf.app</a></p>
+  <p><strong>Try it here →</strong> <a href="https://cloakpdf.app/">cloakpdf.app</a></p>
 
   <p>
     <img src="https://img.shields.io/github/actions/workflow/status/sumitsahoo/cloakpdf/deploy.yml?label=build" alt="Build status" />
