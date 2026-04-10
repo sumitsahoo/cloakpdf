@@ -703,8 +703,43 @@ export function App() {
 
   const ToolComponent = activeTool ? toolComponents[activeTool] : null;
 
+  /** Map category accent colours to the badge shape expected by Layout. */
+  const badgeAccent = useMemo(() => {
+    if (!activeMeta?.category) return undefined;
+    const cat = categories.find((c) => c.key === activeMeta.category);
+    if (!cat) return undefined;
+    const colorMap: Record<string, { bg: string; border: string; text: string }> = {
+      organise: {
+        bg: "bg-blue-50 dark:bg-blue-900/30",
+        border: "border-blue-200 dark:border-blue-700/60",
+        text: "text-blue-700 dark:text-blue-300",
+      },
+      transform: {
+        bg: "bg-violet-50 dark:bg-violet-900/30",
+        border: "border-violet-200 dark:border-violet-700/60",
+        text: "text-violet-700 dark:text-violet-300",
+      },
+      annotate: {
+        bg: "bg-emerald-50 dark:bg-emerald-900/30",
+        border: "border-emerald-200 dark:border-emerald-700/60",
+        text: "text-emerald-700 dark:text-emerald-300",
+      },
+      security: {
+        bg: "bg-amber-50 dark:bg-amber-900/30",
+        border: "border-amber-200 dark:border-amber-700/60",
+        text: "text-amber-700 dark:text-amber-300",
+      },
+    };
+    return colorMap[cat.key];
+  }, [activeMeta]);
+
   return (
-    <Layout onHome={goHome} showBack={!!activeTool || showPrivacy} onPrivacy={handlePrivacy}>
+    <Layout
+      onHome={goHome}
+      showBack={!!activeTool || showPrivacy}
+      onPrivacy={handlePrivacy}
+      badgeAccent={badgeAccent}
+    >
       {activeTool && ToolComponent && activeMeta ? (
         <ToolView tool={activeMeta} Component={ToolComponent} />
       ) : showPrivacy ? (
