@@ -69,7 +69,7 @@ export default function FillPdfForm() {
 
     try {
       const { PDFDocument, PDFTextField, PDFCheckBox, PDFDropdown, PDFRadioGroup } =
-        await import("pdf-lib");
+        await import("@pdfme/pdf-lib");
 
       const [thumbs, fieldPageMap, arrayBuffer] = await Promise.all([
         renderAllThumbnails(pdf),

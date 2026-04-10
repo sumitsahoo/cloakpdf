@@ -217,7 +217,7 @@ export default function StampPdf() {
     try {
       const thumbs = await renderAllThumbnails(pdf);
       setThumbnails(thumbs);
-      const { PDFDocument } = await import("pdf-lib");
+      const { PDFDocument } = await import("@pdfme/pdf-lib");
       const data = await pdf.arrayBuffer();
       const pdfDoc = await PDFDocument.load(data);
       setPageDims(pdfDoc.getPages().map((p) => p.getSize()));

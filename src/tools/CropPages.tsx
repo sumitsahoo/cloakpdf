@@ -57,7 +57,7 @@ export default function CropPages() {
       setAllThumbs(thumbs);
 
       // Get page dimensions from pdf-lib
-      const { PDFDocument } = await import("pdf-lib");
+      const { PDFDocument } = await import("@pdfme/pdf-lib");
       const arrayBuffer = await pdf.arrayBuffer();
       const pdfDoc = await PDFDocument.load(arrayBuffer);
       const dims = pdfDoc.getPage(0).getSize();

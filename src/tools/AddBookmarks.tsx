@@ -46,7 +46,7 @@ export default function AddBookmarks() {
     let cancelled = false;
     void (async () => {
       try {
-        const { PDFDocument } = await import("pdf-lib");
+        const { PDFDocument } = await import("@pdfme/pdf-lib");
         const buf = await file.arrayBuffer();
         const doc = await PDFDocument.load(buf, { throwOnInvalidObject: false });
         if (!cancelled) setPageCount(doc.getPageCount());

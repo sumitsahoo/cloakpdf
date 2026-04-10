@@ -109,7 +109,7 @@ _Protect your PDFs and manage metadata_
 | Styling          | [Tailwind CSS 4](https://tailwindcss.com/)                     |
 | Build Tool       | [Vite+](https://vite.dev/) (Vite + Rolldown unified toolchain) |
 | Language         | [TypeScript 6](https://www.typescriptlang.org/)                |
-| PDF Manipulation | [pdf-lib](https://pdf-lib.js.org/)                             |
+| PDF Manipulation | [@pdfme/pdf-lib](https://github.com/pdfme/pdf-lib)             |
 | PDF Rendering    | [PDF.js](https://mozilla.github.io/pdf.js/)                    |
 | Font Support     | [@pdf-lib/fontkit](https://github.com/Hopding/fontkit)         |
 | Drag & Drop      | [dnd-kit](https://dndkit.com/)                                 |
@@ -180,7 +180,7 @@ cloakpdf/
 
 CloakPDF leverages two complementary libraries for full PDF support:
 
-- **[pdf-lib](https://pdf-lib.js.org/)** — Handles all PDF manipulation: merging, splitting, rotation, page deletion, watermarking, signature embedding, image-to-PDF conversion, and metadata editing.
+- **[@pdfme/pdf-lib](https://github.com/pdfme/pdf-lib)** — Handles all PDF manipulation: merging, splitting, rotation, page deletion, watermarking, signature embedding, image-to-PDF conversion, and metadata editing.
 - **[PDF.js](https://mozilla.github.io/pdf.js/)** — Renders PDF pages to canvas for visual previews and thumbnail generation.
 
 All operations happen in-memory using the browser's `FileReader` API and `ArrayBuffer`s. Processed files are delivered as downloadable blobs — no data ever touches a remote server.

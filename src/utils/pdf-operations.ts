@@ -23,7 +23,7 @@ import {
   rgb,
   degrees,
   StandardFonts,
-} from "pdf-lib";
+} from "@pdfme/pdf-lib";
 
 /** Technical information about a PDF document. */
 export interface PdfInfo {
