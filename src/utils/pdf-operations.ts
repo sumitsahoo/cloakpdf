@@ -23,7 +23,7 @@ import {
   rgb,
   degrees,
   StandardFonts,
-} from "pdf-lib";
+} from "@pdfme/pdf-lib";
 
 /** Technical information about a PDF document. */
 export interface PdfInfo {
@@ -703,7 +703,7 @@ function formatDateForInput(date: Date | undefined): string {
  */
 export async function getPdfMetadata(file: File): Promise<PdfMetadata> {
   const arrayBuffer = await file.arrayBuffer();
-  const pdf = await PDFDocument.load(arrayBuffer);
+  const pdf = await PDFDocument.load(arrayBuffer, { updateMetadata: false });
 
   return {
     title: pdf.getTitle() ?? "",
@@ -730,12 +730,12 @@ export async function getPdfMetadata(file: File): Promise<PdfMetadata> {
  */
 export async function setPdfMetadata(file: File, metadata: PdfMetadata): Promise<Uint8Array> {
   const arrayBuffer = await file.arrayBuffer();
-  const pdf = await PDFDocument.load(arrayBuffer);
+  const pdf = await PDFDocument.load(arrayBuffer, { updateMetadata: false });
 
   pdf.setTitle(metadata.title);
   pdf.setAuthor(metadata.author);
   pdf.setSubject(metadata.subject);
-  pdf.setKeywords(metadata.keywords.split(",").map((k) => k.trim()));
+  pdf.setKeywords([metadata.keywords]);
   pdf.setCreator(metadata.creator);
   pdf.setProducer(metadata.producer);
 
@@ -1621,6 +1621,7 @@ export async function getPdfInfo(file: File): Promise<PdfInfo> {
   const pdf = await PDFDocument.load(arrayBuffer, {
     throwOnInvalidObject: false,
     ignoreEncryption: true,
+    updateMetadata: false,
   });
 
   const isEncrypted = !!pdf.context.trailerInfo.Encrypt;
@@ -1829,6 +1830,238 @@ export async function addBatesNumbers(
       font,
       color: rgb(options.color.r / 255, options.color.g / 255, options.color.b / 255),
     });
+  }
+
+  return pdf.save();
+}
+
+/** Metadata for a single file attachment embedded in a PDF. */
+export interface PdfAttachment {
+  name: string;
+  size: number;
+  mimeType: string;
+  data: Uint8Array;
+}
+
+/**
+ * List all file attachments embedded in a PDF.
+ *
+ * Reads the /Names → /EmbeddedFiles name tree from the document catalog
+ * and extracts the name, size, MIME type, and raw bytes of each entry.
+ */
+export async function listPdfAttachments(file: File): Promise<PdfAttachment[]> {
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await PDFDocument.load(arrayBuffer, { updateMetadata: false });
+  const catalog = pdf.catalog;
+  if (!catalog) return [];
+
+  const namesDict = catalog.lookup(PDFName.of("Names"));
+  if (!(namesDict instanceof PDFDict)) return [];
+
+  const efDict = namesDict.lookup(PDFName.of("EmbeddedFiles"));
+  if (!(efDict instanceof PDFDict)) return [];
+
+  const namesArray = efDict.lookup(PDFName.of("Names"));
+  if (!(namesArray instanceof PDFArray)) return [];
+
+  const attachments: PdfAttachment[] = [];
+
+  for (let i = 0; i < namesArray.size(); i += 2) {
+    const nameObj = namesArray.lookup(i);
+    const fileSpec = namesArray.lookup(i + 1);
+    if (!(fileSpec instanceof PDFDict)) continue;
+
+    // Prefer /UF (Unicode filename) or /F from the filespec dict; fall back to name tree key
+    const ufObj = fileSpec.lookup(PDFName.of("UF"));
+    const fObj = fileSpec.lookup(PDFName.of("F"));
+    const specName =
+      ufObj instanceof PDFString
+        ? ufObj.decodeText()
+        : fObj instanceof PDFString
+          ? fObj.decodeText()
+          : null;
+    const treeName =
+      nameObj instanceof PDFString
+        ? nameObj.decodeText()
+        : nameObj instanceof PDFName
+          ? nameObj.decodeText()
+          : null;
+    const name = specName || treeName || `Attachment ${i / 2 + 1}`;
+
+    const efObj = fileSpec.lookup(PDFName.of("EF"));
+    if (!(efObj instanceof PDFDict)) continue;
+
+    const stream = efObj.lookup(PDFName.of("F"));
+    if (!stream || !("getContents" in stream)) continue;
+
+    const data = (stream as unknown as { getContents(): Uint8Array }).getContents();
+    const streamDict = stream as unknown as PDFDict;
+    const paramsDict = streamDict.lookup?.(PDFName.of("Params"), PDFDict);
+    const sizeNum = paramsDict?.lookup(PDFName.of("Size"), PDFNumber);
+
+    const subtypeObj = streamDict.lookup?.(PDFName.of("Subtype"), PDFName);
+    const mimeType = subtypeObj
+      ? subtypeObj.decodeText().replace(/^\//, "")
+      : "application/octet-stream";
+
+    attachments.push({
+      name,
+      size: sizeNum ? sizeNum.asNumber() : data.length,
+      mimeType,
+      data,
+    });
+  }
+
+  return attachments;
+}
+
+/**
+ * Attach one or more files to a PDF document.
+ *
+ * Uses the @pdfme/pdf-lib `attach()` API to embed files into the PDF's
+ * EmbeddedFiles name tree.
+ */
+export async function attachFilesToPdf(pdfFile: File, attachments: File[]): Promise<Uint8Array> {
+  const arrayBuffer = await pdfFile.arrayBuffer();
+  const pdf = await PDFDocument.load(arrayBuffer, { updateMetadata: false });
+
+  for (const attachment of attachments) {
+    const data = new Uint8Array(await attachment.arrayBuffer());
+    await pdf.attach(data, attachment.name, {
+      mimeType: attachment.type || "application/octet-stream",
+      creationDate: new Date(),
+      modificationDate: new Date(),
+    });
+  }
+
+  return pdf.save();
+}
+
+/**
+ * Remove specific attachments from a PDF by name.
+ *
+ * Modifies the /Names → /EmbeddedFiles name tree to remove entries
+ * matching the given names.
+ */
+export async function removeAttachmentsFromPdf(
+  file: File,
+  namesToRemove: Set<string>,
+): Promise<Uint8Array> {
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await PDFDocument.load(arrayBuffer, { updateMetadata: false });
+  const catalog = pdf.catalog;
+
+  const namesDict = catalog.lookup(PDFName.of("Names"));
+  if (!(namesDict instanceof PDFDict)) return pdf.save();
+
+  const efDict = namesDict.lookup(PDFName.of("EmbeddedFiles"));
+  if (!(efDict instanceof PDFDict)) return pdf.save();
+
+  const namesArray = efDict.lookup(PDFName.of("Names"));
+  if (!(namesArray instanceof PDFArray)) return pdf.save();
+
+  const keepIndices: number[] = [];
+  for (let i = 0; i < namesArray.size(); i += 2) {
+    const nameObj = namesArray.lookup(i);
+    const name =
+      nameObj instanceof PDFString
+        ? nameObj.decodeText()
+        : nameObj instanceof PDFName
+          ? nameObj.decodeText()
+          : "";
+    if (!namesToRemove.has(name)) {
+      keepIndices.push(i);
+    }
+  }
+
+  const context = pdf.context;
+  const newArray = context.obj([]);
+  for (const idx of keepIndices) {
+    (newArray as PDFArray).push(namesArray.get(idx));
+    (newArray as PDFArray).push(namesArray.get(idx + 1));
+  }
+
+  efDict.set(PDFName.of("Names"), newArray);
+
+  return pdf.save();
+}
+
+/**
+ * Add a rectangle stamp with rounded corners to PDF pages.
+ *
+ * Uses the @pdfme/pdf-lib `radius` option on `drawRectangle`.
+ */
+export async function addRectangleStamp(
+  file: File,
+  text: string,
+  fontSize: number,
+  color: { r: number; g: number; b: number },
+  opacity: number,
+  pageIndices?: number[],
+): Promise<Uint8Array> {
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await PDFDocument.load(arrayBuffer);
+
+  const font = await pdf.embedFont(StandardFonts.HelveticaBold);
+  const pages = pageIndices ? pageIndices.map((i) => pdf.getPage(i)) : pdf.getPages();
+  const pdfColor = rgb(color.r / 255, color.g / 255, color.b / 255);
+
+  const textWidth = font.widthOfTextAtSize(text, fontSize);
+  const textHeight = font.heightAtSize(fontSize);
+  const padX = fontSize * 1.2;
+  const padY = fontSize * 0.6;
+  const rectWidth = textWidth + padX * 2;
+  const rectHeight = textHeight + padY * 2;
+  const borderThickness = fontSize * 0.12;
+  const cornerRadius = fontSize * 0.4;
+
+  const rotationDeg = -12;
+  const rotationRad = (rotationDeg * Math.PI) / 180;
+  const cos = Math.cos(rotationRad);
+  const sin = Math.sin(rotationRad);
+
+  for (const page of pages) {
+    const { width, height } = page.getSize();
+    const cx = width / 2;
+    const cy = height / 2;
+
+    const tx = cx - cos * cx + sin * cy;
+    const ty = cy - sin * cx - cos * cy;
+    page.pushOperators(
+      PDFOperator.of(PDFOperatorNames.PushGraphicsState),
+      PDFOperator.of(PDFOperatorNames.ConcatTransformationMatrix, [
+        PDFNumber.of(cos),
+        PDFNumber.of(sin),
+        PDFNumber.of(-sin),
+        PDFNumber.of(cos),
+        PDFNumber.of(tx),
+        PDFNumber.of(ty),
+      ]),
+    );
+
+    page.drawRectangle({
+      x: cx - rectWidth / 2,
+      y: cy - rectHeight / 2,
+      width: rectWidth,
+      height: rectHeight,
+      borderColor: pdfColor,
+      borderWidth: borderThickness,
+      borderOpacity: opacity,
+      color: pdfColor,
+      opacity: opacity * 0.08,
+      radius: cornerRadius,
+    });
+
+    page.drawText(text, {
+      x: cx - textWidth / 2,
+      y: cy - textHeight / 2,
+      size: fontSize,
+      font,
+      color: pdfColor,
+      opacity,
+    });
+
+    page.pushOperators(PDFOperator.of(PDFOperatorNames.PopGraphicsState));
   }
 
   return pdf.save();

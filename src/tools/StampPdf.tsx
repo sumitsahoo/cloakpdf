@@ -8,17 +8,17 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Check, Stamp, CircleDot, Droplets } from "lucide-react";
+import { Check, Stamp, CircleDot, Droplets, RectangleHorizontal } from "lucide-react";
 import { ColorPicker, hexToRgb, rgbToHex } from "../components/ColorPicker.tsx";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { PageThumbnail } from "../components/PageThumbnail.tsx";
 import type { WatermarkOptions } from "../types.ts";
 import { downloadPdf } from "../utils/file-helpers.ts";
-import { addSealStamp, addWatermark } from "../utils/pdf-operations.ts";
+import { addRectangleStamp, addSealStamp, addWatermark } from "../utils/pdf-operations.ts";
 import { renderAllThumbnails } from "../utils/pdf-renderer.ts";
 
-type StampStyle = "text" | "seal" | "watermark";
+type StampStyle = "text" | "seal" | "rectangle" | "watermark";
 
 interface StampPreset {
   id: string;
@@ -217,7 +217,7 @@ export default function StampPdf() {
     try {
       const thumbs = await renderAllThumbnails(pdf);
       setThumbnails(thumbs);
-      const { PDFDocument } = await import("pdf-lib");
+      const { PDFDocument } = await import("@pdfme/pdf-lib");
       const data = await pdf.arrayBuffer();
       const pdfDoc = await PDFDocument.load(data);
       setPageDims(pdfDoc.getPages().map((p) => p.getSize()));
@@ -265,6 +265,15 @@ export default function StampPdf() {
       let result: Uint8Array;
       if (stampStyle === "seal") {
         result = await addSealStamp(
+          file,
+          selectedStamp.label,
+          fontSize,
+          selectedStamp.color,
+          opacity,
+          pageIndices,
+        );
+      } else if (stampStyle === "rectangle") {
+        result = await addRectangleStamp(
           file,
           selectedStamp.label,
           fontSize,
@@ -356,7 +365,7 @@ export default function StampPdf() {
                   Mode
                 </p>
                 <div className="inline-flex w-full items-center gap-0.5 rounded-xl bg-slate-100 dark:bg-dark-bg p-1 border border-slate-200 dark:border-dark-border">
-                  {(["text", "seal", "watermark"] as const).map((style) => (
+                  {(["text", "seal", "rectangle", "watermark"] as const).map((style) => (
                     <button
                       key={style}
                       type="button"
@@ -375,6 +384,10 @@ export default function StampPdf() {
                         ) : style === "seal" ? (
                           <>
                             <CircleDot className="w-3.5 h-3.5" /> Seal
+                          </>
+                        ) : style === "rectangle" ? (
+                          <>
+                            <RectangleHorizontal className="w-3.5 h-3.5" /> Badge
                           </>
                         ) : (
                           <>
@@ -694,6 +707,28 @@ export default function StampPdf() {
                       >
                         {selectedStamp.label}
                       </span>
+                    ) : stampStyle === "rectangle" ? (
+                      <div
+                        style={{
+                          transform: "rotate(-12deg)",
+                          border: `${Math.max(2, fontSize * previewScale * 0.12)}px solid ${rgbaColor(selectedStamp.color, opacity)}`,
+                          borderRadius: `${fontSize * previewScale * 0.4}px`,
+                          backgroundColor: rgbaColor(selectedStamp.color, opacity * 0.08),
+                          padding: `${fontSize * previewScale * 0.4}px ${fontSize * previewScale * 1.0}px`,
+                        }}
+                      >
+                        <span
+                          style={{
+                            fontSize: `${fontSize * previewScale}px`,
+                            color: rgbaColor(selectedStamp.color, opacity),
+                            fontWeight: "bold",
+                            whiteSpace: "nowrap",
+                            letterSpacing: "0.05em",
+                          }}
+                        >
+                          {selectedStamp.label}
+                        </span>
+                      </div>
                     ) : (
                       <SealPreview
                         label={selectedStamp.label}
