@@ -735,7 +735,7 @@ export async function setPdfMetadata(file: File, metadata: PdfMetadata): Promise
   pdf.setTitle(metadata.title);
   pdf.setAuthor(metadata.author);
   pdf.setSubject(metadata.subject);
-  pdf.setKeywords(metadata.keywords.split(",").map((k) => k.trim()));
+  pdf.setKeywords([metadata.keywords]);
   pdf.setCreator(metadata.creator);
   pdf.setProducer(metadata.producer);
 
