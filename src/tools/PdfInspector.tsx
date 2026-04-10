@@ -15,7 +15,10 @@ import {
   Lock,
   LockOpen,
   Tag,
-  Info,
+  Bookmark,
+  User,
+  Building2,
+  Wrench,
   Ruler,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -125,11 +128,11 @@ export default function PdfInspector() {
                   Metadata
                 </p>
               </div>
-              {info.title && <InfoRow icon={Info} label="Title" value={info.title} />}
-              {info.author && <InfoRow icon={Info} label="Author" value={info.author} />}
-              {info.subject && <InfoRow icon={Info} label="Subject" value={info.subject} />}
-              {info.creator && <InfoRow icon={Info} label="Creator" value={info.creator} />}
-              {info.producer && <InfoRow icon={Info} label="Producer" value={info.producer} />}
+              {info.title && <InfoRow icon={Bookmark} label="Title" value={info.title} />}
+              {info.author && <InfoRow icon={User} label="Author" value={info.author} />}
+              {info.subject && <InfoRow icon={FileText} label="Subject" value={info.subject} />}
+              {info.creator && <InfoRow icon={Wrench} label="Creator" value={info.creator} />}
+              {info.producer && <InfoRow icon={Building2} label="Producer" value={info.producer} />}
             </div>
           )}
 
