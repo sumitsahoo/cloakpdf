@@ -151,4 +151,5 @@ export type ToolId =
   | "remove-blank-pages"
   | "bates-numbering"
   | "contact-sheet"
-  | "grayscale";
+  | "grayscale"
+  | "file-attachment";
