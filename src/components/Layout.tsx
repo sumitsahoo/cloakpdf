@@ -19,7 +19,7 @@ interface LayoutProps {
   /** Callback fired when the user clicks the Privacy Policy link. */
   onPrivacy: () => void;
   /** Optional accent colours for the privacy badge (matches active tool category). */
-  badgeAccent?: { bg: string; border: string; text: string };
+  badgeAccent?: { bg: string; border: string; text: string; logoFilter?: string };
 }
 
 export function Layout({ children, onHome, showBack, onPrivacy, badgeAccent }: LayoutProps) {
@@ -48,7 +48,12 @@ export function Layout({ children, onHome, showBack, onPrivacy, badgeAccent }: L
             className="flex items-center gap-2.5 hover:opacity-80 transition-opacity"
           >
             <div className="w-10 h-10 flex items-center justify-center">
-              <img src="/icons/logo.svg" alt="CloakPDF logo" className="w-10 h-10 drop-shadow-md" />
+              <img
+                src="/icons/logo.svg"
+                alt="CloakPDF logo"
+                className="w-10 h-10 drop-shadow-md transition-[filter] duration-300"
+                style={badgeAccent?.logoFilter ? { filter: badgeAccent.logoFilter } : undefined}
+              />
             </div>
             <span className="text-lg font-semibold text-slate-800 dark:text-dark-text">
               CloakPDF
@@ -74,7 +79,7 @@ export function Layout({ children, onHome, showBack, onPrivacy, badgeAccent }: L
               href="https://github.com/sumitsahoo/cloakpdf"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border border-slate-200 dark:border-dark-border hover:bg-slate-100 dark:hover:bg-dark-surface-alt hover:border-slate-300 dark:hover:border-dark-border transition-all duration-200 text-slate-600 dark:text-dark-text-muted hover:text-slate-900 dark:hover:text-dark-text"
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border ${badgeAccent ? `${badgeBorder} ${badgeText} ${badgeBg}` : "border-slate-200 dark:border-dark-border text-slate-600 dark:text-dark-text-muted"} hover:opacity-80 transition-all duration-300`}
               aria-label="View source on GitHub"
             >
               <svg
