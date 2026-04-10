@@ -18,9 +18,14 @@ interface LayoutProps {
   showBack?: boolean;
   /** Callback fired when the user clicks the Privacy Policy link. */
   onPrivacy: () => void;
+  /** Optional accent colours for the privacy badge (matches active tool category). */
+  badgeAccent?: { bg: string; border: string; text: string; logoFilter?: string };
 }
 
-export function Layout({ children, onHome, showBack, onPrivacy }: LayoutProps) {
+export function Layout({ children, onHome, showBack, onPrivacy, badgeAccent }: LayoutProps) {
+  const badgeBg = badgeAccent?.bg ?? "bg-primary-50 dark:bg-primary-900/30";
+  const badgeBorder = badgeAccent?.border ?? "border-primary-200 dark:border-primary-700/60";
+  const badgeText = badgeAccent?.text ?? "text-primary-700 dark:text-primary-300";
   return (
     <div className="min-h-screen bg-linear-to-br from-slate-50 via-white to-primary-50/40 dark:from-dark-bg dark:via-dark-bg dark:to-dark-surface/60 flex flex-col">
       <header className="bg-white/85 dark:bg-dark-surface/85 backdrop-blur-md border-b border-slate-200/80 dark:border-dark-border sticky top-0 z-50 shadow-sm shadow-slate-100/50 dark:shadow-black/20">
@@ -43,7 +48,12 @@ export function Layout({ children, onHome, showBack, onPrivacy }: LayoutProps) {
             className="flex items-center gap-2.5 hover:opacity-80 transition-opacity"
           >
             <div className="w-10 h-10 flex items-center justify-center">
-              <img src="/icons/logo.svg" alt="CloakPDF logo" className="w-10 h-10 drop-shadow-md" />
+              <img
+                src="/icons/logo.svg"
+                alt="CloakPDF logo"
+                className="w-10 h-10 drop-shadow-md transition-[filter] duration-300"
+                style={badgeAccent?.logoFilter ? { filter: badgeAccent.logoFilter } : undefined}
+              />
             </div>
             <span className="text-lg font-semibold text-slate-800 dark:text-dark-text">
               CloakPDF
@@ -53,7 +63,9 @@ export function Layout({ children, onHome, showBack, onPrivacy }: LayoutProps) {
           {/* Right side */}
           <div className="ml-auto flex items-center gap-2">
             {/* Privacy badge */}
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary-50 dark:bg-primary-900/30 border border-primary-200 dark:border-primary-700/60 text-primary-700 dark:text-primary-300 select-none">
+            <div
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full ${badgeBg} border ${badgeBorder} ${badgeText} select-none transition-colors duration-300`}
+            >
               <Lock className="w-3.5 h-3.5 shrink-0" />
               <span className="text-xs font-semibold whitespace-nowrap">
                 <span className="sm:hidden">Private</span>
@@ -67,7 +79,7 @@ export function Layout({ children, onHome, showBack, onPrivacy }: LayoutProps) {
               href="https://github.com/sumitsahoo/cloakpdf"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border border-slate-200 dark:border-dark-border hover:bg-slate-100 dark:hover:bg-dark-surface-alt hover:border-slate-300 dark:hover:border-dark-border transition-all duration-200 text-slate-600 dark:text-dark-text-muted hover:text-slate-900 dark:hover:text-dark-text"
+              className={`flex items-center justify-center gap-1.5 w-8 h-8 sm:w-auto sm:h-auto sm:px-2.5 sm:py-1.5 rounded-full border ${badgeBorder} ${badgeText} ${badgeBg} hover:opacity-80 transition-all duration-300`}
               aria-label="View source on GitHub"
             >
               <svg
