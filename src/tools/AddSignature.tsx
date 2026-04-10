@@ -195,7 +195,7 @@ export default function AddSignature() {
       setThumbnails(thumbs);
 
       const arrayBuffer = await pdf.arrayBuffer();
-      const { PDFDocument } = await import("pdf-lib");
+      const { PDFDocument } = await import("@pdfme/pdf-lib");
       const pdfDoc = await PDFDocument.load(arrayBuffer);
       const dims = pdfDoc.getPages().map((p) => p.getSize());
       setPageDims(dims);
@@ -240,7 +240,7 @@ export default function AddSignature() {
     setError(null);
     try {
       const arrayBuffer = await file.arrayBuffer();
-      const { PDFDocument } = await import("pdf-lib");
+      const { PDFDocument } = await import("@pdfme/pdf-lib");
       const pdfDoc = await PDFDocument.load(arrayBuffer);
       const page = pdfDoc.getPage(selectedPage);
       const { width: pageWidth, height: pageHeight } = page.getSize();

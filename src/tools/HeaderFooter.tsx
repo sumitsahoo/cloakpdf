@@ -84,7 +84,7 @@ export default function HeaderFooter() {
     try {
       const [thumbs, { PDFDocument }] = await Promise.all([
         renderAllThumbnails(pdf),
-        import("pdf-lib"),
+        import("@pdfme/pdf-lib"),
       ]);
       setThumbnails(thumbs);
       const pdfDoc = await PDFDocument.load(await pdf.arrayBuffer());

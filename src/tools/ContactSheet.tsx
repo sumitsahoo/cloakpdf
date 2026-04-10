@@ -204,7 +204,7 @@ export default function ContactSheet() {
 
       if (output === "pdf") {
         // Build a PDF containing each sheet as a page
-        const { PDFDocument } = await import("pdf-lib");
+        const { PDFDocument } = await import("@pdfme/pdf-lib");
         const pdfOut = await PDFDocument.create();
 
         for (const sheetBlob of sheets) {

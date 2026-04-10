@@ -54,6 +54,7 @@ import {
   LayoutDashboard,
   LayoutGrid,
   Lock,
+  Paperclip,
   Pencil,
   PenTool,
   Repeat2,
@@ -106,6 +107,7 @@ const RemoveBlankPages = lazy(() => import("./tools/RemoveBlankPages.tsx"));
 const BatesNumbering = lazy(() => import("./tools/BatesNumbering.tsx"));
 const ContactSheet = lazy(() => import("./tools/ContactSheet.tsx"));
 const GrayscalePdf = lazy(() => import("./tools/GrayscalePdf.tsx"));
+const FileAttachment = lazy(() => import("./tools/FileAttachment.tsx"));
 
 // ── Tool metadata displayed on the home screen grid ──────────────
 // Tools within each category are ordered by importance / frequency of use.
@@ -180,6 +182,13 @@ const tools: Tool[] = [
     title: "Remove Blank Pages",
     description: "Auto-detect and remove empty pages from a PDF",
     icon: FileX,
+    category: "organise",
+  },
+  {
+    id: "file-attachment",
+    title: "File Attachments",
+    description: "View, add, extract, or remove files embedded in a PDF",
+    icon: Paperclip,
     category: "organise",
   },
 
@@ -400,6 +409,7 @@ const toolComponents: Record<string, React.LazyExoticComponent<React.ComponentTy
   "bates-numbering": BatesNumbering,
   "contact-sheet": ContactSheet,
   grayscale: GrayscalePdf,
+  "file-attachment": FileAttachment,
 };
 
 // ── Platform detection (module-level, computed once) ──────────────
