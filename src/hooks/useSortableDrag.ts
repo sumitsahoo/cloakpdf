@@ -37,6 +37,12 @@ export function useSortableDrag(onMove: (fromIndex: number, toSlot: number) => v
         touchStartPos.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
         isDragActive.current = false;
       },
+      // Prevent iOS long-press callout / page preview from hijacking drag.
+      style: {
+        WebkitTouchCallout: "none",
+        WebkitUserSelect: "none",
+        touchAction: "none",
+      } as React.CSSProperties,
     }),
     [],
   );
