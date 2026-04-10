@@ -38,7 +38,6 @@ export interface PdfInfo {
   isEncrypted: boolean;
   pages: Array<{ width: number; height: number }>;
 }
-import fontkit from "@pdf-lib/fontkit";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 
 /**
@@ -439,7 +438,6 @@ export async function addWatermark(
 ): Promise<Uint8Array> {
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await PDFDocument.load(arrayBuffer);
-  pdf.registerFontkit(fontkit);
 
   const font = await pdf.embedFont(StandardFonts.HelveticaBold);
 
@@ -502,7 +500,6 @@ export async function addSealStamp(
 ): Promise<Uint8Array> {
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await PDFDocument.load(arrayBuffer);
-  pdf.registerFontkit(fontkit);
 
   const font = await pdf.embedFont(StandardFonts.HelveticaBold);
 

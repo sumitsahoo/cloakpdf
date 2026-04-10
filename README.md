@@ -112,7 +112,6 @@ _Protect your PDFs and manage metadata_
 | Language         | [TypeScript 6](https://www.typescriptlang.org/)                |
 | PDF Manipulation | [@pdfme/pdf-lib](https://github.com/pdfme/pdf-lib)             |
 | PDF Rendering    | [PDF.js](https://mozilla.github.io/pdf.js/)                    |
-| Font Support     | [@pdf-lib/fontkit](https://github.com/Hopding/fontkit)         |
 | Drag & Drop      | [dnd-kit](https://dndkit.com/)                                 |
 | Icons            | [Lucide React](https://lucide.dev/)                            |
 | OCR Engine       | [Tesseract.js](https://tesseract.projectnaptha.com/)           |
