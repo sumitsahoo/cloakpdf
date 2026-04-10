@@ -79,7 +79,7 @@ export function Layout({ children, onHome, showBack, onPrivacy, badgeAccent }: L
               href="https://github.com/sumitsahoo/cloakpdf"
               target="_blank"
               rel="noopener noreferrer"
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border ${badgeAccent ? `${badgeBorder} ${badgeText} ${badgeBg}` : "border-slate-200 dark:border-dark-border text-slate-600 dark:text-dark-text-muted"} hover:opacity-80 transition-all duration-300`}
+              className={`flex items-center justify-center gap-1.5 w-8 h-8 sm:w-auto sm:h-auto sm:px-2.5 sm:py-1.5 rounded-full border ${badgeBorder} ${badgeText} ${badgeBg} hover:opacity-80 transition-all duration-300`}
               aria-label="View source on GitHub"
             >
               <svg
