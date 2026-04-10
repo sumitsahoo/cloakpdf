@@ -57,7 +57,7 @@ import {
   PDFNumber,
   PDFRawStream,
   PDFString,
-} from "pdf-lib";
+} from "@pdfme/pdf-lib";
 
 // ─── MD5 ─────────────────────────────────────────────────────────────────────
 // RFC 1321. Required for file-ID generation and legacy (R2/R3/R4) key
