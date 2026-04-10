@@ -1621,6 +1621,7 @@ export async function getPdfInfo(file: File): Promise<PdfInfo> {
   const pdf = await PDFDocument.load(arrayBuffer, {
     throwOnInvalidObject: false,
     ignoreEncryption: true,
+    updateMetadata: false,
   });
 
   const isEncrypted = !!pdf.context.trailerInfo.Encrypt;
