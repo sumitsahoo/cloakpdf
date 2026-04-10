@@ -46,6 +46,7 @@ _Rearrange, combine, and manage your PDF pages_
 | **Reverse Pages**      | Flip the entire page order of a PDF in one click                                 |
 | **Add Bookmarks**      | Add a clickable outline so readers can jump to any page instantly                |
 | **Remove Blank Pages** | Auto-detect and remove empty pages — adjustable sensitivity with manual override |
+| **File Attachments**   | View, add, extract, or remove files embedded in a PDF                            |
 
 ### ⚡ Transform & Convert
 
