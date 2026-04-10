@@ -703,7 +703,7 @@ function formatDateForInput(date: Date | undefined): string {
  */
 export async function getPdfMetadata(file: File): Promise<PdfMetadata> {
   const arrayBuffer = await file.arrayBuffer();
-  const pdf = await PDFDocument.load(arrayBuffer);
+  const pdf = await PDFDocument.load(arrayBuffer, { updateMetadata: false });
 
   return {
     title: pdf.getTitle() ?? "",
@@ -730,7 +730,7 @@ export async function getPdfMetadata(file: File): Promise<PdfMetadata> {
  */
 export async function setPdfMetadata(file: File, metadata: PdfMetadata): Promise<Uint8Array> {
   const arrayBuffer = await file.arrayBuffer();
-  const pdf = await PDFDocument.load(arrayBuffer);
+  const pdf = await PDFDocument.load(arrayBuffer, { updateMetadata: false });
 
   pdf.setTitle(metadata.title);
   pdf.setAuthor(metadata.author);
