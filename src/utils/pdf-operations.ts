@@ -1901,7 +1901,7 @@ export async function listPdfAttachments(file: File): Promise<PdfAttachment[]> {
 
     const subtypeObj = streamDict.lookup?.(PDFName.of("Subtype"), PDFName);
     const mimeType = subtypeObj
-      ? subtypeObj.decodeText().replace(/\//g, "/")
+      ? subtypeObj.decodeText().replace(/^\//, "")
       : "application/octet-stream";
 
     attachments.push({
