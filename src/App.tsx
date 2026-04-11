@@ -695,6 +695,12 @@ export function App() {
     setShowPrivacy(true);
   }, []);
 
+  /** Scroll to top whenever the view changes. */
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- activeTool and showPrivacy are intentional trigger deps
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [activeTool, showPrivacy]);
+
   /** Metadata for the active tool (memoised to avoid redundant lookups). */
   const activeMeta = useMemo(
     () => (activeTool ? (tools.find((t) => t.id === activeTool) ?? null) : null),
