@@ -102,7 +102,13 @@ export function Layout({ children, onHome, showBack, onPrivacy, badgeAccent }: L
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-3">
           {/* Brand + copyright */}
           <div className="flex items-center gap-2">
-            <img src="/icons/logo.svg" alt="" aria-hidden="true" className="w-5 h-5 opacity-60" />
+            <img
+              src="/icons/logo.svg"
+              alt=""
+              aria-hidden="true"
+              className="w-5 h-5 opacity-60 transition-[filter] duration-300"
+              style={badgeAccent?.logoFilter ? { filter: badgeAccent.logoFilter } : undefined}
+            />
             <span className="text-xs font-medium text-slate-500 dark:text-dark-text-muted">
               CloakPDF
             </span>
