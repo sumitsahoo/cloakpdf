@@ -15,6 +15,7 @@ import { reorderPages } from "../utils/pdf-operations.ts";
 import { renderAllThumbnails } from "../utils/pdf-renderer.ts";
 import { downloadPdf } from "../utils/file-helpers.ts";
 import { useSortableDrag } from "../hooks/useSortableDrag.ts";
+import { TouchDragOverlay } from "../components/TouchDragOverlay.tsx";
 import { Undo2 } from "lucide-react";
 
 export default function ReorderPages() {
@@ -37,7 +38,7 @@ export default function ReorderPages() {
   }, []);
 
   // Drag state (desktop + mobile touch)
-  const { dragIndex, dragOverSlot, setDragIndex, setDragOverSlot, getTouchHandlers } =
+  const { dragIndex, dragOverSlot, touchPos, setDragIndex, setDragOverSlot, getTouchHandlers } =
     useSortableDrag(handleMove);
 
   const handleFile = useCallback(async (files: File[]) => {
@@ -265,6 +266,19 @@ export default function ReorderPages() {
                 <div className="flex flex-wrap items-end gap-y-6 overflow-x-auto pb-2 min-h-28">
                   {renderItems()}
                 </div>
+
+                {dragIndex !== null && (
+                  <TouchDragOverlay touchPos={touchPos}>
+                    <div className="w-20 sm:w-24 md:w-28 aspect-[3/4] bg-white dark:bg-dark-surface rounded-lg overflow-hidden border-2 border-primary-400 shadow-lg">
+                      <img
+                        src={thumbnails[order[dragIndex]]}
+                        className="w-full h-full object-contain"
+                        alt=""
+                        draggable={false}
+                      />
+                    </div>
+                  </TouchDragOverlay>
+                )}
 
                 {isReordered && (
                   <p className="text-xs text-primary-600 dark:text-primary-400 font-medium">

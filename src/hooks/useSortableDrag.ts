@@ -21,6 +21,8 @@ import { useState, useEffect, useRef, useCallback } from "react";
 export function useSortableDrag(onMove: (fromIndex: number, toSlot: number) => void) {
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverSlot, setDragOverSlot] = useState<number | null>(null);
+  /** Current touch position — non-null only during an active touch drag. */
+  const [touchPos, setTouchPos] = useState<{ x: number; y: number } | null>(null);
 
   // Refs so the document-level listeners don't need to be re-registered
   const touchStartSlot = useRef<number | null>(null);
@@ -65,6 +67,9 @@ export function useSortableDrag(onMove: (fromIndex: number, toSlot: number) => v
       // Prevent page scroll while reordering.
       e.preventDefault();
 
+      // Track finger position for the drag overlay.
+      setTouchPos({ x: touch.clientX, y: touch.clientY });
+
       // Find which drop-zone slot is under the finger.
       const el = document.elementFromPoint(touch.clientX, touch.clientY);
       const zone = el?.closest("[data-drop-slot]") as HTMLElement | null;
@@ -97,6 +102,7 @@ export function useSortableDrag(onMove: (fromIndex: number, toSlot: number) => v
       touchStartPos.current = null;
       setDragIndex(null);
       setDragOverSlot(null);
+      setTouchPos(null);
     };
 
     const handleTouchCancel = () => {
@@ -105,6 +111,7 @@ export function useSortableDrag(onMove: (fromIndex: number, toSlot: number) => v
       touchStartPos.current = null;
       setDragIndex(null);
       setDragOverSlot(null);
+      setTouchPos(null);
     };
 
     // Non-passive so we can call preventDefault() during active drag.
@@ -119,5 +126,5 @@ export function useSortableDrag(onMove: (fromIndex: number, toSlot: number) => v
     };
   }, []); // all mutable state accessed via refs — no deps needed
 
-  return { dragIndex, dragOverSlot, setDragIndex, setDragOverSlot, getTouchHandlers };
+  return { dragIndex, dragOverSlot, touchPos, setDragIndex, setDragOverSlot, getTouchHandlers };
 }
