@@ -114,7 +114,7 @@ export function SortableGrid({
         {elements}
       </div>
 
-      {dragIndex !== null && renderOverlay && (
+      {dragIndex !== null && touchPos !== null && renderOverlay && (
         <TouchDragOverlay touchPos={touchPos}>{renderOverlay(dragIndex)}</TouchDragOverlay>
       )}
     </>
