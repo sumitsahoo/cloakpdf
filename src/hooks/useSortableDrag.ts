@@ -4,9 +4,11 @@
  * Supports both the HTML5 drag API (desktop) and touch events (mobile).
  *
  * Components must:
- *  1. Spread `getTouchHandlers(slot)` onto every draggable item.
+ *  1. Spread `getItemProps(slot)` onto every draggable item — this wires up
+ *     both the HTML5 drag API and touch handlers in one call.
  *  2. Add `data-drop-slot={slot}` to every drop-zone div so touch tracking
  *     can identify the target slot via `document.elementFromPoint`.
+ *     (If using `SortableGrid`, drop-zones are handled automatically.)
  *
  * Touch behaviour:
  *  - Drag activates after an 8 px movement threshold so short taps still
@@ -31,7 +33,7 @@ export function useSortableDrag(onMove: (fromIndex: number, toSlot: number) => v
   const onMoveRef = useRef(onMove);
   onMoveRef.current = onMove;
 
-  /** Call this from each draggable item's onTouchStart. */
+  /** Touch handlers for a single draggable item (used internally by getItemProps). */
   const getTouchHandlers = useCallback(
     (slot: number) => ({
       onTouchStart(e: React.TouchEvent) {
@@ -47,6 +49,26 @@ export function useSortableDrag(onMove: (fromIndex: number, toSlot: number) => v
       } as React.CSSProperties,
     }),
     [],
+  );
+
+  /**
+   * All props needed to make an element draggable (HTML5 + touch).
+   * Spread the result onto the draggable element:  `{...getItemProps(slot)}`
+   */
+  const getItemProps = useCallback(
+    (slot: number) => ({
+      draggable: true as const,
+      onDragStart(e: React.DragEvent) {
+        e.dataTransfer.effectAllowed = "move";
+        setDragIndex(slot);
+      },
+      onDragEnd() {
+        setDragIndex(null);
+        setDragOverSlot(null);
+      },
+      ...getTouchHandlers(slot),
+    }),
+    [getTouchHandlers],
   );
 
   useEffect(() => {
@@ -126,5 +148,16 @@ export function useSortableDrag(onMove: (fromIndex: number, toSlot: number) => v
     };
   }, []); // all mutable state accessed via refs — no deps needed
 
-  return { dragIndex, dragOverSlot, touchPos, setDragIndex, setDragOverSlot, getTouchHandlers };
+  return {
+    dragIndex,
+    dragOverSlot,
+    touchPos,
+    setDragIndex,
+    setDragOverSlot,
+    getItemProps,
+    getTouchHandlers,
+  };
 }
+
+/** Convenience type for passing the full drag bag to SortableGrid. */
+export type SortableDrag = ReturnType<typeof useSortableDrag>;
