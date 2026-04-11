@@ -11,6 +11,7 @@ import { FileDropZone } from "../components/FileDropZone.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
 import { useSortableDrag } from "../hooks/useSortableDrag.ts";
+import { TouchDragOverlay } from "../components/TouchDragOverlay.tsx";
 import { duplicatePages } from "../utils/pdf-operations.ts";
 import { renderAllThumbnails } from "../utils/pdf-renderer.ts";
 import { Undo2 } from "lucide-react";
@@ -43,7 +44,7 @@ export default function DuplicatePage() {
   }, []);
 
   // Drag state (desktop + mobile touch)
-  const { dragIndex, dragOverSlot, setDragIndex, setDragOverSlot, getTouchHandlers } =
+  const { dragIndex, dragOverSlot, touchPos, setDragIndex, setDragOverSlot, getTouchHandlers } =
     useSortableDrag(handleMove);
 
   const handleFile = useCallback(async (files: File[]) => {
@@ -334,6 +335,30 @@ export default function DuplicatePage() {
                 <div className="flex flex-wrap items-end gap-y-6 pb-2 min-h-28">
                   {renderItems()}
                 </div>
+
+                {dragIndex !== null &&
+                  (() => {
+                    const item = items[dragIndex];
+                    const srcIdx =
+                      item?.type === "copy"
+                        ? item.sourceIndex
+                        : item?.type === "original"
+                          ? item.index
+                          : null;
+                    if (srcIdx === null) return null;
+                    return (
+                      <TouchDragOverlay touchPos={touchPos}>
+                        <div className="w-20 sm:w-24 md:w-28 aspect-[3/4] bg-white dark:bg-dark-surface rounded-lg overflow-hidden border-2 border-primary-400 shadow-lg">
+                          <img
+                            src={thumbnails[srcIdx]}
+                            className="w-full h-full object-contain"
+                            alt=""
+                            draggable={false}
+                          />
+                        </div>
+                      </TouchDragOverlay>
+                    );
+                  })()}
 
                 {hasCopies && (
                   <p className="text-xs text-primary-600 dark:text-primary-400 font-medium">
