@@ -23,7 +23,7 @@ export function TouchDragOverlay({ touchPos, children }: TouchDragOverlayProps) 
         position: "fixed",
         left: touchPos.x,
         top: touchPos.y,
-        transform: "translate(-50%, -60%) rotate(-3deg)",
+        transform: "translate(-50%, -60%)",
         pointerEvents: "none",
         zIndex: 9999,
       }}
