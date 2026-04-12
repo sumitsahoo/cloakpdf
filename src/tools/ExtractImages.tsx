@@ -6,8 +6,8 @@
  * images or a ZIP of all selected images.
  */
 
-import { useState, useCallback } from "react";
-import { ImageDown, Loader2 } from "lucide-react";
+import { useState, useCallback, useMemo } from "react";
+import { CheckSquare, ImageDown, Loader2, X } from "lucide-react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import type { PDFDocumentProxy } from "pdfjs-dist";
@@ -124,6 +124,13 @@ async function extractImagesFromPdf(
 ): Promise<ExtractedImage[]> {
   const images: ExtractedImage[] = [];
 
+  // Reuse a single pair of canvases across all images to avoid
+  // creating/destroying DOM elements per image.
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d")!;
+  const thumbCanvas = document.createElement("canvas");
+  const tctx = thumbCanvas.getContext("2d")!;
+
   for (let p = 1; p <= pdf.numPages; p++) {
     const page = await pdf.getPage(p);
     const ops = await page.getOperatorList();
@@ -161,17 +168,11 @@ async function extractImagesFromPdf(
       if (!imgData || imgData.width < 10 || imgData.height < 10) continue;
 
       try {
-        const canvas = document.createElement("canvas");
         canvas.width = imgData.width;
         canvas.height = imgData.height;
-        const ctx = canvas.getContext("2d")!;
 
         const painted = await paintImageToCanvas(imgData, ctx);
-        if (!painted) {
-          canvas.width = 0;
-          canvas.height = 0;
-          continue;
-        }
+        if (!painted) continue;
 
         // Convert to PNG blob
         const blob = await new Promise<Blob>((resolve, reject) =>
@@ -182,18 +183,10 @@ async function extractImagesFromPdf(
         const thumbScale = Math.min(1, 200 / Math.max(imgData.width, imgData.height));
         const tw = Math.round(imgData.width * thumbScale);
         const th = Math.round(imgData.height * thumbScale);
-        const thumbCanvas = document.createElement("canvas");
         thumbCanvas.width = tw;
         thumbCanvas.height = th;
-        const tctx = thumbCanvas.getContext("2d")!;
         tctx.drawImage(canvas, 0, 0, tw, th);
         const dataUrl = thumbCanvas.toDataURL("image/png");
-
-        // Release canvas memory
-        canvas.width = 0;
-        canvas.height = 0;
-        thumbCanvas.width = 0;
-        thumbCanvas.height = 0;
 
         images.push({
           page: p,
@@ -209,8 +202,15 @@ async function extractImagesFromPdf(
       }
     }
 
+    page.cleanup();
     onProgress?.(p, pdf.numPages);
   }
+
+  // Release canvas memory
+  canvas.width = 0;
+  canvas.height = 0;
+  thumbCanvas.width = 0;
+  thumbCanvas.height = 0;
 
   return images;
 }
@@ -247,7 +247,7 @@ export default function ExtractImages() {
         setFile(null);
       } else {
         setImages(extracted);
-        setSelected(new Set(extracted.map((_, i) => i)));
+        setSelected(new Set());
       }
     } catch (e) {
       setError(
@@ -271,11 +271,13 @@ export default function ExtractImages() {
     });
   }, []);
 
-  const toggleAll = useCallback(() => {
-    setSelected((prev) =>
-      prev.size === images.length ? new Set() : new Set(images.map((_, i) => i)),
-    );
+  const selectAll = useCallback(() => {
+    setSelected(new Set(images.map((_, i) => i)));
   }, [images]);
+
+  const clearAll = useCallback(() => {
+    setSelected(new Set());
+  }, []);
 
   const handleDownload = useCallback(async () => {
     if (selected.size === 0) return;
@@ -306,7 +308,10 @@ export default function ExtractImages() {
     }
   }, [file, images, selected]);
 
-  const totalSize = Array.from(selected).reduce((sum, i) => sum + images[i].blob.size, 0);
+  const totalSize = useMemo(
+    () => Array.from(selected).reduce((sum, i) => sum + images[i].blob.size, 0),
+    [selected, images],
+  );
 
   return (
     <div className="space-y-6">
@@ -358,12 +363,24 @@ export default function ExtractImages() {
                 <p className="text-sm font-medium text-slate-700 dark:text-dark-text">
                   Select images to download
                 </p>
-                <button
-                  onClick={toggleAll}
-                  className="text-sm text-primary-600 hover:text-primary-700"
-                >
-                  {selected.size === images.length ? "Deselect all" : "Select all"}
-                </button>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={selectAll}
+                    className="inline-flex items-center gap-1.5 text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 transition-colors"
+                  >
+                    <CheckSquare className="w-4 h-4" />
+                    Select all
+                  </button>
+                  <button
+                    type="button"
+                    onClick={clearAll}
+                    className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 dark:text-dark-text-muted dark:hover:text-dark-text transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                    Clear
+                  </button>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
