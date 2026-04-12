@@ -153,4 +153,6 @@ export type ToolId =
   | "contact-sheet"
   | "grayscale"
   | "file-attachment"
-  | "split-pdf";
+  | "split-pdf"
+  | "extract-images"
+  | "compare-pdf";

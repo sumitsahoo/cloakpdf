@@ -33,6 +33,7 @@
 import {
   AlignCenter,
   Archive,
+  ArrowLeftRight,
   ArrowUpDown,
   BookMarked,
   ClipboardList,
@@ -42,6 +43,7 @@ import {
   EyeOff,
   FileImage,
   FileOutput,
+  ImageDown,
   FileSearch,
   FilePlus,
   FileText,
@@ -111,6 +113,8 @@ const ContactSheet = lazy(() => import("./tools/ContactSheet.tsx"));
 const GrayscalePdf = lazy(() => import("./tools/GrayscalePdf.tsx"));
 const FileAttachment = lazy(() => import("./tools/FileAttachment.tsx"));
 const SplitPdf = lazy(() => import("./tools/SplitPdf.tsx"));
+const ExtractImages = lazy(() => import("./tools/ExtractImages.tsx"));
+const ComparePdf = lazy(() => import("./tools/ComparePdf.tsx"));
 
 // ── Tool metadata displayed on the home screen grid ──────────────
 // Tools within each category are ordered by importance / frequency of use.
@@ -237,6 +241,13 @@ const tools: Tool[] = [
     icon: ScanText,
     category: "transform",
   },
+  {
+    id: "extract-images",
+    title: "Extract Images",
+    description: "Pull all embedded images from a PDF and download as PNG or ZIP",
+    icon: ImageDown,
+    category: "transform",
+  },
   // Page-level transforms
   {
     id: "crop-pages",
@@ -272,6 +283,13 @@ const tools: Tool[] = [
     title: "Contact Sheet",
     description: "Render all pages as a thumbnail grid for quick visual review",
     icon: LayoutDashboard,
+    category: "transform",
+  },
+  {
+    id: "compare-pdf",
+    title: "Compare PDFs",
+    description: "Visual side-by-side diff of two PDFs with pixel-level change detection",
+    icon: ArrowLeftRight,
     category: "transform",
   },
   {
@@ -430,6 +448,8 @@ const toolComponents: Record<string, React.LazyExoticComponent<React.ComponentTy
   grayscale: GrayscalePdf,
   "file-attachment": FileAttachment,
   "split-pdf": SplitPdf,
+  "extract-images": ExtractImages,
+  "compare-pdf": ComparePdf,
 };
 
 // ── Platform detection (module-level, computed once) ──────────────
