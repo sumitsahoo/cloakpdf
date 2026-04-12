@@ -72,6 +72,9 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,svg,png,woff2}"],
+        skipWaiting: false,
+        cleanupOutdatedCaches: true,
+        navigationPreload: true,
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/unpkg\.com\/.*/i,
