@@ -28,7 +28,7 @@
 
 ## ✨ Features
 
-CloakPDF offers **31 powerful PDF tools**, all running 100% client-side:
+CloakPDF offers **33 powerful PDF tools**, all running 100% client-side:
 
 ### 🗂️ Organise & Edit
 
@@ -53,18 +53,20 @@ _Rearrange, combine, and manage your PDF pages_
 
 _Compress, convert, and extract content_
 
-| Tool              | Description                                                                                                                        |
-| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| **Compress PDF**  | Reduce file size with 3 quality levels — Light, Balanced, and Maximum                                                              |
-| **PDF to Image**  | Export pages as PNG or JPEG at 72 / 150 / 300 DPI — single file or ZIP                                                             |
-| **Images to PDF** | Convert images (PNG, JPEG) to PDF with A4, Letter, or Fit-to-Image page sizes                                                      |
-| **OCR PDF**       | Extract text from scanned or image-based PDFs using Tesseract.js OCR                                                               |
-| **Crop Pages**    | Trim page margins by setting a crop box (mm input, uniform or per-side); also removes existing crop boxes to restore the full page |
-| **Flatten PDF**   | Remove interactive form fields and annotations, making the PDF non-editable                                                        |
-| **Grayscale PDF** | Convert all pages to grayscale — useful for print cost savings and black-and-white output                                          |
-| **N-up Pages**    | Arrange multiple pages onto a single sheet (2-up, 4-up, 9-up) for compact printing                                                 |
-| **Contact Sheet** | Render all pages as a thumbnail grid for quick visual review — export as PNG or PDF                                                |
-| **Repair PDF**    | Fix structural issues in corrupted or malformed PDFs by re-parsing and rebuilding the file                                         |
+| Tool               | Description                                                                                                                        |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| **Compress PDF**   | Reduce file size with 3 quality levels — Light, Balanced, and Maximum                                                              |
+| **PDF to Image**   | Export pages as PNG or JPEG at 72 / 150 / 300 DPI — single file or ZIP                                                             |
+| **Images to PDF**  | Convert images (PNG, JPEG) to PDF with A4, Letter, or Fit-to-Image page sizes                                                      |
+| **OCR PDF**        | Extract text from scanned or image-based PDFs using Tesseract.js OCR                                                               |
+| **Extract Images** | Pull all embedded raster images from a PDF — preview, select, and download individually or as a ZIP                                |
+| **Crop Pages**     | Trim page margins by setting a crop box (mm input, uniform or per-side); also removes existing crop boxes to restore the full page |
+| **Flatten PDF**    | Remove interactive form fields and annotations, making the PDF non-editable                                                        |
+| **Grayscale PDF**  | Convert all pages to grayscale — useful for print cost savings and black-and-white output                                          |
+| **N-up Pages**     | Arrange multiple pages onto a single sheet (2-up, 4-up, 9-up) for compact printing                                                 |
+| **Contact Sheet**  | Render all pages as a thumbnail grid for quick visual review — export as PNG or PDF                                                |
+| **Compare PDFs**   | Visual side-by-side diff of two PDFs with pixel-level change detection and diff overlay                                            |
+| **Repair PDF**     | Fix structural issues in corrupted or malformed PDFs by re-parsing and rebuilding the file                                         |
 
 ### ✍️ Annotate & Sign
 
