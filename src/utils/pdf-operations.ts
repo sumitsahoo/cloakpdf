@@ -647,7 +647,7 @@ export async function addSignature(
   file: File,
   signatureDataUrl: string,
   pageIndices: number[],
-  position: Position,
+  position: Position | Map<number, Position>,
 ): Promise<Uint8Array> {
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await PDFDocument.load(arrayBuffer);
@@ -665,13 +665,18 @@ export async function addSignature(
     ? await pdf.embedJpg(signatureBytes)
     : await pdf.embedPng(signatureBytes);
 
+  const isMap = position instanceof Map;
+
   for (const idx of pageIndices) {
+    const fallback = isMap ? position.values().next().value : position;
+    const pos = isMap ? (position.get(idx) ?? fallback) : position;
+    if (!pos) continue;
     const page = pdf.getPage(idx);
     page.drawImage(signatureImage, {
-      x: position.x,
-      y: position.y,
-      width: position.width,
-      height: position.height,
+      x: pos.x,
+      y: pos.y,
+      width: pos.width,
+      height: pos.height,
     });
   }
 
