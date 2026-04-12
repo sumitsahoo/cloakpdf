@@ -33,6 +33,7 @@
 import {
   AlignCenter,
   Archive,
+  ArrowLeftRight,
   ArrowUpDown,
   BookMarked,
   ClipboardList,
@@ -42,6 +43,7 @@ import {
   EyeOff,
   FileImage,
   FileOutput,
+  ImageDown,
   FileSearch,
   FilePlus,
   FileText,
@@ -61,6 +63,7 @@ import {
   RotateCw,
   Scale,
   ScanText,
+  Scissors,
   Search,
   Shield,
   Stamp,
@@ -72,6 +75,7 @@ import {
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Layout } from "./components/Layout.tsx";
 import { PrivacyPolicy } from "./components/PrivacyPolicy.tsx";
+import { ReloadPrompt } from "./components/ReloadPrompt.tsx";
 import { ToolCard } from "./components/ToolCard.tsx";
 import type { Tool, ToolId } from "./types.ts";
 
@@ -108,17 +112,28 @@ const BatesNumbering = lazy(() => import("./tools/BatesNumbering.tsx"));
 const ContactSheet = lazy(() => import("./tools/ContactSheet.tsx"));
 const GrayscalePdf = lazy(() => import("./tools/GrayscalePdf.tsx"));
 const FileAttachment = lazy(() => import("./tools/FileAttachment.tsx"));
+const SplitPdf = lazy(() => import("./tools/SplitPdf.tsx"));
+const ExtractImages = lazy(() => import("./tools/ExtractImages.tsx"));
+const ComparePdf = lazy(() => import("./tools/ComparePdf.tsx"));
 
 // ── Tool metadata displayed on the home screen grid ──────────────
 // Tools within each category are ordered by importance / frequency of use.
 
 const tools: Tool[] = [
   // ── Organise & Edit ──────────────────────────────────────
+  // Combine / Split / Extract are the most common operations
   {
     id: "merge",
     title: "Merge PDFs",
     description: "Combine multiple PDF files into one document",
     icon: GitMerge,
+    category: "organise",
+  },
+  {
+    id: "split-pdf",
+    title: "Split PDF",
+    description: "Divide a PDF into multiple separate files at chosen pages",
+    icon: Scissors,
     category: "organise",
   },
   {
@@ -128,6 +143,7 @@ const tools: Tool[] = [
     icon: FileOutput,
     category: "organise",
   },
+  // Page-level manipulation
   {
     id: "reorder",
     title: "Reorder Pages",
@@ -150,6 +166,14 @@ const tools: Tool[] = [
     category: "organise",
   },
   {
+    id: "reverse-pages",
+    title: "Reverse Pages",
+    description: "Flip the page order of a PDF in one click",
+    icon: Repeat2,
+    category: "organise",
+  },
+  // Add / duplicate pages
+  {
     id: "add-blank-page",
     title: "Add Blank Page",
     description: "Insert a blank page at any position in the document",
@@ -164,24 +188,18 @@ const tools: Tool[] = [
     category: "organise",
   },
   {
-    id: "reverse-pages",
-    title: "Reverse Pages",
-    description: "Flip the page order of a PDF in one click",
-    icon: Repeat2,
+    id: "remove-blank-pages",
+    title: "Remove Blank Pages",
+    description: "Auto-detect and remove empty pages from a PDF",
+    icon: FileX,
     category: "organise",
   },
+  // Navigation & attachments
   {
     id: "add-bookmarks",
     title: "Add Bookmarks",
     description: "Add a clickable outline for quick in-document navigation",
     icon: BookMarked,
-    category: "organise",
-  },
-  {
-    id: "remove-blank-pages",
-    title: "Remove Blank Pages",
-    description: "Auto-detect and remove empty pages from a PDF",
-    icon: FileX,
     category: "organise",
   },
   {
@@ -193,6 +211,7 @@ const tools: Tool[] = [
   },
 
   // ── Transform & Convert ──────────────────────────────────
+  // Compression is the most common transform
   {
     id: "compress",
     title: "Compress PDF",
@@ -200,6 +219,7 @@ const tools: Tool[] = [
     icon: Archive,
     category: "transform",
   },
+  // Format conversions grouped together
   {
     id: "pdf-to-image",
     title: "PDF to Image",
@@ -222,6 +242,14 @@ const tools: Tool[] = [
     category: "transform",
   },
   {
+    id: "extract-images",
+    title: "Extract Images",
+    description: "Pull all embedded images from a PDF and download as PNG or ZIP",
+    icon: ImageDown,
+    category: "transform",
+  },
+  // Page-level transforms
+  {
     id: "crop-pages",
     title: "Crop Pages",
     description: "Trim page margins by adjusting the visible area",
@@ -235,6 +263,14 @@ const tools: Tool[] = [
     icon: Layers,
     category: "transform",
   },
+  {
+    id: "grayscale",
+    title: "Grayscale PDF",
+    description: "Convert all pages to grayscale, removing all colour information",
+    icon: Contrast,
+    category: "transform",
+  },
+  // Layout & printing
   {
     id: "nup-pages",
     title: "N-up Pages",
@@ -254,13 +290,6 @@ const tools: Tool[] = [
     title: "Repair PDF",
     description: "Fix structural issues in corrupted or malformed PDFs",
     icon: Wrench,
-    category: "transform",
-  },
-  {
-    id: "grayscale",
-    title: "Grayscale PDF",
-    description: "Convert all pages to grayscale, removing all colour information",
-    icon: Contrast,
     category: "transform",
   },
 
@@ -286,6 +315,7 @@ const tools: Tool[] = [
     icon: Stamp,
     category: "annotate",
   },
+  // Numbering & headers grouped together
   {
     id: "add-page-numbers",
     title: "Add Page Numbers",
@@ -294,17 +324,17 @@ const tools: Tool[] = [
     category: "annotate",
   },
   {
-    id: "bates-numbering",
-    title: "Bates Numbering",
-    description: "Stamp sequential identifiers for legal and compliance workflows",
-    icon: Scale,
-    category: "annotate",
-  },
-  {
     id: "header-footer",
     title: "Header & Footer",
     description: "Add repeating text at the top and/or bottom of every page",
     icon: AlignCenter,
+    category: "annotate",
+  },
+  {
+    id: "bates-numbering",
+    title: "Bates Numbering",
+    description: "Stamp sequential identifiers for legal and compliance workflows",
+    icon: Scale,
     category: "annotate",
   },
 
@@ -328,6 +358,13 @@ const tools: Tool[] = [
     title: "Edit Metadata",
     description: "View and edit PDF document properties",
     icon: FileText,
+    category: "security",
+  },
+  {
+    id: "compare-pdf",
+    title: "Compare PDFs",
+    description: "Visual side-by-side diff of two PDFs with pixel-level change detection",
+    icon: ArrowLeftRight,
     category: "security",
   },
   {
@@ -410,6 +447,9 @@ const toolComponents: Record<string, React.LazyExoticComponent<React.ComponentTy
   "contact-sheet": ContactSheet,
   grayscale: GrayscalePdf,
   "file-attachment": FileAttachment,
+  "split-pdf": SplitPdf,
+  "extract-images": ExtractImages,
+  "compare-pdf": ComparePdf,
 };
 
 // ── Platform detection (module-level, computed once) ──────────────
@@ -746,19 +786,22 @@ export function App() {
   }, [activeMeta]);
 
   return (
-    <Layout
-      onHome={goHome}
-      showBack={!!activeTool || showPrivacy}
-      onPrivacy={handlePrivacy}
-      badgeAccent={badgeAccent}
-    >
-      {activeTool && ToolComponent && activeMeta ? (
-        <ToolView tool={activeMeta} Component={ToolComponent} />
-      ) : showPrivacy ? (
-        <PrivacyPolicy />
-      ) : (
-        <HomeScreen onSelectTool={handleSelectTool} />
-      )}
-    </Layout>
+    <>
+      <Layout
+        onHome={goHome}
+        showBack={!!activeTool || showPrivacy}
+        onPrivacy={handlePrivacy}
+        badgeAccent={badgeAccent}
+      >
+        {activeTool && ToolComponent && activeMeta ? (
+          <ToolView tool={activeMeta} Component={ToolComponent} />
+        ) : showPrivacy ? (
+          <PrivacyPolicy />
+        ) : (
+          <HomeScreen onSelectTool={handleSelectTool} />
+        )}
+      </Layout>
+      <ReloadPrompt />
+    </>
   );
 }

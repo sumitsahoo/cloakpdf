@@ -28,42 +28,44 @@
 
 ## ✨ Features
 
-CloakPDF offers **30 powerful PDF tools**, all running 100% client-side:
+CloakPDF offers **33 powerful PDF tools**, all running 100% client-side:
 
 ### 🗂️ Organise & Edit
 
 _Rearrange, combine, and manage your PDF pages_
 
-| Tool                   | Description                                                                      |
-| ---------------------- | -------------------------------------------------------------------------------- |
-| **Merge PDFs**         | Combine multiple PDF files into a single document with drag-to-reorder support   |
-| **Extract Pages**      | Select pages visually or by range (e.g., `1-3, 5, 7-9`) and save as a new PDF    |
-| **Reorder Pages**      | Drag and drop to rearrange page order with smooth animations                     |
-| **Delete Pages**       | Select and remove unwanted pages visually                                        |
-| **Rotate Pages**       | Rotate individual pages by 90°, -90°, or 180° — or rotate all at once            |
-| **Add Blank Page**     | Insert a blank page at any position — dimensions match the adjacent page         |
-| **Duplicate Page**     | Copy any page and insert it at a chosen position in the document                 |
-| **Reverse Pages**      | Flip the entire page order of a PDF in one click                                 |
-| **Add Bookmarks**      | Add a clickable outline so readers can jump to any page instantly                |
-| **Remove Blank Pages** | Auto-detect and remove empty pages — adjustable sensitivity with manual override |
-| **File Attachments**   | View, add, extract, or remove files embedded in a PDF                            |
+| Tool                   | Description                                                                                      |
+| ---------------------- | ------------------------------------------------------------------------------------------------ |
+| **Merge PDFs**         | Combine multiple PDF files into a single document with drag-to-reorder support                   |
+| **Split PDF**          | Divide a PDF into multiple separate files — split every page, every N pages, or at custom points |
+| **Extract Pages**      | Select pages visually or by range (e.g., `1-3, 5, 7-9`) and save as a new PDF                    |
+| **Reorder Pages**      | Drag and drop to rearrange page order with smooth animations                                     |
+| **Delete Pages**       | Select and remove unwanted pages visually                                                        |
+| **Rotate Pages**       | Rotate individual pages by 90°, -90°, or 180° — or rotate all at once                            |
+| **Reverse Pages**      | Flip the entire page order of a PDF in one click                                                 |
+| **Add Blank Page**     | Insert a blank page at any position — dimensions match the adjacent page                         |
+| **Duplicate Page**     | Copy any page and insert it at a chosen position in the document                                 |
+| **Remove Blank Pages** | Auto-detect and remove empty pages — adjustable sensitivity with manual override                 |
+| **Add Bookmarks**      | Add a clickable outline so readers can jump to any page instantly                                |
+| **File Attachments**   | View, add, extract, or remove files embedded in a PDF                                            |
 
 ### ⚡ Transform & Convert
 
 _Compress, convert, and extract content_
 
-| Tool              | Description                                                                                                                        |
-| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| **Compress PDF**  | Reduce file size with 3 quality levels — Light, Balanced, and Maximum                                                              |
-| **PDF to Image**  | Export pages as PNG or JPEG at 72 / 150 / 300 DPI — single file or ZIP                                                             |
-| **Images to PDF** | Convert images (PNG, JPEG) to PDF with A4, Letter, or Fit-to-Image page sizes                                                      |
-| **OCR PDF**       | Extract text from scanned or image-based PDFs using Tesseract.js OCR                                                               |
-| **Crop Pages**    | Trim page margins by setting a crop box (mm input, uniform or per-side); also removes existing crop boxes to restore the full page |
-| **Flatten PDF**   | Remove interactive form fields and annotations, making the PDF non-editable                                                        |
-| **N-up Pages**    | Arrange multiple pages onto a single sheet (2-up, 4-up, 9-up) for compact printing                                                 |
-| **Contact Sheet** | Render all pages as a thumbnail grid for quick visual review — export as PNG or PDF                                                |
-| **Repair PDF**    | Fix structural issues in corrupted or malformed PDFs by re-parsing and rebuilding the file                                         |
-| **Grayscale PDF** | Convert all pages to grayscale — useful for print cost savings and black-and-white output                                          |
+| Tool               | Description                                                                                                                        |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
+| **Compress PDF**   | Reduce file size with 3 quality levels — Light, Balanced, and Maximum                                                              |
+| **PDF to Image**   | Export pages as PNG or JPEG at 72 / 150 / 300 DPI — single file or ZIP                                                             |
+| **Images to PDF**  | Convert images (PNG, JPEG) to PDF with A4, Letter, or Fit-to-Image page sizes                                                      |
+| **OCR PDF**        | Extract text from scanned or image-based PDFs using Tesseract.js OCR                                                               |
+| **Extract Images** | Pull all embedded raster images from a PDF — preview, select, and download individually or as a ZIP                                |
+| **Crop Pages**     | Trim page margins by setting a crop box (mm input, uniform or per-side); also removes existing crop boxes to restore the full page |
+| **Flatten PDF**    | Remove interactive form fields and annotations, making the PDF non-editable                                                        |
+| **Grayscale PDF**  | Convert all pages to grayscale — useful for print cost savings and black-and-white output                                          |
+| **N-up Pages**     | Arrange multiple pages onto a single sheet (2-up, 4-up, 9-up) for compact printing                                                 |
+| **Contact Sheet**  | Render all pages as a thumbnail grid for quick visual review — export as PNG or PDF                                                |
+| **Repair PDF**     | Fix structural issues in corrupted or malformed PDFs by re-parsing and rebuilding the file                                         |
 
 ### ✍️ Annotate & Sign
 
@@ -75,8 +77,8 @@ _Add watermarks, signatures, and overlays_
 | **Fill PDF Form**     | Fill text fields, checkboxes, dropdowns, and radio groups in interactive PDF forms                                                                                 |
 | **Stamp & Watermark** | Apply pre-built stamps (DRAFT, APPROVED, CONFIDENTIAL, etc.) in text or seal style, or add a custom text watermark with configurable colour, rotation, and opacity |
 | **Add Page Numbers**  | Insert page numbers with 6 position options, 4 formats, and custom styling                                                                                         |
-| **Bates Numbering**   | Stamp sequential identifiers (prefix + zero-padded number + suffix) for legal and compliance workflows                                                             |
 | **Header & Footer**   | Add repeating text (with `{{page}}` / `{{total}}` tokens) at the top and bottom of every page                                                                      |
+| **Bates Numbering**   | Stamp sequential identifiers (prefix + zero-padded number + suffix) for legal and compliance workflows                                                             |
 
 ### 🔐 Security & Properties
 
@@ -87,6 +89,7 @@ _Protect your PDFs and manage metadata_
 | **PDF Password**  | Add or remove a password and control print, copy, and edit rights                       |
 | **Redact PDF**    | Permanently black out sensitive text and images                                         |
 | **Edit Metadata** | View and edit document properties like title, author, subject, keywords, and dates      |
+| **Compare PDFs**  | Visual side-by-side diff of two PDFs with pixel-level change detection and diff overlay |
 | **PDF Inspector** | View version, page count, dimensions, metadata, and encryption status without modifying |
 
 ---
