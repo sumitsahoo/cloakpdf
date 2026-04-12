@@ -6,7 +6,7 @@
  * All pages/tools are rendered inside `children`.
  */
 
-import { ChevronLeft, Lock } from "lucide-react";
+import { ChevronLeft, Lock, ShieldCheck } from "lucide-react";
 import type { ReactNode } from "react";
 
 interface LayoutProps {
@@ -98,46 +98,25 @@ export function Layout({ children, onHome, showBack, onPrivacy, badgeAccent }: L
 
       <main className="flex-1 max-w-6xl mx-auto px-4 sm:px-6 py-8 w-full">{children}</main>
 
-      <footer className="border-t border-slate-200 dark:border-dark-border bg-white/50 dark:bg-dark-surface/50">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+      <footer className="border-t border-slate-200/60 dark:border-dark-border bg-linear-to-b from-white/60 to-slate-50/80 dark:from-dark-surface/60 dark:to-dark-bg/80">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex flex-col-reverse sm:flex-row items-center justify-between gap-3">
           {/* Brand + copyright */}
-          <div className="flex items-center gap-2">
-            <img
-              src="/icons/logo.svg"
-              alt=""
-              aria-hidden="true"
-              className="w-5 h-5 opacity-60 transition-[filter] duration-300"
-              style={badgeAccent?.logoFilter ? { filter: badgeAccent.logoFilter } : undefined}
-            />
-            <span className="text-xs font-medium text-slate-500 dark:text-dark-text-muted">
-              CloakPDF
-            </span>
-            <span className="text-slate-300 dark:text-dark-border text-xs" aria-hidden="true">
-              ·
-            </span>
-            <span className="text-xs text-slate-400 dark:text-dark-text-muted">
-              © {new Date().getFullYear()} Sumit Sahoo
-            </span>
-          </div>
+          <p className="text-[11px] text-slate-400 dark:text-dark-text-muted">
+            © {new Date().getFullYear()} CloakPDF by Sumit Sahoo
+          </p>
 
-          {/* Right side: privacy note + privacy policy link */}
-          <div className="flex items-center gap-2 text-xs text-slate-400 dark:text-dark-text-muted">
-            <Lock className="w-3.5 h-3.5 shrink-0 hidden sm:block" aria-hidden="true" />
-            <span className="hidden sm:inline">Files never leave your device</span>
-            <span
-              className="text-slate-300 dark:text-dark-border hidden sm:inline"
+          {/* Privacy link */}
+          <button
+            type="button"
+            onClick={onPrivacy}
+            className="group flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-slate-200/80 dark:border-dark-border text-[11px] font-medium text-slate-400 dark:text-dark-text-muted hover:text-primary-600 dark:hover:text-primary-400 hover:border-primary-200 dark:hover:border-primary-700/60 hover:bg-primary-50/50 dark:hover:bg-primary-900/20 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400/50"
+          >
+            <ShieldCheck
+              className="w-3.5 h-3.5 shrink-0 text-slate-300 dark:text-dark-border group-hover:text-primary-500 dark:group-hover:text-primary-400 transition-colors duration-200"
               aria-hidden="true"
-            >
-              ·
-            </span>
-            <button
-              type="button"
-              onClick={onPrivacy}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-slate-200 dark:border-dark-border hover:bg-slate-100 dark:hover:bg-dark-surface-alt hover:border-slate-300 dark:hover:border-dark-border transition-all duration-200 text-xs font-medium text-slate-500 dark:text-dark-text-muted hover:text-slate-700 dark:hover:text-dark-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400/50"
-            >
-              Privacy Policy
-            </button>
-          </div>
+            />
+            Privacy Policy
+          </button>
         </div>
       </footer>
     </div>
