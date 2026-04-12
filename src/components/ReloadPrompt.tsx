@@ -40,8 +40,8 @@ export function ReloadPrompt() {
   if (!offlineReady && !needRefresh) return null;
 
   return (
-    <div className="fixed bottom-6 left-4 right-4 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 z-50 animate-fade-in-up">
-      <div className="relative flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 px-4 sm:px-5 py-3 rounded-2xl bg-white dark:bg-dark-surface backdrop-blur-md text-slate-700 dark:text-dark-text shadow-xl border border-slate-200 dark:border-dark-border">
+    <div className="fixed bottom-6 left-4 right-4 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 z-50">
+      <div className="animate-fade-in-up relative flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 px-4 sm:px-5 py-3 rounded-2xl bg-white/85 dark:bg-dark-surface/85 backdrop-blur-md shadow-sm shadow-slate-100/50 dark:shadow-black/20 border border-slate-200/80 dark:border-dark-border text-slate-700 dark:text-dark-text">
         <button
           type="button"
           onClick={close}
