@@ -41,6 +41,10 @@ export function useSortableDrag(onMove: (fromIndex: number, toSlot: number) => v
         touchStartPos.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
         isDragActive.current = false;
       },
+      // Prevent Android Chrome long-press context menu ("Open in new tab" etc.).
+      onContextMenu(e: React.MouseEvent) {
+        e.preventDefault();
+      },
       // Prevent iOS long-press callout / page preview from hijacking drag.
       style: {
         WebkitTouchCallout: "none",
