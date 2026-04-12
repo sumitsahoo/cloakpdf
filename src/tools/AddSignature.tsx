@@ -24,6 +24,7 @@ import { PenLine, Upload, Move, Maximize2, Check, CheckSquare, X } from "lucide-
 type SignatureMode = "draw" | "upload";
 
 const MAX_UPLOAD_SIZE = 5 * 1024 * 1024; // 5 MB
+const DEFAULT_POSITION = { xPercent: 50, yPercent: 15 };
 
 /**
  * Apply a colour tint to an image data-URL.
@@ -86,7 +87,10 @@ export default function AddSignature() {
   const [processing, setProcessing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [position, setPosition] = useState({ xPercent: 50, yPercent: 15 });
+  const [position, setPosition] = useState(DEFAULT_POSITION);
+  const [pagePositions, setPagePositions] = useState<
+    Record<number, { xPercent: number; yPercent: number }>
+  >({});
   const [sigSize, setSigSize] = useState({ width: 200, height: 80 });
   const [pageDims, setPageDims] = useState<{ width: number; height: number }[]>([]);
   const [isDragging, setIsDragging] = useState(false);
@@ -120,6 +124,22 @@ export default function AddSignature() {
     };
   }, [mode, uploadedImageUrl, tintEnabled, color]);
 
+  // Derive current position: per-page when not applying to all, shared otherwise
+  const currentPosition = applyToAllPages
+    ? position
+    : (pagePositions[selectedPage] ?? DEFAULT_POSITION);
+
+  const setCurrentPosition = useCallback(
+    (pos: { xPercent: number; yPercent: number }) => {
+      if (applyToAllPages) {
+        setPosition(pos);
+      } else {
+        setPagePositions((prev) => ({ ...prev, [selectedPage]: pos }));
+      }
+    },
+    [applyToAllPages, selectedPage],
+  );
+
   /* ---- drag-and-drop positioning ---- */
   const handleDragStart = useCallback(
     (e: React.MouseEvent | React.TouchEvent) => {
@@ -131,12 +151,12 @@ export default function AddSignature() {
         active: true,
         startX: clientX,
         startY: clientY,
-        startXPct: position.xPercent,
-        startYPct: position.yPercent,
+        startXPct: currentPosition.xPercent,
+        startYPct: currentPosition.yPercent,
       };
       setIsDragging(true);
     },
-    [position],
+    [currentPosition],
   );
 
   useEffect(() => {
@@ -150,7 +170,7 @@ export default function AddSignature() {
       const dy = ((dragRef.current.startY - clientY) / rect.height) * 100;
       const newX = Math.max(2, Math.min(98, dragRef.current.startXPct + dx));
       const newY = Math.max(2, Math.min(98, dragRef.current.startYPct + dy));
-      setPosition({ xPercent: Math.round(newX), yPercent: Math.round(newY) });
+      setCurrentPosition({ xPercent: Math.round(newX), yPercent: Math.round(newY) });
     };
 
     const handleUp = () => {
@@ -168,7 +188,7 @@ export default function AddSignature() {
       window.removeEventListener("touchmove", handleMove);
       window.removeEventListener("touchend", handleUp);
     };
-  }, []);
+  }, [setCurrentPosition]);
 
   /* ---- page toggle for multi-select ---- */
   const togglePage = useCallback((index: number) => {
@@ -242,32 +262,56 @@ export default function AddSignature() {
       const arrayBuffer = await file.arrayBuffer();
       const { PDFDocument } = await import("@pdfme/pdf-lib");
       const pdfDoc = await PDFDocument.load(arrayBuffer);
-      const page = pdfDoc.getPage(selectedPage);
-      const { width: pageWidth, height: pageHeight } = page.getSize();
-
-      // Convert centre-based percentage position to bottom-left origin PDF coords
-      const x = (position.xPercent / 100) * pageWidth - sigSize.width / 2;
-      const y = (position.yPercent / 100) * pageHeight - sigSize.height / 2;
 
       const pageIndices = applyToAllPages
         ? Array.from({ length: pdfDoc.getPageCount() }, (_, i) => i)
         : [...selectedPages].sort((a, b) => a - b);
 
-      const result = await addSignature(file, signatureDataUrl, pageIndices, {
-        x: Math.max(0, x),
-        y: Math.max(0, y),
-        width: sigSize.width,
-        height: sigSize.height,
-      });
+      if (applyToAllPages) {
+        // Single shared position
+        const page = pdfDoc.getPage(0);
+        const { width: pageWidth, height: pageHeight } = page.getSize();
+        const x = (position.xPercent / 100) * pageWidth - sigSize.width / 2;
+        const y = (position.yPercent / 100) * pageHeight - sigSize.height / 2;
 
-      const baseName = file.name.replace(/\.pdf$/i, "");
-      downloadPdf(result, `${baseName}_signed.pdf`);
+        const result = await addSignature(file, signatureDataUrl, pageIndices, {
+          x: Math.max(0, x),
+          y: Math.max(0, y),
+          width: sigSize.width,
+          height: sigSize.height,
+        });
+        const baseName = file.name.replace(/\.pdf$/i, "");
+        downloadPdf(result, `${baseName}_signed.pdf`);
+      } else {
+        // Per-page positions
+        const positionMap = new Map<
+          number,
+          { x: number; y: number; width: number; height: number }
+        >();
+        for (const idx of pageIndices) {
+          const page = pdfDoc.getPage(idx);
+          const { width: pageWidth, height: pageHeight } = page.getSize();
+          const pos = pagePositions[idx] ?? DEFAULT_POSITION;
+          const x = (pos.xPercent / 100) * pageWidth - sigSize.width / 2;
+          const y = (pos.yPercent / 100) * pageHeight - sigSize.height / 2;
+          positionMap.set(idx, {
+            x: Math.max(0, x),
+            y: Math.max(0, y),
+            width: sigSize.width,
+            height: sigSize.height,
+          });
+        }
+
+        const result = await addSignature(file, signatureDataUrl, pageIndices, positionMap);
+        const baseName = file.name.replace(/\.pdf$/i, "");
+        downloadPdf(result, `${baseName}_signed.pdf`);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to add signature. Please try again.");
     } finally {
       setProcessing(false);
     }
-  }, [file, signatureDataUrl, selectedPage, position, sigSize, applyToAllPages, selectedPages]);
+  }, [file, signatureDataUrl, position, sigSize, applyToAllPages, selectedPages, pagePositions]);
 
   return (
     <div className="space-y-6">
@@ -293,6 +337,7 @@ export default function AddSignature() {
                 setSignatureDataUrl("");
                 setUploadedImageUrl("");
                 setSelectedPages(new Set());
+                setPagePositions({});
               }}
               className="text-sm text-primary-600 hover:text-primary-700"
             >
@@ -479,7 +524,10 @@ export default function AddSignature() {
                 <div className="flex items-start gap-2 rounded-lg bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 px-3 py-2.5">
                   <Move className="w-4 h-4 mt-0.5 text-primary-500 shrink-0" />
                   <p className="text-xs text-primary-700 dark:text-primary-300 leading-relaxed">
-                    Drag the signature on the preview to reposition it
+                    Drag the signature on the preview to reposition it.
+                    {thumbnails.length > 1 &&
+                      !applyToAllPages &&
+                      " Each page remembers its own position — select a page and drag to adjust."}
                   </p>
                 </div>
               )}
@@ -588,8 +636,8 @@ export default function AddSignature() {
                     <div
                       className="absolute border-2 border-dashed border-primary-400 rounded select-none touch-none"
                       style={{
-                        left: `${position.xPercent}%`,
-                        bottom: `${position.yPercent}%`,
+                        left: `${currentPosition.xPercent}%`,
+                        bottom: `${currentPosition.yPercent}%`,
                         transform: "translate(-50%, 50%)",
                         cursor: isDragging ? "grabbing" : "grab",
                         width: pageDims[selectedPage]
