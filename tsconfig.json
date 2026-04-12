@@ -4,7 +4,7 @@
     "useDefineForClassFields": true,
     "jsx": "react-jsx",
     "lib": ["ES2025", "DOM"],
-    "types": ["vite/client"],
+    "types": ["vite/client", "vite-plugin-pwa/react"],
     "skipLibCheck": true,
 
     /* Bundler mode */
