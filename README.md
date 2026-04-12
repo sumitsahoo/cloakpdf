@@ -65,7 +65,6 @@ _Compress, convert, and extract content_
 | **Grayscale PDF**  | Convert all pages to grayscale — useful for print cost savings and black-and-white output                                          |
 | **N-up Pages**     | Arrange multiple pages onto a single sheet (2-up, 4-up, 9-up) for compact printing                                                 |
 | **Contact Sheet**  | Render all pages as a thumbnail grid for quick visual review — export as PNG or PDF                                                |
-| **Compare PDFs**   | Visual side-by-side diff of two PDFs with pixel-level change detection and diff overlay                                            |
 | **Repair PDF**     | Fix structural issues in corrupted or malformed PDFs by re-parsing and rebuilding the file                                         |
 
 ### ✍️ Annotate & Sign
@@ -90,6 +89,7 @@ _Protect your PDFs and manage metadata_
 | **PDF Password**  | Add or remove a password and control print, copy, and edit rights                       |
 | **Redact PDF**    | Permanently black out sensitive text and images                                         |
 | **Edit Metadata** | View and edit document properties like title, author, subject, keywords, and dates      |
+| **Compare PDFs**  | Visual side-by-side diff of two PDFs with pixel-level change detection and diff overlay |
 | **PDF Inspector** | View version, page count, dimensions, metadata, and encryption status without modifying |
 
 ---

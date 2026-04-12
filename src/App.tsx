@@ -286,13 +286,6 @@ const tools: Tool[] = [
     category: "transform",
   },
   {
-    id: "compare-pdf",
-    title: "Compare PDFs",
-    description: "Visual side-by-side diff of two PDFs with pixel-level change detection",
-    icon: ArrowLeftRight,
-    category: "transform",
-  },
-  {
     id: "repair-pdf",
     title: "Repair PDF",
     description: "Fix structural issues in corrupted or malformed PDFs",
@@ -365,6 +358,13 @@ const tools: Tool[] = [
     title: "Edit Metadata",
     description: "View and edit PDF document properties",
     icon: FileText,
+    category: "security",
+  },
+  {
+    id: "compare-pdf",
+    title: "Compare PDFs",
+    description: "Visual side-by-side diff of two PDFs with pixel-level change detection",
+    icon: ArrowLeftRight,
     category: "security",
   },
   {
