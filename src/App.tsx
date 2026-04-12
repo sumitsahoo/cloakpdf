@@ -792,6 +792,7 @@ export function App() {
         showBack={!!activeTool || showPrivacy}
         onPrivacy={handlePrivacy}
         badgeAccent={badgeAccent}
+        activeCategory={activeMeta?.category}
       >
         {activeTool && ToolComponent && activeMeta ? (
           <ToolView tool={activeMeta} Component={ToolComponent} />

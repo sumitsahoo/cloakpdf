@@ -20,12 +20,46 @@ interface LayoutProps {
   onPrivacy: () => void;
   /** Optional accent colours for the privacy badge (matches active tool category). */
   badgeAccent?: { bg: string; border: string; text: string; logoFilter?: string };
+  /** Active tool category key — drives footer hover accent. */
+  activeCategory?: string;
 }
 
-export function Layout({ children, onHome, showBack, onPrivacy, badgeAccent }: LayoutProps) {
+const footerHover: Record<string, { btn: string; icon: string }> = {
+  organise: {
+    btn: "hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 hover:border-blue-200 dark:hover:border-blue-700/60",
+    icon: "group-hover:text-blue-500 dark:group-hover:text-blue-400",
+  },
+  transform: {
+    btn: "hover:text-violet-600 dark:hover:text-violet-400 hover:bg-violet-50/50 dark:hover:bg-violet-900/20 hover:border-violet-200 dark:hover:border-violet-700/60",
+    icon: "group-hover:text-violet-500 dark:group-hover:text-violet-400",
+  },
+  annotate: {
+    btn: "hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50/50 dark:hover:bg-emerald-900/20 hover:border-emerald-200 dark:hover:border-emerald-700/60",
+    icon: "group-hover:text-emerald-500 dark:group-hover:text-emerald-400",
+  },
+  security: {
+    btn: "hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50/50 dark:hover:bg-amber-900/20 hover:border-amber-200 dark:hover:border-amber-700/60",
+    icon: "group-hover:text-amber-500 dark:group-hover:text-amber-400",
+  },
+};
+
+const defaultFooterHover = {
+  btn: "hover:text-primary-600 dark:hover:text-primary-400 hover:bg-primary-50/50 dark:hover:bg-primary-900/20 hover:border-primary-200 dark:hover:border-primary-700/60",
+  icon: "group-hover:text-primary-500 dark:group-hover:text-primary-400",
+};
+
+export function Layout({
+  children,
+  onHome,
+  showBack,
+  onPrivacy,
+  badgeAccent,
+  activeCategory,
+}: LayoutProps) {
   const badgeBg = badgeAccent?.bg ?? "bg-primary-50 dark:bg-primary-900/30";
   const badgeBorder = badgeAccent?.border ?? "border-primary-200 dark:border-primary-700/60";
   const badgeText = badgeAccent?.text ?? "text-primary-700 dark:text-primary-300";
+  const fh = (activeCategory && footerHover[activeCategory]) || defaultFooterHover;
   return (
     <div className="min-h-screen bg-linear-to-br from-slate-50 via-white to-primary-50/40 dark:from-dark-bg dark:via-dark-bg dark:to-dark-surface/60 flex flex-col">
       <header className="bg-white/85 dark:bg-dark-surface/85 backdrop-blur-md border-b border-slate-200/80 dark:border-dark-border sticky top-0 z-50 shadow-sm shadow-slate-100/50 dark:shadow-black/20">
@@ -109,10 +143,10 @@ export function Layout({ children, onHome, showBack, onPrivacy, badgeAccent }: L
           <button
             type="button"
             onClick={onPrivacy}
-            className="group flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-slate-200/80 dark:border-dark-border text-[11px] font-medium text-slate-400 dark:text-dark-text-muted hover:text-primary-600 dark:hover:text-primary-400 hover:border-primary-200 dark:hover:border-primary-700/60 hover:bg-primary-50/50 dark:hover:bg-primary-900/20 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400/50"
+            className={`group flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-slate-200/80 dark:border-dark-border text-[11px] font-medium text-slate-400 dark:text-dark-text-muted transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400/50 ${fh.btn}`}
           >
             <ShieldCheck
-              className="w-3.5 h-3.5 shrink-0 text-slate-300 dark:text-dark-border group-hover:text-primary-500 dark:group-hover:text-primary-400 transition-colors duration-200"
+              className={`w-3.5 h-3.5 shrink-0 text-slate-300 dark:text-dark-border transition-colors duration-200 ${fh.icon}`}
               aria-hidden="true"
             />
             Privacy Policy
