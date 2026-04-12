@@ -69,11 +69,6 @@ function diffCanvases(
   const diffCtx = diffCanvas.getContext("2d");
   if (!diffCtx) throw new Error("Failed to acquire 2D context for diff canvas");
 
-  // Draw a dimmed version of A as the base
-  diffCtx.globalAlpha = 0.3;
-  diffCtx.drawImage(canvasA, 0, 0);
-  diffCtx.globalAlpha = 1;
-
   // Get pixel data from both canvases (resized to common dimensions)
   const tmpA = document.createElement("canvas");
   tmpA.width = w;
@@ -236,7 +231,7 @@ export default function ComparePdf() {
         pdfjsLib.getDocument({ data: bufB }).promise,
       ]);
 
-      const results = await comparePdfs(pdfA, pdfB, 0.5, (done, total) =>
+      const results = await comparePdfs(pdfA, pdfB, 1.5, (done, total) =>
         setProgress({ done, total }),
       );
 
