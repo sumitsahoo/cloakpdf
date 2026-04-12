@@ -5,14 +5,14 @@
  * All processing is client-side, so the policy is intentionally brief.
  */
 
-import { Lock } from "lucide-react";
+import { ShieldCheck } from "lucide-react";
 
 export function PrivacyPolicy() {
   return (
     <div className="max-w-2xl mx-auto">
       <div className="flex items-center gap-4 mb-8">
         <div className="w-12 h-12 bg-primary-50 dark:bg-primary-900/30 rounded-xl flex items-center justify-center shrink-0">
-          <Lock className="w-6 h-6 text-primary-600 dark:text-primary-400" />
+          <ShieldCheck className="w-6 h-6 text-primary-600 dark:text-primary-400" />
         </div>
         <div>
           <h1 className="text-2xl font-bold text-slate-800 dark:text-dark-text">Privacy Policy</h1>
