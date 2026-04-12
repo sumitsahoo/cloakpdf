@@ -152,4 +152,5 @@ export type ToolId =
   | "bates-numbering"
   | "contact-sheet"
   | "grayscale"
-  | "file-attachment";
+  | "file-attachment"
+  | "split-pdf";

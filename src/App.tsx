@@ -61,6 +61,7 @@ import {
   RotateCw,
   Scale,
   ScanText,
+  Scissors,
   Search,
   Shield,
   Stamp,
@@ -109,17 +110,26 @@ const BatesNumbering = lazy(() => import("./tools/BatesNumbering.tsx"));
 const ContactSheet = lazy(() => import("./tools/ContactSheet.tsx"));
 const GrayscalePdf = lazy(() => import("./tools/GrayscalePdf.tsx"));
 const FileAttachment = lazy(() => import("./tools/FileAttachment.tsx"));
+const SplitPdf = lazy(() => import("./tools/SplitPdf.tsx"));
 
 // ── Tool metadata displayed on the home screen grid ──────────────
 // Tools within each category are ordered by importance / frequency of use.
 
 const tools: Tool[] = [
   // ── Organise & Edit ──────────────────────────────────────
+  // Combine / Split / Extract are the most common operations
   {
     id: "merge",
     title: "Merge PDFs",
     description: "Combine multiple PDF files into one document",
     icon: GitMerge,
+    category: "organise",
+  },
+  {
+    id: "split-pdf",
+    title: "Split PDF",
+    description: "Divide a PDF into multiple separate files at chosen pages",
+    icon: Scissors,
     category: "organise",
   },
   {
@@ -129,6 +139,7 @@ const tools: Tool[] = [
     icon: FileOutput,
     category: "organise",
   },
+  // Page-level manipulation
   {
     id: "reorder",
     title: "Reorder Pages",
@@ -151,6 +162,14 @@ const tools: Tool[] = [
     category: "organise",
   },
   {
+    id: "reverse-pages",
+    title: "Reverse Pages",
+    description: "Flip the page order of a PDF in one click",
+    icon: Repeat2,
+    category: "organise",
+  },
+  // Add / duplicate pages
+  {
     id: "add-blank-page",
     title: "Add Blank Page",
     description: "Insert a blank page at any position in the document",
@@ -165,24 +184,18 @@ const tools: Tool[] = [
     category: "organise",
   },
   {
-    id: "reverse-pages",
-    title: "Reverse Pages",
-    description: "Flip the page order of a PDF in one click",
-    icon: Repeat2,
+    id: "remove-blank-pages",
+    title: "Remove Blank Pages",
+    description: "Auto-detect and remove empty pages from a PDF",
+    icon: FileX,
     category: "organise",
   },
+  // Navigation & attachments
   {
     id: "add-bookmarks",
     title: "Add Bookmarks",
     description: "Add a clickable outline for quick in-document navigation",
     icon: BookMarked,
-    category: "organise",
-  },
-  {
-    id: "remove-blank-pages",
-    title: "Remove Blank Pages",
-    description: "Auto-detect and remove empty pages from a PDF",
-    icon: FileX,
     category: "organise",
   },
   {
@@ -194,6 +207,7 @@ const tools: Tool[] = [
   },
 
   // ── Transform & Convert ──────────────────────────────────
+  // Compression is the most common transform
   {
     id: "compress",
     title: "Compress PDF",
@@ -201,6 +215,7 @@ const tools: Tool[] = [
     icon: Archive,
     category: "transform",
   },
+  // Format conversions grouped together
   {
     id: "pdf-to-image",
     title: "PDF to Image",
@@ -222,6 +237,7 @@ const tools: Tool[] = [
     icon: ScanText,
     category: "transform",
   },
+  // Page-level transforms
   {
     id: "crop-pages",
     title: "Crop Pages",
@@ -236,6 +252,14 @@ const tools: Tool[] = [
     icon: Layers,
     category: "transform",
   },
+  {
+    id: "grayscale",
+    title: "Grayscale PDF",
+    description: "Convert all pages to grayscale, removing all colour information",
+    icon: Contrast,
+    category: "transform",
+  },
+  // Layout & printing
   {
     id: "nup-pages",
     title: "N-up Pages",
@@ -255,13 +279,6 @@ const tools: Tool[] = [
     title: "Repair PDF",
     description: "Fix structural issues in corrupted or malformed PDFs",
     icon: Wrench,
-    category: "transform",
-  },
-  {
-    id: "grayscale",
-    title: "Grayscale PDF",
-    description: "Convert all pages to grayscale, removing all colour information",
-    icon: Contrast,
     category: "transform",
   },
 
@@ -287,6 +304,7 @@ const tools: Tool[] = [
     icon: Stamp,
     category: "annotate",
   },
+  // Numbering & headers grouped together
   {
     id: "add-page-numbers",
     title: "Add Page Numbers",
@@ -295,17 +313,17 @@ const tools: Tool[] = [
     category: "annotate",
   },
   {
-    id: "bates-numbering",
-    title: "Bates Numbering",
-    description: "Stamp sequential identifiers for legal and compliance workflows",
-    icon: Scale,
-    category: "annotate",
-  },
-  {
     id: "header-footer",
     title: "Header & Footer",
     description: "Add repeating text at the top and/or bottom of every page",
     icon: AlignCenter,
+    category: "annotate",
+  },
+  {
+    id: "bates-numbering",
+    title: "Bates Numbering",
+    description: "Stamp sequential identifiers for legal and compliance workflows",
+    icon: Scale,
     category: "annotate",
   },
 
@@ -411,6 +429,7 @@ const toolComponents: Record<string, React.LazyExoticComponent<React.ComponentTy
   "contact-sheet": ContactSheet,
   grayscale: GrayscalePdf,
   "file-attachment": FileAttachment,
+  "split-pdf": SplitPdf,
 };
 
 // ── Platform detection (module-level, computed once) ──────────────
