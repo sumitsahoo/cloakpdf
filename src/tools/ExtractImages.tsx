@@ -30,6 +30,87 @@ interface ExtractedImage {
   blob: Blob;
 }
 
+/** Shape returned by PDF.js for resolved image objects. */
+interface PdfjsImageData {
+  width: number;
+  height: number;
+  data?: Uint8ClampedArray;
+  kind?: number;
+  src?: string;
+  bitmap?: ImageBitmap;
+}
+
+/** Fetch a named image object, routing to commonObjs for global ("g_"-prefixed) IDs. */
+function fetchNamedImage(
+  page: Awaited<ReturnType<PDFDocumentProxy["getPage"]>>,
+  objName: string,
+): Promise<PdfjsImageData> {
+  return new Promise<PdfjsImageData>((resolve, reject) => {
+    try {
+      const store = objName.startsWith("g_") ? page.commonObjs : page.objs;
+      store.get(objName, (obj: unknown) => {
+        if (obj) resolve(obj as PdfjsImageData);
+        else reject(new Error("null object"));
+      });
+    } catch {
+      reject(new Error("object not found"));
+    }
+  });
+}
+
+/** Paint image data onto a canvas, handling ImageBitmap, raw pixels (RGBA/RGB), and src URLs. */
+async function paintImageToCanvas(
+  imgData: PdfjsImageData,
+  ctx: CanvasRenderingContext2D,
+): Promise<boolean> {
+  if (imgData.bitmap) {
+    ctx.drawImage(imgData.bitmap, 0, 0);
+    return true;
+  }
+
+  if (imgData.data) {
+    const expectedRgba = imgData.width * imgData.height * 4;
+    if (imgData.data.length === expectedRgba) {
+      ctx.putImageData(
+        new ImageData(new Uint8ClampedArray(imgData.data), imgData.width, imgData.height),
+        0,
+        0,
+      );
+      return true;
+    }
+    // RGB (3 bytes per pixel) — expand to RGBA
+    const expectedRgb = imgData.width * imgData.height * 3;
+    if (imgData.data.length === expectedRgb) {
+      const rgba = new Uint8ClampedArray(expectedRgba);
+      const src = imgData.data;
+      for (let j = 0, k = 0; j < src.length; j += 3, k += 4) {
+        rgba[k] = src[j];
+        rgba[k + 1] = src[j + 1];
+        rgba[k + 2] = src[j + 2];
+        rgba[k + 3] = 255;
+      }
+      ctx.putImageData(new ImageData(rgba, imgData.width, imgData.height), 0, 0);
+      return true;
+    }
+    return false;
+  }
+
+  if (imgData.src) {
+    await new Promise<void>((resolve, reject) => {
+      const img = new window.Image();
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0);
+        resolve();
+      };
+      img.onerror = reject;
+      img.src = imgData.src as string;
+    });
+    return true;
+  }
+
+  return false;
+}
+
 /**
  * Extract all raster images embedded in a PDF document.
  *
@@ -47,7 +128,7 @@ async function extractImagesFromPdf(
     const page = await pdf.getPage(p);
     const ops = await page.getOperatorList();
 
-    // Track which object names we've already extracted on this page to
+    // Track which named objects we've already extracted on this page to
     // avoid duplicates when the same XObject is painted more than once.
     const seen = new Set<string>();
     let indexOnPage = 0;
@@ -55,71 +136,38 @@ async function extractImagesFromPdf(
     for (let i = 0; i < ops.fnArray.length; i++) {
       const fn = ops.fnArray[i];
 
-      // OPS.paintImageXObject and OPS.paintInlineImageXObject
-      if (fn !== pdfjsLib.OPS.paintImageXObject && fn !== pdfjsLib.OPS.paintInlineImageXObject)
-        continue;
+      let imgData: PdfjsImageData | null = null;
 
-      const objName = ops.argsArray[i]?.[0] as string | undefined;
-      if (!objName || seen.has(objName)) continue;
-      seen.add(objName);
+      if (fn === pdfjsLib.OPS.paintImageXObject || fn === pdfjsLib.OPS.paintImageXObjectRepeat) {
+        // Named image reference — look up in the correct object store.
+        const objName = ops.argsArray[i]?.[0] as string | undefined;
+        if (!objName || typeof objName !== "string" || seen.has(objName)) continue;
+        seen.add(objName);
+        try {
+          imgData = await fetchNamedImage(page, objName);
+        } catch {
+          continue;
+        }
+      } else if (fn === pdfjsLib.OPS.paintInlineImageXObject) {
+        // Inline image — the image data is embedded directly in the args.
+        const arg = ops.argsArray[i]?.[0];
+        if (!arg || typeof arg !== "object") continue;
+        imgData = arg as PdfjsImageData;
+      } else {
+        continue;
+      }
+
+      // Skip tiny images (likely artifacts or masks)
+      if (!imgData || imgData.width < 10 || imgData.height < 10) continue;
 
       try {
-        const imgData = await new Promise<{
-          width: number;
-          height: number;
-          data?: Uint8ClampedArray;
-          kind?: number;
-          src?: string;
-        }>((resolve, reject) => {
-          // PDF.js stores common objects (shared across pages) separately.
-          // Try page-level objects first, then fall back to the common pool.
-          try {
-            page.objs.get(objName, (obj: unknown) => {
-              if (obj)
-                resolve(
-                  obj as {
-                    width: number;
-                    height: number;
-                    data?: Uint8ClampedArray;
-                    kind?: number;
-                    src?: string;
-                  },
-                );
-              else reject(new Error("null object"));
-            });
-          } catch {
-            reject(new Error("object not found"));
-          }
-        });
-
-        // Skip tiny images (likely artifacts or masks)
-        if (imgData.width < 10 || imgData.height < 10) continue;
-
         const canvas = document.createElement("canvas");
         canvas.width = imgData.width;
         canvas.height = imgData.height;
         const ctx = canvas.getContext("2d")!;
 
-        if (imgData.data) {
-          // Raw pixel data — write directly via ImageData
-          const imageData = new ImageData(
-            new Uint8ClampedArray(imgData.data),
-            imgData.width,
-            imgData.height,
-          );
-          ctx.putImageData(imageData, 0, 0);
-        } else if (imgData.src) {
-          // JPEG image with a blob/data URL — draw via Image element
-          await new Promise<void>((resolve, reject) => {
-            const img = new window.Image();
-            img.onload = () => {
-              ctx.drawImage(img, 0, 0);
-              resolve();
-            };
-            img.onerror = reject;
-            img.src = imgData.src as string;
-          });
-        } else {
+        const painted = await paintImageToCanvas(imgData, ctx);
+        if (!painted) {
           canvas.width = 0;
           canvas.height = 0;
           continue;
