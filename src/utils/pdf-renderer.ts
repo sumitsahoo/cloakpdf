@@ -15,6 +15,9 @@ import workerSrc from "pdfjs-dist/build/pdf.worker.min.mjs?worker&url";
 // base path, even when deployed under a subpath like /cloakpdf/.
 pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
 
+/** Re-export the configured PDF.js library so other modules don't need to set up the worker. */
+export { pdfjsLib };
+
 /**
  * Render a single PDF page (1-based) onto a canvas at the given scale.
  * Returns both the canvas and its 2D context so callers can do pixel-level

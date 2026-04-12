@@ -10,9 +10,9 @@ import { useState, useCallback } from "react";
 import { ImageDown, Loader2 } from "lucide-react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
-import { downloadBlob, formatFileSize } from "../utils/file-helpers.ts";
-import * as pdfjsLib from "pdfjs-dist";
 import type { PDFDocumentProxy } from "pdfjs-dist";
+import { downloadBlob, formatFileSize } from "../utils/file-helpers.ts";
+import { pdfjsLib } from "../utils/pdf-renderer.ts";
 
 /** Metadata for a single extracted image. */
 interface ExtractedImage {

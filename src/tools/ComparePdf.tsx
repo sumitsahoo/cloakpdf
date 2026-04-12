@@ -9,11 +9,11 @@
 
 import { ArrowLeftRight, ChevronLeft, ChevronRight, Eye, EyeOff, Layers } from "lucide-react";
 import type { PDFDocumentProxy } from "pdfjs-dist";
-import * as pdfjsLib from "pdfjs-dist";
 import { useCallback, useMemo, useState } from "react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { formatFileSize } from "../utils/file-helpers.ts";
+import { pdfjsLib } from "../utils/pdf-renderer.ts";
 
 /** Rendered data for a single page pair. */
 interface PageComparison {
@@ -274,15 +274,15 @@ export default function ComparePdf() {
 
   const current = comparisons[currentPage] as PageComparison | undefined;
 
-  // ── No files loaded yet ──────────────────────────────────────
-  if (!fileA || !fileB || (comparisons.length === 0 && !loading)) {
+  // ── Upload screen (no files, or files loaded but not yet compared / still comparing) ──
+  if (!fileA || !fileB || comparisons.length === 0 || loading) {
     return (
       <div className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* File A */}
           <div className="space-y-2">
             <p className="text-sm font-medium text-slate-700 dark:text-dark-text flex items-center gap-2">
-              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300 text-xs font-bold">
+              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 text-xs font-bold">
                 A
               </span>
               Original PDF
@@ -305,8 +305,8 @@ export default function ComparePdf() {
               </div>
             ) : (
               <FileDropZone
-                glowColor={categoryGlow.transform}
-                iconColor={categoryAccent.transform}
+                glowColor={categoryGlow.security}
+                iconColor={categoryAccent.security}
                 accept=".pdf,application/pdf"
                 onFiles={handleFileA}
                 label="Drop the original PDF"
@@ -318,7 +318,7 @@ export default function ComparePdf() {
           {/* File B */}
           <div className="space-y-2">
             <p className="text-sm font-medium text-slate-700 dark:text-dark-text flex items-center gap-2">
-              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300 text-xs font-bold">
+              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 text-xs font-bold">
                 B
               </span>
               Modified PDF
@@ -341,8 +341,8 @@ export default function ComparePdf() {
               </div>
             ) : (
               <FileDropZone
-                glowColor={categoryGlow.transform}
-                iconColor={categoryAccent.transform}
+                glowColor={categoryGlow.security}
+                iconColor={categoryAccent.security}
                 accept=".pdf,application/pdf"
                 onFiles={handleFileB}
                 label="Drop the modified PDF"
@@ -353,26 +353,34 @@ export default function ComparePdf() {
         </div>
 
         {fileA && fileB && (
-          <button
-            type="button"
-            onClick={handleCompare}
-            disabled={loading}
-            className="w-full bg-violet-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
-          >
-            <ArrowLeftRight className="w-4 h-4" />
-            Compare PDFs
-          </button>
-        )}
+          <>
+            <button
+              type="button"
+              onClick={handleCompare}
+              disabled={loading}
+              className="w-full bg-amber-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+            >
+              <ArrowLeftRight className="w-4 h-4" />
+              {loading ? "Comparing…" : "Compare PDFs"}
+            </button>
 
-        {loading && (
-          <div className="flex flex-col items-center justify-center py-12 gap-3">
-            <div className="w-8 h-8 border-3 border-violet-200 border-t-violet-600 rounded-full animate-spin" />
-            {progress && (
-              <p className="text-sm text-slate-500 dark:text-dark-text-muted">
-                Comparing page {progress.done} of {progress.total}…
-              </p>
+            {loading && progress && (
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm text-slate-600 dark:text-dark-text-muted">
+                  <span>Comparing pages…</span>
+                  <span>
+                    {progress.done} / {progress.total}
+                  </span>
+                </div>
+                <div className="w-full bg-slate-200 dark:bg-dark-border rounded-full h-2">
+                  <div
+                    className="bg-amber-600 h-2 rounded-full transition-all"
+                    style={{ width: `${(progress.done / progress.total) * 100}%` }}
+                  />
+                </div>
+              </div>
             )}
-          </div>
+          </>
         )}
 
         {error && (
@@ -428,7 +436,7 @@ export default function ComparePdf() {
             onClick={() => setViewMode("side-by-side")}
             className={`flex items-center gap-1.5 rounded-lg py-1.5 px-3 text-sm transition-all duration-150 ${
               viewMode === "side-by-side"
-                ? "font-semibold text-white bg-violet-600 shadow-sm"
+                ? "font-semibold text-white bg-amber-600 shadow-sm"
                 : "font-medium text-slate-500 dark:text-dark-text-muted hover:text-slate-700 dark:hover:text-dark-text hover:bg-white/60 dark:hover:bg-dark-surface-alt"
             }`}
           >
@@ -440,7 +448,7 @@ export default function ComparePdf() {
             onClick={() => setViewMode("diff-overlay")}
             className={`flex items-center gap-1.5 rounded-lg py-1.5 px-3 text-sm transition-all duration-150 ${
               viewMode === "diff-overlay"
-                ? "font-semibold text-white bg-violet-600 shadow-sm"
+                ? "font-semibold text-white bg-amber-600 shadow-sm"
                 : "font-medium text-slate-500 dark:text-dark-text-muted hover:text-slate-700 dark:hover:text-dark-text hover:bg-white/60 dark:hover:bg-dark-surface-alt"
             }`}
           >
@@ -504,7 +512,7 @@ export default function ComparePdf() {
               {/* File A */}
               <div className="space-y-1.5">
                 <p className="text-xs font-medium text-slate-500 dark:text-dark-text-muted flex items-center gap-1.5">
-                  <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300 text-[10px] font-bold">
+                  <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 text-[10px] font-bold">
                     A
                   </span>
                   Original
@@ -527,7 +535,7 @@ export default function ComparePdf() {
               {/* File B */}
               <div className="space-y-1.5">
                 <p className="text-xs font-medium text-slate-500 dark:text-dark-text-muted flex items-center gap-1.5">
-                  <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300 text-[10px] font-bold">
+                  <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 text-[10px] font-bold">
                     B
                   </span>
                   Modified
@@ -604,8 +612,8 @@ export default function ComparePdf() {
               onClick={() => setCurrentPage(comp.page - 1)}
               className={`relative shrink-0 w-14 rounded-md overflow-hidden border-2 transition-[border-color,box-shadow] ${
                 comp.page - 1 === currentPage
-                  ? "border-violet-500 ring-2 ring-violet-200 dark:ring-violet-800"
-                  : "border-slate-200 dark:border-dark-border hover:border-violet-300"
+                  ? "border-amber-500 ring-2 ring-amber-200 dark:ring-amber-800"
+                  : "border-slate-200 dark:border-dark-border hover:border-amber-300"
               }`}
               aria-label={`Page ${comp.page}`}
             >
