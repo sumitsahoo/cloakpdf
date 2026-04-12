@@ -34,6 +34,9 @@ importers:
       tesseract.js:
         specifier: ^7.0.0
         version: 7.0.0
+      workbox-window:
+        specifier: ^7.4.0
+        version: 7.4.0
     devDependencies:
       '@tailwindcss/vite':
         specifier: ^4.2.2

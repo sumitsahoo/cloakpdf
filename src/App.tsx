@@ -72,6 +72,7 @@ import {
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Layout } from "./components/Layout.tsx";
 import { PrivacyPolicy } from "./components/PrivacyPolicy.tsx";
+import { ReloadPrompt } from "./components/ReloadPrompt.tsx";
 import { ToolCard } from "./components/ToolCard.tsx";
 import type { Tool, ToolId } from "./types.ts";
 
@@ -746,19 +747,22 @@ export function App() {
   }, [activeMeta]);
 
   return (
-    <Layout
-      onHome={goHome}
-      showBack={!!activeTool || showPrivacy}
-      onPrivacy={handlePrivacy}
-      badgeAccent={badgeAccent}
-    >
-      {activeTool && ToolComponent && activeMeta ? (
-        <ToolView tool={activeMeta} Component={ToolComponent} />
-      ) : showPrivacy ? (
-        <PrivacyPolicy />
-      ) : (
-        <HomeScreen onSelectTool={handleSelectTool} />
-      )}
-    </Layout>
+    <>
+      <Layout
+        onHome={goHome}
+        showBack={!!activeTool || showPrivacy}
+        onPrivacy={handlePrivacy}
+        badgeAccent={badgeAccent}
+      >
+        {activeTool && ToolComponent && activeMeta ? (
+          <ToolView tool={activeMeta} Component={ToolComponent} />
+        ) : showPrivacy ? (
+          <PrivacyPolicy />
+        ) : (
+          <HomeScreen onSelectTool={handleSelectTool} />
+        )}
+      </Layout>
+      <ReloadPrompt />
+    </>
   );
 }
