@@ -19,7 +19,6 @@ import {
   Eye,
   EyeOff,
   FileKey2,
-  Filter,
   Globe,
   Hash,
   KeyRound,
@@ -29,7 +28,6 @@ import {
   MessageSquareText,
   ShieldCheck,
   ShieldQuestion,
-  Tag,
   Upload,
   User,
 } from "lucide-react";
@@ -50,6 +48,29 @@ import {
 import type forge from "node-forge";
 
 type CertSource = "upload" | "generate";
+
+/** Map raw PDF signature filter/subFilter to a user-friendly label. */
+function formatSignatureStandard(filter: string, subFilter: string): string {
+  const subFilterMap: Record<string, string> = {
+    "adbe.pkcs7.detached": "PKCS#7 Detached Signature",
+    "adbe.pkcs7.sha1": "PKCS#7 SHA-1 Signature",
+    "adbe.x509.rsa_sha1": "X.509 RSA SHA-1",
+    "ETSI.CAdES.detached": "CAdES Advanced Signature",
+    "ETSI.RFC3161": "RFC 3161 Timestamp",
+  };
+
+  const filterMap: Record<string, string> = {
+    "Adobe.PPKLite": "Adobe Standard",
+    "Adobe.PPKMS": "Adobe Windows Crypto",
+    "Entrust.PPKEF": "Entrust",
+  };
+
+  const friendlyType = subFilterMap[subFilter] ?? subFilter;
+  const friendlyProvider = filterMap[filter] ?? filter;
+
+  if (friendlyType && friendlyProvider) return `${friendlyType} (${friendlyProvider})`;
+  return friendlyType || friendlyProvider || "Unknown";
+}
 
 /**
  * Digital Signature tool component.
@@ -328,18 +349,13 @@ export default function DigitalSignature() {
                         </span>
                       </div>
                     )}
-                    {sig.filter && (
+                    {(sig.filter || sig.subFilter) && (
                       <div className="flex items-center gap-1.5">
-                        <Filter className="w-3.5 h-3.5 text-amber-400 dark:text-amber-500 shrink-0" />
-                        <span className="text-slate-500 dark:text-dark-text-muted">Filter:</span>
-                        <span className="text-slate-700 dark:text-dark-text">{sig.filter}</span>
-                      </div>
-                    )}
-                    {sig.subFilter && (
-                      <div className="flex items-center gap-1.5">
-                        <Tag className="w-3.5 h-3.5 text-amber-400 dark:text-amber-500 shrink-0" />
-                        <span className="text-slate-500 dark:text-dark-text-muted">Type:</span>
-                        <span className="text-slate-700 dark:text-dark-text">{sig.subFilter}</span>
+                        <ShieldCheck className="w-3.5 h-3.5 text-amber-400 dark:text-amber-500 shrink-0" />
+                        <span className="text-slate-500 dark:text-dark-text-muted">Standard:</span>
+                        <span className="text-slate-700 dark:text-dark-text">
+                          {formatSignatureStandard(sig.filter, sig.subFilter)}
+                        </span>
                       </div>
                     )}
                   </div>
