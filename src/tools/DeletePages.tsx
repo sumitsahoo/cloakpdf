@@ -18,7 +18,7 @@ import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { PageThumbnail } from "../components/PageThumbnail.tsx";
 import { downloadPdf } from "../utils/file-helpers.ts";
 import { deletePages } from "../utils/pdf-operations.ts";
-import { renderAllThumbnails } from "../utils/pdf-renderer.ts";
+import { renderAllThumbnails, revokeThumbnails } from "../utils/pdf-renderer.ts";
 
 export default function DeletePages() {
   const [file, setFile] = useState<File | null>(null);
@@ -98,6 +98,7 @@ export default function DeletePages() {
             fileName={file.name}
             details={`${thumbnails.length} pages`}
             onChangeFile={() => {
+              revokeThumbnails(thumbnails);
               setFile(null);
               setThumbnails([]);
               setSelectedPages(new Set());

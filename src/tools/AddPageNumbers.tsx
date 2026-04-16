@@ -21,7 +21,7 @@ import { usePreviewScale } from "../hooks/usePreviewScale.ts";
 import type { PageNumberFormat, PageNumberOptions, PageNumberPosition } from "../types.ts";
 import { downloadPdf } from "../utils/file-helpers.ts";
 import { addPageNumbers } from "../utils/pdf-operations.ts";
-import { renderAllThumbnails } from "../utils/pdf-renderer.ts";
+import { renderAllThumbnails, revokeThumbnails } from "../utils/pdf-renderer.ts";
 
 const POSITIONS: { value: PageNumberPosition; label: string; title: string }[] = [
   { value: "top-left", label: "↖", title: "Top left" },
@@ -189,6 +189,7 @@ export default function AddPageNumbers() {
             fileName={file.name}
             details={loading ? "loading…" : `${pageCount} pages`}
             onChangeFile={() => {
+              revokeThumbnails(thumbnails);
               setFile(null);
               setThumbnails([]);
               setPageDims([]);

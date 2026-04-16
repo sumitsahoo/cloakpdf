@@ -23,7 +23,7 @@ import { PageThumbnail } from "../components/PageThumbnail.tsx";
 import type { WatermarkOptions } from "../types.ts";
 import { downloadPdf } from "../utils/file-helpers.ts";
 import { addRectangleStamp, addSealStamp, addWatermark } from "../utils/pdf-operations.ts";
-import { renderAllThumbnails } from "../utils/pdf-renderer.ts";
+import { renderAllThumbnails, revokeThumbnails } from "../utils/pdf-renderer.ts";
 
 type StampStyle = "text" | "seal" | "rectangle" | "watermark";
 
@@ -336,6 +336,7 @@ export default function StampPdf() {
             fileName={file.name}
             details={`${thumbnails.length} pages`}
             onChangeFile={() => {
+              revokeThumbnails(thumbnails);
               setFile(null);
               setThumbnails([]);
               setPageDims([]);

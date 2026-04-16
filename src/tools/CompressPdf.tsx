@@ -26,6 +26,7 @@ export default function CompressPdf() {
     compressed: number;
     data: Uint8Array;
   } | null>(null);
+  const [progress, setProgress] = useState<{ current: number; total: number } | null>(null);
 
   const handleFile = useCallback((files: File[]) => {
     const pdf = files[0];
@@ -40,7 +41,9 @@ export default function CompressPdf() {
     setProcessing(true);
     setError(null);
     try {
-      const data = await compressPdf(file, quality);
+      const data = await compressPdf(file, quality, (current, total) =>
+        setProgress({ current, total }),
+      );
       setResult({
         original: file.size,
         compressed: data.length,
@@ -50,6 +53,7 @@ export default function CompressPdf() {
       setError(e instanceof Error ? e.message : "Failed to compress PDF. Please try again.");
     } finally {
       setProcessing(false);
+      setProgress(null);
     }
   }, [file, quality]);
 
@@ -166,6 +170,23 @@ export default function CompressPdf() {
                   ))}
                 </div>
               </div>
+
+              {processing && progress && (
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm text-slate-600 dark:text-dark-text-muted">
+                    <span>Processing pages…</span>
+                    <span>
+                      {progress.current} / {progress.total}
+                    </span>
+                  </div>
+                  <div className="w-full bg-slate-200 dark:bg-dark-border rounded-full h-2">
+                    <div
+                      className="bg-violet-600 h-2 rounded-full transition-all"
+                      style={{ width: `${(progress.current / progress.total) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              )}
 
               <ActionButton
                 onClick={handleCompress}

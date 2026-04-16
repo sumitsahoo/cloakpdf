@@ -18,7 +18,7 @@ import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
 import { useSortableDrag } from "../hooks/useSortableDrag.ts";
 import { duplicatePages } from "../utils/pdf-operations.ts";
-import { renderAllThumbnails } from "../utils/pdf-renderer.ts";
+import { renderAllThumbnails, revokeThumbnails } from "../utils/pdf-renderer.ts";
 
 type CopyItem = { type: "copy"; sourceIndex: number; id: string };
 type OriginalItem = { type: "original"; index: number };
@@ -131,6 +131,7 @@ export default function DuplicatePage() {
             fileName={file.name}
             details={formatFileSize(file.size)}
             onChangeFile={() => {
+              revokeThumbnails(thumbnails);
               setFile(null);
               setThumbnails([]);
               setItems([]);

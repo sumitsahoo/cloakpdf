@@ -18,7 +18,7 @@ import { ResetButton } from "../components/ResetButton.tsx";
 import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { reorderPages } from "../utils/pdf-operations.ts";
-import { renderAllThumbnails } from "../utils/pdf-renderer.ts";
+import { renderAllThumbnails, revokeThumbnails } from "../utils/pdf-renderer.ts";
 import { downloadPdf } from "../utils/file-helpers.ts";
 import { useSortableDrag } from "../hooks/useSortableDrag.ts";
 
@@ -107,6 +107,7 @@ export default function ReorderPages() {
             fileName={file.name}
             details={`${thumbnails.length} pages`}
             onChangeFile={() => {
+              revokeThumbnails(thumbnails);
               setFile(null);
               setThumbnails([]);
               setOrder([]);

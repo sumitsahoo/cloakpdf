@@ -2,8 +2,12 @@
  * PDF page rendering utilities powered by PDF.js.
  *
  * Renders individual or all pages of a PDF to off-screen canvases and
- * returns the result as PNG data-URL strings — used for page thumbnails
+ * returns the result as Blob object URLs — used for page thumbnails
  * across the Split, Rotate, Delete, Reorder, Watermark, and Signature tools.
+ *
+ * Callers must revoke the returned URLs when they are no longer needed
+ * (e.g. when the component unmounts or a new file is loaded) using
+ * {@link revokeThumbnails}.
  */
 
 import type { PDFDocumentProxy } from "pdfjs-dist";
@@ -17,6 +21,26 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
 
 /** Re-export the configured PDF.js library so other modules don't need to set up the worker. */
 export { pdfjsLib };
+
+/** Convert a canvas to a Blob object URL (PNG). ~33% smaller than data-URLs. */
+function canvasToBlobUrl(canvas: HTMLCanvasElement): Promise<string> {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) resolve(URL.createObjectURL(blob));
+      else reject(new Error("Canvas toBlob returned null"));
+    }, "image/png");
+  });
+}
+
+/**
+ * Revoke an array of Blob object URLs to free browser memory.
+ * Safe to call with data-URLs or empty strings — they are silently skipped.
+ */
+export function revokeThumbnails(urls: string[]): void {
+  for (const url of urls) {
+    if (url.startsWith("blob:")) URL.revokeObjectURL(url);
+  }
+}
 
 /**
  * Render a single PDF page (1-based) onto a canvas at the given scale.
@@ -62,12 +86,12 @@ export async function getPageCount(file: File): Promise<number> {
 }
 
 /**
- * Render a single PDF page to a PNG data-URL thumbnail.
+ * Render a single PDF page to a PNG Blob object URL thumbnail.
  *
  * @param data - Raw PDF bytes as an ArrayBuffer.
  * @param pageNum - 1-based page number to render.
  * @param scale - Render scale factor (default 0.5). Higher = better quality but slower.
- * @returns A `data:image/png;base64,…` string of the rendered page.
+ * @returns A `blob:…` URL of the rendered page. Caller must revoke when done.
  */
 export async function renderPageThumbnail(
   data: ArrayBuffer,
@@ -76,11 +100,11 @@ export async function renderPageThumbnail(
 ): Promise<string> {
   const pdf = await pdfjsLib.getDocument({ data }).promise;
   const { canvas } = await renderPage(pdf, pageNum, scale);
-  const dataUrl = canvas.toDataURL("image/png");
+  const url = await canvasToBlobUrl(canvas);
   canvas.width = 0;
   canvas.height = 0;
   void pdf.destroy();
-  return dataUrl;
+  return url;
 }
 
 /**
@@ -92,7 +116,7 @@ export async function renderPageThumbnail(
  * @param file - The PDF file to render from.
  * @param pageNums - 1-based page numbers to render, in any order.
  * @param scale - Render scale factor (default 0.4).
- * @returns PNG data-URLs in the same order as `pageNums`.
+ * @returns Blob object URLs in the same order as `pageNums`. Caller must revoke when done.
  */
 export async function renderSpecificThumbnails(
   file: File,
@@ -105,7 +129,7 @@ export async function renderSpecificThumbnails(
 
   for (const pageNum of pageNums) {
     const { canvas } = await renderPage(pdf, pageNum, scale);
-    results.push(canvas.toDataURL("image/png"));
+    results.push(await canvasToBlobUrl(canvas));
     canvas.width = 0;
     canvas.height = 0;
   }
@@ -168,14 +192,14 @@ export async function renderPagesToBlobs(
 }
 
 /**
- * Render every page of a PDF file into an array of PNG data-URL thumbnails.
+ * Render every page of a PDF file into an array of PNG Blob object URL thumbnails.
  *
  * Pages are rendered sequentially to avoid excessive memory usage.
  * The PDF document is destroyed after all pages are processed.
  *
  * @param file - The PDF file whose pages should be rendered.
  * @param scale - Render scale factor (default 0.4 for lighter thumbnails).
- * @returns An ordered array of `data:image/png;base64,…` strings, one per page.
+ * @returns An ordered array of `blob:…` URLs, one per page. Caller must revoke when done.
  */
 export async function renderAllThumbnails(file: File, scale = 0.4): Promise<string[]> {
   const arrayBuffer = await file.arrayBuffer();
@@ -184,7 +208,7 @@ export async function renderAllThumbnails(file: File, scale = 0.4): Promise<stri
 
   for (let i = 1; i <= pdf.numPages; i++) {
     const { canvas } = await renderPage(pdf, i, scale);
-    thumbnails.push(canvas.toDataURL("image/png"));
+    thumbnails.push(await canvasToBlobUrl(canvas));
     canvas.width = 0;
     canvas.height = 0;
   }
@@ -202,7 +226,7 @@ export async function renderAllThumbnails(file: File, scale = 0.4): Promise<stri
  *
  * @param file - The PDF file to analyse.
  * @param scale - Render scale factor (default 0.3 — small size is enough for detection).
- * @returns `{ thumbnails, scores }` where thumbnails are PNG data-URLs and scores are 0–1.
+ * @returns `{ thumbnails, scores }` where thumbnails are Blob object URLs and scores are 0–1.
  */
 export async function renderThumbnailsAndScores(
   file: File,
@@ -224,7 +248,7 @@ export async function renderThumbnailsAndScores(
       continue;
     }
 
-    thumbnails.push(canvas.toDataURL("image/png"));
+    thumbnails.push(await canvasToBlobUrl(canvas));
 
     // Count pixels where all channels are near-white (≥ 240)
     const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height);

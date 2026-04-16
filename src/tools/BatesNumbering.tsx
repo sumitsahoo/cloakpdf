@@ -20,7 +20,7 @@ import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { usePreviewScale } from "../hooks/usePreviewScale.ts";
 import { addBatesNumbers } from "../utils/pdf-operations.ts";
 import { downloadPdf } from "../utils/file-helpers.ts";
-import { renderAllThumbnails } from "../utils/pdf-renderer.ts";
+import { renderAllThumbnails, revokeThumbnails } from "../utils/pdf-renderer.ts";
 import type { BatesNumberOptions, BatesPosition } from "../types.ts";
 
 const POSITIONS: { value: BatesPosition; label: string; title: string }[] = [
@@ -166,6 +166,7 @@ export default function BatesNumbering() {
             fileName={file.name}
             details={loading ? "loading…" : `${pageCount} pages`}
             onChangeFile={() => {
+              revokeThumbnails(thumbnails);
               setFile(null);
               setThumbnails([]);
               setPageDims([]);

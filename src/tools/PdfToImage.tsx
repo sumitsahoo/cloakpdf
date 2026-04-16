@@ -18,7 +18,7 @@ import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { PageThumbnail } from "../components/PageThumbnail.tsx";
 import { renderPagesToBlobs } from "../utils/pdf-renderer.ts";
 import { downloadBlob, formatFileSize } from "../utils/file-helpers.ts";
-import { renderAllThumbnails } from "../utils/pdf-renderer.ts";
+import { renderAllThumbnails, revokeThumbnails } from "../utils/pdf-renderer.ts";
 
 export default function PdfToImage() {
   const [file, setFile] = useState<File | null>(null);
@@ -123,6 +123,7 @@ export default function PdfToImage() {
             fileName={file.name}
             details={formatFileSize(file.size)}
             onChangeFile={() => {
+              revokeThumbnails(thumbnails);
               setFile(null);
               setThumbnails([]);
               setSelectedPages(new Set());

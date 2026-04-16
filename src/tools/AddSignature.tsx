@@ -22,7 +22,7 @@ import { SignaturePad } from "../components/SignaturePad.tsx";
 import { ColorPicker, hexToRgb } from "../components/ColorPicker.tsx";
 import { PageThumbnail } from "../components/PageThumbnail.tsx";
 import { addSignature } from "../utils/pdf-operations.ts";
-import { renderAllThumbnails } from "../utils/pdf-renderer.ts";
+import { renderAllThumbnails, revokeThumbnails } from "../utils/pdf-renderer.ts";
 import { downloadPdf } from "../utils/file-helpers.ts";
 import { PenLine, Upload, Move, Maximize2, Check, CheckSquare, X } from "lucide-react";
 
@@ -335,6 +335,7 @@ export default function AddSignature() {
             fileName={file.name}
             details={`${thumbnails.length} pages`}
             onChangeFile={() => {
+              revokeThumbnails(thumbnails);
               setFile(null);
               setThumbnails([]);
               setSignatureDataUrl("");

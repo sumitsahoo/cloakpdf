@@ -15,7 +15,7 @@ import { FileInfoBar } from "../components/FileInfoBar.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
 import { grayscalePdf } from "../utils/pdf-operations.ts";
-import { renderPageThumbnail } from "../utils/pdf-renderer.ts";
+import { renderPageThumbnail, revokeThumbnails } from "../utils/pdf-renderer.ts";
 
 export default function GrayscalePdf() {
   const [file, setFile] = useState<File | null>(null);
@@ -23,6 +23,7 @@ export default function GrayscalePdf() {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<Uint8Array | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const [progress, setProgress] = useState<{ current: number; total: number } | null>(null);
 
   const handleFile = useCallback((files: File[]) => {
     const pdf = files[0];
@@ -56,12 +57,13 @@ export default function GrayscalePdf() {
     setProcessing(true);
     setError(null);
     try {
-      const data = await grayscalePdf(file);
+      const data = await grayscalePdf(file, (current, total) => setProgress({ current, total }));
       setResult(data);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to convert PDF. Please try again.");
     } finally {
       setProcessing(false);
+      setProgress(null);
     }
   }, [file]);
 
@@ -88,6 +90,7 @@ export default function GrayscalePdf() {
             fileName={file.name}
             details={formatFileSize(file.size)}
             onChangeFile={() => {
+              revokeThumbnails(preview ? [preview] : []);
               setFile(null);
               setResult(null);
             }}
@@ -119,13 +122,32 @@ export default function GrayscalePdf() {
           )}
 
           {!result ? (
-            <ActionButton
-              onClick={handleConvert}
-              processing={processing}
-              label="Convert to Grayscale"
-              processingLabel="Converting… (this may take a moment)"
-              color="bg-violet-600 hover:bg-violet-700"
-            />
+            <div className="space-y-4">
+              {processing && progress && (
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm text-slate-600 dark:text-dark-text-muted">
+                    <span>Processing pages…</span>
+                    <span>
+                      {progress.current} / {progress.total}
+                    </span>
+                  </div>
+                  <div className="w-full bg-slate-200 dark:bg-dark-border rounded-full h-2">
+                    <div
+                      className="bg-violet-600 h-2 rounded-full transition-all"
+                      style={{ width: `${(progress.current / progress.total) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <ActionButton
+                onClick={handleConvert}
+                processing={processing}
+                label="Convert to Grayscale"
+                processingLabel="Converting… (this may take a moment)"
+                color="bg-violet-600 hover:bg-violet-700"
+              />
+            </div>
           ) : (
             <div className="space-y-4">
               <div className="bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border p-6 text-center">
