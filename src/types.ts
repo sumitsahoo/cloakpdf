@@ -155,4 +155,5 @@ export type ToolId =
   | "file-attachment"
   | "split-pdf"
   | "extract-images"
-  | "compare-pdf";
+  | "compare-pdf"
+  | "digital-signature";
