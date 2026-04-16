@@ -13,6 +13,7 @@
 
 import { useRef, useEffect, useState, useCallback } from "react";
 import { Trash2 } from "lucide-react";
+import { focusRing } from "../config/theme.ts";
 
 interface SignaturePadProps {
   /** Called with the PNG data-URL every time the user finishes a stroke. Empty string on clear. */
@@ -192,9 +193,10 @@ export function SignaturePad({ onSignature, color, width = 500, height = 200 }: 
       <div
         className={`relative border rounded-xl overflow-hidden bg-white motion-safe:transition-[border-color,box-shadow] duration-200 ${
           isDrawing
-            ? "border-primary-400 dark:border-primary-500 shadow-[0_0_0_3px_rgba(99,102,241,0.15)]"
+            ? "border-primary-400 dark:border-primary-500"
             : "border-slate-300 dark:border-dark-border hover:border-slate-400 dark:hover:border-slate-600"
         }`}
+        style={isDrawing ? { boxShadow: `0 0 0 3px ${focusRing}` } : undefined}
       >
         <canvas
           ref={canvasRef}

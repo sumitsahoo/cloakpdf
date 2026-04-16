@@ -6,15 +6,22 @@
  * is downloaded immediately after processing.
  */
 
-import { ChevronLeft, ChevronRight, Hash, Move, Undo2 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { ChevronLeft, ChevronRight, Hash, Move } from "lucide-react";
+import { useCallback, useState } from "react";
+import { ActionButton } from "../components/ActionButton.tsx";
+import { AlertBox } from "../components/AlertBox.tsx";
 import { ColorPicker, hexToRgb, rgbToHex } from "../components/ColorPicker.tsx";
 import { FileDropZone } from "../components/FileDropZone.tsx";
+import { FileInfoBar } from "../components/FileInfoBar.tsx";
+import { LabeledSlider } from "../components/LabeledSlider.tsx";
+import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
+import { ResetButton } from "../components/ResetButton.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
+import { usePreviewScale } from "../hooks/usePreviewScale.ts";
 import type { PageNumberFormat, PageNumberOptions, PageNumberPosition } from "../types.ts";
 import { downloadPdf } from "../utils/file-helpers.ts";
 import { addPageNumbers } from "../utils/pdf-operations.ts";
-import { renderAllThumbnails } from "../utils/pdf-renderer.ts";
+import { renderAllThumbnails, revokeThumbnails } from "../utils/pdf-renderer.ts";
 
 const POSITIONS: { value: PageNumberPosition; label: string; title: string }[] = [
   { value: "top-left", label: "↖", title: "Top left" },
@@ -90,22 +97,7 @@ export default function AddPageNumbers() {
   const [error, setError] = useState<string | null>(null);
 
   // Scale factor: preview px / page pt — used to size the font overlay correctly
-  const [previewScale, setPreviewScale] = useState(0.5);
-  const previewContainerRef = useRef<HTMLDivElement>(null);
-
-  /* Keep preview font scale in sync with the container's rendered width */
-  useEffect(() => {
-    const el = previewContainerRef.current;
-    const dim = pageDims[selectedPage];
-    if (!el || !dim) return;
-    const update = () => {
-      setPreviewScale(el.getBoundingClientRect().width / dim.width);
-    };
-    update();
-    const ro = new ResizeObserver(update);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [selectedPage, pageDims]);
+  const [previewScale, previewContainerRef] = usePreviewScale(pageDims[selectedPage]);
 
   const handleFile = useCallback(async (files: File[]) => {
     const pdf = files[0];
@@ -193,22 +185,16 @@ export default function AddPageNumbers() {
         />
       ) : (
         <>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <p className="text-sm text-slate-600 dark:text-dark-text-muted break-all sm:break-normal">
-              <span className="font-medium">{file.name}</span>
-              {loading ? " — loading…" : ` — ${pageCount} pages`}
-            </p>
-            <button
-              onClick={() => {
-                setFile(null);
-                setThumbnails([]);
-                setPageDims([]);
-              }}
-              className="text-sm text-primary-600 hover:text-primary-700"
-            >
-              Change file
-            </button>
-          </div>
+          <FileInfoBar
+            fileName={file.name}
+            details={loading ? "loading…" : `${pageCount} pages`}
+            onChangeFile={() => {
+              revokeThumbnails(thumbnails);
+              setFile(null);
+              setThumbnails([]);
+              setPageDims([]);
+            }}
+          />
 
           <div className="grid md:grid-cols-2 gap-6">
             {/* ── Left column: controls ── */}
@@ -217,16 +203,7 @@ export default function AddPageNumbers() {
                 <p className="text-sm font-medium text-slate-700 dark:text-dark-text">
                   Configure style and position
                 </p>
-                {isDirty && (
-                  <button
-                    type="button"
-                    onClick={handleReset}
-                    className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 dark:text-dark-text-muted dark:hover:text-dark-text transition-colors"
-                  >
-                    <Undo2 className="w-4 h-4" />
-                    Reset
-                  </button>
-                )}
+                {isDirty && <ResetButton onClick={handleReset} />}
               </div>
 
               {/* Position grid */}
@@ -285,55 +262,24 @@ export default function AddPageNumbers() {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                {/* Font size */}
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <label
-                      htmlFor="pn-font-size"
-                      className="text-sm font-medium text-slate-700 dark:text-dark-text"
-                    >
-                      Font size
-                    </label>
-                    <span className="inline-flex items-center rounded-full bg-primary-100 dark:bg-primary-900/40 px-2 py-0.5 text-xs font-semibold text-primary-700 dark:text-primary-300 tabular-nums">
-                      {options.fontSize}pt
-                    </span>
-                  </div>
-                  <input
-                    id="pn-font-size"
-                    type="range"
-                    min={8}
-                    max={24}
-                    step={1}
-                    value={options.fontSize}
-                    onChange={(e) => setOpt("fontSize", Number(e.target.value))}
-                    className="w-full accent-primary-600 cursor-pointer"
-                  />
-                </div>
-
-                {/* Margin */}
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <label
-                      htmlFor="pn-margin"
-                      className="text-sm font-medium text-slate-700 dark:text-dark-text"
-                    >
-                      Margin
-                    </label>
-                    <span className="inline-flex items-center rounded-full bg-primary-100 dark:bg-primary-900/40 px-2 py-0.5 text-xs font-semibold text-primary-700 dark:text-primary-300 tabular-nums">
-                      {options.margin}pt
-                    </span>
-                  </div>
-                  <input
-                    id="pn-margin"
-                    type="range"
-                    min={5}
-                    max={72}
-                    step={1}
-                    value={options.margin}
-                    onChange={(e) => setOpt("margin", Number(e.target.value))}
-                    className="w-full accent-primary-600 cursor-pointer"
-                  />
-                </div>
+                <LabeledSlider
+                  id="pn-font-size"
+                  label="Font size"
+                  value={options.fontSize}
+                  min={8}
+                  max={24}
+                  unit="pt"
+                  onChange={(v) => setOpt("fontSize", v)}
+                />
+                <LabeledSlider
+                  id="pn-margin"
+                  label="Margin"
+                  value={options.margin}
+                  min={5}
+                  max={72}
+                  unit="pt"
+                  onChange={(v) => setOpt("margin", v)}
+                />
               </div>
 
               {/* Color */}
@@ -433,7 +379,7 @@ export default function AddPageNumbers() {
 
               {loading ? (
                 <div className="aspect-3/4 bg-slate-100 dark:bg-dark-surface-alt rounded-lg flex items-center justify-center">
-                  <div className="w-8 h-8 border-2 border-emerald-200 border-t-emerald-600 rounded-full animate-spin" />
+                  <LoadingSpinner color="border-emerald-200 border-t-emerald-600" />
                 </div>
               ) : thumbnails[selectedPage] ? (
                 <div
@@ -462,21 +408,18 @@ export default function AddPageNumbers() {
             </div>
           </div>
 
-          <button
+          <ActionButton
             onClick={handleApply}
+            processing={processing}
             disabled={processing || loading}
-            className="w-full bg-emerald-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {processing ? "Adding numbers…" : "Add Page Numbers & Download"}
-          </button>
+            label="Add Page Numbers & Download"
+            processingLabel="Adding numbers…"
+            color="bg-emerald-600 hover:bg-emerald-700"
+          />
         </>
       )}
 
-      {error && (
-        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-4">
-          <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
-        </div>
-      )}
+      {error && <AlertBox variant="error" message={error} />}
     </div>
   );
 }

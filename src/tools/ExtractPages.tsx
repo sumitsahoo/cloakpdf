@@ -9,12 +9,15 @@
 
 import { Check, CheckSquare, X } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
+import { ActionButton } from "../components/ActionButton.tsx";
+import { AlertBox } from "../components/AlertBox.tsx";
 import { FileDropZone } from "../components/FileDropZone.tsx";
+import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { PageThumbnail } from "../components/PageThumbnail.tsx";
 import { downloadPdf } from "../utils/file-helpers.ts";
 import { extractPages } from "../utils/pdf-operations.ts";
-import { renderAllThumbnails } from "../utils/pdf-renderer.ts";
+import { renderAllThumbnails, revokeThumbnails } from "../utils/pdf-renderer.ts";
 
 /** Parse a range string like "1-3, 5, 7-9" into sorted, unique 0-based page indices. */
 function parseRangeInput(input: string, pageCount: number): number[] {
@@ -160,6 +163,7 @@ export default function ExtractPages() {
               <button
                 type="button"
                 onClick={() => {
+                  revokeThumbnails(thumbnails);
                   setFile(null);
                   setThumbnails([]);
                   setSelectedPages(new Set());
@@ -193,9 +197,7 @@ export default function ExtractPages() {
           </div>
 
           {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="w-8 h-8 border-3 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
-            </div>
+            <LoadingSpinner />
           ) : (
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
               {thumbnails.map((thumb, i) => (
@@ -220,25 +222,17 @@ export default function ExtractPages() {
           )}
 
           {hasSelection && effectiveCount > 0 && (
-            <button
-              type="button"
+            <ActionButton
               onClick={handleExtract}
-              disabled={processing}
-              className="w-full bg-primary-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {processing
-                ? "Extracting..."
-                : `Extract ${effectiveCount} Page${effectiveCount !== 1 ? "s" : ""} & Download`}
-            </button>
+              processing={processing}
+              label={`Extract ${effectiveCount} Page${effectiveCount !== 1 ? "s" : ""} & Download`}
+              processingLabel="Extracting..."
+            />
           )}
         </>
       )}
 
-      {error && (
-        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-4">
-          <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
-        </div>
-      )}
+      {error && <AlertBox variant="error" message={error} />}
     </div>
   );
 }

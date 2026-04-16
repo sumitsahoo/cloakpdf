@@ -8,6 +8,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { Download, Paperclip, Plus, Trash2 } from "lucide-react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
+import { AlertBox } from "../components/AlertBox.tsx";
+import { ActionButton } from "../components/ActionButton.tsx";
+import { FileInfoBar } from "../components/FileInfoBar.tsx";
+import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import type { PdfAttachment } from "../utils/pdf-operations.ts";
 import {
@@ -135,28 +139,19 @@ export default function FileAttachment() {
         />
       ) : (
         <>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <p className="text-sm text-slate-600 dark:text-dark-text-muted break-all sm:break-normal">
-              <span className="font-medium">{pdfFile.name}</span> — {formatFileSize(pdfFile.size)}
-            </p>
-            <button
-              type="button"
-              onClick={() => {
-                setPdfFile(null);
-                setAttachments([]);
-                setSuccess(null);
-                setError(null);
-              }}
-              className="text-sm text-primary-600 hover:text-primary-700"
-            >
-              Change file
-            </button>
-          </div>
+          <FileInfoBar
+            fileName={pdfFile.name}
+            details={formatFileSize(pdfFile.size)}
+            onChangeFile={() => {
+              setPdfFile(null);
+              setAttachments([]);
+              setSuccess(null);
+              setError(null);
+            }}
+          />
 
           {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="w-8 h-8 border-3 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
-            </div>
+            <LoadingSpinner color="border-blue-200 border-t-blue-600" />
           ) : (
             <div className="space-y-4">
               {/* Header with add button */}
@@ -232,30 +227,21 @@ export default function FileAttachment() {
               </div>
 
               {/* Download modified PDF */}
-              <button
-                type="button"
+              <ActionButton
                 onClick={handleDownloadPdf}
-                disabled={processing}
-                className="w-full bg-blue-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                {processing ? "Processing..." : "Download PDF"}
-              </button>
+                processing={processing}
+                label="Download PDF"
+                processingLabel="Processing..."
+                color="bg-blue-600 hover:bg-blue-700"
+              />
             </div>
           )}
         </>
       )}
 
-      {success && (
-        <div className="bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-xl p-4">
-          <p className="text-sm text-emerald-700 dark:text-emerald-300">{success}</p>
-        </div>
-      )}
+      {success && <AlertBox variant="success" message={success} />}
 
-      {error && (
-        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-4">
-          <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
-        </div>
-      )}
+      {error && <AlertBox variant="error" message={error} />}
     </div>
   );
 }

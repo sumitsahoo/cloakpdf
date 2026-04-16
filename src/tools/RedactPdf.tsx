@@ -10,10 +10,13 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
-import { categoryAccent, categoryGlow } from "../config/theme.ts";
+import { AlertBox } from "../components/AlertBox.tsx";
+import { ActionButton } from "../components/ActionButton.tsx";
+import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
+import { categoryAccent, categoryGlow, canvas as canvasColors } from "../config/theme.ts";
 import { downloadPdf } from "../utils/file-helpers.ts";
 import { redactPdf } from "../utils/pdf-operations.ts";
-import { renderAllThumbnails } from "../utils/pdf-renderer.ts";
+import { renderAllThumbnails, revokeThumbnails } from "../utils/pdf-renderer.ts";
 import { Trash2, Undo2 } from "lucide-react";
 
 interface RedactionRect {
@@ -86,9 +89,9 @@ export default function RedactPdf() {
         const y = r.yPct * canvas.height;
         const w = r.wPct * canvas.width;
         const h = r.hPct * canvas.height;
-        ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
+        ctx.fillStyle = canvasColors.redactFill;
         ctx.fillRect(x, y, w, h);
-        ctx.strokeStyle = "#ff4444";
+        ctx.strokeStyle = canvasColors.redactStroke;
         ctx.lineWidth = 1.5;
         ctx.strokeRect(x, y, w, h);
       };
@@ -279,6 +282,7 @@ export default function RedactPdf() {
           <button
             type="button"
             onClick={() => {
+              revokeThumbnails(thumbnails);
               setFile(null);
               setThumbnails([]);
               setRedactions(new Map());
@@ -291,9 +295,7 @@ export default function RedactPdf() {
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center py-12">
-          <div className="w-8 h-8 border-3 border-amber-200 border-t-amber-600 rounded-full animate-spin" />
-        </div>
+        <LoadingSpinner color="border-amber-200 border-t-amber-600" />
       ) : editingPage !== null ? (
         // ── Redact editor for a single page ──────────────────────────────────
         <div className="space-y-3">
@@ -413,23 +415,16 @@ export default function RedactPdf() {
       )}
 
       {totalRedactions > 0 && editingPage === null && (
-        <button
-          type="button"
+        <ActionButton
           onClick={handleApply}
-          disabled={processing}
-          className="w-full bg-red-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        >
-          {processing
-            ? "Applying Redactions..."
-            : `Apply ${totalRedactions} Redaction${totalRedactions > 1 ? "s" : ""} & Download`}
-        </button>
+          processing={processing}
+          label={`Apply ${totalRedactions} Redaction${totalRedactions > 1 ? "s" : ""} & Download`}
+          processingLabel="Applying Redactions..."
+          color="bg-red-600 hover:bg-red-700"
+        />
       )}
 
-      {error && (
-        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-4">
-          <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
-        </div>
-      )}
+      {error && <AlertBox variant="error" message={error} />}
     </div>
   );
 }
