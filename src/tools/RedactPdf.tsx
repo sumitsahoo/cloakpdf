@@ -10,7 +10,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
-import { categoryAccent, categoryGlow } from "../config/theme.ts";
+import { categoryAccent, categoryGlow, canvas as canvasColors } from "../config/theme.ts";
 import { downloadPdf } from "../utils/file-helpers.ts";
 import { redactPdf } from "../utils/pdf-operations.ts";
 import { renderAllThumbnails } from "../utils/pdf-renderer.ts";
@@ -86,9 +86,9 @@ export default function RedactPdf() {
         const y = r.yPct * canvas.height;
         const w = r.wPct * canvas.width;
         const h = r.hPct * canvas.height;
-        ctx.fillStyle = "rgba(0, 0, 0, 0.85)";
+        ctx.fillStyle = canvasColors.redactFill;
         ctx.fillRect(x, y, w, h);
-        ctx.strokeStyle = "#ff4444";
+        ctx.strokeStyle = canvasColors.redactStroke;
         ctx.lineWidth = 1.5;
         ctx.strokeRect(x, y, w, h);
       };

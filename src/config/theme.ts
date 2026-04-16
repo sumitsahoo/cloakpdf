@@ -93,6 +93,10 @@ export const colors = {
     800: "#1E40AF",
     900: "#1E3A8A",
   },
+  slate: {
+    200: "#E2E8F0",
+    500: "#64748B",
+  },
   /** Deeper blue for gradients */
   accent: "#1D4ED8",
   /** Semantic / surface colors */
@@ -101,4 +105,31 @@ export const colors = {
   accentTint: "#EFF4FF",
   headings: "#1E293B",
   body: "#64748B",
+} as const;
+
+/** Focus-ring shadow used on interactive canvas/input elements. */
+export const focusRing = "rgba(37,99,235,0.18)" as const;
+
+/** Preset colours shared by Signature & Watermark colour pickers. */
+export const colorPresets = [
+  { label: "Black", hex: "#1E293B" },
+  { label: "Grey", hex: "#64748B" },
+  { label: "Blue", hex: "#1D4ED8" },
+  { label: "Red", hex: "#DC2626" },
+] as const;
+
+/** Canvas rendering colours for tools that draw on an HTML5 canvas. */
+export const canvas = {
+  /** Background fill for generated sheets/images */
+  background: "#FFFFFF",
+  /** Light border around thumbnails / cells */
+  border: "#E2E8F0",
+  /** Label text colour */
+  label: "#64748B",
+  /** Redaction box fill */
+  redactFill: "rgba(0,0,0,0.85)",
+  /** Redaction box stroke (red — intentionally distinct from theme) */
+  redactStroke: "#FF4444",
+  /** Pixel-diff highlight for ComparePdf (RGBA channels 0–255) */
+  diffHighlight: { r: 239, g: 68, b: 68, a: 180 },
 } as const;

@@ -11,7 +11,7 @@ import { ArrowLeftRight, ChevronLeft, ChevronRight, Eye, EyeOff, Layers } from "
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import { useCallback, useMemo, useState } from "react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
-import { categoryAccent, categoryGlow } from "../config/theme.ts";
+import { categoryAccent, categoryGlow, canvas as canvasColors } from "../config/theme.ts";
 import { formatFileSize } from "../utils/file-helpers.ts";
 import { pdfjsLib } from "../utils/pdf-renderer.ts";
 
@@ -98,11 +98,11 @@ function diffCanvases(
     const db = Math.abs(dataA[i + 2] - dataB[i + 2]);
 
     if (dr > threshold || dg > threshold || db > threshold) {
-      // Mark changed pixel in red
-      out[i] = 239; // R
-      out[i + 1] = 68; // G
-      out[i + 2] = 68; // B
-      out[i + 3] = 180; // A
+      // Mark changed pixel with diff highlight colour
+      out[i] = canvasColors.diffHighlight.r;
+      out[i + 1] = canvasColors.diffHighlight.g;
+      out[i + 2] = canvasColors.diffHighlight.b;
+      out[i + 3] = canvasColors.diffHighlight.a;
       changedPixels++;
     } else {
       // Unchanged — transparent
