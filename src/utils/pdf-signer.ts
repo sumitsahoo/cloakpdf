@@ -379,6 +379,21 @@ export function generateSelfSignedCert(commonName: string): {
 }
 
 /**
+ * Convert a Uint8Array to a forge binary string in chunks to avoid
+ * "Maximum call stack size exceeded" from String.fromCharCode.apply
+ * on large arrays.
+ */
+function uint8ToBinaryString(bytes: Uint8Array): string {
+  const chunkSize = 8192;
+  const parts: string[] = [];
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    const chunk = bytes.subarray(i, Math.min(i + chunkSize, bytes.length));
+    parts.push(String.fromCharCode(...chunk));
+  }
+  return parts.join("");
+}
+
+/**
  * Create a PKCS#7 detached signature over the given data.
  */
 function createPkcs7Signature(
@@ -389,8 +404,7 @@ function createPkcs7Signature(
 ): Uint8Array {
   const p7 = forge.pkcs7.createSignedData();
 
-  // Convert Uint8Array to a binary string for forge's buffer API
-  p7.content = forge.util.createBuffer(forge.util.binary.raw.encode(data));
+  p7.content = forge.util.createBuffer(uint8ToBinaryString(data));
   p7.addCertificate(cert);
   for (const c of chain) p7.addCertificate(c);
 
