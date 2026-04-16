@@ -17,7 +17,7 @@ import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { PageThumbnail } from "../components/PageThumbnail.tsx";
 import { downloadPdf } from "../utils/file-helpers.ts";
 import { extractPages } from "../utils/pdf-operations.ts";
-import { renderAllThumbnails } from "../utils/pdf-renderer.ts";
+import { renderAllThumbnails, revokeThumbnails } from "../utils/pdf-renderer.ts";
 
 /** Parse a range string like "1-3, 5, 7-9" into sorted, unique 0-based page indices. */
 function parseRangeInput(input: string, pageCount: number): number[] {
@@ -163,6 +163,7 @@ export default function ExtractPages() {
               <button
                 type="button"
                 onClick={() => {
+                  revokeThumbnails(thumbnails);
                   setFile(null);
                   setThumbnails([]);
                   setSelectedPages(new Set());

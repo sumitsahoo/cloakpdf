@@ -16,7 +16,7 @@ import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
 import { categoryAccent, categoryGlow, canvas as canvasColors } from "../config/theme.ts";
 import { downloadPdf } from "../utils/file-helpers.ts";
 import { redactPdf } from "../utils/pdf-operations.ts";
-import { renderAllThumbnails } from "../utils/pdf-renderer.ts";
+import { renderAllThumbnails, revokeThumbnails } from "../utils/pdf-renderer.ts";
 import { Trash2, Undo2 } from "lucide-react";
 
 interface RedactionRect {
@@ -282,6 +282,7 @@ export default function RedactPdf() {
           <button
             type="button"
             onClick={() => {
+              revokeThumbnails(thumbnails);
               setFile(null);
               setThumbnails([]);
               setRedactions(new Map());

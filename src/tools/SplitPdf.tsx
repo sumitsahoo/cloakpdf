@@ -19,7 +19,7 @@ import { PageThumbnail } from "../components/PageThumbnail.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { downloadBlob, downloadPdf } from "../utils/file-helpers.ts";
 import { extractPages } from "../utils/pdf-operations.ts";
-import { renderAllThumbnails } from "../utils/pdf-renderer.ts";
+import { renderAllThumbnails, revokeThumbnails } from "../utils/pdf-renderer.ts";
 
 export default function SplitPdf() {
   const [file, setFile] = useState<File | null>(null);
@@ -160,6 +160,7 @@ export default function SplitPdf() {
             fileName={file.name}
             details={`${thumbnails.length} page${thumbnails.length !== 1 ? "s" : ""}`}
             onChangeFile={() => {
+              revokeThumbnails(thumbnails);
               setFile(null);
               setThumbnails([]);
               setSplitPoints(new Set());

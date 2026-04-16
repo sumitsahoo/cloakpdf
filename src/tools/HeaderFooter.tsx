@@ -23,7 +23,7 @@ import { usePreviewScale } from "../hooks/usePreviewScale.ts";
 import type { HeaderFooterOptions } from "../types.ts";
 import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
 import { addHeaderFooter } from "../utils/pdf-operations.ts";
-import { renderAllThumbnails } from "../utils/pdf-renderer.ts";
+import { renderAllThumbnails, revokeThumbnails } from "../utils/pdf-renderer.ts";
 
 const DEFAULT_OPTIONS: HeaderFooterOptions = {
   headerLeft: "",
@@ -192,6 +192,7 @@ export default function HeaderFooter() {
             fileName={file.name}
             details={loading ? "loading…" : formatFileSize(file.size)}
             onChangeFile={() => {
+              revokeThumbnails(thumbnails);
               setFile(null);
               setThumbnails([]);
               setPageDims([]);

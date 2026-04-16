@@ -15,7 +15,7 @@ import { FileInfoBar } from "../components/FileInfoBar.tsx";
 import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
 import { categoryAccent, categoryGlow, canvas as canvasColors } from "../config/theme.ts";
 import { downloadBlob, formatFileSize } from "../utils/file-helpers.ts";
-import { renderAllThumbnails } from "../utils/pdf-renderer.ts";
+import { pdfjsLib, renderAllThumbnails, revokeThumbnails } from "../utils/pdf-renderer.ts";
 
 type GridLayout = "2x2" | "3x3" | "4x4" | "5x5";
 type OutputFormat = "png" | "pdf";
@@ -100,11 +100,7 @@ export default function ContactSheet() {
     try {
       const totalSheets = Math.ceil(pageCount / perSheet);
 
-      // Render all pages via PDF.js
-      const workerModule = await import("pdfjs-dist/build/pdf.worker.min.mjs?worker&url");
-      const pdfjsLib = await import("pdfjs-dist");
-      pdfjsLib.GlobalWorkerOptions.workerSrc = workerModule.default;
-
+      // Use the shared PDF.js instance (worker already configured)
       const arrayBuffer = await file.arrayBuffer();
       const pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
 
@@ -261,6 +257,7 @@ export default function ContactSheet() {
             fileName={file.name}
             details={loading ? "loading…" : `${pageCount} pages`}
             onChangeFile={() => {
+              revokeThumbnails(thumbnails);
               setFile(null);
               setThumbnails([]);
               setPageCount(0);

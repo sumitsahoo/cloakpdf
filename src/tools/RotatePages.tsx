@@ -18,7 +18,7 @@ import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { PageThumbnail } from "../components/PageThumbnail.tsx";
 import { downloadPdf } from "../utils/file-helpers.ts";
 import { rotatePages } from "../utils/pdf-operations.ts";
-import { renderAllThumbnails } from "../utils/pdf-renderer.ts";
+import { renderAllThumbnails, revokeThumbnails } from "../utils/pdf-renderer.ts";
 
 export default function RotatePages() {
   const [file, setFile] = useState<File | null>(null);
@@ -120,6 +120,7 @@ export default function RotatePages() {
               </button>
               <button
                 onClick={() => {
+                  revokeThumbnails(thumbnails);
                   setFile(null);
                   setThumbnails([]);
                   setRotations(new Map());

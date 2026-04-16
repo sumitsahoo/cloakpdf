@@ -15,7 +15,7 @@ import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
 import { reversePages } from "../utils/pdf-operations.ts";
-import { getPageCount, renderSpecificThumbnails } from "../utils/pdf-renderer.ts";
+import { getPageCount, renderSpecificThumbnails, revokeThumbnails } from "../utils/pdf-renderer.ts";
 
 /** Only the first and last page thumbnails are needed for the preview. */
 interface PreviewThumbs {
@@ -96,6 +96,7 @@ export default function ReversePages() {
             fileName={file.name}
             details={`${formatFileSize(file.size)}, ${pageCount} pages`}
             onChangeFile={() => {
+              revokeThumbnails(preview ? [preview.first, preview.last].filter(Boolean) : []);
               setFile(null);
               setPreview(null);
               setDone(false);

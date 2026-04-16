@@ -16,7 +16,7 @@ import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { PageThumbnail } from "../components/PageThumbnail.tsx";
 import { deletePages } from "../utils/pdf-operations.ts";
-import { renderThumbnailsAndScores } from "../utils/pdf-renderer.ts";
+import { renderThumbnailsAndScores, revokeThumbnails } from "../utils/pdf-renderer.ts";
 import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
 import { Trash2 } from "lucide-react";
 
@@ -111,6 +111,7 @@ export default function RemoveBlankPages() {
             fileName={file.name}
             details={formatFileSize(file.size)}
             onChangeFile={() => {
+              revokeThumbnails(thumbnails);
               setFile(null);
               setThumbnails([]);
               setScores([]);

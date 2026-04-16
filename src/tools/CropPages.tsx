@@ -19,7 +19,7 @@ import { ResetButton } from "../components/ResetButton.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { PageThumbnail } from "../components/PageThumbnail.tsx";
 import { cropPages, uncropPages } from "../utils/pdf-operations.ts";
-import { renderAllThumbnails } from "../utils/pdf-renderer.ts";
+import { renderAllThumbnails, revokeThumbnails } from "../utils/pdf-renderer.ts";
 import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
 import type { CropMargins } from "../types.ts";
 
@@ -207,7 +207,10 @@ export default function CropPages() {
           <FileInfoBar
             fileName={file.name}
             details={formatFileSize(file.size)}
-            onChangeFile={() => setFile(null)}
+            onChangeFile={() => {
+              revokeThumbnails(allThumbs);
+              setFile(null);
+            }}
           />
 
           {loading ? (

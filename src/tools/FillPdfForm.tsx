@@ -26,7 +26,7 @@ import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { fillPdfForm, getFieldPageIndices } from "../utils/pdf-operations.ts";
 import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
-import { renderAllThumbnails } from "../utils/pdf-renderer.ts";
+import { renderAllThumbnails, revokeThumbnails } from "../utils/pdf-renderer.ts";
 
 type FieldType = "text" | "checkbox" | "dropdown" | "radio" | "other";
 
@@ -198,6 +198,7 @@ export default function FillPdfForm() {
             fileName={file.name}
             details={formatFileSize(file.size)}
             onChangeFile={() => {
+              revokeThumbnails(thumbnails);
               setFile(null);
               setThumbnails([]);
               setThumbnailIds([]);
