@@ -356,7 +356,7 @@ const tools: Tool[] = [
   {
     id: "metadata",
     title: "Edit Metadata",
-    description: "View and edit PDF document properties",
+    description: "View, edit, or redact PDF document properties for privacy",
     icon: FileText,
     category: "security",
   },

@@ -3,7 +3,8 @@
  *
  * Allows users to view and edit all standard PDF metadata fields:
  * title, author, subject, keywords, creator, producer, creation date,
- * and modification date. The modified PDF can be downloaded.
+ * and modification date. Also supports one-click redaction of all
+ * metadata for privacy. The modified PDF can be downloaded.
  */
 
 import { useCallback, useEffect, useState } from "react";
@@ -13,6 +14,7 @@ import {
   CalendarClock,
   CalendarPlus,
   FileText,
+  ShieldOff,
   Tag,
   User,
   Wrench,
@@ -148,6 +150,22 @@ export default function EditMetadata() {
     setSaved(false);
   }, [originalMetadata]);
 
+  const handleRedact = useCallback(() => {
+    if (!metadata) return;
+    const blank: PdfMetadata = {
+      title: "",
+      author: "",
+      subject: "",
+      keywords: "",
+      creator: "",
+      producer: "",
+      creationDate: "",
+      modificationDate: "",
+    };
+    setMetadata(blank);
+    setSaved(false);
+  }, [metadata]);
+
   const handleSave = useCallback(async () => {
     if (!file || !metadata) return;
     setProcessing(true);
@@ -203,7 +221,17 @@ export default function EditMetadata() {
                 <p className="text-sm font-medium text-slate-700 dark:text-dark-text">
                   Edit document properties below
                 </p>
-                {isDirty && <ResetButton onClick={handleReset} />}
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleRedact}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-red-200 dark:border-red-700/60 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+                  >
+                    <ShieldOff className="w-3.5 h-3.5" />
+                    Redact All
+                  </button>
+                  {isDirty && <ResetButton onClick={handleReset} />}
+                </div>
               </div>
               <div className="bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border divide-y divide-slate-100 dark:divide-dark-border">
                 {METADATA_FIELDS.map((field) => {
