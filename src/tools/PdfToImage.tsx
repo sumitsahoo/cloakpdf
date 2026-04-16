@@ -9,6 +9,11 @@
 import { useState, useCallback } from "react";
 import { Image, ScanLine } from "lucide-react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
+import { AlertBox } from "../components/AlertBox.tsx";
+import { ActionButton } from "../components/ActionButton.tsx";
+import { FileInfoBar } from "../components/FileInfoBar.tsx";
+import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
+import { LabeledSlider } from "../components/LabeledSlider.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { PageThumbnail } from "../components/PageThumbnail.tsx";
 import { renderPagesToBlobs } from "../utils/pdf-renderer.ts";
@@ -114,31 +119,25 @@ export default function PdfToImage() {
         />
       ) : (
         <>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <p className="text-sm text-slate-600 dark:text-dark-text-muted break-all sm:break-normal">
-              <span className="font-medium">{file.name}</span> — {formatFileSize(file.size)}
-              {selectedPages.size > 0 && (
+          <FileInfoBar
+            fileName={file.name}
+            details={formatFileSize(file.size)}
+            onChangeFile={() => {
+              setFile(null);
+              setThumbnails([]);
+              setSelectedPages(new Set());
+            }}
+            extra={
+              selectedPages.size > 0 ? (
                 <span className="text-primary-600 ml-2">
                   ({selectedPages.size} of {thumbnails.length} selected)
                 </span>
-              )}
-            </p>
-            <button
-              onClick={() => {
-                setFile(null);
-                setThumbnails([]);
-                setSelectedPages(new Set());
-              }}
-              className="text-sm text-primary-600 hover:text-primary-700"
-            >
-              Change file
-            </button>
-          </div>
+              ) : undefined
+            }
+          />
 
           {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="w-8 h-8 border-3 border-violet-200 border-t-violet-600 rounded-full animate-spin" />
-            </div>
+            <LoadingSpinner color="border-violet-200 border-t-violet-600" />
           ) : (
             <>
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
@@ -215,29 +214,21 @@ export default function PdfToImage() {
                 </div>
 
                 {format === "image/jpeg" && (
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <label className="text-sm font-medium text-slate-700 dark:text-dark-text">
-                        JPEG Quality
-                      </label>
-                      <span className="inline-flex items-center rounded-full bg-primary-100 dark:bg-primary-900/40 px-2 py-0.5 text-xs font-semibold text-primary-700 dark:text-primary-300 tabular-nums">
-                        {quality}%
-                      </span>
-                    </div>
-                    <input
-                      type="range"
+                  <>
+                    <LabeledSlider
+                      label="JPEG Quality"
+                      value={quality}
                       min={60}
                       max={100}
                       step={1}
-                      value={quality}
-                      onChange={(e) => setQuality(Number(e.target.value))}
-                      className="w-full accent-primary-600 cursor-pointer"
+                      unit="%"
+                      onChange={setQuality}
                     />
                     <div className="flex justify-between text-xs text-slate-400 dark:text-dark-text-muted">
                       <span>Smaller</span>
                       <span>Higher quality</span>
                     </div>
-                  </div>
+                  </>
                 )}
               </div>
 
@@ -258,27 +249,24 @@ export default function PdfToImage() {
                 </div>
               )}
 
-              <button
+              <ActionButton
                 onClick={handleExport}
+                processing={processing}
                 disabled={processing || selectedPages.size === 0}
-                className="w-full bg-violet-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                {processing
-                  ? "Exporting…"
-                  : selectedPages.size === 1
+                label={
+                  selectedPages.size === 1
                     ? "Export Image"
-                    : `Export ${selectedPages.size} Images as ZIP`}
-              </button>
+                    : `Export ${selectedPages.size} Images as ZIP`
+                }
+                processingLabel="Exporting…"
+                color="bg-violet-600 hover:bg-violet-700"
+              />
             </>
           )}
         </>
       )}
 
-      {error && (
-        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-4">
-          <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
-        </div>
-      )}
+      {error && <AlertBox variant="error" message={error} />}
     </div>
   );
 }

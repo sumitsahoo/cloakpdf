@@ -10,7 +10,11 @@
 
 import { Minus, Scissors, X } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
+import { ActionButton } from "../components/ActionButton.tsx";
+import { AlertBox } from "../components/AlertBox.tsx";
 import { FileDropZone } from "../components/FileDropZone.tsx";
+import { FileInfoBar } from "../components/FileInfoBar.tsx";
+import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
 import { PageThumbnail } from "../components/PageThumbnail.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { downloadBlob, downloadPdf } from "../utils/file-helpers.ts";
@@ -152,28 +156,22 @@ export default function SplitPdf() {
       ) : (
         <>
           {/* File info bar */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <p className="text-sm text-slate-600 dark:text-dark-text-muted break-all sm:break-normal">
-              <span className="font-medium">{file.name}</span> — {thumbnails.length} page
-              {thumbnails.length !== 1 ? "s" : ""}
-              {splitPoints.size > 0 && (
+          <FileInfoBar
+            fileName={file.name}
+            details={`${thumbnails.length} page${thumbnails.length !== 1 ? "s" : ""}`}
+            onChangeFile={() => {
+              setFile(null);
+              setThumbnails([]);
+              setSplitPoints(new Set());
+            }}
+            extra={
+              splitPoints.size > 0 ? (
                 <span className="text-primary-600 dark:text-primary-400 ml-2">
                   → {parts.length} parts
                 </span>
-              )}
-            </p>
-            <button
-              type="button"
-              onClick={() => {
-                setFile(null);
-                setThumbnails([]);
-                setSplitPoints(new Set());
-              }}
-              className="text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 transition-colors"
-            >
-              Change file
-            </button>
-          </div>
+              ) : undefined
+            }
+          />
 
           {/* Quick split controls */}
           {thumbnails.length > 1 && (
@@ -222,9 +220,7 @@ export default function SplitPdf() {
 
           {/* Thumbnail grid with split dividers */}
           {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="w-8 h-8 border-3 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
-            </div>
+            <LoadingSpinner />
           ) : (
             <>
               <p className="text-xs text-slate-400 dark:text-dark-text-muted">
@@ -267,25 +263,17 @@ export default function SplitPdf() {
 
           {/* Split button */}
           {splitPoints.size > 0 && (
-            <button
-              type="button"
+            <ActionButton
               onClick={handleSplit}
-              disabled={processing}
-              className="w-full bg-primary-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {processing
-                ? "Splitting..."
-                : `Split into ${parts.length} Part${parts.length !== 1 ? "s" : ""} & Download`}
-            </button>
+              processing={processing}
+              label={`Split into ${parts.length} Part${parts.length !== 1 ? "s" : ""} & Download`}
+              processingLabel="Splitting..."
+            />
           )}
         </>
       )}
 
-      {error && (
-        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-4">
-          <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
-        </div>
-      )}
+      {error && <AlertBox variant="error" message={error} />}
     </div>
   );
 }

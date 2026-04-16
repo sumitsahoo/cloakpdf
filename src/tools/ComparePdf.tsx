@@ -11,6 +11,8 @@ import { ArrowLeftRight, ChevronLeft, ChevronRight, Eye, EyeOff, Layers } from "
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import { useCallback, useMemo, useState } from "react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
+import { AlertBox } from "../components/AlertBox.tsx";
+import { ActionButton } from "../components/ActionButton.tsx";
 import { categoryAccent, categoryGlow, canvas as canvasColors } from "../config/theme.ts";
 import { formatFileSize } from "../utils/file-helpers.ts";
 import { pdfjsLib } from "../utils/pdf-renderer.ts";
@@ -349,15 +351,13 @@ export default function ComparePdf() {
 
         {fileA && fileB && (
           <>
-            <button
-              type="button"
+            <ActionButton
               onClick={handleCompare}
-              disabled={loading}
-              className="w-full bg-amber-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
-            >
-              <ArrowLeftRight className="w-4 h-4" />
-              {loading ? "Comparing…" : "Compare PDFs"}
-            </button>
+              processing={loading}
+              label="Compare PDFs"
+              processingLabel="Comparing…"
+              color="bg-amber-600 hover:bg-amber-700"
+            />
 
             {loading && progress && (
               <div className="space-y-2">
@@ -378,11 +378,7 @@ export default function ComparePdf() {
           </>
         )}
 
-        {error && (
-          <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-4">
-            <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
-          </div>
-        )}
+        {error && <AlertBox variant="error" message={error} />}
       </div>
     );
   }
@@ -641,11 +637,7 @@ export default function ComparePdf() {
         </div>
       </div>
 
-      {error && (
-        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-4">
-          <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
-        </div>
-      )}
+      {error && <AlertBox variant="error" message={error} />}
     </div>
   );
 }

@@ -9,6 +9,10 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
+import { AlertBox } from "../components/AlertBox.tsx";
+import { ActionButton } from "../components/ActionButton.tsx";
+import { FileInfoBar } from "../components/FileInfoBar.tsx";
+import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { PageThumbnail } from "../components/PageThumbnail.tsx";
 import { deletePages } from "../utils/pdf-operations.ts";
@@ -103,10 +107,18 @@ export default function RemoveBlankPages() {
         />
       ) : (
         <>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <p className="text-sm text-slate-600 dark:text-dark-text-muted break-all sm:break-normal">
-              <span className="font-medium">{file.name}</span> — {formatFileSize(file.size)}
-              {!loading && pageCount > 0 && (
+          <FileInfoBar
+            fileName={file.name}
+            details={formatFileSize(file.size)}
+            onChangeFile={() => {
+              setFile(null);
+              setThumbnails([]);
+              setScores([]);
+              setSelectedPages(new Set());
+              setDone(false);
+            }}
+            extra={
+              !loading && pageCount > 0 ? (
                 <>
                   , {pageCount} pages
                   {selectedPages.size > 0 && (
@@ -116,25 +128,13 @@ export default function RemoveBlankPages() {
                     </span>
                   )}
                 </>
-              )}
-            </p>
-            <button
-              onClick={() => {
-                setFile(null);
-                setThumbnails([]);
-                setScores([]);
-                setSelectedPages(new Set());
-                setDone(false);
-              }}
-              className="text-sm text-primary-600 hover:text-primary-700"
-            >
-              Change file
-            </button>
-          </div>
+              ) : undefined
+            }
+          />
 
           {loading ? (
             <div className="flex flex-col items-center justify-center py-12 gap-3">
-              <div className="w-8 h-8 border-3 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
+              <LoadingSpinner className="" />
               <p className="text-sm text-slate-500 dark:text-dark-text-muted">Analysing pages…</p>
             </div>
           ) : (
@@ -196,15 +196,12 @@ export default function RemoveBlankPages() {
               )}
 
               {selectedPages.size > 0 && selectedPages.size < pageCount && (
-                <button
+                <ActionButton
                   onClick={handleRemove}
-                  disabled={processing}
-                  className="w-full bg-primary-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  {processing
-                    ? "Removing…"
-                    : `Remove ${selectedPages.size} Page${selectedPages.size !== 1 ? "s" : ""} & Download`}
-                </button>
+                  processing={processing}
+                  label={`Remove ${selectedPages.size} Page${selectedPages.size !== 1 ? "s" : ""} & Download`}
+                  processingLabel="Removing…"
+                />
               )}
 
               {selectedPages.size >= pageCount && pageCount > 0 && (
@@ -214,22 +211,17 @@ export default function RemoveBlankPages() {
               )}
 
               {done && (
-                <div className="bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-xl p-4">
-                  <p className="text-sm text-emerald-700 dark:text-emerald-300">
-                    Blank pages removed successfully. The PDF has been downloaded.
-                  </p>
-                </div>
+                <AlertBox
+                  variant="success"
+                  message="Blank pages removed successfully. The PDF has been downloaded."
+                />
               )}
             </>
           )}
         </>
       )}
 
-      {error && (
-        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-4">
-          <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
-        </div>
-      )}
+      {error && <AlertBox variant="error" message={error} />}
     </div>
   );
 }

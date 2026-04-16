@@ -8,8 +8,12 @@
  */
 
 import { useCallback, useState } from "react";
-import { FlipVertical2, RotateCcw, RotateCw, Undo2 } from "lucide-react";
+import { FlipVertical2, RotateCcw, RotateCw } from "lucide-react";
+import { ActionButton } from "../components/ActionButton.tsx";
+import { AlertBox } from "../components/AlertBox.tsx";
 import { FileDropZone } from "../components/FileDropZone.tsx";
+import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
+import { ResetButton } from "../components/ResetButton.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { PageThumbnail } from "../components/PageThumbnail.tsx";
 import { downloadPdf } from "../utils/file-helpers.ts";
@@ -128,25 +132,14 @@ export default function RotatePages() {
           </div>
 
           {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="w-8 h-8 border-3 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
-            </div>
+            <LoadingSpinner />
           ) : (
             <>
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <p className="text-sm font-medium text-slate-700 dark:text-dark-text">
                   Click rotation buttons on each page to adjust
                 </p>
-                {rotations.size > 0 && (
-                  <button
-                    type="button"
-                    onClick={handleReset}
-                    className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 dark:text-dark-text-muted dark:hover:text-dark-text transition-colors"
-                  >
-                    <Undo2 className="w-4 h-4" />
-                    Reset
-                  </button>
-                )}
+                {rotations.size > 0 && <ResetButton onClick={handleReset} />}
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                 {thumbnails.map((thumb, i) => (
@@ -186,22 +179,17 @@ export default function RotatePages() {
           )}
 
           {rotations.size > 0 && (
-            <button
+            <ActionButton
               onClick={handleApply}
-              disabled={processing}
-              className="w-full bg-primary-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {processing ? "Applying..." : "Apply Rotations & Download"}
-            </button>
+              processing={processing}
+              label="Apply Rotations & Download"
+              processingLabel="Applying..."
+            />
           )}
         </>
       )}
 
-      {error && (
-        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-4">
-          <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
-        </div>
-      )}
+      {error && <AlertBox variant="error" message={error} />}
     </div>
   );
 }
