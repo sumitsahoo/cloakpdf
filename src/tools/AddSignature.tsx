@@ -12,7 +12,7 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
-import { categoryAccent, categoryGlow } from "../config/theme.ts";
+import { categoryAccent, categoryGlow, colorPresets } from "../config/theme.ts";
 import { SignaturePad } from "../components/SignaturePad.tsx";
 import { ColorPicker, hexToRgb } from "../components/ColorPicker.tsx";
 import { PageThumbnail } from "../components/PageThumbnail.tsx";
@@ -97,7 +97,7 @@ export default function AddSignature() {
   const [applyToAllPages, setApplyToAllPages] = useState(false);
 
   // Centralised colour (drives both SignaturePad ink & image tint)
-  const [color, setColor] = useState("#1e293b");
+  const [color, setColor] = useState<string>(colorPresets[0].hex);
 
   // Upload-related state
   const [mode, setMode] = useState<SignatureMode>("draw");
