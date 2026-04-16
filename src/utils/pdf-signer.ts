@@ -395,6 +395,7 @@ function createPkcs7Signature(
   for (const c of chain) p7.addCertificate(c);
 
   p7.addSigner({
+    // @types/node-forge declares key as string but forge accepts PrivateKey at runtime
     key: key as unknown as string,
     certificate: cert,
     digestAlgorithm: forge.pki.oids.sha256,

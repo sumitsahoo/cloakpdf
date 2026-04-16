@@ -278,7 +278,7 @@ export default function DigitalSignature() {
               </h3>
               {existingSignatures.map((sig, idx) => (
                 <div
-                  key={`sig-${sig.signerName || "unknown"}-${sig.date || idx}`}
+                  key={`sig-${sig.signerName || "unknown"}-${sig.date || "nodate"}-${sig.filter}-${sig.subFilter}`}
                   className="bg-amber-50/60 dark:bg-amber-900/10 rounded-xl border border-amber-200 dark:border-amber-700/40 p-4"
                 >
                   <div className="flex items-center gap-2 mb-3">
@@ -481,6 +481,9 @@ export default function DigitalSignature() {
                 type="button"
                 onClick={() => {
                   setCertSource("upload");
+                  setCertFile(null);
+                  setCertPassword("");
+                  setShowPassword(false);
                   setCertInfo(null);
                   setCertError(null);
                   setPrivateKey(null);
@@ -500,6 +503,10 @@ export default function DigitalSignature() {
                 type="button"
                 onClick={() => {
                   setCertSource("generate");
+                  setCertFile(null);
+                  setCertPassword("");
+                  setShowPassword(false);
+                  setCommonName("");
                   setCertInfo(null);
                   setCertError(null);
                   setPrivateKey(null);
