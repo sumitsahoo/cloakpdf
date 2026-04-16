@@ -42,6 +42,7 @@ import {
   Crop,
   EyeOff,
   FileImage,
+  FileKey2,
   FileOutput,
   ImageDown,
   FileSearch,
@@ -115,6 +116,7 @@ const FileAttachment = lazy(() => import("./tools/FileAttachment.tsx"));
 const SplitPdf = lazy(() => import("./tools/SplitPdf.tsx"));
 const ExtractImages = lazy(() => import("./tools/ExtractImages.tsx"));
 const ComparePdf = lazy(() => import("./tools/ComparePdf.tsx"));
+const DigitalSignature = lazy(() => import("./tools/DigitalSignature.tsx"));
 
 // ── Tool metadata displayed on the home screen grid ──────────────
 // Tools within each category are ordered by importance / frequency of use.
@@ -356,7 +358,7 @@ const tools: Tool[] = [
   {
     id: "metadata",
     title: "Edit Metadata",
-    description: "View and edit PDF document properties",
+    description: "View, edit, or redact PDF document properties for privacy",
     icon: FileText,
     category: "security",
   },
@@ -365,6 +367,13 @@ const tools: Tool[] = [
     title: "Compare PDFs",
     description: "Visual side-by-side diff of two PDFs with pixel-level change detection",
     icon: ArrowLeftRight,
+    category: "security",
+  },
+  {
+    id: "digital-signature",
+    title: "Digital Signature",
+    description: "Sign PDFs with a cryptographic certificate for authenticity verification",
+    icon: FileKey2,
     category: "security",
   },
   {
@@ -450,6 +459,7 @@ const toolComponents: Record<string, React.LazyExoticComponent<React.ComponentTy
   "split-pdf": SplitPdf,
   "extract-images": ExtractImages,
   "compare-pdf": ComparePdf,
+  "digital-signature": DigitalSignature,
 };
 
 // ── Platform detection (module-level, computed once) ──────────────
