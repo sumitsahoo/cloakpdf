@@ -9,12 +9,17 @@
 import { useState, useCallback } from "react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { SortableGrid } from "../components/SortableGrid.tsx";
+import { AlertBox } from "../components/AlertBox.tsx";
+import { ActionButton } from "../components/ActionButton.tsx";
+import { FileInfoBar } from "../components/FileInfoBar.tsx";
+import { ResetButton } from "../components/ResetButton.tsx";
+import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
 import { useSortableDrag } from "../hooks/useSortableDrag.ts";
 import { addBlankPages } from "../utils/pdf-operations.ts";
-import { renderAllThumbnails } from "../utils/pdf-renderer.ts";
-import { Undo2, Plus } from "lucide-react";
+import { renderAllThumbnails, revokeThumbnails } from "../utils/pdf-renderer.ts";
+import { Plus } from "lucide-react";
 
 type BlankItem = { type: "blank"; id: string };
 type OriginalItem = { type: "original"; index: number };
@@ -122,27 +127,19 @@ export default function AddBlankPage() {
         />
       ) : (
         <>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <p className="text-sm text-slate-600 dark:text-dark-text-muted break-all sm:break-normal">
-              <span className="font-medium">{file.name}</span> — {formatFileSize(file.size)}
-            </p>
-            <button
-              type="button"
-              onClick={() => {
-                setFile(null);
-                setThumbnails([]);
-                setItems([]);
-              }}
-              className="text-sm text-primary-600 hover:text-primary-700"
-            >
-              Change file
-            </button>
-          </div>
+          <FileInfoBar
+            fileName={file.name}
+            details={formatFileSize(file.size)}
+            onChangeFile={() => {
+              revokeThumbnails(thumbnails);
+              setFile(null);
+              setThumbnails([]);
+              setItems([]);
+            }}
+          />
 
           {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="w-8 h-8 border-3 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
-            </div>
+            <LoadingSpinner />
           ) : (
             <>
               <div className="space-y-3">
@@ -153,16 +150,7 @@ export default function AddBlankPage() {
                       : "Drag pages to rearrange them"}
                   </p>
                   <div className="flex items-center gap-3">
-                    {hasBlankPages && (
-                      <button
-                        type="button"
-                        onClick={handleReset}
-                        className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 dark:text-dark-text-muted dark:hover:text-dark-text transition-colors"
-                      >
-                        <Undo2 className="w-4 h-4" />
-                        Reset
-                      </button>
-                    )}
+                    {hasBlankPages && <ResetButton onClick={handleReset} />}
                     <button
                       type="button"
                       onClick={handleAddBlank}
@@ -296,25 +284,19 @@ export default function AddBlankPage() {
               </div>
 
               {hasBlankPages && (
-                <button
-                  type="button"
+                <ActionButton
                   onClick={handleApply}
-                  disabled={processing}
-                  className="w-full bg-primary-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  {processing ? "Inserting…" : "Insert Blank Pages & Download"}
-                </button>
+                  processing={processing}
+                  label="Insert Blank Pages & Download"
+                  processingLabel="Inserting…"
+                />
               )}
             </>
           )}
         </>
       )}
 
-      {error && (
-        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-4">
-          <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
-        </div>
-      )}
+      {error && <AlertBox variant="error" message={error} />}
     </div>
   );
 }

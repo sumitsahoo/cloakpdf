@@ -7,13 +7,18 @@
  */
 
 import { useCallback, useState } from "react";
-import { Trash2, Undo2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
+import { ActionButton } from "../components/ActionButton.tsx";
+import { AlertBox } from "../components/AlertBox.tsx";
 import { FileDropZone } from "../components/FileDropZone.tsx";
+import { FileInfoBar } from "../components/FileInfoBar.tsx";
+import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
+import { ResetButton } from "../components/ResetButton.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { PageThumbnail } from "../components/PageThumbnail.tsx";
 import { downloadPdf } from "../utils/file-helpers.ts";
 import { deletePages } from "../utils/pdf-operations.ts";
-import { renderAllThumbnails } from "../utils/pdf-renderer.ts";
+import { renderAllThumbnails, revokeThumbnails } from "../utils/pdf-renderer.ts";
 
 export default function DeletePages() {
   const [file, setFile] = useState<File | null>(null);
@@ -89,47 +94,33 @@ export default function DeletePages() {
         />
       ) : (
         <>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <p className="text-sm text-slate-600 dark:text-dark-text-muted break-all sm:break-normal">
-              <span className="font-medium">{file.name}</span> — {thumbnails.length} pages
-              {selectedPages.size > 0 && (
+          <FileInfoBar
+            fileName={file.name}
+            details={`${thumbnails.length} pages`}
+            onChangeFile={() => {
+              revokeThumbnails(thumbnails);
+              setFile(null);
+              setThumbnails([]);
+              setSelectedPages(new Set());
+            }}
+            extra={
+              selectedPages.size > 0 ? (
                 <span className="text-red-500 ml-2">
                   ({selectedPages.size} selected for removal)
                 </span>
-              )}
-            </p>
-            <button
-              onClick={() => {
-                setFile(null);
-                setThumbnails([]);
-                setSelectedPages(new Set());
-              }}
-              className="text-sm text-primary-600 hover:text-primary-700"
-            >
-              Change file
-            </button>
-          </div>
+              ) : undefined
+            }
+          />
 
           {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="w-8 h-8 border-3 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
-            </div>
+            <LoadingSpinner />
           ) : (
             <>
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <p className="text-sm font-medium text-slate-700 dark:text-dark-text">
                   Click pages to mark them for deletion
                 </p>
-                {selectedPages.size > 0 && (
-                  <button
-                    type="button"
-                    onClick={handleReset}
-                    className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 dark:text-dark-text-muted dark:hover:text-dark-text transition-colors"
-                  >
-                    <Undo2 className="w-4 h-4" />
-                    Reset
-                  </button>
-                )}
+                {selectedPages.size > 0 && <ResetButton onClick={handleReset} />}
               </div>
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
                 {thumbnails.map((thumb, i) => (
@@ -153,15 +144,13 @@ export default function DeletePages() {
           )}
 
           {selectedPages.size > 0 && selectedPages.size < thumbnails.length && (
-            <button
+            <ActionButton
               onClick={handleDelete}
-              disabled={processing}
-              className="w-full bg-red-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {processing
-                ? "Removing..."
-                : `Remove ${selectedPages.size} Page${selectedPages.size > 1 ? "s" : ""} & Download`}
-            </button>
+              processing={processing}
+              label={`Remove ${selectedPages.size} Page${selectedPages.size > 1 ? "s" : ""} & Download`}
+              processingLabel="Removing..."
+              color="bg-red-600 hover:bg-red-700"
+            />
           )}
 
           {selectedPages.size >= thumbnails.length && (
@@ -172,11 +161,7 @@ export default function DeletePages() {
         </>
       )}
 
-      {error && (
-        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-4">
-          <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
-        </div>
-      )}
+      {error && <AlertBox variant="error" message={error} />}
     </div>
   );
 }

@@ -11,19 +11,34 @@ import { ArrowLeftRight, ChevronLeft, ChevronRight, Eye, EyeOff, Layers } from "
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import { useCallback, useMemo, useState } from "react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
-import { categoryAccent, categoryGlow } from "../config/theme.ts";
+import { AlertBox } from "../components/AlertBox.tsx";
+import { ActionButton } from "../components/ActionButton.tsx";
+import { categoryAccent, categoryGlow, canvas as canvasColors } from "../config/theme.ts";
 import { formatFileSize } from "../utils/file-helpers.ts";
 import { pdfjsLib } from "../utils/pdf-renderer.ts";
+
+/**
+ * Convert a canvas to a Blob URL (more memory-efficient than data-URLs).
+ * The caller is responsible for revoking the URL via `URL.revokeObjectURL`.
+ */
+async function canvasToBlobUrl(canvas: HTMLCanvasElement): Promise<string> {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) resolve(URL.createObjectURL(blob));
+      else reject(new Error("Canvas toBlob returned null"));
+    }, "image/png");
+  });
+}
 
 /** Rendered data for a single page pair. */
 interface PageComparison {
   /** 1-based page number. */
   page: number;
-  /** Data-URL of the rendered page from the first PDF (or null if beyond its page count). */
+  /** Blob URL of the rendered page from the first PDF (or null if beyond its page count). */
   thumbA: string | null;
-  /** Data-URL of the rendered page from the second PDF (or null if beyond its page count). */
+  /** Blob URL of the rendered page from the second PDF (or null if beyond its page count). */
   thumbB: string | null;
-  /** Data-URL of the pixel-diff overlay (red highlight on transparent). */
+  /** Blob URL of the pixel-diff overlay (red highlight on transparent). */
   diffThumb: string | null;
   /** Percentage of pixels that differ (0–100). */
   diffPercent: number;
@@ -98,11 +113,11 @@ function diffCanvases(
     const db = Math.abs(dataA[i + 2] - dataB[i + 2]);
 
     if (dr > threshold || dg > threshold || db > threshold) {
-      // Mark changed pixel in red
-      out[i] = 239; // R
-      out[i + 1] = 68; // G
-      out[i + 2] = 68; // B
-      out[i + 3] = 180; // A
+      // Mark changed pixel with diff highlight colour
+      out[i] = canvasColors.diffHighlight.r;
+      out[i + 1] = canvasColors.diffHighlight.g;
+      out[i + 2] = canvasColors.diffHighlight.b;
+      out[i + 3] = canvasColors.diffHighlight.a;
       changedPixels++;
     } else {
       // Unchanged — transparent
@@ -148,12 +163,12 @@ async function comparePdfs(
     let diffThumb: string | null = null;
     let diffPercent = 0;
 
-    if (canvasA) thumbA = canvasA.toDataURL("image/png");
-    if (canvasB) thumbB = canvasB.toDataURL("image/png");
+    if (canvasA) thumbA = await canvasToBlobUrl(canvasA);
+    if (canvasB) thumbB = await canvasToBlobUrl(canvasB);
 
     if (canvasA && canvasB) {
       const { diffCanvas, diffPercent: pct } = diffCanvases(canvasA, canvasB);
-      diffThumb = diffCanvas.toDataURL("image/png");
+      diffThumb = await canvasToBlobUrl(diffCanvas);
       diffPercent = pct;
       diffCanvas.width = 0;
       diffCanvas.height = 0;
@@ -218,6 +233,12 @@ export default function ComparePdf() {
 
   const handleCompare = useCallback(async () => {
     if (!fileA || !fileB) return;
+    // Revoke any existing blob URLs before starting a new comparison
+    for (const c of comparisons) {
+      if (c.thumbA) URL.revokeObjectURL(c.thumbA);
+      if (c.thumbB) URL.revokeObjectURL(c.thumbB);
+      if (c.diffThumb) URL.revokeObjectURL(c.diffThumb);
+    }
     setLoading(true);
     setError(null);
     setProgress(null);
@@ -249,15 +270,21 @@ export default function ComparePdf() {
       setLoading(false);
       setProgress(null);
     }
-  }, [fileA, fileB]);
+  }, [fileA, fileB, comparisons]);
 
   const reset = useCallback(() => {
+    // Revoke blob URLs to free memory
+    for (const c of comparisons) {
+      if (c.thumbA) URL.revokeObjectURL(c.thumbA);
+      if (c.thumbB) URL.revokeObjectURL(c.thumbB);
+      if (c.diffThumb) URL.revokeObjectURL(c.diffThumb);
+    }
     setFileA(null);
     setFileB(null);
     setComparisons([]);
     setError(null);
     setCurrentPage(0);
-  }, []);
+  }, [comparisons]);
 
   const summary = useMemo(() => {
     if (comparisons.length === 0) return null;
@@ -349,15 +376,13 @@ export default function ComparePdf() {
 
         {fileA && fileB && (
           <>
-            <button
-              type="button"
+            <ActionButton
               onClick={handleCompare}
-              disabled={loading}
-              className="w-full bg-amber-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
-            >
-              <ArrowLeftRight className="w-4 h-4" />
-              {loading ? "Comparing…" : "Compare PDFs"}
-            </button>
+              processing={loading}
+              label="Compare PDFs"
+              processingLabel="Comparing…"
+              color="bg-amber-600 hover:bg-amber-700"
+            />
 
             {loading && progress && (
               <div className="space-y-2">
@@ -378,11 +403,7 @@ export default function ComparePdf() {
           </>
         )}
 
-        {error && (
-          <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-4">
-            <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
-          </div>
-        )}
+        {error && <AlertBox variant="error" message={error} />}
       </div>
     );
   }
@@ -641,11 +662,7 @@ export default function ComparePdf() {
         </div>
       </div>
 
-      {error && (
-        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-4">
-          <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
-        </div>
-      )}
+      {error && <AlertBox variant="error" message={error} />}
     </div>
   );
 }

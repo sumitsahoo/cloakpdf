@@ -10,6 +10,7 @@
  */
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { colorPresets } from "../config/theme.ts";
 
 /* ------------------------------------------------------------------ */
 /*  Colour-space helpers                                               */
@@ -57,15 +58,8 @@ export function rgbToHex(r: number, g: number, b: number): string {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Preset colours shared by Signature & Watermark tools               */
+/*  Preset colours — centralised in theme.ts                           */
 /* ------------------------------------------------------------------ */
-
-const PRESETS = [
-  { label: "Black", hex: "#1e293b" },
-  { label: "Grey", hex: "#6b7280" },
-  { label: "Blue", hex: "#1d4ed8" },
-  { label: "Red", hex: "#dc2626" },
-];
 
 /* ------------------------------------------------------------------ */
 /*  Component                                                          */
@@ -81,7 +75,7 @@ export function ColorPicker({ value, onChange }: ColorPickerProps) {
   const popoverRef = useRef<HTMLDivElement>(null);
   const svAreaRef = useRef<HTMLDivElement>(null);
 
-  const isPreset = PRESETS.some((p) => p.hex === value);
+  const isPreset = colorPresets.some((p) => p.hex === value);
 
   // Internal HSV state for the popover – synced from value when opening
   const [hsv, setHsv] = useState(() => hexToHsv(value));
@@ -191,7 +185,7 @@ export function ColorPicker({ value, onChange }: ColorPickerProps) {
       <div className="flex items-center gap-2.5">
         <span className="text-xs text-slate-400 dark:text-dark-text-muted shrink-0">Color:</span>
 
-        {PRESETS.map((p) => (
+        {colorPresets.map((p) => (
           <button
             key={p.hex}
             aria-label={`${p.label} color${value === p.hex ? " (selected)" : ""}`}

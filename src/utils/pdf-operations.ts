@@ -146,6 +146,7 @@ export async function splitPdf(file: File, ranges: PageRange[]): Promise<Uint8Ar
 export async function compressPdf(
   file: File,
   quality: "low" | "medium" | "high" = "medium",
+  onProgress?: (rendered: number, total: number) => void,
 ): Promise<Uint8Array> {
   const qualitySettings = {
     low: { scale: 1.0, jpegQuality: 0.85 },
@@ -199,6 +200,9 @@ export async function compressPdf(
       width: origViewport.width,
       height: origViewport.height,
     });
+
+    onProgress?.(i, sourcePdf.numPages);
+    await new Promise((r) => setTimeout(r, 0));
   }
 
   void sourcePdf.destroy();
@@ -219,7 +223,10 @@ export async function compressPdf(
  * @param file - The PDF file to convert.
  * @returns Grayscale PDF bytes.
  */
-export async function grayscalePdf(file: File): Promise<Uint8Array> {
+export async function grayscalePdf(
+  file: File,
+  onProgress?: (rendered: number, total: number) => void,
+): Promise<Uint8Array> {
   const SCALE = 2.0;
 
   const pdfjsLib = await getPdfJs();
@@ -270,6 +277,9 @@ export async function grayscalePdf(file: File): Promise<Uint8Array> {
       width: origViewport.width,
       height: origViewport.height,
     });
+
+    onProgress?.(i, sourcePdf.numPages);
+    await new Promise((r) => setTimeout(r, 0));
   }
 
   void sourcePdf.destroy();

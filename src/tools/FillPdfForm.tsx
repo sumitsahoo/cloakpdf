@@ -19,10 +19,14 @@
 import { useState, useCallback } from "react";
 import { ChevronDown } from "lucide-react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
+import { AlertBox } from "../components/AlertBox.tsx";
+import { ActionButton } from "../components/ActionButton.tsx";
+import { FileInfoBar } from "../components/FileInfoBar.tsx";
+import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { fillPdfForm, getFieldPageIndices } from "../utils/pdf-operations.ts";
 import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
-import { renderAllThumbnails } from "../utils/pdf-renderer.ts";
+import { renderAllThumbnails, revokeThumbnails } from "../utils/pdf-renderer.ts";
 
 type FieldType = "text" | "checkbox" | "dropdown" | "radio" | "other";
 
@@ -190,30 +194,22 @@ export default function FillPdfForm() {
         />
       ) : (
         <>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <p className="text-sm text-slate-600 dark:text-dark-text-muted break-all sm:break-normal">
-              <span className="font-medium">{file.name}</span> — {formatFileSize(file.size)}
-            </p>
-            <button
-              type="button"
-              onClick={() => {
-                setFile(null);
-                setThumbnails([]);
-                setThumbnailIds([]);
-                setSelectedPage(null);
-                setFields([]);
-                setFieldValues({});
-              }}
-              className="text-sm text-primary-600 hover:text-primary-700"
-            >
-              Change file
-            </button>
-          </div>
+          <FileInfoBar
+            fileName={file.name}
+            details={formatFileSize(file.size)}
+            onChangeFile={() => {
+              revokeThumbnails(thumbnails);
+              setFile(null);
+              setThumbnails([]);
+              setThumbnailIds([]);
+              setSelectedPage(null);
+              setFields([]);
+              setFieldValues({});
+            }}
+          />
 
           {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="w-8 h-8 border-3 border-emerald-200 border-t-emerald-600 rounded-full animate-spin" />
-            </div>
+            <LoadingSpinner color="border-emerald-200 border-t-emerald-600" />
           ) : (
             <>
               {/* Page selector */}
@@ -415,14 +411,13 @@ export default function FillPdfForm() {
                       </div>
                     </label>
                   </div>
-                  <button
-                    type="button"
+                  <ActionButton
                     onClick={handleFill}
-                    disabled={processing}
-                    className="w-full bg-emerald-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    {processing ? "Filling…" : "Fill & Download PDF"}
-                  </button>
+                    processing={processing}
+                    label="Fill & Download PDF"
+                    processingLabel="Filling…"
+                    color="bg-emerald-600 hover:bg-emerald-700"
+                  />
                 </div>
               )}
             </>
@@ -430,11 +425,7 @@ export default function FillPdfForm() {
         </>
       )}
 
-      {error && (
-        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-4">
-          <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
-        </div>
-      )}
+      {error && <AlertBox variant="error" message={error} />}
     </div>
   );
 }

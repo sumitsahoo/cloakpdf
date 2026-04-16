@@ -9,9 +9,13 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { Grid3X3, Image, Tag } from "lucide-react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
-import { categoryAccent, categoryGlow } from "../config/theme.ts";
+import { AlertBox } from "../components/AlertBox.tsx";
+import { ActionButton } from "../components/ActionButton.tsx";
+import { FileInfoBar } from "../components/FileInfoBar.tsx";
+import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
+import { categoryAccent, categoryGlow, canvas as canvasColors } from "../config/theme.ts";
 import { downloadBlob, formatFileSize } from "../utils/file-helpers.ts";
-import { renderAllThumbnails } from "../utils/pdf-renderer.ts";
+import { pdfjsLib, renderAllThumbnails, revokeThumbnails } from "../utils/pdf-renderer.ts";
 
 type GridLayout = "2x2" | "3x3" | "4x4" | "5x5";
 type OutputFormat = "png" | "pdf";
@@ -96,11 +100,7 @@ export default function ContactSheet() {
     try {
       const totalSheets = Math.ceil(pageCount / perSheet);
 
-      // Render all pages via PDF.js
-      const workerModule = await import("pdfjs-dist/build/pdf.worker.min.mjs?worker&url");
-      const pdfjsLib = await import("pdfjs-dist");
-      pdfjsLib.GlobalWorkerOptions.workerSrc = workerModule.default;
-
+      // Use the shared PDF.js instance (worker already configured)
       const arrayBuffer = await file.arrayBuffer();
       const pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
 
@@ -125,7 +125,7 @@ export default function ContactSheet() {
         if (!ctx) throw new Error("Failed to create canvas context");
 
         // White background
-        ctx.fillStyle = "#ffffff";
+        ctx.fillStyle = canvasColors.background;
         ctx.fillRect(0, 0, sheetW, sheetH);
 
         for (let slot = 0; slot < perSheet; slot++) {
@@ -163,7 +163,7 @@ export default function ContactSheet() {
           const drawY = cellY + (drawAreaH - drawH) / 2;
 
           // Light border around the thumbnail
-          ctx.strokeStyle = "#e2e8f0";
+          ctx.strokeStyle = canvasColors.border;
           ctx.lineWidth = 2;
           ctx.strokeRect(drawX - 1, drawY - 1, drawW + 2, drawH + 2);
 
@@ -172,7 +172,7 @@ export default function ContactSheet() {
 
           // Page label
           if (showLabels) {
-            ctx.fillStyle = "#64748b";
+            ctx.fillStyle = canvasColors.label;
             ctx.font = "bold 20px sans-serif";
             ctx.textAlign = "center";
             ctx.fillText(`Page ${pageIdx + 1}`, cellX + genCellW / 2, cellY + genCellH - 6);
@@ -253,25 +253,21 @@ export default function ContactSheet() {
         />
       ) : (
         <>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <p className="text-sm text-slate-600 dark:text-dark-text-muted break-all sm:break-normal">
-              <span className="font-medium">{file.name}</span>
-              {loading ? " — loading…" : ` — ${pageCount} pages`}
-              {!loading && pageCount > 0 && (
+          <FileInfoBar
+            fileName={file.name}
+            details={loading ? "loading…" : `${pageCount} pages`}
+            onChangeFile={() => {
+              revokeThumbnails(thumbnails);
+              setFile(null);
+              setThumbnails([]);
+              setPageCount(0);
+            }}
+            extra={
+              !loading && pageCount > 0 ? (
                 <span className="text-primary-600 ml-2">({formatFileSize(file.size)})</span>
-              )}
-            </p>
-            <button
-              onClick={() => {
-                setFile(null);
-                setThumbnails([]);
-                setPageCount(0);
-              }}
-              className="text-sm text-primary-600 hover:text-primary-700"
-            >
-              Change file
-            </button>
-          </div>
+              ) : undefined
+            }
+          />
 
           <div className="grid md:grid-cols-2 gap-6 items-start">
             {/* Left column: controls */}
@@ -359,7 +355,7 @@ export default function ContactSheet() {
               </p>
               {loading ? (
                 <div className="aspect-[7/10] bg-slate-100 dark:bg-dark-surface-alt rounded-lg flex items-center justify-center">
-                  <div className="w-8 h-8 border-3 border-violet-200 border-t-violet-600 rounded-full animate-spin" />
+                  <LoadingSpinner color="border-violet-200 border-t-violet-600" className="" />
                 </div>
               ) : (
                 <div
@@ -399,7 +395,7 @@ export default function ContactSheet() {
                                     alt={`Page ${idx + 1}`}
                                     className="max-w-full max-h-full object-contain rounded-[2px]"
                                     style={{
-                                      border: "1px solid #e2e8f0",
+                                      border: `1px solid ${canvasColors.border}`,
                                       display: "block",
                                     }}
                                     draggable={false}
@@ -454,21 +450,18 @@ export default function ContactSheet() {
             </div>
           )}
 
-          <button
+          <ActionButton
             onClick={handleGenerate}
+            processing={processing}
             disabled={processing || loading || pageCount === 0}
-            className="w-full bg-violet-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {processing ? "Generating…" : `Generate Contact Sheet${sheetsNeeded > 1 ? "s" : ""}`}
-          </button>
+            label={`Generate Contact Sheet${sheetsNeeded > 1 ? "s" : ""}`}
+            processingLabel="Generating…"
+            color="bg-violet-600 hover:bg-violet-700"
+          />
         </>
       )}
 
-      {error && (
-        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-4">
-          <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
-        </div>
-      )}
+      {error && <AlertBox variant="error" message={error} />}
     </div>
   );
 }

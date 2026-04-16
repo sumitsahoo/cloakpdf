@@ -7,6 +7,8 @@
  */
 
 import { useState, useCallback } from "react";
+import { ActionButton } from "../components/ActionButton.tsx";
+import { AlertBox } from "../components/AlertBox.tsx";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { mergePdfs } from "../utils/pdf-operations.ts";
@@ -122,20 +124,15 @@ export default function MergePdf() {
       )}
 
       {files.length >= 2 && (
-        <button
+        <ActionButton
           onClick={handleMerge}
-          disabled={processing}
-          className="w-full bg-primary-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        >
-          {processing ? "Merging..." : `Merge ${files.length} Files`}
-        </button>
+          processing={processing}
+          label={`Merge ${files.length} Files`}
+          processingLabel="Merging..."
+        />
       )}
 
-      {error && (
-        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-4">
-          <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
-        </div>
-      )}
+      {error && <AlertBox variant="error" message={error} />}
     </div>
   );
 }

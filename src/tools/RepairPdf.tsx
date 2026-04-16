@@ -9,6 +9,8 @@
 
 import { useState, useCallback } from "react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
+import { AlertBox } from "../components/AlertBox.tsx";
+import { ActionButton } from "../components/ActionButton.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { repairPdf } from "../utils/pdf-operations.ts";
 import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
@@ -114,29 +116,24 @@ export default function RepairPdf() {
             </p>
           </div>
 
-          <button
+          <ActionButton
             onClick={handleRepair}
-            disabled={processing}
-            className="w-full bg-violet-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {processing ? "Repairing..." : "Repair & Download PDF"}
-          </button>
+            processing={processing}
+            label="Repair & Download PDF"
+            processingLabel="Repairing..."
+            color="bg-violet-600 hover:bg-violet-700"
+          />
 
           {done && (
-            <div className="bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-xl p-4">
-              <p className="text-sm text-emerald-700 dark:text-emerald-300">
-                PDF repaired successfully. The file has been downloaded.
-              </p>
-            </div>
+            <AlertBox
+              variant="success"
+              message="PDF repaired successfully. The file has been downloaded."
+            />
           )}
         </>
       )}
 
-      {error && (
-        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-4">
-          <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
-        </div>
-      )}
+      {error && <AlertBox variant="error" message={error} />}
     </div>
   );
 }

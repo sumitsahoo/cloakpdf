@@ -8,7 +8,10 @@
 
 import { useState, useCallback } from "react";
 import { Gauge } from "lucide-react";
+import { ActionButton } from "../components/ActionButton.tsx";
+import { AlertBox } from "../components/AlertBox.tsx";
 import { FileDropZone } from "../components/FileDropZone.tsx";
+import { FileInfoBar } from "../components/FileInfoBar.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { compressPdf } from "../utils/pdf-operations.ts";
 import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
@@ -23,6 +26,7 @@ export default function CompressPdf() {
     compressed: number;
     data: Uint8Array;
   } | null>(null);
+  const [progress, setProgress] = useState<{ current: number; total: number } | null>(null);
 
   const handleFile = useCallback((files: File[]) => {
     const pdf = files[0];
@@ -37,7 +41,9 @@ export default function CompressPdf() {
     setProcessing(true);
     setError(null);
     try {
-      const data = await compressPdf(file, quality);
+      const data = await compressPdf(file, quality, (current, total) =>
+        setProgress({ current, total }),
+      );
       setResult({
         original: file.size,
         compressed: data.length,
@@ -47,6 +53,7 @@ export default function CompressPdf() {
       setError(e instanceof Error ? e.message : "Failed to compress PDF. Please try again.");
     } finally {
       setProcessing(false);
+      setProgress(null);
     }
   }, [file, quality]);
 
@@ -74,20 +81,14 @@ export default function CompressPdf() {
         />
       ) : (
         <>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <p className="text-sm text-slate-600 dark:text-dark-text-muted break-all sm:break-normal">
-              <span className="font-medium">{file.name}</span> — {formatFileSize(file.size)}
-            </p>
-            <button
-              onClick={() => {
-                setFile(null);
-                setResult(null);
-              }}
-              className="text-sm text-primary-600 hover:text-primary-700"
-            >
-              Change file
-            </button>
-          </div>
+          <FileInfoBar
+            fileName={file.name}
+            details={formatFileSize(file.size)}
+            onChangeFile={() => {
+              setFile(null);
+              setResult(null);
+            }}
+          />
 
           {!result ? (
             <div className="space-y-4">
@@ -170,13 +171,30 @@ export default function CompressPdf() {
                 </div>
               </div>
 
-              <button
+              {processing && progress && (
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm text-slate-600 dark:text-dark-text-muted">
+                    <span>Processing pages…</span>
+                    <span>
+                      {progress.current} / {progress.total}
+                    </span>
+                  </div>
+                  <div className="w-full bg-slate-200 dark:bg-dark-border rounded-full h-2">
+                    <div
+                      className="bg-violet-600 h-2 rounded-full transition-all"
+                      style={{ width: `${(progress.current / progress.total) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              <ActionButton
                 onClick={handleCompress}
-                disabled={processing}
-                className="w-full bg-violet-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                {processing ? "Compressing... (this may take a moment)" : "Compress PDF"}
-              </button>
+                processing={processing}
+                label="Compress PDF"
+                processingLabel="Compressing... (this may take a moment)"
+                color="bg-violet-600 hover:bg-violet-700"
+              />
             </div>
           ) : (
             <div className="space-y-4">
@@ -210,22 +228,19 @@ export default function CompressPdf() {
                 )}
               </div>
 
-              <button
+              <ActionButton
                 onClick={handleDownload}
-                className="w-full bg-violet-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-violet-700 transition-colors"
-              >
-                Download Compressed PDF
-              </button>
+                processing={false}
+                label="Download Compressed PDF"
+                processingLabel=""
+                color="bg-violet-600 hover:bg-violet-700"
+              />
             </div>
           )}
         </>
       )}
 
-      {error && (
-        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-4">
-          <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
-        </div>
-      )}
+      {error && <AlertBox variant="error" message={error} />}
     </div>
   );
 }

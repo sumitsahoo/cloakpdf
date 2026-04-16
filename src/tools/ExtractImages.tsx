@@ -9,6 +9,9 @@
 import { useState, useCallback, useMemo } from "react";
 import { CheckSquare, ImageDown, Loader2, X } from "lucide-react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
+import { AlertBox } from "../components/AlertBox.tsx";
+import { FileInfoBar } from "../components/FileInfoBar.tsx";
+import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import { downloadBlob, formatFileSize } from "../utils/file-helpers.ts";
@@ -326,31 +329,27 @@ export default function ExtractImages() {
         />
       ) : (
         <>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <p className="text-sm text-slate-600 dark:text-dark-text-muted break-all sm:break-normal">
-              <span className="font-medium">{file.name}</span> — {formatFileSize(file.size)}
-              {!loading && images.length > 0 && (
+          <FileInfoBar
+            fileName={file.name}
+            details={formatFileSize(file.size)}
+            onChangeFile={() => {
+              setFile(null);
+              setImages([]);
+              setSelected(new Set());
+              setError(null);
+            }}
+            extra={
+              !loading && images.length > 0 ? (
                 <span className="text-violet-600 ml-2">
                   ({images.length} image{images.length !== 1 && "s"} found)
                 </span>
-              )}
-            </p>
-            <button
-              onClick={() => {
-                setFile(null);
-                setImages([]);
-                setSelected(new Set());
-                setError(null);
-              }}
-              className="text-sm text-primary-600 hover:text-primary-700"
-            >
-              Change file
-            </button>
-          </div>
+              ) : undefined
+            }
+          />
 
           {loading ? (
             <div className="flex flex-col items-center justify-center py-12 gap-3">
-              <div className="w-8 h-8 border-3 border-violet-200 border-t-violet-600 rounded-full animate-spin" />
+              <LoadingSpinner color="border-violet-200 border-t-violet-600" className="" />
               {progress && (
                 <p className="text-sm text-slate-500 dark:text-dark-text-muted">
                   Scanning page {progress.done} of {progress.total}…
@@ -456,11 +455,7 @@ export default function ExtractImages() {
         </>
       )}
 
-      {error && (
-        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-4">
-          <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
-        </div>
-      )}
+      {error && <AlertBox variant="error" message={error} />}
     </div>
   );
 }

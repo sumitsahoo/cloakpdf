@@ -9,6 +9,7 @@
 
 import { FileUp } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
+import { categoryGlow } from "../config/theme.ts";
 
 interface FileDropZoneProps {
   /** MIME type filter for the hidden file input (e.g. ".pdf,application/pdf"). */
@@ -39,7 +40,7 @@ export function FileDropZone({
   onFiles,
   label = "Drop files here or click to browse",
   hint,
-  glowColor = "rgba(99,102,241,0.14)",
+  glowColor = categoryGlow.organise,
   iconColor,
 }: FileDropZoneProps) {
   const [isDragOver, setIsDragOver] = useState(false);
