@@ -9,6 +9,8 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
+import { AlertBox } from "../components/AlertBox.tsx";
+import { ActionButton } from "../components/ActionButton.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { imagesToPdf } from "../utils/pdf-operations.ts";
 import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
@@ -168,23 +170,17 @@ export default function ImagesToPdf() {
             ))}
           </div>
 
-          <button
+          <ActionButton
             onClick={handleConvert}
-            disabled={processing}
-            className="w-full bg-violet-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {processing
-              ? "Creating PDF..."
-              : `Create PDF from ${images.length} Image${images.length > 1 ? "s" : ""}`}
-          </button>
+            processing={processing}
+            label={`Create PDF from ${images.length} Image${images.length > 1 ? "s" : ""}`}
+            processingLabel="Creating PDF..."
+            color="bg-violet-600 hover:bg-violet-700"
+          />
         </>
       )}
 
-      {error && (
-        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-4">
-          <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
-        </div>
-      )}
+      {error && <AlertBox variant="error" message={error} />}
     </div>
   );
 }

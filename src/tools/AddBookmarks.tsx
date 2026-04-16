@@ -8,6 +8,10 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
+import { AlertBox } from "../components/AlertBox.tsx";
+import { ActionButton } from "../components/ActionButton.tsx";
+import { FileInfoBar } from "../components/FileInfoBar.tsx";
+import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { addPdfBookmarks } from "../utils/pdf-operations.ts";
 import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
@@ -115,29 +119,19 @@ export default function AddBookmarks() {
         />
       ) : (
         <>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <p className="text-sm text-slate-600 dark:text-dark-text-muted break-all sm:break-normal">
-              <span className="font-medium">{file.name}</span> — {formatFileSize(file.size)}
-              {pageCount > 0 && `, ${pageCount} pages`}
-            </p>
-            <button
-              type="button"
-              onClick={() => {
-                setFile(null);
-                setPageCount(0);
-                setDone(false);
-                setBookmarks([{ id: nextId++, title: "", pageNumber: "1" }]);
-              }}
-              className="text-sm text-primary-600 hover:text-primary-700"
-            >
-              Change file
-            </button>
-          </div>
+          <FileInfoBar
+            fileName={file.name}
+            details={`${formatFileSize(file.size)}${pageCount > 0 ? `, ${pageCount} pages` : ""}`}
+            onChangeFile={() => {
+              setFile(null);
+              setPageCount(0);
+              setDone(false);
+              setBookmarks([{ id: nextId++, title: "", pageNumber: "1" }]);
+            }}
+          />
 
           {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="w-8 h-8 border-3 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
-            </div>
+            <LoadingSpinner />
           ) : (
             <div className="space-y-3">
               <div className="bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border overflow-hidden">
@@ -196,34 +190,26 @@ export default function AddBookmarks() {
                 Add bookmark
               </button>
 
-              <button
-                type="button"
+              <ActionButton
                 onClick={handleApply}
+                processing={processing}
                 disabled={processing || bookmarks.every((b) => !b.title.trim())}
-                className="w-full bg-primary-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                {processing
-                  ? "Adding Bookmarks..."
-                  : `Add ${bookmarks.filter((b) => b.title.trim()).length} Bookmark${bookmarks.filter((b) => b.title.trim()).length !== 1 ? "s" : ""} & Download`}
-              </button>
+                label={`Add ${bookmarks.filter((b) => b.title.trim()).length} Bookmark${bookmarks.filter((b) => b.title.trim()).length !== 1 ? "s" : ""} & Download`}
+                processingLabel="Adding Bookmarks..."
+              />
 
               {done && (
-                <div className="bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-xl p-4">
-                  <p className="text-sm text-emerald-700 dark:text-emerald-300">
-                    Bookmarks added successfully. The PDF has been downloaded.
-                  </p>
-                </div>
+                <AlertBox
+                  variant="success"
+                  message="Bookmarks added successfully. The PDF has been downloaded."
+                />
               )}
             </div>
           )}
         </>
       )}
 
-      {error && (
-        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-4">
-          <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
-        </div>
-      )}
+      {error && <AlertBox variant="error" message={error} />}
     </div>
   );
 }

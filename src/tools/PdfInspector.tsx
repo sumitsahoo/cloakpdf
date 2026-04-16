@@ -23,6 +23,8 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
+import { AlertBox } from "../components/AlertBox.tsx";
+import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { getPdfInfo } from "../utils/pdf-operations.ts";
 import { formatFileSize } from "../utils/file-helpers.ts";
@@ -84,11 +86,7 @@ export default function PdfInspector() {
         hint="Inspect version, page count, dimensions, metadata, and more"
       />
 
-      {loading && (
-        <div className="flex items-center justify-center py-12">
-          <div className="w-8 h-8 border-3 border-amber-200 border-t-amber-600 rounded-full animate-spin" />
-        </div>
-      )}
+      {loading && <LoadingSpinner color="border-amber-200 border-t-amber-600" />}
 
       {info && !loading && (
         <div className="space-y-4">
@@ -167,11 +165,7 @@ export default function PdfInspector() {
         </div>
       )}
 
-      {error && (
-        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-4">
-          <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
-        </div>
-      )}
+      {error && <AlertBox variant="error" message={error} />}
     </div>
   );
 }

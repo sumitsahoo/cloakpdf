@@ -7,15 +7,23 @@
  * the first page (e.g. for cover pages or title pages).
  */
 
-import { ChevronLeft, ChevronRight, PanelBottom, PanelTop, Undo2 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { ChevronLeft, ChevronRight, PanelBottom, PanelTop } from "lucide-react";
+import { useCallback, useRef, useState } from "react";
+import { ActionButton } from "../components/ActionButton.tsx";
+import { AlertBox } from "../components/AlertBox.tsx";
+import { CheckboxField } from "../components/CheckboxField.tsx";
 import { ColorPicker, hexToRgb, rgbToHex } from "../components/ColorPicker.tsx";
 import { FileDropZone } from "../components/FileDropZone.tsx";
+import { FileInfoBar } from "../components/FileInfoBar.tsx";
+import { LabeledSlider } from "../components/LabeledSlider.tsx";
+import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
+import { ResetButton } from "../components/ResetButton.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
+import { usePreviewScale } from "../hooks/usePreviewScale.ts";
 import type { HeaderFooterOptions } from "../types.ts";
 import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
 import { addHeaderFooter } from "../utils/pdf-operations.ts";
-import { renderAllThumbnails } from "../utils/pdf-renderer.ts";
+import { renderAllThumbnails, revokeThumbnails } from "../utils/pdf-renderer.ts";
 
 const DEFAULT_OPTIONS: HeaderFooterOptions = {
   headerLeft: "",
@@ -51,28 +59,13 @@ export default function HeaderFooter() {
   const [error, setError] = useState<string | null>(null);
 
   // Scale factor: preview px / page pt — used to size the font overlay correctly
-  const [previewScale, setPreviewScale] = useState(0.5);
-  const previewContainerRef = useRef<HTMLDivElement>(null);
+  const [previewScale, previewContainerRef] = usePreviewScale(pageDims[selectedPage]);
 
   // Track the last focused text input for token insertion
   const lastFocusedRef = useRef<{
     field: keyof HeaderFooterOptions;
     el: HTMLInputElement;
   } | null>(null);
-
-  /* Keep preview font scale in sync with the container's rendered width */
-  useEffect(() => {
-    const el = previewContainerRef.current;
-    const dim = pageDims[selectedPage];
-    if (!el || !dim) return;
-    const update = () => {
-      setPreviewScale(el.getBoundingClientRect().width / dim.width);
-    };
-    update();
-    const ro = new ResizeObserver(update);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [selectedPage, pageDims]);
 
   const handleFile = useCallback(async (files: File[]) => {
     const pdf = files[0];
@@ -195,23 +188,16 @@ export default function HeaderFooter() {
         />
       ) : (
         <>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <p className="text-sm text-slate-600 dark:text-dark-text-muted break-all sm:break-normal">
-              <span className="font-medium">{file.name}</span>
-              {loading ? " — loading…" : ` — ${formatFileSize(file.size)}`}
-            </p>
-            <button
-              type="button"
-              onClick={() => {
-                setFile(null);
-                setThumbnails([]);
-                setPageDims([]);
-              }}
-              className="text-sm text-primary-600 hover:text-primary-700"
-            >
-              Change file
-            </button>
-          </div>
+          <FileInfoBar
+            fileName={file.name}
+            details={loading ? "loading…" : formatFileSize(file.size)}
+            onChangeFile={() => {
+              revokeThumbnails(thumbnails);
+              setFile(null);
+              setThumbnails([]);
+              setPageDims([]);
+            }}
+          />
 
           <div className="grid md:grid-cols-2 gap-6 items-start">
             {/* ── Left column: controls ── */}
@@ -220,16 +206,7 @@ export default function HeaderFooter() {
                 <p className="text-sm font-medium text-slate-700 dark:text-dark-text">
                   Configure header and footer text below
                 </p>
-                {isDirty && (
-                  <button
-                    type="button"
-                    onClick={handleReset}
-                    className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 dark:text-dark-text-muted dark:hover:text-dark-text transition-colors"
-                  >
-                    <Undo2 className="w-4 h-4" />
-                    Reset
-                  </button>
-                )}
+                {isDirty && <ResetButton onClick={handleReset} />}
               </div>
 
               {/* Header row */}
@@ -330,55 +307,26 @@ export default function HeaderFooter() {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                {/* Font size */}
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <label
-                      htmlFor="hf-font-size"
-                      className="text-sm font-medium text-slate-700 dark:text-dark-text"
-                    >
-                      Font size
-                    </label>
-                    <span className="inline-flex items-center rounded-full bg-primary-100 dark:bg-primary-900/40 px-2 py-0.5 text-xs font-semibold text-primary-700 dark:text-primary-300 tabular-nums">
-                      {options.fontSize}pt
-                    </span>
-                  </div>
-                  <input
-                    id="hf-font-size"
-                    type="range"
-                    min={7}
-                    max={20}
-                    step={1}
-                    value={options.fontSize}
-                    onChange={(e) => setOpt("fontSize", Number(e.target.value))}
-                    className="w-full accent-emerald-600 cursor-pointer"
-                  />
-                </div>
-
-                {/* Margin */}
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <label
-                      htmlFor="hf-margin"
-                      className="text-sm font-medium text-slate-700 dark:text-dark-text"
-                    >
-                      Margin
-                    </label>
-                    <span className="inline-flex items-center rounded-full bg-primary-100 dark:bg-primary-900/40 px-2 py-0.5 text-xs font-semibold text-primary-700 dark:text-primary-300 tabular-nums">
-                      {options.margin}pt
-                    </span>
-                  </div>
-                  <input
-                    id="hf-margin"
-                    type="range"
-                    min={5}
-                    max={72}
-                    step={1}
-                    value={options.margin}
-                    onChange={(e) => setOpt("margin", Number(e.target.value))}
-                    className="w-full accent-emerald-600 cursor-pointer"
-                  />
-                </div>
+                <LabeledSlider
+                  id="hf-font-size"
+                  label="Font size"
+                  value={options.fontSize}
+                  min={7}
+                  max={20}
+                  unit="pt"
+                  onChange={(v) => setOpt("fontSize", v)}
+                  accent="accent-emerald-600"
+                />
+                <LabeledSlider
+                  id="hf-margin"
+                  label="Margin"
+                  value={options.margin}
+                  min={5}
+                  max={72}
+                  unit="pt"
+                  onChange={(v) => setOpt("margin", v)}
+                  accent="accent-emerald-600"
+                />
               </div>
 
               {/* Colour */}
@@ -396,22 +344,13 @@ export default function HeaderFooter() {
               </div>
 
               {/* Skip first page */}
-              <label className="flex items-start gap-3 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={options.skipFirstPage}
-                  onChange={(e) => setOpt("skipFirstPage", e.target.checked)}
-                  className="mt-0.5 h-4 w-4 shrink-0 rounded accent-emerald-600 cursor-pointer"
-                />
-                <div className="flex flex-col gap-0.5">
-                  <p className="text-sm font-medium text-slate-700 dark:text-dark-text leading-snug">
-                    Skip first page
-                  </p>
-                  <p className="text-xs text-slate-400 dark:text-dark-text-muted leading-snug">
-                    Useful when the first page is a cover or title page
-                  </p>
-                </div>
-              </label>
+              <CheckboxField
+                label="Skip first page"
+                description="Useful when the first page is a cover or title page"
+                checked={options.skipFirstPage}
+                onChange={(v) => setOpt("skipFirstPage", v)}
+                accent="accent-emerald-600"
+              />
             </div>
 
             {/* ── Right column: live page preview ── */}
@@ -449,7 +388,7 @@ export default function HeaderFooter() {
 
               {loading ? (
                 <div className="aspect-3/4 bg-slate-100 dark:bg-dark-surface-alt rounded-lg flex items-center justify-center">
-                  <div className="w-8 h-8 border-2 border-emerald-200 border-t-emerald-600 rounded-full animate-spin" />
+                  <LoadingSpinner color="border-emerald-200 border-t-emerald-600" />
                 </div>
               ) : thumbnails[selectedPage] ? (
                 <div
@@ -557,22 +496,18 @@ export default function HeaderFooter() {
             </div>
           </div>
 
-          <button
-            type="button"
+          <ActionButton
             onClick={handleApply}
+            processing={processing}
             disabled={processing || loading}
-            className="w-full bg-emerald-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {processing ? "Applying…" : "Apply Header & Footer & Download"}
-          </button>
+            label="Apply Header & Footer & Download"
+            processingLabel="Applying…"
+            color="bg-emerald-600 hover:bg-emerald-700"
+          />
         </>
       )}
 
-      {error && (
-        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-4">
-          <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
-        </div>
-      )}
+      {error && <AlertBox variant="error" message={error} />}
     </div>
   );
 }
