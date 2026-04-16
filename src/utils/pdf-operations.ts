@@ -751,11 +751,18 @@ export async function setPdfMetadata(file: File, metadata: PdfMetadata): Promise
   pdf.setCreator(metadata.creator);
   pdf.setProducer(metadata.producer);
 
+  // Access the Info dictionary to allow removing date entries.
+  // getInfoDict() is private on PDFDocument but available at runtime.
+  const infoDict = (pdf as unknown as { getInfoDict(): PDFDict }).getInfoDict();
   if (metadata.creationDate) {
     pdf.setCreationDate(new Date(metadata.creationDate));
+  } else {
+    infoDict.delete(PDFName.of("CreationDate"));
   }
   if (metadata.modificationDate) {
     pdf.setModificationDate(new Date(metadata.modificationDate));
+  } else {
+    infoDict.delete(PDFName.of("ModDate"));
   }
 
   return pdf.save();

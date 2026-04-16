@@ -84,13 +84,13 @@ _Add watermarks, signatures, and overlays_
 
 _Protect your PDFs and manage metadata_
 
-| Tool              | Description                                                                             |
-| ----------------- | --------------------------------------------------------------------------------------- |
-| **PDF Password**  | Add or remove a password and control print, copy, and edit rights                       |
-| **Redact PDF**    | Permanently black out sensitive text and images                                         |
-| **Edit Metadata** | View and edit document properties like title, author, subject, keywords, and dates      |
-| **Compare PDFs**  | Visual side-by-side diff of two PDFs with pixel-level change detection and diff overlay |
-| **PDF Inspector** | View version, page count, dimensions, metadata, and encryption status without modifying |
+| Tool              | Description                                                                                |
+| ----------------- | ------------------------------------------------------------------------------------------ |
+| **PDF Password**  | Add or remove a password and control print, copy, and edit rights                          |
+| **Redact PDF**    | Permanently black out sensitive text and images                                            |
+| **Edit Metadata** | View, edit, or redact document properties like title, author, subject, keywords, and dates |
+| **Compare PDFs**  | Visual side-by-side diff of two PDFs with pixel-level change detection and diff overlay    |
+| **PDF Inspector** | View version, page count, dimensions, metadata, and encryption status without modifying    |
 
 ---
 
