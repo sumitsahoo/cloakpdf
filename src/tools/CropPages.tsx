@@ -9,8 +9,13 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Check, Scissors, Undo2 } from "lucide-react";
+import { Check, Scissors } from "lucide-react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
+import { AlertBox } from "../components/AlertBox.tsx";
+import { ActionButton } from "../components/ActionButton.tsx";
+import { FileInfoBar } from "../components/FileInfoBar.tsx";
+import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
+import { ResetButton } from "../components/ResetButton.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { PageThumbnail } from "../components/PageThumbnail.tsx";
 import { cropPages, uncropPages } from "../utils/pdf-operations.ts";
@@ -199,39 +204,21 @@ export default function CropPages() {
         />
       ) : (
         <>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <p className="text-sm text-slate-600 dark:text-dark-text-muted break-all sm:break-normal">
-              <span className="font-medium">{file.name}</span> — {formatFileSize(file.size)}
-            </p>
-            <button
-              type="button"
-              onClick={() => setFile(null)}
-              className="text-sm text-primary-600 hover:text-primary-700"
-            >
-              Change file
-            </button>
-          </div>
+          <FileInfoBar
+            fileName={file.name}
+            details={formatFileSize(file.size)}
+            onChangeFile={() => setFile(null)}
+          />
 
           {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="w-8 h-8 border-3 border-violet-200 border-t-violet-600 rounded-full animate-spin" />
-            </div>
+            <LoadingSpinner color="border-violet-200 border-t-violet-600" />
           ) : (
             <>
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <p className="text-sm font-medium text-slate-700 dark:text-dark-text">
                   Set margins to crop the visible area of each page
                 </p>
-                {isDirty && (
-                  <button
-                    type="button"
-                    onClick={handleReset}
-                    className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 dark:text-dark-text-muted dark:hover:text-dark-text transition-colors"
-                  >
-                    <Undo2 className="w-4 h-4" />
-                    Reset
-                  </button>
-                )}
+                {isDirty && <ResetButton onClick={handleReset} />}
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Left: controls */}
@@ -480,14 +467,14 @@ export default function CropPages() {
                   )}
 
                   <div className="flex flex-col gap-2">
-                    <button
-                      type="button"
+                    <ActionButton
                       onClick={handleCrop}
+                      processing={processing}
                       disabled={processing || !isValid}
-                      className="w-full bg-violet-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                      {processing ? "Processing…" : "Crop & Download"}
-                    </button>
+                      label="Crop & Download"
+                      processingLabel="Processing…"
+                      color="bg-violet-600 hover:bg-violet-700"
+                    />
                     <button
                       type="button"
                       onClick={handleUncrop}
@@ -553,11 +540,7 @@ export default function CropPages() {
         </>
       )}
 
-      {error && (
-        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-4">
-          <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
-        </div>
-      )}
+      {error && <AlertBox variant="error" message={error} />}
     </div>
   );
 }

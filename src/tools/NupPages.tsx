@@ -9,6 +9,10 @@
 import { useState, useCallback } from "react";
 import { LayoutGrid } from "lucide-react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
+import { AlertBox } from "../components/AlertBox.tsx";
+import { ActionButton } from "../components/ActionButton.tsx";
+import { FileInfoBar } from "../components/FileInfoBar.tsx";
+import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { nupPages } from "../utils/pdf-operations.ts";
 import { getPageCount } from "../utils/pdf-renderer.ts";
@@ -94,27 +98,18 @@ export default function NupPages() {
         />
       ) : (
         <>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <p className="text-sm text-slate-600 dark:text-dark-text-muted break-all sm:break-normal">
-              <span className="font-medium">{file.name}</span> — {formatFileSize(file.size)}
-              {!loading && pageCount > 0 && `, ${pageCount} pages`}
-            </p>
-            <button
-              onClick={() => {
-                setFile(null);
-                setPageCount(0);
-                setDone(false);
-              }}
-              className="text-sm text-primary-600 hover:text-primary-700"
-            >
-              Change file
-            </button>
-          </div>
+          <FileInfoBar
+            fileName={file.name}
+            details={`${formatFileSize(file.size)}${!loading && pageCount > 0 ? `, ${pageCount} pages` : ""}`}
+            onChangeFile={() => {
+              setFile(null);
+              setPageCount(0);
+              setDone(false);
+            }}
+          />
 
           {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="w-8 h-8 border-3 border-violet-200 border-t-violet-600 rounded-full animate-spin" />
-            </div>
+            <LoadingSpinner color="border-violet-200 border-t-violet-600" />
           ) : (
             <>
               {/* Layout selector */}
@@ -167,31 +162,27 @@ export default function NupPages() {
                 </p>
               )}
 
-              <button
+              <ActionButton
                 onClick={handleProcess}
+                processing={processing}
                 disabled={processing || pageCount === 0}
-                className="w-full bg-violet-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                {processing ? "Processing..." : `Create ${selected.label} PDF`}
-              </button>
+                label={`Create ${selected.label} PDF`}
+                processingLabel="Processing..."
+                color="bg-violet-600 hover:bg-violet-700"
+              />
 
               {done && (
-                <div className="bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-xl p-4">
-                  <p className="text-sm text-emerald-700 dark:text-emerald-300">
-                    N-up PDF created and downloaded successfully.
-                  </p>
-                </div>
+                <AlertBox
+                  variant="success"
+                  message="N-up PDF created and downloaded successfully."
+                />
               )}
             </>
           )}
         </>
       )}
 
-      {error && (
-        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-4">
-          <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
-        </div>
-      )}
+      {error && <AlertBox variant="error" message={error} />}
     </div>
   );
 }

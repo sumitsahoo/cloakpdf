@@ -14,13 +14,17 @@ import {
   CalendarPlus,
   FileText,
   Tag,
-  Undo2,
   User,
   Wrench,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { ActionButton } from "../components/ActionButton.tsx";
+import { AlertBox } from "../components/AlertBox.tsx";
 import { DateTimeInput } from "../components/DateTimeInput.tsx";
 import { FileDropZone } from "../components/FileDropZone.tsx";
+import { FileInfoBar } from "../components/FileInfoBar.tsx";
+import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
+import { ResetButton } from "../components/ResetButton.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import type { PdfMetadata } from "../types.ts";
 import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
@@ -178,27 +182,20 @@ export default function EditMetadata() {
         />
       ) : (
         <>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <p className="text-sm text-slate-600 dark:text-dark-text-muted break-all sm:break-normal">
-              <span className="font-medium">{file.name}</span> — {formatFileSize(file.size)}
-            </p>
-            <button
-              type="button"
-              onClick={() => {
-                setFile(null);
-                setOriginalMetadata(null);
-                setMetadata(null);
-                setSaved(false);
-              }}
-              className="text-sm text-primary-600 hover:text-primary-700"
-            >
-              Change file
-            </button>
-          </div>
+          <FileInfoBar
+            fileName={file.name}
+            details={formatFileSize(file.size)}
+            onChangeFile={() => {
+              setFile(null);
+              setOriginalMetadata(null);
+              setMetadata(null);
+              setSaved(false);
+            }}
+          />
 
           {loading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="w-8 h-8 border-3 border-amber-200 border-t-amber-600 rounded-full animate-spin" />
+              <LoadingSpinner color="border-amber-200 border-t-amber-600" />
             </div>
           ) : metadata ? (
             <div className="space-y-4">
@@ -206,16 +203,7 @@ export default function EditMetadata() {
                 <p className="text-sm font-medium text-slate-700 dark:text-dark-text">
                   Edit document properties below
                 </p>
-                {isDirty && (
-                  <button
-                    type="button"
-                    onClick={handleReset}
-                    className="inline-flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 dark:text-dark-text-muted dark:hover:text-dark-text transition-colors"
-                  >
-                    <Undo2 className="w-4 h-4" />
-                    Reset
-                  </button>
-                )}
+                {isDirty && <ResetButton onClick={handleReset} />}
               </div>
               <div className="bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border divide-y divide-slate-100 dark:divide-dark-border">
                 {METADATA_FIELDS.map((field) => {
@@ -260,32 +248,27 @@ export default function EditMetadata() {
                 })}
               </div>
 
-              <button
-                type="button"
+              <ActionButton
                 onClick={handleSave}
-                disabled={processing || !isDirty}
-                className="w-full bg-amber-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                {processing ? "Saving..." : "Save & Download PDF"}
-              </button>
+                processing={processing}
+                disabled={!isDirty}
+                label="Save & Download PDF"
+                processingLabel="Saving..."
+                color="bg-amber-600 hover:bg-amber-700"
+              />
 
               {saved && (
-                <div className="bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-xl p-4">
-                  <p className="text-sm text-emerald-700 dark:text-emerald-300">
-                    ✅ Metadata updated and PDF downloaded successfully.
-                  </p>
-                </div>
+                <AlertBox
+                  variant="success"
+                  message="✅ Metadata updated and PDF downloaded successfully."
+                />
               )}
             </div>
           ) : null}
         </>
       )}
 
-      {error && (
-        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-4">
-          <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
-        </div>
-      )}
+      {error && <AlertBox variant="error" message={error} />}
     </div>
   );
 }

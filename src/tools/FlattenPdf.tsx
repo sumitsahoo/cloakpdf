@@ -8,6 +8,9 @@
 
 import { useState, useCallback } from "react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
+import { AlertBox } from "../components/AlertBox.tsx";
+import { ActionButton } from "../components/ActionButton.tsx";
+import { FileInfoBar } from "../components/FileInfoBar.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { flattenPdf } from "../utils/pdf-operations.ts";
 import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
@@ -59,21 +62,14 @@ export default function FlattenPdf() {
         />
       ) : (
         <>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <p className="text-sm text-slate-600 dark:text-dark-text-muted break-all sm:break-normal">
-              <span className="font-medium">{file.name}</span> — {formatFileSize(file.size)}
-            </p>
-            <button
-              type="button"
-              onClick={() => {
-                setFile(null);
-                setResult(null);
-              }}
-              className="text-sm text-primary-600 hover:text-primary-700"
-            >
-              Change file
-            </button>
-          </div>
+          <FileInfoBar
+            fileName={file.name}
+            details={formatFileSize(file.size)}
+            onChangeFile={() => {
+              setFile(null);
+              setResult(null);
+            }}
+          />
 
           {!result ? (
             <div className="space-y-4">
@@ -201,40 +197,34 @@ export default function FlattenPdf() {
                 </ul>
               </div>
 
-              <button
-                type="button"
+              <ActionButton
                 onClick={handleFlatten}
-                disabled={processing}
-                className="w-full bg-violet-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                {processing ? "Flattening..." : "Flatten PDF"}
-              </button>
+                processing={processing}
+                label="Flatten PDF"
+                processingLabel="Flattening..."
+                color="bg-violet-600 hover:bg-violet-700"
+              />
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-xl p-4">
-                <p className="text-sm text-emerald-700 dark:text-emerald-300 font-medium">
-                  PDF flattened successfully. All form fields and annotations have been removed.
-                </p>
-              </div>
+              <AlertBox
+                variant="success"
+                message="PDF flattened successfully. All form fields and annotations have been removed."
+              />
 
-              <button
-                type="button"
+              <ActionButton
                 onClick={handleDownload}
-                className="w-full bg-violet-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-violet-700 transition-colors"
-              >
-                Download Flattened PDF
-              </button>
+                processing={false}
+                label="Download Flattened PDF"
+                processingLabel=""
+                color="bg-violet-600 hover:bg-violet-700"
+              />
             </div>
           )}
         </>
       )}
 
-      {error && (
-        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-4">
-          <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
-        </div>
-      )}
+      {error && <AlertBox variant="error" message={error} />}
     </div>
   );
 }

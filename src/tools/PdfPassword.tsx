@@ -25,6 +25,8 @@ import {
   Printer,
   type LucideIcon,
 } from "lucide-react";
+import { ActionButton } from "../components/ActionButton.tsx";
+import { AlertBox } from "../components/AlertBox.tsx";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { isPdfEncrypted, protectPdf, unlockPdf } from "../utils/pdf-security.ts";
@@ -447,39 +449,32 @@ export default function PdfPassword() {
 
       {/* Action button */}
       {(pdfState === "unencrypted" || pdfState === "encrypted") && (
-        <button
-          type="button"
+        <ActionButton
           onClick={pdfState === "unencrypted" ? handleAddPassword : handleRemovePassword}
+          processing={processing}
           disabled={pdfState === "unencrypted" ? !canSubmitAdd : !canSubmitRemove}
-          className="w-full bg-amber-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        >
-          {processing
-            ? pdfState === "unencrypted"
-              ? "Protecting…"
-              : "Unlocking…"
-            : pdfState === "unencrypted"
-              ? "Protect PDF & Download"
-              : "Remove Password & Download"}
-        </button>
+          label={
+            pdfState === "unencrypted" ? "Protect PDF & Download" : "Remove Password & Download"
+          }
+          processingLabel={pdfState === "unencrypted" ? "Protecting…" : "Unlocking…"}
+          color="bg-amber-600 hover:bg-amber-700"
+        />
       )}
 
       {/* Success */}
       {success && (
-        <div className="bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-xl p-4">
-          <p className="text-sm text-emerald-700 dark:text-emerald-300">
-            {pdfState === "unencrypted"
+        <AlertBox
+          variant="success"
+          message={
+            pdfState === "unencrypted"
               ? "Password added successfully. The protected PDF has been downloaded."
-              : "Password removed successfully. The unlocked PDF has been downloaded."}
-          </p>
-        </div>
+              : "Password removed successfully. The unlocked PDF has been downloaded."
+          }
+        />
       )}
 
       {/* Error */}
-      {error && (
-        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-4">
-          <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
-        </div>
-      )}
+      {error && <AlertBox variant="error" message={error} />}
     </div>
   );
 }

@@ -9,6 +9,9 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
+import { AlertBox } from "../components/AlertBox.tsx";
+import { ActionButton } from "../components/ActionButton.tsx";
+import { FileInfoBar } from "../components/FileInfoBar.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
 import { grayscalePdf } from "../utils/pdf-operations.ts";
@@ -81,21 +84,14 @@ export default function GrayscalePdf() {
         />
       ) : (
         <>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <p className="text-sm text-slate-600 dark:text-dark-text-muted break-all sm:break-normal">
-              <span className="font-medium">{file.name}</span> — {formatFileSize(file.size)}
-            </p>
-            <button
-              type="button"
-              onClick={() => {
-                setFile(null);
-                setResult(null);
-              }}
-              className="text-sm text-primary-600 hover:text-primary-700"
-            >
-              Change file
-            </button>
-          </div>
+          <FileInfoBar
+            fileName={file.name}
+            details={formatFileSize(file.size)}
+            onChangeFile={() => {
+              setFile(null);
+              setResult(null);
+            }}
+          />
 
           {/* Before / After preview */}
           {preview && (
@@ -123,14 +119,13 @@ export default function GrayscalePdf() {
           )}
 
           {!result ? (
-            <button
-              type="button"
+            <ActionButton
               onClick={handleConvert}
-              disabled={processing}
-              className="w-full bg-violet-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {processing ? "Converting… (this may take a moment)" : "Convert to Grayscale"}
-            </button>
+              processing={processing}
+              label="Convert to Grayscale"
+              processingLabel="Converting… (this may take a moment)"
+              color="bg-violet-600 hover:bg-violet-700"
+            />
           ) : (
             <div className="space-y-4">
               <div className="bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border p-6 text-center">
@@ -143,23 +138,19 @@ export default function GrayscalePdf() {
                 </p>
               </div>
 
-              <button
-                type="button"
+              <ActionButton
                 onClick={handleDownload}
-                className="w-full bg-violet-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-violet-700 transition-colors"
-              >
-                Download Grayscale PDF
-              </button>
+                processing={false}
+                label="Download Grayscale PDF"
+                processingLabel=""
+                color="bg-violet-600 hover:bg-violet-700"
+              />
             </div>
           )}
         </>
       )}
 
-      {error && (
-        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-4">
-          <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
-        </div>
-      )}
+      {error && <AlertBox variant="error" message={error} />}
     </div>
   );
 }

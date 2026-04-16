@@ -7,11 +7,18 @@
  * configurable colour, rotation, and opacity.
  */
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 import { Check, Stamp, CircleDot, Droplets, RectangleHorizontal } from "lucide-react";
+import { ActionButton } from "../components/ActionButton.tsx";
+import { AlertBox } from "../components/AlertBox.tsx";
+import { CheckboxField } from "../components/CheckboxField.tsx";
 import { ColorPicker, hexToRgb, rgbToHex } from "../components/ColorPicker.tsx";
 import { FileDropZone } from "../components/FileDropZone.tsx";
+import { FileInfoBar } from "../components/FileInfoBar.tsx";
+import { LabeledSlider } from "../components/LabeledSlider.tsx";
+import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
+import { usePreviewScale } from "../hooks/usePreviewScale.ts";
 import { PageThumbnail } from "../components/PageThumbnail.tsx";
 import type { WatermarkOptions } from "../types.ts";
 import { downloadPdf } from "../utils/file-helpers.ts";
@@ -203,8 +210,6 @@ export default function StampPdf() {
   const [selectedPages, setSelectedPages] = useState<Set<number>>(new Set());
 
   const [pageDims, setPageDims] = useState<{ width: number; height: number }[]>([]);
-  const previewRef = useRef<HTMLDivElement>(null);
-  const [previewScale, setPreviewScale] = useState(0.4);
 
   const handleFile = useCallback(async (files: File[]) => {
     const pdf = files[0];
@@ -233,18 +238,7 @@ export default function StampPdf() {
     }
   }, []);
 
-  useEffect(() => {
-    if (!previewRef.current || !pageDims[selectedPage]) return;
-    const el = previewRef.current;
-    const update = () => {
-      const rect = el.getBoundingClientRect();
-      if (rect.width) setPreviewScale(rect.width / pageDims[selectedPage].width);
-    };
-    update();
-    const ro = new ResizeObserver(update);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [pageDims, selectedPage]);
+  const [previewScale, previewRef] = usePreviewScale(pageDims[selectedPage]);
 
   const togglePage = useCallback((index: number) => {
     setSelectedPages((prev) => {
@@ -338,23 +332,16 @@ export default function StampPdf() {
         />
       ) : (
         <>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <p className="text-sm text-slate-600 dark:text-dark-text-muted break-all sm:break-normal">
-              <span className="font-medium">{file.name}</span> — {thumbnails.length} pages
-            </p>
-            <button
-              type="button"
-              onClick={() => {
-                setFile(null);
-                setThumbnails([]);
-                setPageDims([]);
-                setSelectedPages(new Set());
-              }}
-              className="text-sm text-primary-600 hover:text-primary-700"
-            >
-              Change file
-            </button>
-          </div>
+          <FileInfoBar
+            fileName={file.name}
+            details={`${thumbnails.length} pages`}
+            onChangeFile={() => {
+              setFile(null);
+              setThumbnails([]);
+              setPageDims([]);
+              setSelectedPages(new Set());
+            }}
+          />
 
           <div className="grid md:grid-cols-2 gap-6 items-start">
             {/* Left column: controls + page selection */}
@@ -419,74 +406,36 @@ export default function StampPdf() {
                     />
                   </div>
 
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <label
-                        htmlFor="watermark-font-size"
-                        className="text-sm font-medium text-slate-700 dark:text-dark-text"
-                      >
-                        Font Size
-                      </label>
-                      <span className="inline-flex items-center rounded-full bg-primary-100 dark:bg-primary-900/40 px-2 py-0.5 text-xs font-semibold text-primary-700 dark:text-primary-300 tabular-nums">
-                        {fontSize}px
-                      </span>
-                    </div>
-                    <input
-                      id="watermark-font-size"
-                      type="range"
-                      min={12}
-                      max={120}
-                      value={fontSize}
-                      onChange={(e) => setFontSize(Number(e.target.value))}
-                      className="w-full accent-primary-600 cursor-pointer"
-                    />
-                  </div>
+                  <LabeledSlider
+                    id="watermark-font-size"
+                    label="Font Size"
+                    value={fontSize}
+                    min={12}
+                    max={120}
+                    unit="px"
+                    onChange={(v) => setFontSize(v)}
+                  />
 
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <label
-                        htmlFor="watermark-opacity"
-                        className="text-sm font-medium text-slate-700 dark:text-dark-text"
-                      >
-                        Opacity
-                      </label>
-                      <span className="inline-flex items-center rounded-full bg-primary-100 dark:bg-primary-900/40 px-2 py-0.5 text-xs font-semibold text-primary-700 dark:text-primary-300 tabular-nums">
-                        {Math.round(opacity * 100)}%
-                      </span>
-                    </div>
-                    <input
-                      id="watermark-opacity"
-                      type="range"
-                      min={5}
-                      max={100}
-                      value={Math.round(opacity * 100)}
-                      onChange={(e) => setOpacity(Number(e.target.value) / 100)}
-                      className="w-full accent-primary-600 cursor-pointer"
-                    />
-                  </div>
+                  <LabeledSlider
+                    id="watermark-opacity"
+                    label="Opacity"
+                    value={Math.round(opacity * 100)}
+                    min={5}
+                    max={100}
+                    unit="%"
+                    onChange={(v) => setOpacity(v / 100)}
+                    displayValue={`${Math.round(opacity * 100)}%`}
+                  />
 
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <label
-                        htmlFor="watermark-rotation"
-                        className="text-sm font-medium text-slate-700 dark:text-dark-text"
-                      >
-                        Rotation
-                      </label>
-                      <span className="inline-flex items-center rounded-full bg-primary-100 dark:bg-primary-900/40 px-2 py-0.5 text-xs font-semibold text-primary-700 dark:text-primary-300 tabular-nums">
-                        {rotation}°
-                      </span>
-                    </div>
-                    <input
-                      id="watermark-rotation"
-                      type="range"
-                      min={-90}
-                      max={90}
-                      value={rotation}
-                      onChange={(e) => setRotation(Number(e.target.value))}
-                      className="w-full accent-primary-600 cursor-pointer"
-                    />
-                  </div>
+                  <LabeledSlider
+                    id="watermark-rotation"
+                    label="Rotation"
+                    value={rotation}
+                    min={-90}
+                    max={90}
+                    unit="°"
+                    onChange={(v) => setRotation(v)}
+                  />
 
                   <ColorPicker
                     value={rgbToHex(customColor.r, customColor.g, customColor.b)}
@@ -517,70 +466,39 @@ export default function StampPdf() {
                     </div>
                   </div>
 
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <label
-                        htmlFor="stamp-font-size"
-                        className="text-sm font-medium text-slate-700 dark:text-dark-text"
-                      >
-                        Size
-                      </label>
-                      <span className="inline-flex items-center rounded-full bg-primary-100 dark:bg-primary-900/40 px-2 py-0.5 text-xs font-semibold text-primary-700 dark:text-primary-300 tabular-nums">
-                        {fontSize}pt
-                      </span>
-                    </div>
-                    <input
-                      id="stamp-font-size"
-                      type="range"
-                      min={24}
-                      max={120}
-                      value={fontSize}
-                      onChange={(e) => setFontSize(Number(e.target.value))}
-                      className="w-full accent-primary-600 cursor-pointer"
-                    />
-                  </div>
+                  <LabeledSlider
+                    id="stamp-font-size"
+                    label="Size"
+                    value={fontSize}
+                    min={24}
+                    max={120}
+                    unit="pt"
+                    onChange={(v) => setFontSize(v)}
+                  />
 
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <label
-                        htmlFor="stamp-opacity"
-                        className="text-sm font-medium text-slate-700 dark:text-dark-text"
-                      >
-                        Opacity
-                      </label>
-                      <span className="inline-flex items-center rounded-full bg-primary-100 dark:bg-primary-900/40 px-2 py-0.5 text-xs font-semibold text-primary-700 dark:text-primary-300 tabular-nums">
-                        {Math.round(opacity * 100)}%
-                      </span>
-                    </div>
-                    <input
-                      id="stamp-opacity"
-                      type="range"
-                      min={10}
-                      max={100}
-                      value={Math.round(opacity * 100)}
-                      onChange={(e) => setOpacity(Number(e.target.value) / 100)}
-                      className="w-full accent-primary-600 cursor-pointer"
-                    />
-                  </div>
+                  <LabeledSlider
+                    id="stamp-opacity"
+                    label="Opacity"
+                    value={Math.round(opacity * 100)}
+                    min={10}
+                    max={100}
+                    unit="%"
+                    onChange={(v) => setOpacity(v / 100)}
+                    displayValue={`${Math.round(opacity * 100)}%`}
+                  />
                 </>
               )}
 
               {thumbnails.length > 1 && (
                 <div className="space-y-3">
-                  <label className="flex items-center gap-2.5 cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      checked={applyToAllPages}
-                      onChange={(e) => {
-                        setApplyToAllPages(e.target.checked);
-                        if (e.target.checked) setSelectedPages(new Set());
-                      }}
-                      className="accent-primary-600 w-4 h-4 rounded"
-                    />
-                    <span className="text-sm font-medium text-slate-700 dark:text-dark-text">
-                      Apply to all pages
-                    </span>
-                  </label>
+                  <CheckboxField
+                    label="Apply to all pages"
+                    checked={applyToAllPages}
+                    onChange={(v) => {
+                      setApplyToAllPages(v);
+                      if (v) setSelectedPages(new Set());
+                    }}
+                  />
 
                   {!applyToAllPages && (
                     <div className="space-y-2">
@@ -615,7 +533,10 @@ export default function StampPdf() {
                       </div>
                       {loading ? (
                         <div className="flex items-center justify-center py-8">
-                          <div className="w-6 h-6 border-2 border-emerald-200 border-t-emerald-600 rounded-full animate-spin" />
+                          <LoadingSpinner
+                            size="sm"
+                            color="border-emerald-200 border-t-emerald-600"
+                          />
                         </div>
                       ) : (
                         <div className="grid grid-cols-3 gap-2">
@@ -655,7 +576,7 @@ export default function StampPdf() {
               </p>
               {loading ? (
                 <div className="aspect-3/4 bg-slate-100 dark:bg-dark-surface-alt rounded-lg flex items-center justify-center">
-                  <div className="w-8 h-8 border-3 border-emerald-200 border-t-emerald-600 rounded-full animate-spin" />
+                  <LoadingSpinner color="border-emerald-200 border-t-emerald-600" />
                 </div>
               ) : thumbnails[selectedPage] ? (
                 <div
@@ -743,26 +664,22 @@ export default function StampPdf() {
             </div>
           </div>
 
-          <button
-            type="button"
+          <ActionButton
             onClick={handleApply}
+            processing={processing}
             disabled={processing || !canApply}
-            className="w-full bg-emerald-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {processing
-              ? "Applying..."
-              : stampStyle === "watermark"
+            label={
+              stampStyle === "watermark"
                 ? "Apply Watermark & Download"
-                : `Apply "${selectedStamp.label}" Stamp & Download`}
-          </button>
+                : `Apply "${selectedStamp.label}" Stamp & Download`
+            }
+            processingLabel="Applying..."
+            color="bg-emerald-600 hover:bg-emerald-700"
+          />
         </>
       )}
 
-      {error && (
-        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-4">
-          <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
-        </div>
-      )}
+      {error && <AlertBox variant="error" message={error} />}
     </div>
   );
 }

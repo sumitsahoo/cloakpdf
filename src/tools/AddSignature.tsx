@@ -12,6 +12,11 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
+import { AlertBox } from "../components/AlertBox.tsx";
+import { ActionButton } from "../components/ActionButton.tsx";
+import { FileInfoBar } from "../components/FileInfoBar.tsx";
+import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
+import { LabeledSlider } from "../components/LabeledSlider.tsx";
 import { categoryAccent, categoryGlow, colorPresets } from "../config/theme.ts";
 import { SignaturePad } from "../components/SignaturePad.tsx";
 import { ColorPicker, hexToRgb } from "../components/ColorPicker.tsx";
@@ -326,24 +331,18 @@ export default function AddSignature() {
         />
       ) : (
         <>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <p className="text-sm text-slate-600 dark:text-dark-text-muted break-all sm:break-normal">
-              <span className="font-medium">{file.name}</span> — {thumbnails.length} pages
-            </p>
-            <button
-              onClick={() => {
-                setFile(null);
-                setThumbnails([]);
-                setSignatureDataUrl("");
-                setUploadedImageUrl("");
-                setSelectedPages(new Set());
-                setPagePositions({});
-              }}
-              className="text-sm text-primary-600 hover:text-primary-700"
-            >
-              Change file
-            </button>
-          </div>
+          <FileInfoBar
+            fileName={file.name}
+            details={`${thumbnails.length} pages`}
+            onChangeFile={() => {
+              setFile(null);
+              setThumbnails([]);
+              setSignatureDataUrl("");
+              setUploadedImageUrl("");
+              setSelectedPages(new Set());
+              setPagePositions({});
+            }}
+          />
 
           <div className="grid md:grid-cols-2 gap-6">
             <div className="space-y-4">
@@ -479,44 +478,22 @@ export default function AddSignature() {
                   Signature Size
                 </p>
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-600 dark:text-dark-text-muted">
-                        Width
-                      </span>
-                      <span className="inline-flex items-center rounded-full bg-primary-100 dark:bg-primary-900/40 px-2 py-0.5 text-xs font-semibold text-primary-700 dark:text-primary-300 tabular-nums">
-                        {sigSize.width}px
-                      </span>
-                    </div>
-                    <input
-                      type="range"
-                      min={50}
-                      max={400}
-                      value={sigSize.width}
-                      onChange={(e) => setSigSize((s) => ({ ...s, width: Number(e.target.value) }))}
-                      className="w-full accent-primary-600 cursor-pointer"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-600 dark:text-dark-text-muted">
-                        Height
-                      </span>
-                      <span className="inline-flex items-center rounded-full bg-primary-100 dark:bg-primary-900/40 px-2 py-0.5 text-xs font-semibold text-primary-700 dark:text-primary-300 tabular-nums">
-                        {sigSize.height}px
-                      </span>
-                    </div>
-                    <input
-                      type="range"
-                      min={20}
-                      max={200}
-                      value={sigSize.height}
-                      onChange={(e) =>
-                        setSigSize((s) => ({ ...s, height: Number(e.target.value) }))
-                      }
-                      className="w-full accent-primary-600 cursor-pointer"
-                    />
-                  </div>
+                  <LabeledSlider
+                    label="Width"
+                    value={sigSize.width}
+                    min={50}
+                    max={400}
+                    unit="px"
+                    onChange={(v) => setSigSize((s) => ({ ...s, width: v }))}
+                  />
+                  <LabeledSlider
+                    label="Height"
+                    value={sigSize.height}
+                    min={20}
+                    max={200}
+                    unit="px"
+                    onChange={(v) => setSigSize((s) => ({ ...s, height: v }))}
+                  />
                 </div>
               </div>
 
@@ -583,9 +560,11 @@ export default function AddSignature() {
                         </div>
                       </div>
                       {loading ? (
-                        <div className="flex items-center justify-center py-8">
-                          <div className="w-6 h-6 border-2 border-emerald-200 border-t-emerald-600 rounded-full animate-spin" />
-                        </div>
+                        <LoadingSpinner
+                          color="border-emerald-200 border-t-emerald-600"
+                          size="sm"
+                          className="flex items-center justify-center py-8"
+                        />
                       ) : (
                         <div className="grid grid-cols-3 gap-2">
                           {thumbnails.map((thumb, i) => (
@@ -619,9 +598,10 @@ export default function AddSignature() {
                 Preview — {applyToAllPages ? "All Pages" : `Page ${selectedPage + 1}`}
               </p>
               {loading ? (
-                <div className="aspect-3/4 bg-slate-100 dark:bg-dark-surface-alt rounded-lg flex items-center justify-center">
-                  <div className="w-8 h-8 border-3 border-emerald-200 border-t-emerald-600 rounded-full animate-spin" />
-                </div>
+                <LoadingSpinner
+                  color="border-emerald-200 border-t-emerald-600"
+                  className="aspect-3/4 bg-slate-100 dark:bg-dark-surface-alt rounded-lg flex items-center justify-center"
+                />
               ) : thumbnails[selectedPage] ? (
                 <div
                   ref={previewRef}
@@ -662,25 +642,22 @@ export default function AddSignature() {
             </div>
           </div>
 
-          <button
+          <ActionButton
             onClick={handleApply}
+            processing={processing}
             disabled={
               processing ||
               !signatureDataUrl ||
               (!applyToAllPages && thumbnails.length > 1 && selectedPages.size === 0)
             }
-            className="w-full bg-emerald-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {processing ? "Applying..." : "Apply Signature & Download"}
-          </button>
+            label="Apply Signature & Download"
+            processingLabel="Applying..."
+            color="bg-emerald-600 hover:bg-emerald-700"
+          />
         </>
       )}
 
-      {error && (
-        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-4">
-          <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
-        </div>
-      )}
+      {error && <AlertBox variant="error" message={error} />}
     </div>
   );
 }
