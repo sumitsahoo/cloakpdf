@@ -29,4 +29,4 @@ jobs:
           run-install: true
 
       - name: Run dependency audit
-        run: vp dlx audit-ci --high
+        run: vp dlx osv-scanner --lockfile=pnpm-lock.yaml
