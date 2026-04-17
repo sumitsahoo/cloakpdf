@@ -28,6 +28,7 @@ import {
 import { ActionButton } from "../components/ActionButton.tsx";
 import { AlertBox } from "../components/AlertBox.tsx";
 import { FileDropZone } from "../components/FileDropZone.tsx";
+import { InfoCallout } from "../components/InfoCallout.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { isPdfEncrypted, protectPdf, unlockPdf } from "../utils/pdf-security.ts";
 import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
@@ -405,13 +406,10 @@ export default function PdfPassword() {
                 ))}
               </div>
 
-              <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-900/20">
-                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500 dark:text-amber-400" />
-                <p className="text-xs text-amber-700 dark:text-amber-300">
-                  Permission restrictions are enforced by Adobe Acrobat/Reader. Other viewers such
-                  as macOS Preview and Chrome may ignore them and allow all operations regardless.
-                </p>
-              </div>
+              <InfoCallout icon={AlertTriangle} title="Viewer compatibility" accent="security">
+                Permission restrictions are enforced by Adobe Acrobat/Reader. Other viewers such as
+                macOS Preview and Chrome may ignore them and allow all operations regardless.
+              </InfoCallout>
             </>
           )}
         </>

@@ -7,9 +7,11 @@
  * visible content.
  */
 
+import { ShieldOff } from "lucide-react";
 import { useState, useCallback } from "react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { AlertBox } from "../components/AlertBox.tsx";
+import { InfoCallout } from "../components/InfoCallout.tsx";
 import { ActionButton } from "../components/ActionButton.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { repairPdf } from "../utils/pdf-operations.ts";
@@ -109,12 +111,11 @@ export default function RepairPdf() {
             )}
           </div>
 
-          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
-            <p className="text-sm text-amber-700 dark:text-amber-300">
-              Repair re-builds the PDF structure from scratch. Content (text, images, forms) is
-              preserved, but any encryption will be stripped so the output is unprotected.
-            </p>
-          </div>
+          <InfoCallout icon={ShieldOff} title="Encryption will be removed" accent="transform">
+            Repair re-builds the PDF structure from scratch. Content (text, images, forms) is
+            preserved, but any password protection or encryption is stripped so the output is
+            unprotected.
+          </InfoCallout>
 
           <ActionButton
             onClick={handleRepair}
