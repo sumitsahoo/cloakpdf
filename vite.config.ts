@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { defineConfig } from "vite-plus";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
@@ -5,8 +6,15 @@ import { VitePWA } from "vite-plugin-pwa";
 
 declare const process: { env: Record<string, string | undefined> };
 
+const pkg = JSON.parse(readFileSync(new URL("./package.json", import.meta.url), "utf-8")) as {
+  version: string;
+};
+
 export default defineConfig({
   base: process.env.VITE_APP_BASE_PATH || "/",
+  define: {
+    __APP_VERSION__: JSON.stringify(pkg.version),
+  },
   server: {
     allowedHosts: true,
   },
