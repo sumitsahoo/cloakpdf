@@ -419,7 +419,7 @@ export default function AddPageNumbers() {
         </>
       )}
 
-      {error && <AlertBox variant="error" message={error} />}
+      {error && <AlertBox message={error} />}
     </div>
   );
 }

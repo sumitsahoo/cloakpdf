@@ -180,7 +180,7 @@ export default function ImagesToPdf() {
         </>
       )}
 
-      {error && <AlertBox variant="error" message={error} />}
+      {error && <AlertBox message={error} />}
     </div>
   );
 }

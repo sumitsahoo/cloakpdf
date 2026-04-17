@@ -222,7 +222,7 @@ export default function RemoveBlankPages() {
         </>
       )}
 
-      {error && <AlertBox variant="error" message={error} />}
+      {error && <AlertBox message={error} />}
     </div>
   );
 }

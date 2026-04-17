@@ -132,7 +132,7 @@ export default function MergePdf() {
         />
       )}
 
-      {error && <AlertBox variant="error" message={error} />}
+      {error && <AlertBox message={error} />}
     </div>
   );
 }

@@ -403,7 +403,7 @@ export default function ComparePdf() {
           </>
         )}
 
-        {error && <AlertBox variant="error" message={error} />}
+        {error && <AlertBox message={error} />}
       </div>
     );
   }
@@ -662,7 +662,7 @@ export default function ComparePdf() {
         </div>
       </div>
 
-      {error && <AlertBox variant="error" message={error} />}
+      {error && <AlertBox message={error} />}
     </div>
   );
 }
