@@ -15,6 +15,7 @@ import { CloudDownload } from "lucide-react";
 import { useState, useCallback } from "react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { AlertBox } from "../components/AlertBox.tsx";
+import { InfoCallout } from "../components/InfoCallout.tsx";
 import { ActionButton } from "../components/ActionButton.tsx";
 import { FileInfoBar } from "../components/FileInfoBar.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
@@ -189,20 +190,11 @@ export default function OcrPdf() {
           {pages.length === 0 ? (
             <div className="space-y-4">
               {/* First-run download notice */}
-              <div className="flex items-start gap-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/60 rounded-xl p-4">
-                <CloudDownload
-                  className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5"
-                  aria-hidden="true"
-                />
-                <div className="text-sm text-blue-800 dark:text-blue-200">
-                  <p className="font-semibold mb-0.5">First-run download</p>
-                  <p className="text-blue-700/90 dark:text-blue-300/90 leading-relaxed">
-                    The OCR engine (<span className="font-medium">~2 MB</span>) and the selected
-                    language data (<span className="font-medium">~10–15 MB</span>) are fetched once
-                    from a public CDN, then cached locally for offline reuse.
-                  </p>
-                </div>
-              </div>
+              <InfoCallout icon={CloudDownload} title="First-run download" accent="transform">
+                The OCR engine (<span className="font-medium">~2 MB</span>) and the selected
+                language data (<span className="font-medium">~10–15 MB</span>) are fetched once from
+                a public CDN, then cached locally for offline reuse.
+              </InfoCallout>
 
               {/* Language pill selector */}
               <div className="bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border shadow-sm p-4">
