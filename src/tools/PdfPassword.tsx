@@ -470,7 +470,7 @@ export default function PdfPassword() {
       )}
 
       {/* Error */}
-      {error && <AlertBox variant="error" message={error} />}
+      {error && <AlertBox message={error} />}
     </div>
   );
 }

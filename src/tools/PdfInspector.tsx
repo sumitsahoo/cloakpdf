@@ -165,7 +165,7 @@ export default function PdfInspector() {
         </div>
       )}
 
-      {error && <AlertBox variant="error" message={error} />}
+      {error && <AlertBox message={error} />}
     </div>
   );
 }
