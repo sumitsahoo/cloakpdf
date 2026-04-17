@@ -17,9 +17,10 @@
  */
 
 import { useState, useCallback } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, FileX } from "lucide-react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { AlertBox } from "../components/AlertBox.tsx";
+import { InfoCallout } from "../components/InfoCallout.tsx";
 import { ActionButton } from "../components/ActionButton.tsx";
 import { FileInfoBar } from "../components/FileInfoBar.tsx";
 import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
@@ -221,12 +222,10 @@ export default function FillPdfForm() {
                 </p>
 
                 {totalFields === 0 ? (
-                  <div className="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
-                    <p className="text-sm text-amber-600 dark:text-amber-400 mt-1">
-                      This PDF does not contain interactive form fields. Use the Add Watermark or
-                      Add Signature tools to annotate it instead.
-                    </p>
-                  </div>
+                  <InfoCallout icon={FileX} title="No fillable fields" accent="annotate">
+                    This PDF does not contain interactive form fields. Use the Add Watermark or Add
+                    Signature tools to annotate it instead.
+                  </InfoCallout>
                 ) : (
                   <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
                     {thumbnails.map((thumb, i) => {

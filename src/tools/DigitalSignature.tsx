@@ -35,6 +35,7 @@ import { ActionButton } from "../components/ActionButton.tsx";
 import { AlertBox } from "../components/AlertBox.tsx";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { FileInfoBar } from "../components/FileInfoBar.tsx";
+import { InfoCallout } from "../components/InfoCallout.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
 import {
@@ -465,23 +466,11 @@ export default function DigitalSignature() {
 
           {/* Warning if already signed */}
           {!detectingSignatures && existingSignatures.length > 0 && (
-            <div className="flex gap-3 rounded-xl border-2 border-amber-300 dark:border-amber-600 bg-amber-50/80 dark:bg-amber-900/20 p-4">
-              <div className="shrink-0 mt-0.5">
-                <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-800/40 flex items-center justify-center">
-                  <ShieldCheck className="w-4.5 h-4.5 text-amber-600 dark:text-amber-400" />
-                </div>
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-amber-800 dark:text-amber-200">
-                  This PDF is already signed
-                </p>
-                <p className="text-sm text-amber-700/80 dark:text-amber-300/80 mt-0.5">
-                  Adding another signature will invalidate the existing{" "}
-                  {existingSignatures.length === 1 ? "signature" : "signatures"}. Use a different
-                  file if you want to preserve {existingSignatures.length === 1 ? "it" : "them"}.
-                </p>
-              </div>
-            </div>
+            <InfoCallout icon={ShieldCheck} title="This PDF is already signed" accent="security">
+              Adding another signature will invalidate the existing{" "}
+              {existingSignatures.length === 1 ? "signature" : "signatures"}. Use a different file
+              if you want to preserve {existingSignatures.length === 1 ? "it" : "them"}.
+            </InfoCallout>
           )}
 
           {/* Step 2: Certificate source */}
@@ -607,10 +596,14 @@ export default function DigitalSignature() {
             {/* Generate form */}
             {certSource === "generate" && (
               <div className="bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border p-4 space-y-4">
-                <AlertBox
-                  variant="info"
-                  message="Self-signed certificates are suitable for personal use. Recipients will see the signature is not from a trusted authority."
-                />
+                <InfoCallout
+                  icon={ShieldQuestion}
+                  title="Self-signed certificate"
+                  accent="security"
+                >
+                  Suitable for personal use. Recipients will see the signature is not from a trusted
+                  certificate authority.
+                </InfoCallout>
 
                 <div>
                   <label
