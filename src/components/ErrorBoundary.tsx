@@ -233,10 +233,30 @@ export class ErrorBoundary extends Component<Props, State> {
         </main>
 
         <footer className="border-t border-slate-200/60 dark:border-dark-border bg-linear-to-b from-white/60 to-slate-50/80 dark:from-dark-surface/60 dark:to-dark-bg/80">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-center">
-            <p className="text-[11px] text-slate-400 dark:text-dark-text-muted">
-              © {new Date().getFullYear()} CloakPDF by Sumit Sahoo
-            </p>
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-center gap-2 flex-wrap text-[11px] text-slate-400 dark:text-dark-text-muted">
+            <span>© {new Date().getFullYear()} CloakPDF by Sumit Sahoo</span>
+            <span aria-hidden="true" className="text-slate-300 dark:text-slate-600">
+              ·
+            </span>
+            <a
+              href={`${REPO_URL}/releases`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-mono font-medium text-slate-500 dark:text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400/50 rounded"
+            >
+              v{__APP_VERSION__}
+            </a>
+            <span aria-hidden="true" className="text-slate-300 dark:text-slate-600">
+              ·
+            </span>
+            <a
+              href={`${REPO_URL}/blob/main/LICENSE`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-primary-600 dark:hover:text-primary-400 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400/50 rounded"
+            >
+              MIT License
+            </a>
           </div>
         </footer>
       </div>

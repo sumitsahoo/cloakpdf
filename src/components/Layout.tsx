@@ -9,6 +9,10 @@
 import { ChevronLeft, ShieldCheck } from "lucide-react";
 import type { ReactNode } from "react";
 
+declare const __APP_VERSION__: string;
+
+const REPO_URL = "https://github.com/sumitsahoo/cloakpdf";
+
 interface LayoutProps {
   /** Content to render in the main area. */
   children: ReactNode;
@@ -24,28 +28,33 @@ interface LayoutProps {
   activeCategory?: string;
 }
 
-const footerHover: Record<string, { btn: string; icon: string }> = {
+const footerHover: Record<string, { btn: string; icon: string; link: string }> = {
   organise: {
     btn: "hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50/50 dark:hover:bg-blue-900/20 hover:border-blue-200 dark:hover:border-blue-700/60",
     icon: "group-hover:text-blue-500 dark:group-hover:text-blue-400",
+    link: "hover:text-blue-600 dark:hover:text-blue-400",
   },
   transform: {
     btn: "hover:text-violet-600 dark:hover:text-violet-400 hover:bg-violet-50/50 dark:hover:bg-violet-900/20 hover:border-violet-200 dark:hover:border-violet-700/60",
     icon: "group-hover:text-violet-500 dark:group-hover:text-violet-400",
+    link: "hover:text-violet-600 dark:hover:text-violet-400",
   },
   annotate: {
     btn: "hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50/50 dark:hover:bg-emerald-900/20 hover:border-emerald-200 dark:hover:border-emerald-700/60",
     icon: "group-hover:text-emerald-500 dark:group-hover:text-emerald-400",
+    link: "hover:text-emerald-600 dark:hover:text-emerald-400",
   },
   security: {
     btn: "hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50/50 dark:hover:bg-amber-900/20 hover:border-amber-200 dark:hover:border-amber-700/60",
     icon: "group-hover:text-amber-500 dark:group-hover:text-amber-400",
+    link: "hover:text-amber-600 dark:hover:text-amber-400",
   },
 };
 
 const defaultFooterHover = {
   btn: "hover:text-primary-600 dark:hover:text-primary-400 hover:bg-primary-50/50 dark:hover:bg-primary-900/20 hover:border-primary-200 dark:hover:border-primary-700/60",
   icon: "group-hover:text-primary-500 dark:group-hover:text-primary-400",
+  link: "hover:text-primary-600 dark:hover:text-primary-400",
 };
 
 export function Layout({
@@ -127,10 +136,33 @@ export function Layout({
 
       <footer className="border-t border-slate-200/60 dark:border-dark-border bg-linear-to-b from-white/60 to-slate-50/80 dark:from-dark-surface/60 dark:to-dark-bg/80">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex flex-col-reverse sm:flex-row items-center justify-between gap-3">
-          {/* Brand + copyright */}
-          <p className="text-[11px] text-slate-400 dark:text-dark-text-muted">
-            © {new Date().getFullYear()} CloakPDF by Sumit Sahoo
-          </p>
+          {/* Brand · version · license */}
+          <div className="flex items-center gap-2 flex-wrap justify-center sm:justify-start text-[11px] text-slate-400 dark:text-dark-text-muted">
+            <span>© {new Date().getFullYear()} CloakPDF by Sumit Sahoo</span>
+            <span aria-hidden="true" className="text-slate-300 dark:text-slate-600">
+              ·
+            </span>
+            <a
+              href={`${REPO_URL}/releases`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`font-mono font-medium text-slate-500 dark:text-slate-400 ${fh.link} transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400/50 rounded`}
+              aria-label={`Version ${__APP_VERSION__} — view release notes on GitHub`}
+            >
+              v{__APP_VERSION__}
+            </a>
+            <span aria-hidden="true" className="text-slate-300 dark:text-slate-600">
+              ·
+            </span>
+            <a
+              href={`${REPO_URL}/blob/main/LICENSE`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`${fh.link} transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400/50 rounded`}
+            >
+              MIT License
+            </a>
+          </div>
 
           {/* Privacy link */}
           <button
