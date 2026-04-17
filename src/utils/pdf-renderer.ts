@@ -22,6 +22,23 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
 /** Re-export the configured PDF.js library so other modules don't need to set up the worker. */
 export { pdfjsLib };
 
+/**
+ * Render scale for full-panel page previews (e.g. the large image shown in
+ * Stamp, Bates, Header/Footer, Page Numbers, Signature, Crop, Redact).
+ *
+ * Grid thumbnails get by on ~0.4 because they display at ~120 CSS px. Large
+ * previews fill the preview panel (often 500–800 CSS px) and then get doubled
+ * on HiDPI displays, so a 0.4 render upscales by ~4–8× and looks blurry.
+ *
+ * We pick `max(1.5, devicePixelRatio)` so the bitmap has enough pixels for any
+ * reasonable panel width on both standard and retina screens, without paying
+ * the cost of a very high scale on every page.
+ */
+export const PREVIEW_SCALE = Math.max(
+  1.5,
+  typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1,
+);
+
 /** Convert a canvas to a Blob object URL (PNG). ~33% smaller than data-URLs. */
 function canvasToBlobUrl(canvas: HTMLCanvasElement): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -66,6 +83,8 @@ async function renderPage(
   canvas.height = viewport.height;
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error(`Failed to acquire 2D canvas context for page ${pageNum}`);
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
 
   await page.render({ canvasContext: ctx, viewport, canvas }).promise;
   return { canvas, ctx };

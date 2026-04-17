@@ -7,6 +7,44 @@
  */
 
 /**
+ * Shared error message used whenever loading a PDF fails without a more
+ * specific reason. Tools import this so the wording stays consistent.
+ */
+export const LOAD_ERROR_MESSAGE =
+  "Failed to load PDF. The file may be corrupted or password-protected.";
+
+/**
+ * Extract a user-facing message from an unknown thrown value.
+ *
+ * Falls back to `fallback` when the value isn't an `Error` instance — this
+ * is the common case when something like a rejected Promise carries a
+ * non-Error payload (e.g. a plain string from a third-party library).
+ *
+ * @param error - The caught value from a `try/catch` block.
+ * @param fallback - Message shown when `error` isn't an `Error`.
+ */
+export function errorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback;
+}
+
+/**
+ * Build an output filename from a source PDF by stripping its `.pdf`
+ * extension and appending a descriptive suffix.
+ *
+ * @example
+ *   pdfFilename(file, "_rotated");        // "report_rotated.pdf"
+ *   pdfFilename("report.PDF", "_merged"); // "report_merged.pdf"
+ *
+ * @param source - Either the source `File` or a raw filename string.
+ * @param suffix - Text inserted between the base name and the extension
+ *   (include a leading underscore or space as desired).
+ */
+export function pdfFilename(source: File | string, suffix: string): string {
+  const name = typeof source === "string" ? source : source.name;
+  return `${name.replace(/\.pdf$/i, "")}${suffix}.pdf`;
+}
+
+/**
  * Trigger a browser download for any Blob type.
  *
  * Creates a temporary Blob URL, programmatically clicks a hidden anchor

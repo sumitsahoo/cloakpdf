@@ -38,7 +38,8 @@ import { FileDropZone } from "../components/FileDropZone.tsx";
 import { FileInfoBar } from "../components/FileInfoBar.tsx";
 import { InfoCallout } from "../components/InfoCallout.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
-import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
+import { useAsyncProcess } from "../hooks/useAsyncProcess.ts";
+import { downloadPdf, formatFileSize, pdfFilename } from "../utils/file-helpers.ts";
 import {
   type CertificateInfo,
   type ExistingSignature,
@@ -107,21 +108,28 @@ export default function DigitalSignature() {
   const [location, setLocation] = useState("");
   const [contactInfo, setContactInfo] = useState("");
 
-  // Processing state
-  const [processing, setProcessing] = useState(false);
+  // PDF-signing state is managed by `task`; certificate-loading state stays
+  // local because the cert parsing errors use a separate panel from the
+  // signing error.
+  const task = useAsyncProcess();
+  const processing = task.processing;
+  const error = task.error;
+  const setError = task.setError;
   const [certLoading, setCertLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [certError, setCertError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  const handleFile = useCallback((files: File[]) => {
-    const pdf = files[0];
-    if (!pdf) return;
-    setFile(pdf);
-    setExistingSignatures([]);
-    setError(null);
-    setSuccess(false);
-  }, []);
+  const handleFile = useCallback(
+    (files: File[]) => {
+      const pdf = files[0];
+      if (!pdf) return;
+      setFile(pdf);
+      setExistingSignatures([]);
+      setError(null);
+      setSuccess(false);
+    },
+    [setError],
+  );
 
   // Detect existing signatures when a file is loaded
   useEffect(() => {
@@ -163,7 +171,7 @@ export default function DigitalSignature() {
     setError(null);
     setCertError(null);
     setSuccess(false);
-  }, []);
+  }, [setError]);
 
   const handleCertFile = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -244,24 +252,17 @@ export default function DigitalSignature() {
 
   const handleSign = useCallback(async () => {
     if (!file || !privateKey || !certificate) return;
-    setProcessing(true);
-    setError(null);
     setSuccess(false);
-    try {
+    const ok = await task.run(async () => {
       const data = await signPdf(file, privateKey, certificate, certChain, {
         reason: reason || undefined,
         location: location || undefined,
         contactInfo: contactInfo || undefined,
       });
-      const baseName = file.name.replace(/\.pdf$/i, "");
-      downloadPdf(data, `${baseName}_signed.pdf`);
-      setSuccess(true);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to sign PDF.");
-    } finally {
-      setProcessing(false);
-    }
-  }, [file, privateKey, certificate, certChain, reason, location, contactInfo]);
+      downloadPdf(data, pdfFilename(file, "_signed"));
+    }, "Failed to sign PDF.");
+    if (ok) setSuccess(true);
+  }, [file, privateKey, certificate, certChain, reason, location, contactInfo, task]);
 
   const canSign = file && privateKey && certificate;
 
