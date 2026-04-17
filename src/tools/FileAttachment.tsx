@@ -6,9 +6,10 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { Download, Paperclip, Plus, Trash2 } from "lucide-react";
+import { CheckCircle2, Download, Paperclip, Plus, Trash2 } from "lucide-react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { AlertBox } from "../components/AlertBox.tsx";
+import { InfoCallout } from "../components/InfoCallout.tsx";
 import { ActionButton } from "../components/ActionButton.tsx";
 import { FileInfoBar } from "../components/FileInfoBar.tsx";
 import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
@@ -239,7 +240,11 @@ export default function FileAttachment() {
         </>
       )}
 
-      {success && <AlertBox variant="success" message={success} />}
+      {success && (
+        <InfoCallout icon={CheckCircle2} accent="organise">
+          {success}
+        </InfoCallout>
+      )}
 
       {error && <AlertBox variant="error" message={error} />}
     </div>

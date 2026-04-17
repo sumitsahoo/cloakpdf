@@ -6,9 +6,11 @@
  * forms before sharing.
  */
 
+import { CheckCircle2 } from "lucide-react";
 import { useState, useCallback } from "react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { AlertBox } from "../components/AlertBox.tsx";
+import { InfoCallout } from "../components/InfoCallout.tsx";
 import { ActionButton } from "../components/ActionButton.tsx";
 import { FileInfoBar } from "../components/FileInfoBar.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
@@ -207,10 +209,9 @@ export default function FlattenPdf() {
             </div>
           ) : (
             <div className="space-y-4">
-              <AlertBox
-                variant="success"
-                message="PDF flattened successfully. All form fields and annotations have been removed."
-              />
+              <InfoCallout icon={CheckCircle2} accent="transform">
+                PDF flattened successfully. All form fields and annotations have been removed.
+              </InfoCallout>
 
               <ActionButton
                 onClick={handleDownload}

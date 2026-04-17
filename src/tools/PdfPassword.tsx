@@ -13,6 +13,7 @@
 import { useState, useCallback } from "react";
 import {
   AlertTriangle,
+  CheckCircle2,
   ChevronRight,
   ClipboardList,
   Copy,
@@ -406,7 +407,7 @@ export default function PdfPassword() {
                 ))}
               </div>
 
-              <InfoCallout icon={AlertTriangle} title="Viewer compatibility" accent="security">
+              <InfoCallout icon={AlertTriangle} title="Viewer compatibility" accent="warning">
                 Permission restrictions are enforced by Adobe Acrobat/Reader. Other viewers such as
                 macOS Preview and Chrome may ignore them and allow all operations regardless.
               </InfoCallout>
@@ -461,14 +462,11 @@ export default function PdfPassword() {
 
       {/* Success */}
       {success && (
-        <AlertBox
-          variant="success"
-          message={
-            pdfState === "unencrypted"
-              ? "Password added successfully. The protected PDF has been downloaded."
-              : "Password removed successfully. The unlocked PDF has been downloaded."
-          }
-        />
+        <InfoCallout icon={CheckCircle2} accent="security">
+          {pdfState === "unencrypted"
+            ? "Password added successfully. The protected PDF has been downloaded."
+            : "Password removed successfully. The unlocked PDF has been downloaded."}
+        </InfoCallout>
       )}
 
       {/* Error */}

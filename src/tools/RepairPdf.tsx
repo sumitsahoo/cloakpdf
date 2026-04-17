@@ -7,7 +7,7 @@
  * visible content.
  */
 
-import { ShieldOff } from "lucide-react";
+import { CheckCircle2, ShieldOff } from "lucide-react";
 import { useState, useCallback } from "react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { AlertBox } from "../components/AlertBox.tsx";
@@ -111,7 +111,7 @@ export default function RepairPdf() {
             )}
           </div>
 
-          <InfoCallout icon={ShieldOff} title="Encryption will be removed" accent="transform">
+          <InfoCallout icon={ShieldOff} title="Encryption will be removed" accent="warning">
             Repair re-builds the PDF structure from scratch. Content (text, images, forms) is
             preserved, but any password protection or encryption is stripped so the output is
             unprotected.
@@ -126,10 +126,9 @@ export default function RepairPdf() {
           />
 
           {done && (
-            <AlertBox
-              variant="success"
-              message="PDF repaired successfully. The file has been downloaded."
-            />
+            <InfoCallout icon={CheckCircle2} accent="transform">
+              PDF repaired successfully. The file has been downloaded.
+            </InfoCallout>
           )}
         </>
       )}

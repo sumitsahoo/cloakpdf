@@ -6,9 +6,10 @@
  */
 
 import { useCallback, useState } from "react";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, CheckCircle2 } from "lucide-react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { AlertBox } from "../components/AlertBox.tsx";
+import { InfoCallout } from "../components/InfoCallout.tsx";
 import { ActionButton } from "../components/ActionButton.tsx";
 import { FileInfoBar } from "../components/FileInfoBar.tsx";
 import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
@@ -189,10 +190,9 @@ export default function ReversePages() {
           )}
 
           {done && (
-            <AlertBox
-              variant="success"
-              message="Pages reversed successfully. The PDF has been downloaded."
-            />
+            <InfoCallout icon={CheckCircle2} accent="organise">
+              Pages reversed successfully. The PDF has been downloaded.
+            </InfoCallout>
           )}
         </>
       )}

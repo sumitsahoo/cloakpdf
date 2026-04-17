@@ -15,6 +15,7 @@ import {
   BadgeCheck,
   Building2,
   Calendar,
+  CheckCircle2,
   Clock,
   Eye,
   EyeOff,
@@ -466,7 +467,7 @@ export default function DigitalSignature() {
 
           {/* Warning if already signed */}
           {!detectingSignatures && existingSignatures.length > 0 && (
-            <InfoCallout icon={ShieldCheck} title="This PDF is already signed" accent="security">
+            <InfoCallout icon={ShieldCheck} title="This PDF is already signed" accent="warning">
               Adding another signature will invalidate the existing{" "}
               {existingSignatures.length === 1 ? "signature" : "signatures"}. Use a different file
               if you want to preserve {existingSignatures.length === 1 ? "it" : "them"}.
@@ -763,7 +764,9 @@ export default function DigitalSignature() {
           />
 
           {success && (
-            <AlertBox variant="success" message="PDF signed and downloaded successfully." />
+            <InfoCallout icon={CheckCircle2} accent="security">
+              PDF signed and downloaded successfully.
+            </InfoCallout>
           )}
         </>
       )}

@@ -13,6 +13,7 @@ import {
   Building2,
   CalendarClock,
   CalendarPlus,
+  CheckCircle2,
   FileText,
   ShieldOff,
   Tag,
@@ -22,6 +23,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { ActionButton } from "../components/ActionButton.tsx";
 import { AlertBox } from "../components/AlertBox.tsx";
+import { InfoCallout } from "../components/InfoCallout.tsx";
 import { DateTimeInput } from "../components/DateTimeInput.tsx";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { FileInfoBar } from "../components/FileInfoBar.tsx";
@@ -286,10 +288,9 @@ export default function EditMetadata() {
               />
 
               {saved && (
-                <AlertBox
-                  variant="success"
-                  message="✅ Metadata updated and PDF downloaded successfully."
-                />
+                <InfoCallout icon={CheckCircle2} accent="security">
+                  Metadata updated and PDF downloaded successfully.
+                </InfoCallout>
               )}
             </div>
           ) : null}

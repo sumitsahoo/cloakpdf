@@ -7,9 +7,10 @@
  */
 
 import { useState, useCallback } from "react";
-import { LayoutGrid } from "lucide-react";
+import { CheckCircle2, LayoutGrid } from "lucide-react";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { AlertBox } from "../components/AlertBox.tsx";
+import { InfoCallout } from "../components/InfoCallout.tsx";
 import { ActionButton } from "../components/ActionButton.tsx";
 import { FileInfoBar } from "../components/FileInfoBar.tsx";
 import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
@@ -172,10 +173,9 @@ export default function NupPages() {
               />
 
               {done && (
-                <AlertBox
-                  variant="success"
-                  message="N-up PDF created and downloaded successfully."
-                />
+                <InfoCallout icon={CheckCircle2} accent="transform">
+                  N-up PDF created and downloaded successfully.
+                </InfoCallout>
               )}
             </>
           )}

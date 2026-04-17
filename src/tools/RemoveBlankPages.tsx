@@ -18,7 +18,8 @@ import { PageThumbnail } from "../components/PageThumbnail.tsx";
 import { deletePages } from "../utils/pdf-operations.ts";
 import { renderThumbnailsAndScores, revokeThumbnails } from "../utils/pdf-renderer.ts";
 import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
-import { Trash2 } from "lucide-react";
+import { CheckCircle2, Trash2 } from "lucide-react";
+import { InfoCallout } from "../components/InfoCallout.tsx";
 
 export default function RemoveBlankPages() {
   const [file, setFile] = useState<File | null>(null);
@@ -212,10 +213,9 @@ export default function RemoveBlankPages() {
               )}
 
               {done && (
-                <AlertBox
-                  variant="success"
-                  message="Blank pages removed successfully. The PDF has been downloaded."
-                />
+                <InfoCallout icon={CheckCircle2} accent="organise">
+                  Blank pages removed successfully. The PDF has been downloaded.
+                </InfoCallout>
               )}
             </>
           )}

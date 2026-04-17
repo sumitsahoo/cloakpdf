@@ -15,7 +15,8 @@ import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { addPdfBookmarks } from "../utils/pdf-operations.ts";
 import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
-import { X, Plus } from "lucide-react";
+import { CheckCircle2, X, Plus } from "lucide-react";
+import { InfoCallout } from "../components/InfoCallout.tsx";
 
 interface BookmarkEntry {
   id: number;
@@ -199,10 +200,9 @@ export default function AddBookmarks() {
               />
 
               {done && (
-                <AlertBox
-                  variant="success"
-                  message="Bookmarks added successfully. The PDF has been downloaded."
-                />
+                <InfoCallout icon={CheckCircle2} accent="organise">
+                  Bookmarks added successfully. The PDF has been downloaded.
+                </InfoCallout>
               )}
             </div>
           )}
