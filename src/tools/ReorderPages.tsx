@@ -210,7 +210,7 @@ export default function ReorderPages() {
         </>
       )}
 
-      {error && <AlertBox variant="error" message={error} />}
+      {error && <AlertBox message={error} />}
     </div>
   );
 }

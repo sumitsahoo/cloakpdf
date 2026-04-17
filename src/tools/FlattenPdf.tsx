@@ -225,7 +225,7 @@ export default function FlattenPdf() {
         </>
       )}
 
-      {error && <AlertBox variant="error" message={error} />}
+      {error && <AlertBox message={error} />}
     </div>
   );
 }

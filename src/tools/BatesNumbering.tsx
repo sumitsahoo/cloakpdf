@@ -377,7 +377,7 @@ export default function BatesNumbering() {
         </>
       )}
 
-      {error && <AlertBox variant="error" message={error} />}
+      {error && <AlertBox message={error} />}
     </div>
   );
 }

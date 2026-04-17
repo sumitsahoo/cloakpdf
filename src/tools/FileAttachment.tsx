@@ -246,7 +246,7 @@ export default function FileAttachment() {
         </InfoCallout>
       )}
 
-      {error && <AlertBox variant="error" message={error} />}
+      {error && <AlertBox message={error} />}
     </div>
   );
 }

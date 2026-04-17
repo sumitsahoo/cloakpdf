@@ -644,7 +644,7 @@ export default function DigitalSignature() {
               </div>
             )}
 
-            {certError && <AlertBox variant="error" message={certError} />}
+            {certError && <AlertBox message={certError} />}
 
             {/* Certificate info display */}
             {certInfo && (
@@ -771,7 +771,7 @@ export default function DigitalSignature() {
         </>
       )}
 
-      {error && <AlertBox variant="error" message={error} />}
+      {error && <AlertBox message={error} />}
     </div>
   );
 }

@@ -507,7 +507,7 @@ export default function HeaderFooter() {
         </>
       )}
 
-      {error && <AlertBox variant="error" message={error} />}
+      {error && <AlertBox message={error} />}
     </div>
   );
 }
