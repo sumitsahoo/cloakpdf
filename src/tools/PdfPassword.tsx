@@ -10,7 +10,6 @@
  * All processing happens entirely in the browser — no files are uploaded.
  */
 
-import { useState, useCallback } from "react";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -21,18 +20,20 @@ import {
   EyeOff,
   Lock,
   LockOpen,
+  type LucideIcon,
   MessageSquare,
   Pencil,
   Printer,
-  type LucideIcon,
 } from "lucide-react";
+import { useCallback, useState } from "react";
 import { ActionButton } from "../components/ActionButton.tsx";
 import { AlertBox } from "../components/AlertBox.tsx";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { InfoCallout } from "../components/InfoCallout.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
+import { useAsyncProcess } from "../hooks/useAsyncProcess.ts";
+import { downloadPdf, errorMessage, formatFileSize, pdfFilename } from "../utils/file-helpers.ts";
 import { isPdfEncrypted, protectPdf, unlockPdf } from "../utils/pdf-security.ts";
-import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
 
 type PdfState = "idle" | "detecting" | "unencrypted" | "encrypted";
 
@@ -185,28 +186,34 @@ export default function PdfPassword() {
     fillForms: true,
   });
 
-  // Shared operation state
-  const [processing, setProcessing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // Shared operation state — uses useAsyncProcess for the processing/error
+  // machine. `success` stays local because it's a boolean, not a message.
+  const task = useAsyncProcess();
+  const processing = task.processing;
+  const error = task.error;
+  const setError = task.setError;
   const [success, setSuccess] = useState(false);
 
-  const handleFile = useCallback(async (files: File[]) => {
-    const pdf = files[0];
-    if (!pdf) return;
-    setFile(pdf);
-    setError(null);
-    setSuccess(false);
-    setNewPassword("");
-    setConfirmPassword("");
-    setCurrentPassword("");
-    setPdfState("detecting");
-    try {
-      const encrypted = await isPdfEncrypted(pdf);
-      setPdfState(encrypted ? "encrypted" : "unencrypted");
-    } catch {
-      setPdfState("unencrypted"); // fallback: let the operation surface the real error
-    }
-  }, []);
+  const handleFile = useCallback(
+    async (files: File[]) => {
+      const pdf = files[0];
+      if (!pdf) return;
+      setFile(pdf);
+      setError(null);
+      setSuccess(false);
+      setNewPassword("");
+      setConfirmPassword("");
+      setCurrentPassword("");
+      setPdfState("detecting");
+      try {
+        const encrypted = await isPdfEncrypted(pdf);
+        setPdfState(encrypted ? "encrypted" : "unencrypted");
+      } catch {
+        setPdfState("unencrypted"); // fallback: let the operation surface the real error
+      }
+    },
+    [setError],
+  );
 
   const reset = useCallback(() => {
     setFile(null);
@@ -217,7 +224,7 @@ export default function PdfPassword() {
     setConfirmPassword("");
     setCurrentPassword("");
     setShowPerms(false);
-  }, []);
+  }, [setError]);
 
   const togglePermission = useCallback((key: keyof Permissions) => {
     setPermissions((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -233,35 +240,29 @@ export default function PdfPassword() {
       setError("Passwords do not match.");
       return;
     }
-
-    setProcessing(true);
-    setError(null);
     setSuccess(false);
-    try {
+    const ok = await task.run(async () => {
       const permMask = showPerms ? buildPermissionsMask(permissions) : undefined;
       const bytes = await protectPdf(file, newPassword, undefined, permMask);
-      const baseName = file.name.replace(/\.pdf$/i, "");
-      downloadPdf(bytes, `${baseName}_protected.pdf`);
-      setSuccess(true);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to add password.");
-    } finally {
-      setProcessing(false);
-    }
-  }, [file, newPassword, confirmPassword, showPerms, permissions]);
+      downloadPdf(bytes, pdfFilename(file, "_protected"));
+    }, "Failed to add password.");
+    if (ok) setSuccess(true);
+  }, [file, newPassword, confirmPassword, showPerms, permissions, task, setError]);
 
   const handleRemovePassword = useCallback(async () => {
     if (!file) return;
-    setProcessing(true);
-    setError(null);
     setSuccess(false);
+    // Don't use task.run here — this handler needs to rewrite the error
+    // message based on the failure mode (incorrect password vs. missing
+    // password vs. generic), which run()'s fallback-string contract can't
+    // express. Fall back to manual try/catch wiring through `task.setError`.
     try {
       const bytes = await unlockPdf(file, currentPassword);
-      const baseName = file.name.replace(/\.pdf$/i, "");
-      downloadPdf(bytes, `${baseName}_unlocked.pdf`);
+      downloadPdf(bytes, pdfFilename(file, "_unlocked"));
       setSuccess(true);
+      setError(null);
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "Failed to unlock PDF.";
+      const msg = errorMessage(e, "Failed to unlock PDF.");
       if (msg.toLowerCase().includes("incorrect") || msg.toLowerCase().includes("invalid")) {
         setError("Incorrect password. Please check and try again.");
       } else if (msg.toLowerCase().includes("password") || msg.toLowerCase().includes("encrypt")) {
@@ -269,10 +270,8 @@ export default function PdfPassword() {
       } else {
         setError(msg);
       }
-    } finally {
-      setProcessing(false);
     }
-  }, [file, currentPassword]);
+  }, [file, currentPassword, setError]);
 
   const passwordsMatch = newPassword === confirmPassword;
   const canSubmitAdd = !!file && !!newPassword && passwordsMatch && !processing;

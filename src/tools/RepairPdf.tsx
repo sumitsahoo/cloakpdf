@@ -8,54 +8,40 @@
  */
 
 import { CheckCircle2, ShieldOff } from "lucide-react";
-import { useState, useCallback } from "react";
-import { FileDropZone } from "../components/FileDropZone.tsx";
-import { AlertBox } from "../components/AlertBox.tsx";
-import { InfoCallout } from "../components/InfoCallout.tsx";
+import { useCallback, useState } from "react";
 import { ActionButton } from "../components/ActionButton.tsx";
+import { AlertBox } from "../components/AlertBox.tsx";
+import { FileDropZone } from "../components/FileDropZone.tsx";
+import { InfoCallout } from "../components/InfoCallout.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
+import { useAsyncProcess } from "../hooks/useAsyncProcess.ts";
+import { usePdfFile } from "../hooks/usePdfFile.ts";
+import { downloadPdf, formatFileSize, pdfFilename } from "../utils/file-helpers.ts";
 import { repairPdf } from "../utils/pdf-operations.ts";
-import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
 
 export default function RepairPdf() {
-  const [file, setFile] = useState<File | null>(null);
-  const [processing, setProcessing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [done, setDone] = useState(false);
-  const [sizeBefore, setSizeBefore] = useState(0);
   const [sizeAfter, setSizeAfter] = useState(0);
+  const [done, setDone] = useState(false);
 
-  const handleFile = useCallback((files: File[]) => {
-    const pdf = files[0];
-    if (!pdf) return;
-    setFile(pdf);
-    setSizeBefore(pdf.size);
-    setDone(false);
-    setError(null);
-    setSizeAfter(0);
-  }, []);
+  const pdf = usePdfFile({
+    onReset: () => {
+      setSizeAfter(0);
+      setDone(false);
+    },
+  });
+  const task = useAsyncProcess();
 
   const handleRepair = useCallback(async () => {
-    if (!file) return;
-    setProcessing(true);
-    setError(null);
+    if (!pdf.file) return;
+    const file = pdf.file;
     setDone(false);
-    try {
+    const ok = await task.run(async () => {
       const result = await repairPdf(file);
       setSizeAfter(result.byteLength);
-      const baseName = file.name.replace(/\.pdf$/i, "");
-      downloadPdf(result, `${baseName}_repaired.pdf`);
-      setDone(true);
-    } catch (e) {
-      setError(
-        e instanceof Error
-          ? e.message
-          : "Failed to repair PDF. The file may be severely corrupted.",
-      );
-    } finally {
-      setProcessing(false);
-    }
-  }, [file]);
+      downloadPdf(result, pdfFilename(file, "_repaired"));
+    }, "Failed to repair PDF. The file may be severely corrupted.");
+    if (ok) setDone(true);
+  }, [pdf.file, task]);
 
   return (
     <div className="space-y-6">
@@ -63,12 +49,12 @@ export default function RepairPdf() {
         glowColor={categoryGlow.transform}
         iconColor={categoryAccent.transform}
         accept=".pdf,application/pdf"
-        onFiles={handleFile}
+        onFiles={pdf.onFiles}
         label="Drop a PDF file here"
         hint="Re-save the PDF through pdf-lib to fix structural issues"
       />
 
-      {file && (
+      {pdf.file && (
         <>
           <div className="bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border divide-y divide-slate-100 dark:divide-dark-border">
             <div className="flex items-center justify-between px-4 py-3">
@@ -77,14 +63,11 @@ export default function RepairPdf() {
               </span>
               <div className="flex items-center gap-3">
                 <span className="text-sm text-slate-800 dark:text-dark-text truncate max-w-48">
-                  {file.name}
+                  {pdf.file.name}
                 </span>
                 <button
-                  onClick={() => {
-                    setFile(null);
-                    setDone(false);
-                    setSizeAfter(0);
-                  }}
+                  type="button"
+                  onClick={pdf.reset}
                   className="text-xs text-primary-600 hover:text-primary-700 shrink-0"
                 >
                   Change
@@ -96,7 +79,7 @@ export default function RepairPdf() {
                 Original size
               </span>
               <span className="text-sm text-slate-800 dark:text-dark-text">
-                {formatFileSize(sizeBefore)}
+                {formatFileSize(pdf.file.size)}
               </span>
             </div>
             {sizeAfter > 0 && (
@@ -119,7 +102,7 @@ export default function RepairPdf() {
 
           <ActionButton
             onClick={handleRepair}
-            processing={processing}
+            processing={task.processing}
             label="Repair & Download PDF"
             processingLabel="Repairing..."
             color="bg-violet-600 hover:bg-violet-700"
@@ -133,7 +116,7 @@ export default function RepairPdf() {
         </>
       )}
 
-      {error && <AlertBox message={error} />}
+      {(pdf.loadError || task.error) && <AlertBox message={pdf.loadError ?? task.error ?? ""} />}
     </div>
   );
 }
