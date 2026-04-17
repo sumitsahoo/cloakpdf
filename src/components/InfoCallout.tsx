@@ -73,9 +73,10 @@ const accentStyles: Record<
 
 export function InfoCallout({ icon: Icon, title, accent = "primary", children }: InfoCalloutProps) {
   const s = accentStyles[accent];
+  const pulseClass = accent === "warning" ? "warning-pulse" : "";
   return (
     <div
-      className={`flex ${title ? "items-start" : "items-center"} gap-3 border rounded-xl p-4 ${s.container}`}
+      className={`flex ${title ? "items-start" : "items-center"} gap-3 border rounded-xl p-4 ${s.container} ${pulseClass}`}
     >
       <Icon className={`w-5 h-5 shrink-0 ${title ? "mt-0.5" : ""} ${s.icon}`} aria-hidden="true" />
       <div className="text-sm leading-relaxed">

@@ -2,6 +2,10 @@
  * Colour-coded alert banner for inline feedback messages.
  *
  * Variants: `error` (red), `success` (emerald), `warning` (amber), `info` (blue).
+ *
+ * `error` and `warning` gain a continuous soft-ring attention pulse (see
+ * `.error-pulse` / `.warning-pulse` in index.css) so users don't miss them.
+ * The pulse respects `prefers-reduced-motion`.
  */
 
 interface AlertBoxProps {
@@ -21,9 +25,16 @@ const styles = {
   info: "bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-xl p-4 text-sm text-blue-700 dark:text-blue-300",
 };
 
+const pulse: Record<AlertBoxProps["variant"], string> = {
+  error: "error-pulse",
+  warning: "warning-pulse",
+  success: "",
+  info: "",
+};
+
 export function AlertBox({ message, variant }: AlertBoxProps) {
   return (
-    <div className={styles[variant]}>
+    <div className={`${styles[variant]} ${pulse[variant]}`}>
       <p>{message}</p>
     </div>
   );
