@@ -1,5 +1,7 @@
-import { AlertTriangle, RefreshCw, ShieldCheck } from "lucide-react";
-import { Component, type ErrorInfo, type ReactNode } from "react";
+import { AlertTriangle, Check, Copy, RefreshCw, ShieldCheck } from "lucide-react";
+import { Component, createRef, type ErrorInfo, type ReactNode } from "react";
+
+declare const __APP_VERSION__: string;
 
 const REPO_URL = "https://github.com/sumitsahoo/cloakpdf";
 
@@ -9,12 +11,16 @@ interface Props {
 
 interface State {
   error: Error | null;
+  copied: boolean;
 }
 
 export class ErrorBoundary extends Component<Props, State> {
-  state: State = { error: null };
+  state: State = { error: null, copied: false };
 
-  static getDerivedStateFromError(error: Error): State {
+  private reloadButtonRef = createRef<HTMLButtonElement>();
+  private copyResetTimer: ReturnType<typeof setTimeout> | null = null;
+
+  static getDerivedStateFromError(error: Error): Partial<State> {
     return { error };
   }
 
@@ -22,23 +28,60 @@ export class ErrorBoundary extends Component<Props, State> {
     console.error("[CloakPDF] Uncaught error:", error, info.componentStack);
   }
 
+  componentDidUpdate(_prevProps: Props, prevState: State): void {
+    // Focus primary action as soon as the error view first renders, so
+    // keyboard + screen-reader users land on the most useful control.
+    if (!prevState.error && this.state.error) {
+      this.reloadButtonRef.current?.focus();
+    }
+  }
+
+  componentWillUnmount(): void {
+    if (this.copyResetTimer) clearTimeout(this.copyResetTimer);
+  }
+
   private handleReload = (): void => {
     window.location.reload();
   };
 
   private handleReset = (): void => {
-    this.setState({ error: null });
+    this.setState({ error: null, copied: false });
+  };
+
+  private handleCopy = async (): Promise<void> => {
+    const { error } = this.state;
+    if (!error) return;
+    const text = `CloakPDF ${__APP_VERSION__} — ${new Date().toISOString()}\n\n${error.message}\n\n${error.stack ?? "(no stack)"}\n\nBrowser: ${navigator.userAgent}`;
+    try {
+      await navigator.clipboard.writeText(text);
+      this.setState({ copied: true });
+      if (this.copyResetTimer) clearTimeout(this.copyResetTimer);
+      this.copyResetTimer = setTimeout(() => this.setState({ copied: false }), 2000);
+    } catch {
+      // Clipboard unavailable (older browsers, insecure contexts) — silent noop.
+    }
   };
 
   render(): ReactNode {
-    const { error } = this.state;
+    const { error, copied } = this.state;
     if (!error) return this.props.children;
+
+    const issueBody = [
+      `**CloakPDF version:** ${__APP_VERSION__}`,
+      `**When:** ${new Date().toISOString()}`,
+      `**Browser:** ${navigator.userAgent}`,
+      ``,
+      `**Error:** ${error.message}`,
+      ``,
+      `**Stack:**`,
+      `\`\`\``,
+      error.stack ?? "(no stack)",
+      `\`\`\``,
+    ].join("\n");
 
     const issueUrl = `${REPO_URL}/issues/new?title=${encodeURIComponent(
       `Crash: ${error.message}`,
-    )}&body=${encodeURIComponent(
-      `**Error:** ${error.message}\n\n**Stack:**\n\`\`\`\n${error.stack ?? "(no stack)"}\n\`\`\`\n\n**Browser:** ${navigator.userAgent}`,
-    )}`;
+    )}&body=${encodeURIComponent(issueBody)}`;
 
     return (
       <div className="min-h-screen bg-linear-to-br from-slate-50 via-white to-primary-50/40 dark:from-dark-bg dark:via-dark-bg dark:to-dark-surface/60 flex flex-col">
@@ -91,9 +134,12 @@ export class ErrorBoundary extends Component<Props, State> {
         </header>
 
         <main className="flex-1 max-w-2xl mx-auto px-4 sm:px-6 py-8 w-full">
-          <div className="flex items-center gap-4 mb-8">
+          <div role="alert" aria-live="assertive" className="flex items-center gap-4 mb-8">
             <div className="w-12 h-12 bg-red-50 dark:bg-red-900/30 rounded-xl flex items-center justify-center shrink-0">
-              <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400" />
+              <AlertTriangle
+                className="w-6 h-6 text-red-600 dark:text-red-400"
+                aria-hidden="true"
+              />
             </div>
             <div>
               <h1 className="text-2xl font-bold text-slate-800 dark:text-dark-text">
@@ -107,19 +153,45 @@ export class ErrorBoundary extends Component<Props, State> {
 
           <div className="space-y-8 text-sm text-slate-600 dark:text-dark-text-muted leading-relaxed">
             <section className="flex items-start gap-2.5 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/60 rounded-xl p-4">
-              <ShieldCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+              <ShieldCheck
+                className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5"
+                aria-hidden="true"
+              />
               <p className="text-emerald-800 dark:text-emerald-200">
                 Your files were never uploaded — everything stays on your device.
               </p>
             </section>
 
             <section>
-              <h2 className="text-base font-semibold text-slate-800 dark:text-dark-text mb-2">
-                Error details
-              </h2>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-base font-semibold text-slate-800 dark:text-dark-text">
+                  Error details
+                </h2>
+                <button
+                  type="button"
+                  onClick={this.handleCopy}
+                  className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-dark-border text-slate-600 dark:text-dark-text-muted hover:bg-primary-100 hover:text-primary-700 dark:hover:bg-primary-900/40 dark:hover:text-primary-300 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400/50"
+                  aria-label={copied ? "Copied to clipboard" : "Copy error details to clipboard"}
+                >
+                  {copied ? (
+                    <>
+                      <Check className="w-3.5 h-3.5" aria-hidden="true" />
+                      Copied
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5" aria-hidden="true" />
+                      Copy
+                    </>
+                  )}
+                </button>
+              </div>
               <pre className="whitespace-pre-wrap text-xs bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-dark-border rounded-lg p-3 text-slate-700 dark:text-dark-text font-mono overflow-x-auto max-h-40">
                 {error.message}
               </pre>
+              <p className="mt-2 text-[11px] text-slate-400 dark:text-dark-text-muted">
+                CloakPDF {__APP_VERSION__} · {new Date().toLocaleString()}
+              </p>
             </section>
 
             <section>
@@ -128,6 +200,7 @@ export class ErrorBoundary extends Component<Props, State> {
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <button
+                  ref={this.reloadButtonRef}
                   type="button"
                   onClick={this.handleReload}
                   className="inline-flex items-center justify-center gap-2 bg-primary-600 hover:bg-primary-700 text-white py-3 px-6 rounded-xl font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400/50"
@@ -159,7 +232,6 @@ export class ErrorBoundary extends Component<Props, State> {
           </div>
         </main>
 
-        {/* Footer — mirrors Layout.tsx footer (minus the privacy button, which needs app state) */}
         <footer className="border-t border-slate-200/60 dark:border-dark-border bg-linear-to-b from-white/60 to-slate-50/80 dark:from-dark-surface/60 dark:to-dark-bg/80">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-center">
             <p className="text-[11px] text-slate-400 dark:text-dark-text-muted">
