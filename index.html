@@ -3,6 +3,17 @@
   <head>
     <meta charset="UTF-8" />
 
+    <!--
+      Content Security Policy — enforces the "no uploads, 100% private" promise.
+      `connect-src` is intentionally narrow: only the CDNs that deliver the
+      Tesseract OCR engine and language data are permitted. There is no path
+      for user file content to leave the browser.
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' blob: https://cdn.jsdelivr.net https://unpkg.com; worker-src 'self' blob: https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' blob: https://cdn.jsdelivr.net https://unpkg.com https://tessdata.projectnaptha.com; object-src 'none'; base-uri 'self'; form-action 'self'; manifest-src 'self'"
+    />
+
     <!-- SVG favicon (primary + only) -->
     <link rel="icon" href="/icons/favicon.svg" type="image/svg+xml" />
 
@@ -15,6 +26,14 @@
     <!-- Theme -->
     <meta name="theme-color" content="#2563EB" />
     <meta name="color-scheme" content="light dark" />
+
+    <!-- Preload primary font so first paint uses Inter, not the system fallback -->
+    <link rel="preload" href="/fonts/InterVariable.woff2" as="font" type="font/woff2" crossorigin />
+
+    <!-- Resource hints for runtime CDNs (PDF.js worker, Tesseract.js core + lang data) -->
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    <link rel="preconnect" href="https://unpkg.com" crossorigin />
+    <link rel="dns-prefetch" href="https://tessdata.projectnaptha.com" />
 
     <!-- iOS PWA -->
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />

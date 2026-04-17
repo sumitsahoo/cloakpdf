@@ -27,4 +27,17 @@ CloakPDF is a **client-side only** application — all PDF processing happens in
 
 ## Dependency Vulnerabilities
 
-Known dependency vulnerabilities are tracked automatically via GitHub Dependabot and the weekly security audit workflow. If you spot one that has not been addressed, please follow the disclosure process above.
+Known dependency vulnerabilities are tracked automatically via:
+
+- **GitHub Dependabot** — daily checks against the GitHub Advisory Database
+- **OSV-Scanner** — weekly CI workflow against the Open Source Vulnerabilities database
+
+If you spot one that has not been addressed, please follow the disclosure process above.
+
+## Defence-in-Depth Controls
+
+- **Content Security Policy** — declared via `<meta http-equiv="Content-Security-Policy">` in [`index.html`](./index.html). `connect-src` is restricted to the application origin and the public CDNs that serve the Tesseract OCR engine and language data, making it physically impossible for the page to upload user file content elsewhere.
+- **Subresource integrity** — all first-party JavaScript is bundled and served from the same origin under hashed filenames.
+- **No tracking or analytics** — the page makes no third-party network requests at runtime beyond what is listed above.
+
+_Last reviewed: 2026-04-17._

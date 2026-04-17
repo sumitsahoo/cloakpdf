@@ -187,6 +187,12 @@ export default function OcrPdf() {
 
           {pages.length === 0 ? (
             <div className="space-y-4">
+              {/* First-run download notice */}
+              <AlertBox
+                variant="info"
+                message="On first use, the OCR engine (~2 MB) and the selected language data (~10–15 MB per language) are downloaded from a public CDN. They're cached locally for offline reuse on subsequent runs."
+              />
+
               {/* Language pill selector */}
               <div className="bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border shadow-sm p-4">
                 <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-dark-text-muted mb-3">
