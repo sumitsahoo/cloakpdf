@@ -7,29 +7,33 @@
  * metadata for privacy. The modified PDF can be downloaded.
  */
 
-import { useCallback, useEffect, useState } from "react";
 import {
   Bookmark,
   Building2,
   CalendarClock,
   CalendarPlus,
+  CheckCircle2,
   FileText,
+  type LucideIcon,
   ShieldOff,
   Tag,
   User,
   Wrench,
 } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import { useCallback, useState } from "react";
 import { ActionButton } from "../components/ActionButton.tsx";
 import { AlertBox } from "../components/AlertBox.tsx";
 import { DateTimeInput } from "../components/DateTimeInput.tsx";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { FileInfoBar } from "../components/FileInfoBar.tsx";
+import { InfoCallout } from "../components/InfoCallout.tsx";
 import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
 import { ResetButton } from "../components/ResetButton.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
+import { useAsyncProcess } from "../hooks/useAsyncProcess.ts";
+import { usePdfFile } from "../hooks/usePdfFile.ts";
 import type { PdfMetadata } from "../types.ts";
-import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
+import { downloadPdf, formatFileSize, pdfFilename } from "../utils/file-helpers.ts";
 import { getPdfMetadata, setPdfMetadata } from "../utils/pdf-operations.ts";
 
 /** Field configuration for rendering the metadata form. */
@@ -86,54 +90,37 @@ const METADATA_FIELDS: {
   },
 ];
 
+/** All metadata fields cleared — used by the "Redact All" button. */
+const BLANK_METADATA: PdfMetadata = {
+  title: "",
+  author: "",
+  subject: "",
+  keywords: "",
+  creator: "",
+  producer: "",
+  creationDate: "",
+  modificationDate: "",
+};
+
 export default function EditMetadata() {
-  const [file, setFile] = useState<File | null>(null);
-  const [originalMetadata, setOriginalMetadata] = useState<PdfMetadata | null>(null);
   const [metadata, setMetadata] = useState<PdfMetadata | null>(null);
-  const [processing, setProcessing] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
-  const handleFile = useCallback((files: File[]) => {
-    const pdf = files[0];
-    if (!pdf) return;
-    setFile(pdf);
-    setOriginalMetadata(null);
-    setMetadata(null);
-    setSaved(false);
-    setError(null);
-  }, []);
+  const pdf = usePdfFile<PdfMetadata>({
+    load: async (file) => {
+      const meta = await getPdfMetadata(file);
+      setMetadata(meta);
+      return meta;
+    },
+    onReset: () => {
+      setMetadata(null);
+      setSaved(false);
+    },
+    loadErrorMessage: "Failed to read metadata.",
+  });
+  const task = useAsyncProcess();
 
-  // Load metadata when a file is selected
-  useEffect(() => {
-    if (!file) return;
-    const currentFile = file;
-    let cancelled = false;
-
-    async function load() {
-      setLoading(true);
-      setError(null);
-      try {
-        const meta = await getPdfMetadata(currentFile);
-        if (!cancelled) {
-          setOriginalMetadata(meta);
-          setMetadata(meta);
-        }
-      } catch (e) {
-        if (!cancelled) {
-          setError(e instanceof Error ? e.message : "Failed to read metadata.");
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-
-    void load();
-    return () => {
-      cancelled = true;
-    };
-  }, [file]);
+  const originalMetadata = pdf.data;
 
   const handleFieldChange = useCallback(
     (key: keyof PdfMetadata, value: string) => {
@@ -152,35 +139,19 @@ export default function EditMetadata() {
 
   const handleRedact = useCallback(() => {
     if (!metadata) return;
-    const blank: PdfMetadata = {
-      title: "",
-      author: "",
-      subject: "",
-      keywords: "",
-      creator: "",
-      producer: "",
-      creationDate: "",
-      modificationDate: "",
-    };
-    setMetadata(blank);
+    setMetadata(BLANK_METADATA);
     setSaved(false);
   }, [metadata]);
 
   const handleSave = useCallback(async () => {
-    if (!file || !metadata) return;
-    setProcessing(true);
-    setError(null);
-    try {
+    if (!pdf.file || !metadata) return;
+    const file = pdf.file;
+    const ok = await task.run(async () => {
       const data = await setPdfMetadata(file, metadata);
-      const baseName = file.name.replace(/\.pdf$/i, "");
-      downloadPdf(data, `${baseName}_metadata.pdf`);
-      setSaved(true);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to update metadata.");
-    } finally {
-      setProcessing(false);
-    }
-  }, [file, metadata]);
+      downloadPdf(data, pdfFilename(file, "_metadata"));
+    }, "Failed to update metadata.");
+    if (ok) setSaved(true);
+  }, [pdf.file, metadata, task]);
 
   const isDirty =
     metadata !== null &&
@@ -189,29 +160,24 @@ export default function EditMetadata() {
 
   return (
     <div className="space-y-6">
-      {!file ? (
+      {!pdf.file ? (
         <FileDropZone
           glowColor={categoryGlow.security}
           iconColor={categoryAccent.security}
           accept=".pdf,application/pdf"
-          onFiles={handleFile}
+          onFiles={pdf.onFiles}
           label="Drop a PDF file here"
           hint="View and edit document metadata properties"
         />
       ) : (
         <>
           <FileInfoBar
-            fileName={file.name}
-            details={formatFileSize(file.size)}
-            onChangeFile={() => {
-              setFile(null);
-              setOriginalMetadata(null);
-              setMetadata(null);
-              setSaved(false);
-            }}
+            fileName={pdf.file.name}
+            details={formatFileSize(pdf.file.size)}
+            onChangeFile={pdf.reset}
           />
 
-          {loading ? (
+          {pdf.loading ? (
             <div className="flex items-center justify-center py-12">
               <LoadingSpinner color="border-amber-200 border-t-amber-600" />
             </div>
@@ -278,7 +244,7 @@ export default function EditMetadata() {
 
               <ActionButton
                 onClick={handleSave}
-                processing={processing}
+                processing={task.processing}
                 disabled={!isDirty}
                 label="Save & Download PDF"
                 processingLabel="Saving..."
@@ -286,17 +252,16 @@ export default function EditMetadata() {
               />
 
               {saved && (
-                <AlertBox
-                  variant="success"
-                  message="✅ Metadata updated and PDF downloaded successfully."
-                />
+                <InfoCallout icon={CheckCircle2} accent="security">
+                  Metadata updated and PDF downloaded successfully.
+                </InfoCallout>
               )}
             </div>
           ) : null}
         </>
       )}
 
-      {error && <AlertBox variant="error" message={error} />}
+      {(pdf.loadError || task.error) && <AlertBox message={pdf.loadError ?? task.error ?? ""} />}
     </div>
   );
 }

@@ -6,16 +6,19 @@
  * because /PageMode is set to UseOutlines. Any existing outline is replaced.
  */
 
-import { useState, useCallback, useEffect } from "react";
-import { FileDropZone } from "../components/FileDropZone.tsx";
-import { AlertBox } from "../components/AlertBox.tsx";
+import { CheckCircle2, Plus, X } from "lucide-react";
+import { useCallback, useState } from "react";
 import { ActionButton } from "../components/ActionButton.tsx";
+import { AlertBox } from "../components/AlertBox.tsx";
+import { FileDropZone } from "../components/FileDropZone.tsx";
 import { FileInfoBar } from "../components/FileInfoBar.tsx";
+import { InfoCallout } from "../components/InfoCallout.tsx";
 import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
+import { useAsyncProcess } from "../hooks/useAsyncProcess.ts";
+import { usePdfFile } from "../hooks/usePdfFile.ts";
+import { downloadPdf, formatFileSize, pdfFilename } from "../utils/file-helpers.ts";
 import { addPdfBookmarks } from "../utils/pdf-operations.ts";
-import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
-import { X, Plus } from "lucide-react";
 
 interface BookmarkEntry {
   id: number;
@@ -24,46 +27,31 @@ interface BookmarkEntry {
 }
 
 let nextId = 1;
+const initialBookmarks = (): BookmarkEntry[] => [{ id: nextId++, title: "", pageNumber: "1" }];
+
+/** Load the page count via pdf-lib (same lenient settings the operations use). */
+async function getPageCount(file: File): Promise<number> {
+  const { PDFDocument } = await import("@pdfme/pdf-lib");
+  const buf = await file.arrayBuffer();
+  const doc = await PDFDocument.load(buf, { throwOnInvalidObject: false });
+  return doc.getPageCount();
+}
 
 export default function AddBookmarks() {
-  const [file, setFile] = useState<File | null>(null);
-  const [pageCount, setPageCount] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [processing, setProcessing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [bookmarks, setBookmarks] = useState<BookmarkEntry[]>(initialBookmarks);
   const [done, setDone] = useState(false);
-  const [bookmarks, setBookmarks] = useState<BookmarkEntry[]>([
-    { id: nextId++, title: "", pageNumber: "1" },
-  ]);
 
-  const handleFile = useCallback((files: File[]) => {
-    const pdf = files[0];
-    if (!pdf) return;
-    setFile(pdf);
-    setDone(false);
-    setError(null);
-    setLoading(true);
-  }, []);
+  const pdf = usePdfFile<number>({
+    load: getPageCount,
+    onReset: () => {
+      setDone(false);
+      setBookmarks(initialBookmarks());
+    },
+    loadErrorMessage: "Failed to load PDF.",
+  });
+  const task = useAsyncProcess();
 
-  useEffect(() => {
-    if (!file || !loading) return;
-    let cancelled = false;
-    void (async () => {
-      try {
-        const { PDFDocument } = await import("@pdfme/pdf-lib");
-        const buf = await file.arrayBuffer();
-        const doc = await PDFDocument.load(buf, { throwOnInvalidObject: false });
-        if (!cancelled) setPageCount(doc.getPageCount());
-      } catch (e) {
-        if (!cancelled) setError(e instanceof Error ? e.message : "Failed to load PDF.");
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [file, loading]);
+  const pageCount = pdf.data ?? 0;
 
   const addRow = useCallback(() => {
     setBookmarks((prev) => [...prev, { id: nextId++, title: "", pageNumber: "1" }]);
@@ -81,56 +69,45 @@ export default function AddBookmarks() {
   );
 
   const handleApply = useCallback(async () => {
-    if (!file) return;
+    if (!pdf.file) return;
     const valid = bookmarks.filter((b) => b.title.trim());
     if (valid.length === 0) {
-      setError("Add at least one bookmark with a title.");
+      task.setError("Add at least one bookmark with a title.");
       return;
     }
-    setProcessing(true);
-    setError(null);
+    const file = pdf.file;
     setDone(false);
-    try {
+    const ok = await task.run(async () => {
       const entries = valid.map((b) => ({
         title: b.title.trim(),
         pageIndex: Math.max(0, Math.min(parseInt(b.pageNumber, 10) || 1, pageCount) - 1),
       }));
       const result = await addPdfBookmarks(file, entries);
-      const baseName = file.name.replace(/\.pdf$/i, "");
-      downloadPdf(result, `${baseName}_bookmarks.pdf`);
-      setDone(true);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to add bookmarks. Please try again.");
-    } finally {
-      setProcessing(false);
-    }
-  }, [file, bookmarks, pageCount]);
+      downloadPdf(result, pdfFilename(file, "_bookmarks"));
+    }, "Failed to add bookmarks. Please try again.");
+    if (ok) setDone(true);
+  }, [pdf.file, bookmarks, pageCount, task]);
 
   return (
     <div className="space-y-6">
-      {!file ? (
+      {!pdf.file ? (
         <FileDropZone
           glowColor={categoryGlow.organise}
           iconColor={categoryAccent.organise}
           accept=".pdf,application/pdf"
-          onFiles={handleFile}
+          onFiles={pdf.onFiles}
           label="Drop a PDF file here"
           hint="Add a clickable bookmark list to navigate the document"
         />
       ) : (
         <>
           <FileInfoBar
-            fileName={file.name}
-            details={`${formatFileSize(file.size)}${pageCount > 0 ? `, ${pageCount} pages` : ""}`}
-            onChangeFile={() => {
-              setFile(null);
-              setPageCount(0);
-              setDone(false);
-              setBookmarks([{ id: nextId++, title: "", pageNumber: "1" }]);
-            }}
+            fileName={pdf.file.name}
+            details={`${formatFileSize(pdf.file.size)}${pageCount > 0 ? `, ${pageCount} pages` : ""}`}
+            onChangeFile={pdf.reset}
           />
 
-          {loading ? (
+          {pdf.loading ? (
             <LoadingSpinner />
           ) : (
             <div className="space-y-3">
@@ -192,24 +169,23 @@ export default function AddBookmarks() {
 
               <ActionButton
                 onClick={handleApply}
-                processing={processing}
-                disabled={processing || bookmarks.every((b) => !b.title.trim())}
+                processing={task.processing}
+                disabled={task.processing || bookmarks.every((b) => !b.title.trim())}
                 label={`Add ${bookmarks.filter((b) => b.title.trim()).length} Bookmark${bookmarks.filter((b) => b.title.trim()).length !== 1 ? "s" : ""} & Download`}
                 processingLabel="Adding Bookmarks..."
               />
 
               {done && (
-                <AlertBox
-                  variant="success"
-                  message="Bookmarks added successfully. The PDF has been downloaded."
-                />
+                <InfoCallout icon={CheckCircle2} accent="organise">
+                  Bookmarks added successfully. The PDF has been downloaded.
+                </InfoCallout>
               )}
             </div>
           )}
         </>
       )}
 
-      {error && <AlertBox variant="error" message={error} />}
+      {(pdf.loadError || task.error) && <AlertBox message={pdf.loadError ?? task.error ?? ""} />}
     </div>
   );
 }

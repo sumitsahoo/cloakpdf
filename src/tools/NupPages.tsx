@@ -6,17 +6,20 @@
  * a new PDF where source pages are scaled to fill each grid cell.
  */
 
-import { useState, useCallback } from "react";
-import { LayoutGrid } from "lucide-react";
-import { FileDropZone } from "../components/FileDropZone.tsx";
-import { AlertBox } from "../components/AlertBox.tsx";
+import { CheckCircle2, LayoutGrid } from "lucide-react";
+import { useCallback, useState } from "react";
 import { ActionButton } from "../components/ActionButton.tsx";
+import { AlertBox } from "../components/AlertBox.tsx";
+import { FileDropZone } from "../components/FileDropZone.tsx";
 import { FileInfoBar } from "../components/FileInfoBar.tsx";
+import { InfoCallout } from "../components/InfoCallout.tsx";
 import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
+import { useAsyncProcess } from "../hooks/useAsyncProcess.ts";
+import { usePdfFile } from "../hooks/usePdfFile.ts";
+import { downloadPdf, formatFileSize, pdfFilename } from "../utils/file-helpers.ts";
 import { nupPages } from "../utils/pdf-operations.ts";
 import { getPageCount } from "../utils/pdf-renderer.ts";
-import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
 
 type NupLayout = "2x1" | "1x2" | "2x2" | "3x3";
 
@@ -34,52 +37,27 @@ const LAYOUTS: {
 ];
 
 export default function NupPages() {
-  const [file, setFile] = useState<File | null>(null);
-  const [pageCount, setPageCount] = useState(0);
   const [layout, setLayout] = useState<NupLayout>("2x2");
-  const [processing, setProcessing] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
 
-  const handleFile = useCallback(async (files: File[]) => {
-    const pdf = files[0];
-    if (!pdf) return;
-    setFile(pdf);
-    setDone(false);
-    setLoading(true);
-    setError(null);
-    try {
-      const count = await getPageCount(pdf);
-      setPageCount(count);
-    } catch (e) {
-      setError(
-        e instanceof Error
-          ? e.message
-          : "Failed to load PDF. The file may be corrupted or password-protected.",
-      );
-      setFile(null);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const pdf = usePdfFile<number>({
+    load: getPageCount,
+    onReset: () => setDone(false),
+  });
+  const task = useAsyncProcess();
+
+  const pageCount = pdf.data ?? 0;
 
   const handleProcess = useCallback(async () => {
-    if (!file) return;
-    setProcessing(true);
-    setError(null);
+    if (!pdf.file) return;
+    const file = pdf.file;
     setDone(false);
-    try {
+    const ok = await task.run(async () => {
       const result = await nupPages(file, layout);
-      const baseName = file.name.replace(/\.pdf$/i, "");
-      downloadPdf(result, `${baseName}_${layout}.pdf`);
-      setDone(true);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to create N-up PDF. Please try again.");
-    } finally {
-      setProcessing(false);
-    }
-  }, [file, layout]);
+      downloadPdf(result, pdfFilename(file, `_${layout}`));
+    }, "Failed to create N-up PDF. Please try again.");
+    if (ok) setDone(true);
+  }, [pdf.file, layout, task]);
 
   const selected = LAYOUTS.find((l) => l.value === layout)!;
   const perSheet = selected.cols * selected.rows;
@@ -87,28 +65,24 @@ export default function NupPages() {
 
   return (
     <div className="space-y-6">
-      {!file ? (
+      {!pdf.file ? (
         <FileDropZone
           glowColor={categoryGlow.transform}
           iconColor={categoryAccent.transform}
           accept=".pdf,application/pdf"
-          onFiles={handleFile}
+          onFiles={pdf.onFiles}
           label="Drop a PDF file here"
           hint="Multiple pages will be arranged onto single sheets"
         />
       ) : (
         <>
           <FileInfoBar
-            fileName={file.name}
-            details={`${formatFileSize(file.size)}${!loading && pageCount > 0 ? `, ${pageCount} pages` : ""}`}
-            onChangeFile={() => {
-              setFile(null);
-              setPageCount(0);
-              setDone(false);
-            }}
+            fileName={pdf.file.name}
+            details={`${formatFileSize(pdf.file.size)}${!pdf.loading && pageCount > 0 ? `, ${pageCount} pages` : ""}`}
+            onChangeFile={pdf.reset}
           />
 
-          {loading ? (
+          {pdf.loading ? (
             <LoadingSpinner color="border-violet-200 border-t-violet-600" />
           ) : (
             <>
@@ -122,6 +96,7 @@ export default function NupPages() {
                   {LAYOUTS.map((l) => (
                     <button
                       key={l.value}
+                      type="button"
                       onClick={() => setLayout(l.value)}
                       className={`border-2 rounded-xl p-3 text-center transition-all duration-150 ${
                         layout === l.value
@@ -164,25 +139,24 @@ export default function NupPages() {
 
               <ActionButton
                 onClick={handleProcess}
-                processing={processing}
-                disabled={processing || pageCount === 0}
+                processing={task.processing}
+                disabled={task.processing || pageCount === 0}
                 label={`Create ${selected.label} PDF`}
                 processingLabel="Processing..."
                 color="bg-violet-600 hover:bg-violet-700"
               />
 
               {done && (
-                <AlertBox
-                  variant="success"
-                  message="N-up PDF created and downloaded successfully."
-                />
+                <InfoCallout icon={CheckCircle2} accent="transform">
+                  N-up PDF created and downloaded successfully.
+                </InfoCallout>
               )}
             </>
           )}
         </>
       )}
 
-      {error && <AlertBox variant="error" message={error} />}
+      {(pdf.loadError || task.error) && <AlertBox message={pdf.loadError ?? task.error ?? ""} />}
     </div>
   );
 }

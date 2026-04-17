@@ -6,21 +6,21 @@
  * and the percentage saved. The compressed file can then be downloaded.
  */
 
-import { useState, useCallback } from "react";
 import { Gauge } from "lucide-react";
+import { useCallback, useState } from "react";
 import { ActionButton } from "../components/ActionButton.tsx";
 import { AlertBox } from "../components/AlertBox.tsx";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { FileInfoBar } from "../components/FileInfoBar.tsx";
+import { ProgressBar } from "../components/ProgressBar.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
+import { useAsyncProcess } from "../hooks/useAsyncProcess.ts";
+import { usePdfFile } from "../hooks/usePdfFile.ts";
+import { downloadPdf, formatFileSize, pdfFilename } from "../utils/file-helpers.ts";
 import { compressPdf } from "../utils/pdf-operations.ts";
-import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
 
 export default function CompressPdf() {
-  const [file, setFile] = useState<File | null>(null);
-  const [processing, setProcessing] = useState(false);
   const [quality, setQuality] = useState<"low" | "medium" | "high">("medium");
-  const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<{
     original: number;
     compressed: number;
@@ -28,40 +28,31 @@ export default function CompressPdf() {
   } | null>(null);
   const [progress, setProgress] = useState<{ current: number; total: number } | null>(null);
 
-  const handleFile = useCallback((files: File[]) => {
-    const pdf = files[0];
-    if (!pdf) return;
-    setFile(pdf);
-    setResult(null);
-  }, []);
+  const pdf = usePdfFile({
+    onReset: () => setResult(null),
+  });
+  const task = useAsyncProcess();
+  const processing = task.processing;
+  const error = task.error;
 
   /** Compress the PDF at the selected quality preset and store the result for download. */
   const handleCompress = useCallback(async () => {
-    if (!file) return;
-    setProcessing(true);
-    setError(null);
-    try {
+    if (!pdf.file) return;
+    const file = pdf.file;
+    const ok = await task.run(async () => {
       const data = await compressPdf(file, quality, (current, total) =>
         setProgress({ current, total }),
       );
-      setResult({
-        original: file.size,
-        compressed: data.length,
-        data,
-      });
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to compress PDF. Please try again.");
-    } finally {
-      setProcessing(false);
-      setProgress(null);
-    }
-  }, [file, quality]);
+      setResult({ original: file.size, compressed: data.length, data });
+    }, "Failed to compress PDF. Please try again.");
+    void ok;
+    setProgress(null);
+  }, [pdf.file, quality, task]);
 
   const handleDownload = useCallback(() => {
-    if (!result || !file) return;
-    const baseName = file.name.replace(/\.pdf$/i, "");
-    downloadPdf(result.data, `${baseName}_compressed.pdf`);
-  }, [result, file]);
+    if (!result || !pdf.file) return;
+    downloadPdf(result.data, pdfFilename(pdf.file, "_compressed"));
+  }, [result, pdf.file]);
 
   // Clamp to 0 so we never show negative savings when the output is larger
   const savings = result
@@ -70,24 +61,21 @@ export default function CompressPdf() {
 
   return (
     <div className="space-y-6">
-      {!file ? (
+      {!pdf.file ? (
         <FileDropZone
           glowColor={categoryGlow.transform}
           iconColor={categoryAccent.transform}
           accept=".pdf,application/pdf"
-          onFiles={handleFile}
+          onFiles={pdf.onFiles}
           label="Drop a PDF file here"
           hint="We'll optimize the file structure to reduce size"
         />
       ) : (
         <>
           <FileInfoBar
-            fileName={file.name}
-            details={formatFileSize(file.size)}
-            onChangeFile={() => {
-              setFile(null);
-              setResult(null);
-            }}
+            fileName={pdf.file.name}
+            details={formatFileSize(pdf.file.size)}
+            onChangeFile={pdf.reset}
           />
 
           {!result ? (
@@ -172,20 +160,11 @@ export default function CompressPdf() {
               </div>
 
               {processing && progress && (
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm text-slate-600 dark:text-dark-text-muted">
-                    <span>Processing pages…</span>
-                    <span>
-                      {progress.current} / {progress.total}
-                    </span>
-                  </div>
-                  <div className="w-full bg-slate-200 dark:bg-dark-border rounded-full h-2">
-                    <div
-                      className="bg-violet-600 h-2 rounded-full transition-all"
-                      style={{ width: `${(progress.current / progress.total) * 100}%` }}
-                    />
-                  </div>
-                </div>
+                <ProgressBar
+                  current={progress.current}
+                  total={progress.total}
+                  label="Processing pages…"
+                />
               )}
 
               <ActionButton
@@ -240,7 +219,7 @@ export default function CompressPdf() {
         </>
       )}
 
-      {error && <AlertBox variant="error" message={error} />}
+      {error && <AlertBox message={error} />}
     </div>
   );
 }

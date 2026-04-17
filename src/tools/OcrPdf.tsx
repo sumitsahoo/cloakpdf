@@ -11,14 +11,18 @@
  * - "Copy All" and "Download as TXT" actions
  */
 
-import { useState, useCallback } from "react";
-import { FileDropZone } from "../components/FileDropZone.tsx";
-import { AlertBox } from "../components/AlertBox.tsx";
+import { CloudDownload } from "lucide-react";
+import { useCallback, useState } from "react";
 import { ActionButton } from "../components/ActionButton.tsx";
+import { AlertBox } from "../components/AlertBox.tsx";
+import { FileDropZone } from "../components/FileDropZone.tsx";
 import { FileInfoBar } from "../components/FileInfoBar.tsx";
+import { InfoCallout } from "../components/InfoCallout.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
-import { extractTextOcr, createSearchablePdf } from "../utils/pdf-operations.ts";
-import { downloadBlob, formatFileSize } from "../utils/file-helpers.ts";
+import { useAsyncProcess } from "../hooks/useAsyncProcess.ts";
+import { usePdfFile } from "../hooks/usePdfFile.ts";
+import { downloadBlob, formatFileSize, pdfFilename } from "../utils/file-helpers.ts";
+import { createSearchablePdf, extractTextOcr } from "../utils/pdf-operations.ts";
 
 /** Language options displayed as pill buttons. "auto" uses Tesseract OSD. */
 const LANGUAGES = [
@@ -39,38 +43,35 @@ const LANGUAGES = [
 ] as const;
 
 export default function OcrPdf() {
-  const [file, setFile] = useState<File | null>(null);
   const [language, setLanguage] = useState("auto");
-  const [processing, setProcessing] = useState(false);
   const [progressStatus, setProgressStatus] = useState<string | null>(null);
   const [progress, setProgress] = useState<{ current: number; total: number } | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [pages, setPages] = useState<string[]>([]);
   const [expandedPages, setExpandedPages] = useState<Set<number>>(new Set());
   const [copiedPage, setCopiedPage] = useState<number | null>(null);
   const [copiedAll, setCopiedAll] = useState(false);
   const [creatingPdf, setCreatingPdf] = useState(false);
 
-  const handleFile = useCallback((files: File[]) => {
-    const pdf = files[0];
-    if (!pdf) return;
-    setFile(pdf);
-    setPages([]);
-    setProgress(null);
-    setProgressStatus(null);
-    setError(null);
-    setExpandedPages(new Set());
-  }, []);
+  const pdf = usePdfFile({
+    onReset: () => {
+      setPages([]);
+      setProgress(null);
+      setProgressStatus(null);
+      setExpandedPages(new Set());
+    },
+  });
+  const task = useAsyncProcess();
+  const processing = task.processing;
+  const error = task.error;
 
   /** Run Tesseract OCR on every page and store the per-page text results. */
   const handleExtract = useCallback(async () => {
-    if (!file) return;
-    setProcessing(true);
-    setError(null);
+    if (!pdf.file) return;
+    const file = pdf.file;
     setPages([]);
     setProgress({ current: 0, total: 0 });
     setProgressStatus("Initializing OCR engine…");
-    try {
+    const ok = await task.run(async () => {
       const pageTexts = await extractTextOcr(file, language, (current, total, status) => {
         setProgress({ current, total });
         if (status) setProgressStatus(status);
@@ -78,14 +79,11 @@ export default function OcrPdf() {
       setPages(pageTexts);
       // Start with all pages collapsed for easy navigation
       setExpandedPages(new Set());
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to extract text. Please try again.");
-    } finally {
-      setProcessing(false);
-      setProgress(null);
-      setProgressStatus(null);
-    }
-  }, [file, language]);
+    }, "Failed to extract text. Please try again.");
+    void ok;
+    setProgress(null);
+    setProgressStatus(null);
+  }, [pdf.file, language, task]);
 
   // Combine all page texts with page-number headers for copy/download operations
   const fullText = pages.map((text, i) => `--- Page ${i + 1} ---\n\n${text}`).join("\n\n");
@@ -97,9 +95,9 @@ export default function OcrPdf() {
       setCopiedAll(true);
       setTimeout(() => setCopiedAll(false), 2000);
     } catch {
-      setError("Failed to copy to clipboard.");
+      task.setError("Failed to copy to clipboard.");
     }
-  }, [fullText]);
+  }, [fullText, task]);
 
   const handleCopyPage = useCallback(
     async (pageIndex: number) => {
@@ -110,35 +108,35 @@ export default function OcrPdf() {
         setCopiedPage(pageIndex);
         setTimeout(() => setCopiedPage(null), 2000);
       } catch {
-        setError("Failed to copy to clipboard.");
+        task.setError("Failed to copy to clipboard.");
       }
     },
-    [pages],
+    [pages, task],
   );
 
   const handleDownload = useCallback(() => {
-    if (!fullText || !file) return;
-    const baseName = file.name.replace(/\.pdf$/i, "");
+    if (!fullText || !pdf.file) return;
+    const baseName = pdf.file.name.replace(/\.pdf$/i, "");
     const blob = new Blob([fullText], { type: "text/plain;charset=utf-8" });
     downloadBlob(blob, `${baseName}_ocr.txt`);
-  }, [fullText, file]);
+  }, [fullText, pdf.file]);
 
   /** Overlay invisible OCR text on the original PDF so it becomes searchable. */
   const handleDownloadSearchablePdf = useCallback(async () => {
-    if (!file || pages.length === 0) return;
+    if (!pdf.file || pages.length === 0) return;
+    const file = pdf.file;
     setCreatingPdf(true);
-    setError(null);
+    task.setError(null);
     try {
       const pdfBytes = await createSearchablePdf(file, pages);
       const blob = new Blob([new Uint8Array(pdfBytes)], { type: "application/pdf" });
-      const baseName = file.name.replace(/\.pdf$/i, "");
-      downloadBlob(blob, `${baseName}_searchable.pdf`);
+      downloadBlob(blob, pdfFilename(file, "_searchable"));
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to create searchable PDF.");
+      task.setError(e instanceof Error ? e.message : "Failed to create searchable PDF.");
     } finally {
       setCreatingPdf(false);
     }
-  }, [file, pages]);
+  }, [pdf.file, pages, task]);
 
   const togglePage = useCallback((pageIndex: number) => {
     setExpandedPages((prev) => {
@@ -162,31 +160,32 @@ export default function OcrPdf() {
 
   return (
     <div className="space-y-6">
-      {!file ? (
+      {!pdf.file ? (
         <FileDropZone
           glowColor={categoryGlow.transform}
           iconColor={categoryAccent.transform}
           accept=".pdf,application/pdf"
-          onFiles={handleFile}
+          onFiles={pdf.onFiles}
           label="Drop a PDF file here"
           hint="Extract text from scanned or image-based PDFs using OCR"
         />
       ) : (
         <>
           <FileInfoBar
-            fileName={file.name}
-            details={formatFileSize(file.size)}
-            onChangeFile={() => {
-              setFile(null);
-              setPages([]);
-              setProgress(null);
-              setProgressStatus(null);
-              setExpandedPages(new Set());
-            }}
+            fileName={pdf.file.name}
+            details={formatFileSize(pdf.file.size)}
+            onChangeFile={pdf.reset}
           />
 
           {pages.length === 0 ? (
             <div className="space-y-4">
+              {/* First-run download notice */}
+              <InfoCallout icon={CloudDownload} title="First-run download" accent="transform">
+                The OCR engine (<span className="font-medium">~2 MB</span>) and the selected
+                language data (<span className="font-medium">~10–15 MB</span>) are fetched once from
+                a public CDN, then cached locally for offline reuse.
+              </InfoCallout>
+
               {/* Language pill selector */}
               <div className="bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border shadow-sm p-4">
                 <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-dark-text-muted mb-3">
@@ -367,7 +366,7 @@ export default function OcrPdf() {
         </>
       )}
 
-      {error && <AlertBox variant="error" message={error} />}
+      {error && <AlertBox message={error} />}
     </div>
   );
 }

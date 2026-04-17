@@ -6,14 +6,15 @@
  * with unique IDs for stable list keys.
  */
 
-import { useState, useCallback } from "react";
+import { ChevronDown, ChevronUp, X } from "lucide-react";
+import { useCallback, useState } from "react";
 import { ActionButton } from "../components/ActionButton.tsx";
 import { AlertBox } from "../components/AlertBox.tsx";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
-import { mergePdfs } from "../utils/pdf-operations.ts";
+import { useAsyncProcess } from "../hooks/useAsyncProcess.ts";
 import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
-import { ChevronUp, ChevronDown, X } from "lucide-react";
+import { mergePdfs } from "../utils/pdf-operations.ts";
 
 /** Internal representation of a queued PDF file. */
 interface FileItem {
@@ -23,8 +24,7 @@ interface FileItem {
 
 export default function MergePdf() {
   const [files, setFiles] = useState<FileItem[]>([]);
-  const [processing, setProcessing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const task = useAsyncProcess();
 
   const handleFiles = useCallback((newFiles: File[]) => {
     const items = newFiles
@@ -50,21 +50,11 @@ export default function MergePdf() {
 
   const handleMerge = useCallback(async () => {
     if (files.length < 2) return;
-    setProcessing(true);
-    setError(null);
-    try {
+    await task.run(async () => {
       const result = await mergePdfs(files.map((f) => f.file));
       downloadPdf(result, "merged.pdf");
-    } catch (e) {
-      setError(
-        e instanceof Error
-          ? e.message
-          : "Failed to merge PDFs. Please check your files and try again.",
-      );
-    } finally {
-      setProcessing(false);
-    }
-  }, [files]);
+    }, "Failed to merge PDFs. Please check your files and try again.");
+  }, [files, task]);
 
   return (
     <div className="space-y-6">
@@ -126,13 +116,13 @@ export default function MergePdf() {
       {files.length >= 2 && (
         <ActionButton
           onClick={handleMerge}
-          processing={processing}
+          processing={task.processing}
           label={`Merge ${files.length} Files`}
           processingLabel="Merging..."
         />
       )}
 
-      {error && <AlertBox variant="error" message={error} />}
+      {task.error && <AlertBox message={task.error} />}
     </div>
   );
 }

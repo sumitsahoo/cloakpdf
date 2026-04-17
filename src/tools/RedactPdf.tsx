@@ -8,16 +8,18 @@
  * permanent filled black boxes via pdf-lib.
  */
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { FileDropZone } from "../components/FileDropZone.tsx";
-import { AlertBox } from "../components/AlertBox.tsx";
-import { ActionButton } from "../components/ActionButton.tsx";
-import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
-import { categoryAccent, categoryGlow, canvas as canvasColors } from "../config/theme.ts";
-import { downloadPdf } from "../utils/file-helpers.ts";
-import { redactPdf } from "../utils/pdf-operations.ts";
-import { renderAllThumbnails, revokeThumbnails } from "../utils/pdf-renderer.ts";
 import { Trash2, Undo2 } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { ActionButton } from "../components/ActionButton.tsx";
+import { AlertBox } from "../components/AlertBox.tsx";
+import { FileDropZone } from "../components/FileDropZone.tsx";
+import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
+import { canvas as canvasColors, categoryAccent, categoryGlow } from "../config/theme.ts";
+import { useAsyncProcess } from "../hooks/useAsyncProcess.ts";
+import { usePdfFile } from "../hooks/usePdfFile.ts";
+import { downloadPdf, pdfFilename } from "../utils/file-helpers.ts";
+import { redactPdf } from "../utils/pdf-operations.ts";
+import { PREVIEW_SCALE, renderAllThumbnails, revokeThumbnails } from "../utils/pdf-renderer.ts";
 
 interface RedactionRect {
   xPct: number;
@@ -27,50 +29,30 @@ interface RedactionRect {
 }
 
 export default function RedactPdf() {
-  const [file, setFile] = useState<File | null>(null);
-  const [thumbnails, setThumbnails] = useState<string[]>([]);
-  const [pageIds, setPageIds] = useState<string[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [processing, setProcessing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
   // editingPage = null → thumbnail grid; number → redact editor for that page
   const [editingPage, setEditingPage] = useState<number | null>(null);
   // Map of pageIndex → list of redaction rects (fraction coords)
   const [redactions, setRedactions] = useState<Map<number, RedactionRect[]>>(new Map());
-
   // Global undo history — each entry is the full redactions map before a rect was added
   const [undoHistory, setUndoHistory] = useState<Map<number, RedactionRect[]>[]>([]);
+
+  const pdf = usePdfFile<string[]>({
+    load: (file) => renderAllThumbnails(file, PREVIEW_SCALE),
+    onReset: (thumbs) => {
+      revokeThumbnails(thumbs ?? []);
+      setRedactions(new Map());
+      setUndoHistory([]);
+      setEditingPage(null);
+    },
+  });
+  const task = useAsyncProcess();
+
+  const thumbnails = pdf.data ?? [];
 
   // Canvas drawing state
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
-
-  const handleFile = useCallback(async (files: File[]) => {
-    const pdf = files[0];
-    if (!pdf) return;
-    setFile(pdf);
-    setRedactions(new Map());
-    setUndoHistory([]);
-    setEditingPage(null);
-    setLoading(true);
-    setError(null);
-    try {
-      const thumbs = await renderAllThumbnails(pdf);
-      setThumbnails(thumbs);
-      setPageIds(thumbs.map((_, idx) => `${pdf.name}-${idx}`));
-    } catch (e) {
-      setError(
-        e instanceof Error
-          ? e.message
-          : "Failed to load PDF. The file may be corrupted or password-protected.",
-      );
-      setFile(null);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
 
   const totalRedactions = [...redactions.values()].reduce((sum, r) => sum + r.length, 0);
 
@@ -205,26 +187,18 @@ export default function RedactPdf() {
   }, [editingPage]);
 
   const handleApply = useCallback(async () => {
-    if (!file || totalRedactions === 0) return;
-    setProcessing(true);
-    setError(null);
-    try {
+    if (!pdf.file || totalRedactions === 0) return;
+    const file = pdf.file;
+    await task.run(async () => {
       const flat: { pageIndex: number; xPct: number; yPct: number; wPct: number; hPct: number }[] =
         [];
       for (const [pageIndex, rects] of redactions) {
-        for (const r of rects) {
-          flat.push({ pageIndex, ...r });
-        }
+        for (const r of rects) flat.push({ pageIndex, ...r });
       }
       const result = await redactPdf(file, flat);
-      const baseName = file.name.replace(/\.pdf$/i, "");
-      downloadPdf(result, `${baseName}_redacted.pdf`);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to apply redactions. Please try again.");
-    } finally {
-      setProcessing(false);
-    }
-  }, [file, redactions, totalRedactions]);
+      downloadPdf(result, pdfFilename(file, "_redacted"));
+    }, "Failed to apply redactions. Please try again.");
+  }, [pdf.file, redactions, totalRedactions, task]);
 
   // Sync canvas size to container size on mount / resize
   useEffect(() => {
@@ -244,17 +218,18 @@ export default function RedactPdf() {
     return () => ro.disconnect();
   }, [editingPage, redrawCanvas]);
 
-  if (!file) {
+  if (!pdf.file) {
     return (
       <div className="space-y-6">
         <FileDropZone
           glowColor={categoryGlow.security}
           iconColor={categoryAccent.security}
           accept=".pdf,application/pdf"
-          onFiles={handleFile}
+          onFiles={pdf.onFiles}
           label="Drop a PDF file here"
           hint="Draw black boxes over sensitive content to permanently redact it"
         />
+        {pdf.loadError && <AlertBox message={pdf.loadError} />}
       </div>
     );
   }
@@ -263,7 +238,7 @@ export default function RedactPdf() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <p className="text-sm text-slate-600 dark:text-dark-text-muted break-all sm:break-normal">
-          <span className="font-medium">{file.name}</span> — {thumbnails.length} pages
+          <span className="font-medium">{pdf.file.name}</span> — {thumbnails.length} pages
           {totalRedactions > 0 && (
             <span className="text-red-600 dark:text-red-400 ml-2">
               ({totalRedactions} redaction{totalRedactions > 1 ? "s" : ""} drawn)
@@ -281,12 +256,7 @@ export default function RedactPdf() {
         ) : (
           <button
             type="button"
-            onClick={() => {
-              revokeThumbnails(thumbnails);
-              setFile(null);
-              setThumbnails([]);
-              setRedactions(new Map());
-            }}
+            onClick={pdf.reset}
             className="text-sm text-primary-600 hover:text-primary-700"
           >
             Change file
@@ -294,7 +264,7 @@ export default function RedactPdf() {
         )}
       </div>
 
-      {loading ? (
+      {pdf.loading ? (
         <LoadingSpinner color="border-amber-200 border-t-amber-600" />
       ) : editingPage !== null ? (
         // ── Redact editor for a single page ──────────────────────────────────
@@ -393,7 +363,7 @@ export default function RedactPdf() {
               return (
                 <button
                   type="button"
-                  key={pageIds[i]}
+                  key={`${pdf.file?.name ?? "page"}-${i}`}
                   onClick={() => setEditingPage(i)}
                   className="relative rounded-lg overflow-hidden border-2 border-slate-200 dark:border-dark-border hover:border-primary-400 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500"
                 >
@@ -417,14 +387,14 @@ export default function RedactPdf() {
       {totalRedactions > 0 && editingPage === null && (
         <ActionButton
           onClick={handleApply}
-          processing={processing}
+          processing={task.processing}
           label={`Apply ${totalRedactions} Redaction${totalRedactions > 1 ? "s" : ""} & Download`}
           processingLabel="Applying Redactions..."
           color="bg-red-600 hover:bg-red-700"
         />
       )}
 
-      {error && <AlertBox variant="error" message={error} />}
+      {(pdf.loadError || task.error) && <AlertBox message={pdf.loadError ?? task.error ?? ""} />}
     </div>
   );
 }

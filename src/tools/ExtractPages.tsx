@@ -13,9 +13,12 @@ import { ActionButton } from "../components/ActionButton.tsx";
 import { AlertBox } from "../components/AlertBox.tsx";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
-import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { PageThumbnail } from "../components/PageThumbnail.tsx";
-import { downloadPdf } from "../utils/file-helpers.ts";
+import { ThumbnailGrid } from "../components/ThumbnailGrid.tsx";
+import { categoryAccent, categoryGlow } from "../config/theme.ts";
+import { useAsyncProcess } from "../hooks/useAsyncProcess.ts";
+import { usePdfFile } from "../hooks/usePdfFile.ts";
+import { downloadPdf, pdfFilename } from "../utils/file-helpers.ts";
 import { extractPages } from "../utils/pdf-operations.ts";
 import { renderAllThumbnails, revokeThumbnails } from "../utils/pdf-renderer.ts";
 
@@ -37,42 +40,26 @@ function parseRangeInput(input: string, pageCount: number): number[] {
 }
 
 export default function ExtractPages() {
-  const [file, setFile] = useState<File | null>(null);
-  const [thumbnails, setThumbnails] = useState<string[]>([]);
   const [selectedPages, setSelectedPages] = useState<Set<number>>(new Set());
   const [rangeInput, setRangeInput] = useState("");
-  const [processing, setProcessing] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+
+  const pdf = usePdfFile<string[]>({
+    load: renderAllThumbnails,
+    onReset: (thumbs) => {
+      revokeThumbnails(thumbs ?? []);
+      setSelectedPages(new Set());
+      setRangeInput("");
+    },
+  });
+  const task = useAsyncProcess();
+
+  const thumbnails = pdf.data ?? [];
 
   // Stable keys that don't use the map index directly in JSX (avoids lint warning)
   const thumbnailKeys = useMemo(
-    () => thumbnails.map((_, i) => `${file?.name ?? "page"}-${i}`),
-    [thumbnails, file?.name],
+    () => thumbnails.map((_, i) => `${pdf.file?.name ?? "page"}-${i}`),
+    [thumbnails, pdf.file?.name],
   );
-
-  const handleFile = useCallback(async (files: File[]) => {
-    const pdf = files[0];
-    if (!pdf) return;
-    setFile(pdf);
-    setSelectedPages(new Set());
-    setRangeInput("");
-    setLoading(true);
-    setError(null);
-    try {
-      const thumbs = await renderAllThumbnails(pdf);
-      setThumbnails(thumbs);
-    } catch (e) {
-      setError(
-        e instanceof Error
-          ? e.message
-          : "Failed to load PDF. The file may be corrupted or password-protected.",
-      );
-      setFile(null);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
 
   const togglePage = useCallback((pageIndex: number) => {
     setSelectedPages((prev) => {
@@ -87,12 +74,10 @@ export default function ExtractPages() {
     setSelectedPages(new Set(thumbnails.map((_, i) => i)));
   }, [thumbnails]);
 
-  const clearAll = useCallback(() => {
-    setSelectedPages(new Set());
-  }, []);
+  const clearAll = useCallback(() => setSelectedPages(new Set()), []);
 
   const handleExtract = useCallback(async () => {
-    if (!file) return;
+    if (!pdf.file) return;
 
     // Range input takes priority over thumbnail clicks when filled
     const indices = rangeInput.trim()
@@ -101,18 +86,12 @@ export default function ExtractPages() {
 
     if (indices.length === 0) return;
 
-    setProcessing(true);
-    setError(null);
-    try {
+    const file = pdf.file;
+    await task.run(async () => {
       const result = await extractPages(file, indices);
-      const baseName = file.name.replace(/\.pdf$/i, "");
-      downloadPdf(result, `${baseName}_extracted.pdf`);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to extract pages. Please try again.");
-    } finally {
-      setProcessing(false);
-    }
-  }, [file, selectedPages, rangeInput, thumbnails.length]);
+      downloadPdf(result, pdfFilename(file, "_extracted"));
+    }, "Failed to extract pages. Please try again.");
+  }, [pdf.file, selectedPages, rangeInput, thumbnails.length, task]);
 
   const hasSelection = rangeInput.trim().length > 0 || selectedPages.size > 0;
 
@@ -123,12 +102,12 @@ export default function ExtractPages() {
 
   return (
     <div className="space-y-6">
-      {!file ? (
+      {!pdf.file ? (
         <FileDropZone
           glowColor={categoryGlow.organise}
           iconColor={categoryAccent.organise}
           accept=".pdf,application/pdf"
-          onFiles={handleFile}
+          onFiles={pdf.onFiles}
           label="Drop a PDF file here"
           hint="Select pages to keep and download as a new PDF"
         />
@@ -136,7 +115,7 @@ export default function ExtractPages() {
         <>
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <p className="text-sm text-slate-600 dark:text-dark-text-muted break-all sm:break-normal">
-              <span className="font-medium">{file.name}</span> — {thumbnails.length} pages
+              <span className="font-medium">{pdf.file.name}</span> — {thumbnails.length} pages
               {selectedPages.size > 0 && !rangeInput.trim() && (
                 <span className="text-primary-600 dark:text-primary-400 ml-2">
                   ({selectedPages.size} selected)
@@ -162,13 +141,7 @@ export default function ExtractPages() {
               </button>
               <button
                 type="button"
-                onClick={() => {
-                  revokeThumbnails(thumbnails);
-                  setFile(null);
-                  setThumbnails([]);
-                  setSelectedPages(new Set());
-                  setRangeInput("");
-                }}
+                onClick={pdf.reset}
                 className="text-sm text-primary-600 hover:text-primary-700"
               >
                 Change file
@@ -196,10 +169,10 @@ export default function ExtractPages() {
             </p>
           </div>
 
-          {loading ? (
+          {pdf.loading ? (
             <LoadingSpinner />
           ) : (
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+            <ThumbnailGrid>
               {thumbnails.map((thumb, i) => (
                 <PageThumbnail
                   key={thumbnailKeys[i]}
@@ -218,13 +191,13 @@ export default function ExtractPages() {
                   }
                 />
               ))}
-            </div>
+            </ThumbnailGrid>
           )}
 
           {hasSelection && effectiveCount > 0 && (
             <ActionButton
               onClick={handleExtract}
-              processing={processing}
+              processing={task.processing}
               label={`Extract ${effectiveCount} Page${effectiveCount !== 1 ? "s" : ""} & Download`}
               processingLabel="Extracting..."
             />
@@ -232,7 +205,7 @@ export default function ExtractPages() {
         </>
       )}
 
-      {error && <AlertBox variant="error" message={error} />}
+      {(pdf.loadError || task.error) && <AlertBox message={pdf.loadError ?? task.error ?? ""} />}
     </div>
   );
 }

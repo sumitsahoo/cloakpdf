@@ -6,14 +6,16 @@
  * images or a ZIP of all selected images.
  */
 
-import { useState, useCallback, useMemo } from "react";
 import { CheckSquare, ImageDown, Loader2, X } from "lucide-react";
-import { FileDropZone } from "../components/FileDropZone.tsx";
+import type { PDFDocumentProxy } from "pdfjs-dist";
+import { useCallback, useMemo, useState } from "react";
 import { AlertBox } from "../components/AlertBox.tsx";
+import { FileDropZone } from "../components/FileDropZone.tsx";
 import { FileInfoBar } from "../components/FileInfoBar.tsx";
 import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
-import type { PDFDocumentProxy } from "pdfjs-dist";
+import { useAsyncProcess } from "../hooks/useAsyncProcess.ts";
+import { usePdfFile } from "../hooks/usePdfFile.ts";
 import { downloadBlob, formatFileSize } from "../utils/file-helpers.ts";
 import { pdfjsLib } from "../utils/pdf-renderer.ts";
 
@@ -219,51 +221,42 @@ async function extractImagesFromPdf(
 }
 
 export default function ExtractImages() {
-  const [file, setFile] = useState<File | null>(null);
-  const [images, setImages] = useState<ExtractedImage[]>([]);
   const [selected, setSelected] = useState<Set<number>>(new Set());
-  const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
-  const [downloading, setDownloading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  const handleFile = useCallback(async (files: File[]) => {
-    const pdf = files[0];
-    if (!pdf) return;
-    setFile(pdf);
-    setImages([]);
-    setSelected(new Set());
-    setError(null);
-    setLoading(true);
-    setProgress(null);
-
-    try {
-      const arrayBuffer = await pdf.arrayBuffer();
-      const doc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-      const extracted = await extractImagesFromPdf(doc, (done, total) =>
-        setProgress({ done, total }),
-      );
-      void doc.destroy();
-
-      if (extracted.length === 0) {
-        setError("No extractable images found in this PDF.");
-        setFile(null);
-      } else {
-        setImages(extracted);
-        setSelected(new Set());
-      }
-    } catch (e) {
-      setError(
-        e instanceof Error
-          ? e.message
-          : "Failed to extract images. The file may be corrupted or password-protected.",
-      );
-      setFile(null);
-    } finally {
-      setLoading(false);
+  const pdf = usePdfFile<ExtractedImage[]>({
+    load: async (file) => {
       setProgress(null);
-    }
-  }, []);
+      const arrayBuffer = await file.arrayBuffer();
+      const doc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      try {
+        const extracted = await extractImagesFromPdf(doc, (done, total) =>
+          setProgress({ done, total }),
+        );
+        if (extracted.length === 0) {
+          // Bubbling up via thrown Error lets usePdfFile surface the message
+          // and reset the file in one step — matching the prior behaviour.
+          throw new Error("No extractable images found in this PDF.");
+        }
+        return extracted;
+      } finally {
+        void doc.destroy();
+        setProgress(null);
+      }
+    },
+    onReset: () => {
+      setSelected(new Set());
+      setProgress(null);
+    },
+    loadErrorMessage: "Failed to extract images. The file may be corrupted or password-protected.",
+  });
+  const downloadTask = useAsyncProcess();
+
+  const file = pdf.file;
+  const images = pdf.data ?? [];
+  const loading = pdf.loading;
+  const downloading = downloadTask.processing;
+  const error = pdf.loadError ?? downloadTask.error;
 
   const toggleImage = useCallback((idx: number) => {
     setSelected((prev) => {
@@ -284,9 +277,7 @@ export default function ExtractImages() {
 
   const handleDownload = useCallback(async () => {
     if (selected.size === 0) return;
-    setDownloading(true);
-
-    try {
+    await downloadTask.run(async () => {
       const baseName = file?.name.replace(/\.pdf$/i, "") ?? "extracted";
       const selectedImages = Array.from(selected)
         .sort((a, b) => a - b)
@@ -304,12 +295,8 @@ export default function ExtractImages() {
         const zipBlob = await zip.generateAsync({ type: "blob" });
         downloadBlob(zipBlob, `${baseName}_images.zip`);
       }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to download images. Please try again.");
-    } finally {
-      setDownloading(false);
-    }
-  }, [file, images, selected]);
+    }, "Failed to download images. Please try again.");
+  }, [file, images, selected, downloadTask]);
 
   const totalSize = useMemo(
     () => Array.from(selected).reduce((sum, i) => sum + images[i].blob.size, 0),
@@ -323,7 +310,7 @@ export default function ExtractImages() {
           glowColor={categoryGlow.transform}
           iconColor={categoryAccent.transform}
           accept=".pdf,application/pdf"
-          onFiles={handleFile}
+          onFiles={pdf.onFiles}
           label="Drop a PDF file here"
           hint="All embedded images will be extracted for download"
         />
@@ -332,12 +319,7 @@ export default function ExtractImages() {
           <FileInfoBar
             fileName={file.name}
             details={formatFileSize(file.size)}
-            onChangeFile={() => {
-              setFile(null);
-              setImages([]);
-              setSelected(new Set());
-              setError(null);
-            }}
+            onChangeFile={pdf.reset}
             extra={
               !loading && images.length > 0 ? (
                 <span className="text-violet-600 ml-2">
@@ -455,7 +437,7 @@ export default function ExtractImages() {
         </>
       )}
 
-      {error && <AlertBox variant="error" message={error} />}
+      {error && <AlertBox message={error} />}
     </div>
   );
 }

@@ -7,8 +7,8 @@
  * configurable colour, rotation, and opacity.
  */
 
+import { Check, CircleDot, Droplets, RectangleHorizontal, Stamp } from "lucide-react";
 import { useCallback, useState } from "react";
-import { Check, Stamp, CircleDot, Droplets, RectangleHorizontal } from "lucide-react";
 import { ActionButton } from "../components/ActionButton.tsx";
 import { AlertBox } from "../components/AlertBox.tsx";
 import { CheckboxField } from "../components/CheckboxField.tsx";
@@ -17,13 +17,32 @@ import { FileDropZone } from "../components/FileDropZone.tsx";
 import { FileInfoBar } from "../components/FileInfoBar.tsx";
 import { LabeledSlider } from "../components/LabeledSlider.tsx";
 import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
-import { categoryAccent, categoryGlow } from "../config/theme.ts";
-import { usePreviewScale } from "../hooks/usePreviewScale.ts";
 import { PageThumbnail } from "../components/PageThumbnail.tsx";
+import { categoryAccent, categoryGlow } from "../config/theme.ts";
+import { useAsyncProcess } from "../hooks/useAsyncProcess.ts";
+import { usePdfFile } from "../hooks/usePdfFile.ts";
+import { usePreviewScale } from "../hooks/usePreviewScale.ts";
 import type { WatermarkOptions } from "../types.ts";
-import { downloadPdf } from "../utils/file-helpers.ts";
+import { downloadPdf, pdfFilename } from "../utils/file-helpers.ts";
 import { addRectangleStamp, addSealStamp, addWatermark } from "../utils/pdf-operations.ts";
-import { renderAllThumbnails, revokeThumbnails } from "../utils/pdf-renderer.ts";
+import { PREVIEW_SCALE, renderAllThumbnails, revokeThumbnails } from "../utils/pdf-renderer.ts";
+
+/** Data loaded once per file: thumbnails + per-page dimensions in PDF points. */
+interface LoadedPdf {
+  thumbnails: string[];
+  pageDims: { width: number; height: number }[];
+}
+
+/** Load thumbnails and page dimensions together in a single pass. */
+async function loadPdfWithDims(file: File): Promise<LoadedPdf> {
+  const [thumbnails, { PDFDocument }] = await Promise.all([
+    renderAllThumbnails(file, PREVIEW_SCALE),
+    import("@pdfme/pdf-lib"),
+  ]);
+  const pdfDoc = await PDFDocument.load(await file.arrayBuffer());
+  const pageDims = pdfDoc.getPages().map((p) => p.getSize());
+  return { thumbnails, pageDims };
+}
 
 type StampStyle = "text" | "seal" | "rectangle" | "watermark";
 
@@ -193,11 +212,6 @@ function starPoints(cx: number, cy: number, r: number, points: number) {
 }
 
 export default function StampPdf() {
-  const [file, setFile] = useState<File | null>(null);
-  const [thumbnails, setThumbnails] = useState<string[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [processing, setProcessing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [selectedStamp, setSelectedStamp] = useState<StampPreset>(STAMPS[0]);
   const [fontSize, setFontSize] = useState(64);
   const [opacity, setOpacity] = useState(0.35);
@@ -209,34 +223,21 @@ export default function StampPdf() {
   const [selectedPage, setSelectedPage] = useState(0);
   const [selectedPages, setSelectedPages] = useState<Set<number>>(new Set());
 
-  const [pageDims, setPageDims] = useState<{ width: number; height: number }[]>([]);
+  const pdf = usePdfFile<LoadedPdf>({
+    load: loadPdfWithDims,
+    onReset: (data) => {
+      revokeThumbnails(data?.thumbnails ?? []);
+      setSelectedPage(0);
+      setSelectedPages(new Set());
+    },
+  });
+  const task = useAsyncProcess();
 
-  const handleFile = useCallback(async (files: File[]) => {
-    const pdf = files[0];
-    if (!pdf) return;
-    setFile(pdf);
-    setSelectedPage(0);
-    setSelectedPages(new Set());
-    setLoading(true);
-    setError(null);
-    try {
-      const thumbs = await renderAllThumbnails(pdf);
-      setThumbnails(thumbs);
-      const { PDFDocument } = await import("@pdfme/pdf-lib");
-      const data = await pdf.arrayBuffer();
-      const pdfDoc = await PDFDocument.load(data);
-      setPageDims(pdfDoc.getPages().map((p) => p.getSize()));
-    } catch (e) {
-      setError(
-        e instanceof Error
-          ? e.message
-          : "Failed to load PDF. The file may be corrupted or password-protected.",
-      );
-      setFile(null);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const thumbnails = pdf.data?.thumbnails ?? [];
+  const pageDims = pdf.data?.pageDims ?? [];
+  const loading = pdf.loading;
+  const processing = task.processing;
+  const error = pdf.loadError ?? task.error;
 
   const [previewScale, previewRef] = usePreviewScale(pageDims[selectedPage]);
 
@@ -251,10 +252,9 @@ export default function StampPdf() {
   }, []);
 
   const handleApply = useCallback(async () => {
-    if (!file) return;
-    setProcessing(true);
-    setError(null);
-    try {
+    if (!pdf.file) return;
+    const file = pdf.file;
+    await task.run(async () => {
       const pageIndices = applyToAllPages ? undefined : [...selectedPages].sort((a, b) => a - b);
       let result: Uint8Array;
       if (stampStyle === "seal") {
@@ -294,16 +294,11 @@ export default function StampPdf() {
         };
         result = await addWatermark(file, options, pageIndices);
       }
-      const baseName = file.name.replace(/\.pdf$/i, "");
       const suffix = stampStyle === "watermark" ? "_watermarked" : "_stamped";
-      downloadPdf(result, `${baseName}${suffix}.pdf`);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to apply stamp. Please try again.");
-    } finally {
-      setProcessing(false);
-    }
+      downloadPdf(result, pdfFilename(file, suffix));
+    }, "Failed to apply stamp. Please try again.");
   }, [
-    file,
+    pdf.file,
     selectedStamp,
     fontSize,
     opacity,
@@ -313,6 +308,7 @@ export default function StampPdf() {
     customText,
     customColor,
     rotation,
+    task,
   ]);
 
   const canApply =
@@ -321,27 +317,21 @@ export default function StampPdf() {
 
   return (
     <div className="space-y-6">
-      {!file ? (
+      {!pdf.file ? (
         <FileDropZone
           glowColor={categoryGlow.annotate}
           iconColor={categoryAccent.annotate}
           accept=".pdf,application/pdf"
-          onFiles={handleFile}
+          onFiles={pdf.onFiles}
           label="Drop a PDF file here"
           hint="Apply a stamp (DRAFT, APPROVED, etc.) or a custom text watermark"
         />
       ) : (
         <>
           <FileInfoBar
-            fileName={file.name}
+            fileName={pdf.file.name}
             details={`${thumbnails.length} pages`}
-            onChangeFile={() => {
-              revokeThumbnails(thumbnails);
-              setFile(null);
-              setThumbnails([]);
-              setPageDims([]);
-              setSelectedPages(new Set());
-            }}
+            onChangeFile={pdf.reset}
           />
 
           <div className="grid md:grid-cols-2 gap-6 items-start">
@@ -680,7 +670,7 @@ export default function StampPdf() {
         </>
       )}
 
-      {error && <AlertBox variant="error" message={error} />}
+      {error && <AlertBox message={error} />}
     </div>
   );
 }

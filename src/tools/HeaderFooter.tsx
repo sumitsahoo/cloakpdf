@@ -19,11 +19,30 @@ import { LabeledSlider } from "../components/LabeledSlider.tsx";
 import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
 import { ResetButton } from "../components/ResetButton.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
+import { useAsyncProcess } from "../hooks/useAsyncProcess.ts";
+import { usePdfFile } from "../hooks/usePdfFile.ts";
 import { usePreviewScale } from "../hooks/usePreviewScale.ts";
 import type { HeaderFooterOptions } from "../types.ts";
-import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
+import { downloadPdf, formatFileSize, pdfFilename } from "../utils/file-helpers.ts";
 import { addHeaderFooter } from "../utils/pdf-operations.ts";
-import { renderAllThumbnails, revokeThumbnails } from "../utils/pdf-renderer.ts";
+import { PREVIEW_SCALE, renderAllThumbnails, revokeThumbnails } from "../utils/pdf-renderer.ts";
+
+/** Data loaded once per file: thumbnails + per-page dimensions in PDF points. */
+interface LoadedPdf {
+  thumbnails: string[];
+  pageDims: { width: number; height: number }[];
+}
+
+/** Load thumbnails and page dimensions together in a single pass. */
+async function loadPdfWithDims(file: File): Promise<LoadedPdf> {
+  const [thumbnails, { PDFDocument }] = await Promise.all([
+    renderAllThumbnails(file, PREVIEW_SCALE),
+    import("@pdfme/pdf-lib"),
+  ]);
+  const pdfDoc = await PDFDocument.load(await file.arrayBuffer());
+  const pageDims = pdfDoc.getPages().map((p) => p.getSize());
+  return { thumbnails, pageDims };
+}
 
 const DEFAULT_OPTIONS: HeaderFooterOptions = {
   headerLeft: "",
@@ -49,14 +68,23 @@ function resolveTokens(text: string, page: number, total: number): string {
 }
 
 export default function HeaderFooter() {
-  const [file, setFile] = useState<File | null>(null);
-  const [thumbnails, setThumbnails] = useState<string[]>([]);
-  const [pageDims, setPageDims] = useState<{ width: number; height: number }[]>([]);
   const [selectedPage, setSelectedPage] = useState(0);
-  const [loading, setLoading] = useState(false);
   const [options, setOptions] = useState<HeaderFooterOptions>(DEFAULT_OPTIONS);
-  const [processing, setProcessing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+
+  const pdf = usePdfFile<LoadedPdf>({
+    load: loadPdfWithDims,
+    onReset: (data) => {
+      revokeThumbnails(data?.thumbnails ?? []);
+      setSelectedPage(0);
+    },
+  });
+  const task = useAsyncProcess();
+
+  const thumbnails = pdf.data?.thumbnails ?? [];
+  const pageDims = pdf.data?.pageDims ?? [];
+  const loading = pdf.loading;
+  const processing = task.processing;
+  const error = pdf.loadError ?? task.error;
 
   // Scale factor: preview px / page pt — used to size the font overlay correctly
   const [previewScale, previewContainerRef] = usePreviewScale(pageDims[selectedPage]);
@@ -66,33 +94,6 @@ export default function HeaderFooter() {
     field: keyof HeaderFooterOptions;
     el: HTMLInputElement;
   } | null>(null);
-
-  const handleFile = useCallback(async (files: File[]) => {
-    const pdf = files[0];
-    if (!pdf) return;
-    setFile(pdf);
-    setSelectedPage(0);
-    setError(null);
-    setLoading(true);
-    try {
-      const [thumbs, { PDFDocument }] = await Promise.all([
-        renderAllThumbnails(pdf),
-        import("@pdfme/pdf-lib"),
-      ]);
-      setThumbnails(thumbs);
-      const pdfDoc = await PDFDocument.load(await pdf.arrayBuffer());
-      setPageDims(pdfDoc.getPages().map((p) => p.getSize()));
-    } catch (e) {
-      setError(
-        e instanceof Error
-          ? e.message
-          : "Failed to load PDF. The file may be corrupted or password-protected.",
-      );
-      setFile(null);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
 
   const handleReset = useCallback(() => {
     setOptions(DEFAULT_OPTIONS);
@@ -124,7 +125,7 @@ export default function HeaderFooter() {
   );
 
   const handleApply = useCallback(async () => {
-    if (!file) return;
+    if (!pdf.file) return;
     const hasContent = [
       options.headerLeft,
       options.headerCenter,
@@ -134,21 +135,15 @@ export default function HeaderFooter() {
       options.footerRight,
     ].some((s) => s.trim());
     if (!hasContent) {
-      setError("Please enter at least one header or footer text.");
+      task.setError("Please enter at least one header or footer text.");
       return;
     }
-    setProcessing(true);
-    setError(null);
-    try {
+    const file = pdf.file;
+    await task.run(async () => {
       const result = await addHeaderFooter(file, options);
-      const baseName = file.name.replace(/\.pdf$/i, "");
-      downloadPdf(result, `${baseName}_header_footer.pdf`);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to add header/footer. Please try again.");
-    } finally {
-      setProcessing(false);
-    }
-  }, [file, options]);
+      downloadPdf(result, pdfFilename(file, "_header_footer"));
+    }, "Failed to add header/footer. Please try again.");
+  }, [pdf.file, options, task]);
 
   const slotClass =
     "w-full border border-slate-300 dark:border-dark-border rounded-lg px-2.5 py-1.5 text-sm bg-white dark:bg-dark-surface text-slate-800 dark:text-dark-text focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 placeholder:text-slate-300 dark:placeholder:text-dark-text-muted transition-colors";
@@ -177,26 +172,21 @@ export default function HeaderFooter() {
 
   return (
     <div className="space-y-6">
-      {!file ? (
+      {!pdf.file ? (
         <FileDropZone
           glowColor={categoryGlow.annotate}
           iconColor={categoryAccent.annotate}
           accept=".pdf,application/pdf"
-          onFiles={handleFile}
+          onFiles={pdf.onFiles}
           label="Drop a PDF file here"
           hint="Header and footer text will be added to every page"
         />
       ) : (
         <>
           <FileInfoBar
-            fileName={file.name}
-            details={loading ? "loading…" : formatFileSize(file.size)}
-            onChangeFile={() => {
-              revokeThumbnails(thumbnails);
-              setFile(null);
-              setThumbnails([]);
-              setPageDims([]);
-            }}
+            fileName={pdf.file.name}
+            details={loading ? "loading…" : formatFileSize(pdf.file.size)}
+            onChangeFile={pdf.reset}
           />
 
           <div className="grid md:grid-cols-2 gap-6 items-start">
@@ -507,7 +497,7 @@ export default function HeaderFooter() {
         </>
       )}
 
-      {error && <AlertBox variant="error" message={error} />}
+      {error && <AlertBox message={error} />}
     </div>
   );
 }

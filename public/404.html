@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex" />
+    <meta name="theme-color" content="#2563EB" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Page redacted — CloakPDF</title>
+    <link rel="icon" href="/icons/favicon.svg" type="image/svg+xml" />
+    <link rel="preload" href="/fonts/InterVariable.woff2" as="font" type="font/woff2" crossorigin />
+    <style>
+      @font-face {
+        font-family: "Inter";
+        font-style: normal;
+        font-weight: 100 900;
+        font-display: swap;
+        src: url("/fonts/InterVariable.woff2") format("woff2-variations");
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family:
+          "Inter",
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          Roboto,
+          sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        background: linear-gradient(135deg, #f8fafc 0%, #ffffff 50%, #eff4fa 100%);
+        color: #1e293b;
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+      }
+      @media (prefers-color-scheme: dark) {
+        body {
+          background: linear-gradient(135deg, #0f172a 0%, #0f172a 55%, #1e293b 100%);
+          color: #f1f5f9;
+        }
+      }
+
+      header {
+        padding: 12px 24px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        border-bottom: 1px solid rgba(226, 232, 240, 0.7);
+        backdrop-filter: blur(8px);
+        background: rgba(255, 255, 255, 0.6);
+      }
+      @media (prefers-color-scheme: dark) {
+        header {
+          border-bottom-color: #334155;
+          background: rgba(30, 41, 59, 0.6);
+        }
+      }
+      header img {
+        width: 40px;
+        height: 40px;
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.12));
+      }
+      header .brand {
+        font-size: 18px;
+        font-weight: 600;
+      }
+
+      main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 48px 24px;
+        text-align: center;
+      }
+
+      .stamp {
+        font-size: clamp(96px, 18vw, 180px);
+        font-weight: 900;
+        letter-spacing: -0.05em;
+        line-height: 1;
+        color: #2563eb;
+        margin-bottom: 24px;
+        display: flex;
+        justify-content: center;
+        align-items: baseline;
+        gap: 0.05em;
+      }
+      @media (prefers-color-scheme: dark) {
+        .stamp {
+          color: #60a5fa;
+        }
+      }
+      .stamp .redacted-digit {
+        position: relative;
+        display: inline-block;
+        color: transparent;
+        background: #1e293b;
+        border-radius: 6px;
+        padding: 0 0.08em;
+        transform: rotate(-1.5deg);
+        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.25);
+      }
+      @media (prefers-color-scheme: dark) {
+        .stamp .redacted-digit {
+          background: #cbd5e1;
+        }
+      }
+
+      h1 {
+        font-size: clamp(22px, 3.5vw, 28px);
+        font-weight: 700;
+        margin: 0 0 12px;
+        letter-spacing: -0.01em;
+      }
+      .tagline {
+        max-width: 520px;
+        margin: 0 auto 28px;
+        font-size: 15px;
+        line-height: 1.65;
+        color: #475569;
+      }
+      @media (prefers-color-scheme: dark) {
+        .tagline {
+          color: #94a3b8;
+        }
+      }
+
+      .path-box {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 13px;
+        font-family: ui-monospace, "SF Mono", "Consolas", monospace;
+        color: #64748b;
+        background: rgba(226, 232, 240, 0.5);
+        border: 1px solid rgba(226, 232, 240, 0.9);
+        padding: 8px 14px;
+        border-radius: 10px;
+        margin-bottom: 32px;
+        max-width: 90vw;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      @media (prefers-color-scheme: dark) {
+        .path-box {
+          background: rgba(51, 65, 85, 0.5);
+          border-color: #334155;
+          color: #94a3b8;
+        }
+      }
+      .path-box .label {
+        font-family:
+          "Inter",
+          -apple-system,
+          sans-serif;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: #94a3b8;
+      }
+
+      .button {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: #2563eb;
+        color: #fff;
+        text-decoration: none;
+        padding: 12px 22px;
+        border-radius: 12px;
+        font-weight: 500;
+        font-size: 14px;
+        transition:
+          background 0.15s,
+          transform 0.15s;
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+      }
+      .button:hover {
+        background: #1d4ed8;
+        transform: translateY(-1px);
+      }
+      .button:active {
+        transform: translateY(0);
+      }
+
+      footer {
+        text-align: center;
+        padding: 20px 24px;
+        font-size: 12px;
+        color: #94a3b8;
+      }
+      footer a {
+        color: inherit;
+        text-decoration: underline;
+        text-decoration-style: dotted;
+        text-underline-offset: 3px;
+      }
+      footer a:hover {
+        color: #2563eb;
+      }
+      @media (prefers-color-scheme: dark) {
+        footer a:hover {
+          color: #60a5fa;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <img src="/icons/logo.svg" alt="CloakPDF logo" />
+      <span class="brand">CloakPDF</span>
+    </header>
+
+    <main>
+      <div class="stamp" aria-label="404">4<span class="redacted-digit">0</span>4</div>
+
+      <h1>This page has been redacted.</h1>
+      <p class="tagline">
+        We looked everywhere, scanned every byte, even ran OCR on the cobwebs &mdash; no luck. The
+        good news: even if this page existed, we wouldn't know you were looking for it. Your
+        browsing history stays in your browser, where it belongs.
+      </p>
+
+      <div class="path-box">
+        <span class="label">You requested</span>
+        <span id="requested-path">&mdash;</span>
+      </div>
+
+      <a class="button" href="/">&larr; Back to the toolkit</a>
+    </main>
+
+    <footer>
+      If a link on our site led you here,
+      <a href="https://github.com/sumitsahoo/cloakpdf/issues/new">please report it</a>.
+    </footer>
+
+    <script>
+      (() => {
+        try {
+          const el = document.getElementById("requested-path");
+          if (!el) return;
+          let path = window.location.pathname + window.location.search;
+          if (path === "/" || path === "") path = "(unknown)";
+          // textContent prevents any HTML injection from the URL
+          el.textContent = path;
+        } catch {
+          /* noop */
+        }
+      })();
+    </script>
+  </body>
+</html>

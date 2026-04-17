@@ -10,21 +10,40 @@
  * PDF at the user-specified coordinates.
  */
 
-import { useState, useCallback, useRef, useEffect } from "react";
-import { FileDropZone } from "../components/FileDropZone.tsx";
-import { AlertBox } from "../components/AlertBox.tsx";
+import { Check, CheckSquare, Maximize2, Move, PenLine, Upload, X } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ActionButton } from "../components/ActionButton.tsx";
-import { FileInfoBar } from "../components/FileInfoBar.tsx";
-import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
-import { LabeledSlider } from "../components/LabeledSlider.tsx";
-import { categoryAccent, categoryGlow, colorPresets } from "../config/theme.ts";
-import { SignaturePad } from "../components/SignaturePad.tsx";
+import { AlertBox } from "../components/AlertBox.tsx";
 import { ColorPicker, hexToRgb } from "../components/ColorPicker.tsx";
+import { FileDropZone } from "../components/FileDropZone.tsx";
+import { FileInfoBar } from "../components/FileInfoBar.tsx";
+import { LabeledSlider } from "../components/LabeledSlider.tsx";
+import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
 import { PageThumbnail } from "../components/PageThumbnail.tsx";
+import { SignaturePad } from "../components/SignaturePad.tsx";
+import { categoryAccent, categoryGlow, colorPresets } from "../config/theme.ts";
+import { useAsyncProcess } from "../hooks/useAsyncProcess.ts";
+import { usePdfFile } from "../hooks/usePdfFile.ts";
+import { downloadPdf, pdfFilename } from "../utils/file-helpers.ts";
 import { addSignature } from "../utils/pdf-operations.ts";
-import { renderAllThumbnails, revokeThumbnails } from "../utils/pdf-renderer.ts";
-import { downloadPdf } from "../utils/file-helpers.ts";
-import { PenLine, Upload, Move, Maximize2, Check, CheckSquare, X } from "lucide-react";
+import { PREVIEW_SCALE, renderAllThumbnails, revokeThumbnails } from "../utils/pdf-renderer.ts";
+
+/** Data loaded once per file: thumbnails + per-page dimensions in PDF points. */
+interface LoadedPdf {
+  thumbnails: string[];
+  pageDims: { width: number; height: number }[];
+}
+
+/** Load thumbnails and page dimensions together in a single pass. */
+async function loadPdfWithDims(file: File): Promise<LoadedPdf> {
+  const [thumbnails, { PDFDocument }] = await Promise.all([
+    renderAllThumbnails(file, PREVIEW_SCALE),
+    import("@pdfme/pdf-lib"),
+  ]);
+  const pdfDoc = await PDFDocument.load(await file.arrayBuffer());
+  const pageDims = pdfDoc.getPages().map((p) => p.getSize());
+  return { thumbnails, pageDims };
+}
 
 type SignatureMode = "draw" | "upload";
 
@@ -84,20 +103,32 @@ function tintImage(dataUrl: string, hex: string): Promise<string> {
 }
 
 export default function AddSignature() {
-  const [file, setFile] = useState<File | null>(null);
-  const [thumbnails, setThumbnails] = useState<string[]>([]);
   const [selectedPage, setSelectedPage] = useState(0);
   const [selectedPages, setSelectedPages] = useState<Set<number>>(new Set());
   const [signatureDataUrl, setSignatureDataUrl] = useState("");
-  const [processing, setProcessing] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [position, setPosition] = useState(DEFAULT_POSITION);
   const [pagePositions, setPagePositions] = useState<
     Record<number, { xPercent: number; yPercent: number }>
   >({});
   const [sigSize, setSigSize] = useState({ width: 200, height: 80 });
-  const [pageDims, setPageDims] = useState<{ width: number; height: number }[]>([]);
+
+  const pdf = usePdfFile<LoadedPdf>({
+    load: loadPdfWithDims,
+    onReset: (data) => {
+      revokeThumbnails(data?.thumbnails ?? []);
+      setSelectedPage(0);
+      setSelectedPages(new Set());
+      setSignatureDataUrl("");
+      setPagePositions({});
+    },
+  });
+  const task = useAsyncProcess();
+
+  const thumbnails = pdf.data?.thumbnails ?? [];
+  const pageDims = pdf.data?.pageDims ?? [];
+  const loading = pdf.loading;
+  const processing = task.processing;
+  const error = pdf.loadError ?? task.error;
   const [isDragging, setIsDragging] = useState(false);
   const [applyToAllPages, setApplyToAllPages] = useState(false);
 
@@ -206,45 +237,15 @@ export default function AddSignature() {
     setSelectedPage(index);
   }, []);
 
-  /* ---- file handlers ---- */
-  const handleFile = useCallback(async (files: File[]) => {
-    const pdf = files[0];
-    if (!pdf) return;
-    setFile(pdf);
-    setSelectedPage(0);
-    setSelectedPages(new Set());
-    setLoading(true);
-    setError(null);
-    try {
-      const thumbs = await renderAllThumbnails(pdf);
-      setThumbnails(thumbs);
-
-      const arrayBuffer = await pdf.arrayBuffer();
-      const { PDFDocument } = await import("@pdfme/pdf-lib");
-      const pdfDoc = await PDFDocument.load(arrayBuffer);
-      const dims = pdfDoc.getPages().map((p) => p.getSize());
-      setPageDims(dims);
-    } catch (e) {
-      setError(
-        e instanceof Error
-          ? e.message
-          : "Failed to load PDF. The file may be corrupted or password-protected.",
-      );
-      setFile(null);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   const handleImageUpload = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const imgFile = e.target.files?.[0];
       if (!imgFile) return;
       if (imgFile.size > MAX_UPLOAD_SIZE) {
-        setError("Image must be under 5 MB.");
+        task.setError("Image must be under 5 MB.");
         return;
       }
-      setError(null);
+      task.setError(null);
       const reader = new FileReader();
       reader.onload = () => {
         const dataUrl = reader.result as string;
@@ -255,15 +256,14 @@ export default function AddSignature() {
       };
       reader.readAsDataURL(imgFile);
     },
-    [tintEnabled],
+    [tintEnabled, task],
   );
 
   /** Convert the percentage-based preview position to PDF points and embed the signature. */
   const handleApply = useCallback(async () => {
-    if (!file || !signatureDataUrl) return;
-    setProcessing(true);
-    setError(null);
-    try {
+    if (!pdf.file || !signatureDataUrl) return;
+    const file = pdf.file;
+    await task.run(async () => {
       const arrayBuffer = await file.arrayBuffer();
       const { PDFDocument } = await import("@pdfme/pdf-lib");
       const pdfDoc = await PDFDocument.load(arrayBuffer);
@@ -285,8 +285,7 @@ export default function AddSignature() {
           width: sigSize.width,
           height: sigSize.height,
         });
-        const baseName = file.name.replace(/\.pdf$/i, "");
-        downloadPdf(result, `${baseName}_signed.pdf`);
+        downloadPdf(result, pdfFilename(file, "_signed"));
       } else {
         // Per-page positions
         const positionMap = new Map<
@@ -308,40 +307,39 @@ export default function AddSignature() {
         }
 
         const result = await addSignature(file, signatureDataUrl, pageIndices, positionMap);
-        const baseName = file.name.replace(/\.pdf$/i, "");
-        downloadPdf(result, `${baseName}_signed.pdf`);
+        downloadPdf(result, pdfFilename(file, "_signed"));
       }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to add signature. Please try again.");
-    } finally {
-      setProcessing(false);
-    }
-  }, [file, signatureDataUrl, position, sigSize, applyToAllPages, selectedPages, pagePositions]);
+    }, "Failed to add signature. Please try again.");
+  }, [
+    pdf.file,
+    signatureDataUrl,
+    position,
+    sigSize,
+    applyToAllPages,
+    selectedPages,
+    pagePositions,
+    task,
+  ]);
 
   return (
     <div className="space-y-6">
-      {!file ? (
+      {!pdf.file ? (
         <FileDropZone
           glowColor={categoryGlow.annotate}
           iconColor={categoryAccent.annotate}
           accept=".pdf,application/pdf"
-          onFiles={handleFile}
+          onFiles={pdf.onFiles}
           label="Drop a PDF file here"
           hint="Draw or upload your signature, then place it on a page"
         />
       ) : (
         <>
           <FileInfoBar
-            fileName={file.name}
+            fileName={pdf.file.name}
             details={`${thumbnails.length} pages`}
             onChangeFile={() => {
-              revokeThumbnails(thumbnails);
-              setFile(null);
-              setThumbnails([]);
-              setSignatureDataUrl("");
               setUploadedImageUrl("");
-              setSelectedPages(new Set());
-              setPagePositions({});
+              pdf.reset();
             }}
           />
 
@@ -658,7 +656,7 @@ export default function AddSignature() {
         </>
       )}
 
-      {error && <AlertBox variant="error" message={error} />}
+      {error && <AlertBox message={error} />}
     </div>
   );
 }

@@ -7,55 +7,47 @@
  * detection, and individual pages can be toggled manually.
  */
 
-import { useState, useCallback, useEffect } from "react";
-import { FileDropZone } from "../components/FileDropZone.tsx";
-import { AlertBox } from "../components/AlertBox.tsx";
+import { CheckCircle2, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import { ActionButton } from "../components/ActionButton.tsx";
+import { AlertBox } from "../components/AlertBox.tsx";
+import { FileDropZone } from "../components/FileDropZone.tsx";
 import { FileInfoBar } from "../components/FileInfoBar.tsx";
+import { InfoCallout } from "../components/InfoCallout.tsx";
 import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
-import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { PageThumbnail } from "../components/PageThumbnail.tsx";
+import { ThumbnailGrid } from "../components/ThumbnailGrid.tsx";
+import { categoryAccent, categoryGlow } from "../config/theme.ts";
+import { useAsyncProcess } from "../hooks/useAsyncProcess.ts";
+import { usePdfFile } from "../hooks/usePdfFile.ts";
+import { downloadPdf, formatFileSize, pdfFilename } from "../utils/file-helpers.ts";
 import { deletePages } from "../utils/pdf-operations.ts";
 import { renderThumbnailsAndScores, revokeThumbnails } from "../utils/pdf-renderer.ts";
-import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
-import { Trash2 } from "lucide-react";
+
+/** Analysis output: thumbnail URL + whiteness score per page. */
+interface PageAnalysis {
+  thumbnails: string[];
+  scores: number[];
+}
 
 export default function RemoveBlankPages() {
-  const [file, setFile] = useState<File | null>(null);
-  const [thumbnails, setThumbnails] = useState<string[]>([]);
-  const [scores, setScores] = useState<number[]>([]);
   const [threshold, setThreshold] = useState(0.97);
   const [selectedPages, setSelectedPages] = useState<Set<number>>(new Set());
-  const [processing, setProcessing] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
 
-  const handleFile = useCallback(async (files: File[]) => {
-    const pdf = files[0];
-    if (!pdf) return;
-    setFile(pdf);
-    setDone(false);
-    setLoading(true);
-    setError(null);
-    setScores([]);
-    setThumbnails([]);
-    setSelectedPages(new Set());
-    try {
-      const { thumbnails: thumbs, scores: pageScores } = await renderThumbnailsAndScores(pdf);
-      setThumbnails(thumbs);
-      setScores(pageScores);
-    } catch (e) {
-      setError(
-        e instanceof Error
-          ? e.message
-          : "Failed to load PDF. The file may be corrupted or password-protected.",
-      );
-      setFile(null);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const pdf = usePdfFile<PageAnalysis>({
+    load: renderThumbnailsAndScores,
+    onReset: (analysis) => {
+      revokeThumbnails(analysis?.thumbnails ?? []);
+      setSelectedPages(new Set());
+      setDone(false);
+    },
+  });
+  const task = useAsyncProcess();
+
+  const thumbnails = pdf.data?.thumbnails ?? [];
+  const scores = pdf.data?.scores ?? [];
+  const pageCount = thumbnails.length;
 
   // Re-compute auto-selection whenever scores or threshold change
   useEffect(() => {
@@ -75,51 +67,36 @@ export default function RemoveBlankPages() {
   }, []);
 
   const handleRemove = useCallback(async () => {
-    if (!file || selectedPages.size === 0) return;
-    if (selectedPages.size >= thumbnails.length) return;
-    setProcessing(true);
-    setError(null);
+    if (!pdf.file || selectedPages.size === 0) return;
+    if (selectedPages.size >= pageCount) return;
+    const file = pdf.file;
     setDone(false);
-    try {
+    const ok = await task.run(async () => {
       const result = await deletePages(file, Array.from(selectedPages));
-      const baseName = file.name.replace(/\.pdf$/i, "");
-      downloadPdf(result, `${baseName}_cleaned.pdf`);
-      setDone(true);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to remove pages. Please try again.");
-    } finally {
-      setProcessing(false);
-    }
-  }, [file, selectedPages, thumbnails.length]);
-
-  const pageCount = thumbnails.length;
+      downloadPdf(result, pdfFilename(file, "_cleaned"));
+    }, "Failed to remove pages. Please try again.");
+    if (ok) setDone(true);
+  }, [pdf.file, selectedPages, pageCount, task]);
 
   return (
     <div className="space-y-6">
-      {!file ? (
+      {!pdf.file ? (
         <FileDropZone
           glowColor={categoryGlow.organise}
           iconColor={categoryAccent.organise}
           accept=".pdf,application/pdf"
-          onFiles={handleFile}
+          onFiles={pdf.onFiles}
           label="Drop a PDF file here"
           hint="Blank pages are detected automatically — review before removing"
         />
       ) : (
         <>
           <FileInfoBar
-            fileName={file.name}
-            details={formatFileSize(file.size)}
-            onChangeFile={() => {
-              revokeThumbnails(thumbnails);
-              setFile(null);
-              setThumbnails([]);
-              setScores([]);
-              setSelectedPages(new Set());
-              setDone(false);
-            }}
+            fileName={pdf.file.name}
+            details={formatFileSize(pdf.file.size)}
+            onChangeFile={pdf.reset}
             extra={
-              !loading && pageCount > 0 ? (
+              !pdf.loading && pageCount > 0 ? (
                 <>
                   , {pageCount} pages
                   {selectedPages.size > 0 && (
@@ -133,7 +110,7 @@ export default function RemoveBlankPages() {
             }
           />
 
-          {loading ? (
+          {pdf.loading ? (
             <div className="flex flex-col items-center justify-center py-12 gap-3">
               <LoadingSpinner className="" />
               <p className="text-sm text-slate-500 dark:text-dark-text-muted">Analysing pages…</p>
@@ -171,7 +148,7 @@ export default function RemoveBlankPages() {
                 </p>
               )}
 
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+              <ThumbnailGrid>
                 {thumbnails.map((thumb, i) => (
                   <PageThumbnail
                     key={i}
@@ -188,7 +165,7 @@ export default function RemoveBlankPages() {
                     }
                   />
                 ))}
-              </div>
+              </ThumbnailGrid>
 
               {selectedPages.size === 0 && pageCount > 0 && (
                 <p className="text-center text-sm text-slate-400 dark:text-dark-text-muted">
@@ -199,7 +176,7 @@ export default function RemoveBlankPages() {
               {selectedPages.size > 0 && selectedPages.size < pageCount && (
                 <ActionButton
                   onClick={handleRemove}
-                  processing={processing}
+                  processing={task.processing}
                   label={`Remove ${selectedPages.size} Page${selectedPages.size !== 1 ? "s" : ""} & Download`}
                   processingLabel="Removing…"
                 />
@@ -212,17 +189,16 @@ export default function RemoveBlankPages() {
               )}
 
               {done && (
-                <AlertBox
-                  variant="success"
-                  message="Blank pages removed successfully. The PDF has been downloaded."
-                />
+                <InfoCallout icon={CheckCircle2} accent="organise">
+                  Blank pages removed successfully. The PDF has been downloaded.
+                </InfoCallout>
               )}
             </>
           )}
         </>
       )}
 
-      {error && <AlertBox variant="error" message={error} />}
+      {(pdf.loadError || task.error) && <AlertBox message={pdf.loadError ?? task.error ?? ""} />}
     </div>
   );
 }

@@ -6,20 +6,22 @@
  * pages, drag any item to reorder, and download the result.
  */
 
-import { useState, useCallback } from "react";
-import { FileDropZone } from "../components/FileDropZone.tsx";
-import { SortableGrid } from "../components/SortableGrid.tsx";
-import { AlertBox } from "../components/AlertBox.tsx";
+import { Plus } from "lucide-react";
+import { useCallback, useState } from "react";
 import { ActionButton } from "../components/ActionButton.tsx";
+import { AlertBox } from "../components/AlertBox.tsx";
+import { FileDropZone } from "../components/FileDropZone.tsx";
 import { FileInfoBar } from "../components/FileInfoBar.tsx";
-import { ResetButton } from "../components/ResetButton.tsx";
 import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
+import { ResetButton } from "../components/ResetButton.tsx";
+import { SortableGrid } from "../components/SortableGrid.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
-import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
+import { useAsyncProcess } from "../hooks/useAsyncProcess.ts";
+import { usePdfFile } from "../hooks/usePdfFile.ts";
 import { useSortableDrag } from "../hooks/useSortableDrag.ts";
+import { downloadPdf, formatFileSize, pdfFilename } from "../utils/file-helpers.ts";
 import { addBlankPages } from "../utils/pdf-operations.ts";
 import { renderAllThumbnails, revokeThumbnails } from "../utils/pdf-renderer.ts";
-import { Plus } from "lucide-react";
 
 type BlankItem = { type: "blank"; id: string };
 type OriginalItem = { type: "original"; index: number };
@@ -31,12 +33,24 @@ function nextBlankId() {
 }
 
 export default function AddBlankPage() {
-  const [file, setFile] = useState<File | null>(null);
-  const [thumbnails, setThumbnails] = useState<string[]>([]);
   const [items, setItems] = useState<PageItem[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [processing, setProcessing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+
+  const pdf = usePdfFile<string[]>({
+    load: async (file) => {
+      const thumbs = await renderAllThumbnails(file);
+      // Default: one blank page at the start
+      const originals: PageItem[] = thumbs.map((_, i) => ({ type: "original" as const, index: i }));
+      setItems([{ type: "blank", id: nextBlankId() }, ...originals]);
+      return thumbs;
+    },
+    onReset: (thumbs) => {
+      revokeThumbnails(thumbs ?? []);
+      setItems([]);
+    },
+  });
+  const task = useAsyncProcess();
+
+  const thumbnails = pdf.data ?? [];
 
   const handleMove = useCallback((fromIndex: number, toSlot: number) => {
     setItems((prev) => {
@@ -50,30 +64,6 @@ export default function AddBlankPage() {
 
   // Drag state (desktop + mobile touch)
   const drag = useSortableDrag(handleMove);
-
-  const handleFile = useCallback(async (files: File[]) => {
-    const pdf = files[0];
-    if (!pdf) return;
-    setFile(pdf);
-    setError(null);
-    setLoading(true);
-    try {
-      const thumbs = await renderAllThumbnails(pdf);
-      setThumbnails(thumbs);
-      // Default: one blank page at the start
-      const originals: PageItem[] = thumbs.map((_, i) => ({ type: "original" as const, index: i }));
-      setItems([{ type: "blank", id: nextBlankId() }, ...originals]);
-    } catch (e) {
-      setError(
-        e instanceof Error
-          ? e.message
-          : "Failed to load PDF. The file may be corrupted or password-protected.",
-      );
-      setFile(null);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
 
   const hasBlankPages = items.some((it) => it.type === "blank");
   const isDragging = drag.dragIndex !== null;
@@ -89,10 +79,9 @@ export default function AddBlankPage() {
   }, [drag]);
 
   const handleApply = useCallback(async () => {
-    if (!file || !hasBlankPages) return;
-    setProcessing(true);
-    setError(null);
-    try {
+    if (!pdf.file || !hasBlankPages) return;
+    const file = pdf.file;
+    await task.run(async () => {
       // Compute the 0-based positions (relative to the original page list)
       // where blank pages should be inserted.
       const positions: number[] = [];
@@ -105,40 +94,30 @@ export default function AddBlankPage() {
         }
       }
       const result = await addBlankPages(file, positions);
-      const baseName = file.name.replace(/\.pdf$/i, "");
-      downloadPdf(result, `${baseName}_blank_added.pdf`);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to insert blank pages. Please try again.");
-    } finally {
-      setProcessing(false);
-    }
-  }, [file, hasBlankPages, items]);
+      downloadPdf(result, pdfFilename(file, "_blank_added"));
+    }, "Failed to insert blank pages. Please try again.");
+  }, [pdf.file, hasBlankPages, items, task]);
 
   return (
     <div className="space-y-6">
-      {!file ? (
+      {!pdf.file ? (
         <FileDropZone
           glowColor={categoryGlow.organise}
           iconColor={categoryAccent.organise}
           accept=".pdf,application/pdf"
-          onFiles={handleFile}
+          onFiles={pdf.onFiles}
           label="Drop a PDF file here"
           hint="Add one or more blank pages and drag to set their position"
         />
       ) : (
         <>
           <FileInfoBar
-            fileName={file.name}
-            details={formatFileSize(file.size)}
-            onChangeFile={() => {
-              revokeThumbnails(thumbnails);
-              setFile(null);
-              setThumbnails([]);
-              setItems([]);
-            }}
+            fileName={pdf.file.name}
+            details={formatFileSize(pdf.file.size)}
+            onChangeFile={pdf.reset}
           />
 
-          {loading ? (
+          {pdf.loading ? (
             <LoadingSpinner />
           ) : (
             <>
@@ -286,7 +265,7 @@ export default function AddBlankPage() {
               {hasBlankPages && (
                 <ActionButton
                   onClick={handleApply}
-                  processing={processing}
+                  processing={task.processing}
                   label="Insert Blank Pages & Download"
                   processingLabel="Inserting…"
                 />
@@ -296,7 +275,7 @@ export default function AddBlankPage() {
         </>
       )}
 
-      {error && <AlertBox variant="error" message={error} />}
+      {(pdf.loadError || task.error) && <AlertBox message={pdf.loadError ?? task.error ?? ""} />}
     </div>
   );
 }

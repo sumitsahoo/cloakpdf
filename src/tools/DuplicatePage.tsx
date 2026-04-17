@@ -7,16 +7,18 @@
  */
 
 import { useCallback, useState } from "react";
-import { FileDropZone } from "../components/FileDropZone.tsx";
-import { SortableGrid } from "../components/SortableGrid.tsx";
-import { AlertBox } from "../components/AlertBox.tsx";
 import { ActionButton } from "../components/ActionButton.tsx";
+import { AlertBox } from "../components/AlertBox.tsx";
+import { FileDropZone } from "../components/FileDropZone.tsx";
 import { FileInfoBar } from "../components/FileInfoBar.tsx";
-import { ResetButton } from "../components/ResetButton.tsx";
 import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
+import { ResetButton } from "../components/ResetButton.tsx";
+import { SortableGrid } from "../components/SortableGrid.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
-import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
+import { useAsyncProcess } from "../hooks/useAsyncProcess.ts";
+import { usePdfFile } from "../hooks/usePdfFile.ts";
 import { useSortableDrag } from "../hooks/useSortableDrag.ts";
+import { downloadPdf, formatFileSize, pdfFilename } from "../utils/file-helpers.ts";
 import { duplicatePages } from "../utils/pdf-operations.ts";
 import { renderAllThumbnails, revokeThumbnails } from "../utils/pdf-renderer.ts";
 
@@ -30,12 +32,22 @@ function nextCopyId() {
 }
 
 export default function DuplicatePage() {
-  const [file, setFile] = useState<File | null>(null);
-  const [thumbnails, setThumbnails] = useState<string[]>([]);
   const [items, setItems] = useState<PageItem[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [processing, setProcessing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+
+  const pdf = usePdfFile<string[]>({
+    load: async (file) => {
+      const thumbs = await renderAllThumbnails(file);
+      setItems(thumbs.map((_, i) => ({ type: "original" as const, index: i })));
+      return thumbs;
+    },
+    onReset: (thumbs) => {
+      revokeThumbnails(thumbs ?? []);
+      setItems([]);
+    },
+  });
+  const task = useAsyncProcess();
+
+  const thumbnails = pdf.data ?? [];
 
   const handleMove = useCallback((fromIndex: number, toSlot: number) => {
     setItems((prev) => {
@@ -49,28 +61,6 @@ export default function DuplicatePage() {
 
   // Drag state (desktop + mobile touch)
   const drag = useSortableDrag(handleMove);
-
-  const handleFile = useCallback(async (files: File[]) => {
-    const pdf = files[0];
-    if (!pdf) return;
-    setFile(pdf);
-    setError(null);
-    setLoading(true);
-    try {
-      const thumbs = await renderAllThumbnails(pdf);
-      setThumbnails(thumbs);
-      setItems(thumbs.map((_, i) => ({ type: "original" as const, index: i })));
-    } catch (e) {
-      setError(
-        e instanceof Error
-          ? e.message
-          : "Failed to load PDF. The file may be corrupted or password-protected.",
-      );
-      setFile(null);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
 
   const hasCopies = items.some((it) => it.type === "copy");
   const isDragging = drag.dragIndex !== null;
@@ -90,10 +80,9 @@ export default function DuplicatePage() {
   }, [drag]);
 
   const handleApply = useCallback(async () => {
-    if (!file || !hasCopies) return;
-    setProcessing(true);
-    setError(null);
-    try {
+    if (!pdf.file || !hasCopies) return;
+    const file = pdf.file;
+    await task.run(async () => {
       // Compute copy positions relative to the original page list.
       const copies: { sourceIndex: number; position: number }[] = [];
       let originalsSeen = 0;
@@ -105,40 +94,30 @@ export default function DuplicatePage() {
         }
       }
       const result = await duplicatePages(file, copies);
-      const baseName = file.name.replace(/\.pdf$/i, "");
-      downloadPdf(result, `${baseName}_duplicated.pdf`);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to duplicate pages. Please try again.");
-    } finally {
-      setProcessing(false);
-    }
-  }, [file, hasCopies, items]);
+      downloadPdf(result, pdfFilename(file, "_duplicated"));
+    }, "Failed to duplicate pages. Please try again.");
+  }, [pdf.file, hasCopies, items, task]);
 
   return (
     <div className="space-y-6">
-      {!file ? (
+      {!pdf.file ? (
         <FileDropZone
           glowColor={categoryGlow.organise}
           iconColor={categoryAccent.organise}
           accept=".pdf,application/pdf"
-          onFiles={handleFile}
+          onFiles={pdf.onFiles}
           label="Drop a PDF file here"
           hint="Click a page to duplicate it right after and drag copies to rearrange"
         />
       ) : (
         <>
           <FileInfoBar
-            fileName={file.name}
-            details={formatFileSize(file.size)}
-            onChangeFile={() => {
-              revokeThumbnails(thumbnails);
-              setFile(null);
-              setThumbnails([]);
-              setItems([]);
-            }}
+            fileName={pdf.file.name}
+            details={formatFileSize(pdf.file.size)}
+            onChangeFile={pdf.reset}
           />
 
-          {loading ? (
+          {pdf.loading ? (
             <LoadingSpinner />
           ) : (
             <>
@@ -304,7 +283,7 @@ export default function DuplicatePage() {
               {hasCopies && (
                 <ActionButton
                   onClick={handleApply}
-                  processing={processing}
+                  processing={task.processing}
                   label="Duplicate Pages & Download"
                   processingLabel="Duplicating…"
                 />
@@ -314,7 +293,7 @@ export default function DuplicatePage() {
         </>
       )}
 
-      {error && <AlertBox variant="error" message={error} />}
+      {(pdf.loadError || task.error) && <AlertBox message={pdf.loadError ?? task.error ?? ""} />}
     </div>
   );
 }

@@ -7,14 +7,15 @@
  * Object URLs for image previews are revoked on removal to avoid memory leaks.
  */
 
-import { useState, useCallback, useEffect } from "react";
-import { FileDropZone } from "../components/FileDropZone.tsx";
-import { AlertBox } from "../components/AlertBox.tsx";
+import { ChevronDown, ChevronUp, X } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import { ActionButton } from "../components/ActionButton.tsx";
+import { AlertBox } from "../components/AlertBox.tsx";
+import { FileDropZone } from "../components/FileDropZone.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
-import { imagesToPdf } from "../utils/pdf-operations.ts";
+import { useAsyncProcess } from "../hooks/useAsyncProcess.ts";
 import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
-import { ChevronUp, ChevronDown, X } from "lucide-react";
+import { imagesToPdf } from "../utils/pdf-operations.ts";
 
 /** Internal representation of a queued image with its preview URL. */
 interface ImageItem {
@@ -27,8 +28,7 @@ interface ImageItem {
 export default function ImagesToPdf() {
   const [images, setImages] = useState<ImageItem[]>([]);
   const [pageSize, setPageSize] = useState<"a4" | "letter" | "fit">("a4");
-  const [processing, setProcessing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const task = useAsyncProcess();
 
   // Revoke all object URLs when the component unmounts
   useEffect(() => {
@@ -70,22 +70,14 @@ export default function ImagesToPdf() {
 
   const handleConvert = useCallback(async () => {
     if (images.length === 0) return;
-    setProcessing(true);
-    setError(null);
-    try {
+    await task.run(async () => {
       const result = await imagesToPdf(
         images.map((i) => i.file),
         pageSize,
       );
       downloadPdf(result, "images.pdf");
-    } catch (e) {
-      setError(
-        e instanceof Error ? e.message : "Failed to create PDF from images. Please try again.",
-      );
-    } finally {
-      setProcessing(false);
-    }
-  }, [images, pageSize]);
+    }, "Failed to create PDF from images. Please try again.");
+  }, [images, pageSize, task]);
 
   return (
     <div className="space-y-6">
@@ -172,7 +164,7 @@ export default function ImagesToPdf() {
 
           <ActionButton
             onClick={handleConvert}
-            processing={processing}
+            processing={task.processing}
             label={`Create PDF from ${images.length} Image${images.length > 1 ? "s" : ""}`}
             processingLabel="Creating PDF..."
             color="bg-violet-600 hover:bg-violet-700"
@@ -180,7 +172,7 @@ export default function ImagesToPdf() {
         </>
       )}
 
-      {error && <AlertBox variant="error" message={error} />}
+      {task.error && <AlertBox message={task.error} />}
     </div>
   );
 }

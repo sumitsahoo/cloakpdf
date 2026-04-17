@@ -16,16 +16,19 @@
  *      bottom-left, so a larger y value means nearer to the top of the page.
  */
 
-import { useState, useCallback } from "react";
-import { ChevronDown } from "lucide-react";
-import { FileDropZone } from "../components/FileDropZone.tsx";
-import { AlertBox } from "../components/AlertBox.tsx";
+import { ChevronDown, FileX } from "lucide-react";
+import { useCallback, useState } from "react";
 import { ActionButton } from "../components/ActionButton.tsx";
+import { AlertBox } from "../components/AlertBox.tsx";
+import { FileDropZone } from "../components/FileDropZone.tsx";
 import { FileInfoBar } from "../components/FileInfoBar.tsx";
+import { InfoCallout } from "../components/InfoCallout.tsx";
 import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
+import { useAsyncProcess } from "../hooks/useAsyncProcess.ts";
+import { usePdfFile } from "../hooks/usePdfFile.ts";
+import { downloadPdf, formatFileSize, pdfFilename } from "../utils/file-helpers.ts";
 import { fillPdfForm, getFieldPageIndices } from "../utils/pdf-operations.ts";
-import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
 import { renderAllThumbnails, revokeThumbnails } from "../utils/pdf-renderer.ts";
 
 type FieldType = "text" | "checkbox" | "dropdown" | "radio" | "other";
@@ -47,128 +50,123 @@ interface FieldInfo {
   y: number;
 }
 
+/** Shape produced by the loader: thumbnails + stable keys + parsed field list. */
+interface LoadedForm {
+  thumbnails: string[];
+  thumbnailIds: string[];
+  fields: FieldInfo[];
+}
+
+/**
+ * Render thumbnails and parse form fields in a single pass. Fields are
+ * sorted in visual reading order so the UI lists them consistently.
+ */
+async function loadForm(file: File): Promise<LoadedForm> {
+  const { PDFDocument, PDFTextField, PDFCheckBox, PDFDropdown, PDFRadioGroup } =
+    await import("@pdfme/pdf-lib");
+
+  const [thumbs, fieldPageMap, arrayBuffer] = await Promise.all([
+    renderAllThumbnails(file),
+    getFieldPageIndices(file),
+    file.arrayBuffer(),
+  ]);
+
+  const pdfDoc = await PDFDocument.load(arrayBuffer);
+  const form = pdfDoc.getForm();
+  const rawFields = form.getFields();
+
+  const infos: FieldInfo[] = rawFields
+    .map((field): FieldInfo => {
+      const name = field.getName();
+      const pos = fieldPageMap.get(name);
+      const pageIndex = pos?.pageIndex ?? 0;
+      const y = pos?.y ?? 0;
+      if (field instanceof PDFTextField) {
+        return {
+          name,
+          type: "text",
+          defaultValue: field.getText() ?? "",
+          multiline: field.isMultiline(),
+          pageIndex,
+          y,
+        };
+      }
+      if (field instanceof PDFCheckBox) {
+        return { name, type: "checkbox", defaultValue: field.isChecked(), pageIndex, y };
+      }
+      if (field instanceof PDFDropdown) {
+        return {
+          name,
+          type: "dropdown",
+          defaultValue: field.getSelected()[0] ?? "",
+          options: field.getOptions(),
+          pageIndex,
+          y,
+        };
+      }
+      if (field instanceof PDFRadioGroup) {
+        return {
+          name,
+          type: "radio",
+          defaultValue: field.getSelected() ?? "",
+          options: field.getOptions(),
+          pageIndex,
+          y,
+        };
+      }
+      return { name, type: "other", defaultValue: "", pageIndex, y };
+    })
+    .filter((f) => f.type !== "other");
+
+  // Sort fields by their visual position: top-to-bottom within each page,
+  // pages in document order. PDF y-coordinates origin is bottom-left, so a
+  // higher y value means the widget sits closer to the top of the page.
+  infos.sort((a, b) => a.pageIndex - b.pageIndex || b.y - a.y);
+
+  return {
+    thumbnails: thumbs,
+    thumbnailIds: thumbs.map((_, i) => `thumb-${i}-${Date.now()}`),
+    fields: infos,
+  };
+}
+
 export default function FillPdfForm() {
-  const [file, setFile] = useState<File | null>(null);
-  const [thumbnails, setThumbnails] = useState<string[]>([]);
-  const [thumbnailIds, setThumbnailIds] = useState<string[]>([]);
   const [selectedPage, setSelectedPage] = useState<number | null>(null);
-  const [fields, setFields] = useState<FieldInfo[]>([]);
   const [fieldValues, setFieldValues] = useState<Record<string, string | boolean>>({});
   const [flatten, setFlatten] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [processing, setProcessing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  const handleFile = useCallback(async (files: File[]) => {
-    const pdf = files[0];
-    if (!pdf) return;
-    setFile(pdf);
-    setThumbnails([]);
-    setThumbnailIds([]);
-    setSelectedPage(null);
-    setFields([]);
-    setFieldValues({});
-    setError(null);
-    setLoading(true);
+  const pdf = usePdfFile<LoadedForm>({
+    load: async (file) => {
+      const loaded = await loadForm(file);
+      // Initialise the controlled inputs with each field's current value.
+      setFieldValues(Object.fromEntries(loaded.fields.map((f) => [f.name, f.defaultValue])));
+      return loaded;
+    },
+    onReset: (data) => {
+      revokeThumbnails(data?.thumbnails ?? []);
+      setSelectedPage(null);
+      setFieldValues({});
+    },
+    loadErrorMessage:
+      "Failed to load form fields. The file may be corrupted or password-protected.",
+  });
+  const task = useAsyncProcess();
 
-    try {
-      const { PDFDocument, PDFTextField, PDFCheckBox, PDFDropdown, PDFRadioGroup } =
-        await import("@pdfme/pdf-lib");
-
-      const [thumbs, fieldPageMap, arrayBuffer] = await Promise.all([
-        renderAllThumbnails(pdf),
-        getFieldPageIndices(pdf),
-        pdf.arrayBuffer(),
-      ]);
-
-      setThumbnails(thumbs);
-      setThumbnailIds(thumbs.map((_, i) => `thumb-${i}-${Date.now()}`));
-
-      const pdfDoc = await PDFDocument.load(arrayBuffer);
-      const form = pdfDoc.getForm();
-      const rawFields = form.getFields();
-
-      const infos: FieldInfo[] = rawFields
-        .map((field) => {
-          const name = field.getName();
-          const pos = fieldPageMap.get(name);
-          const pageIndex = pos?.pageIndex ?? 0;
-          const y = pos?.y ?? 0;
-          if (field instanceof PDFTextField) {
-            return {
-              name,
-              type: "text" as FieldType,
-              defaultValue: field.getText() ?? "",
-              multiline: field.isMultiline(),
-              pageIndex,
-              y,
-            };
-          }
-          if (field instanceof PDFCheckBox) {
-            return {
-              name,
-              type: "checkbox" as FieldType,
-              defaultValue: field.isChecked(),
-              pageIndex,
-              y,
-            };
-          }
-          if (field instanceof PDFDropdown) {
-            return {
-              name,
-              type: "dropdown" as FieldType,
-              defaultValue: field.getSelected()[0] ?? "",
-              options: field.getOptions(),
-              pageIndex,
-              y,
-            };
-          }
-          if (field instanceof PDFRadioGroup) {
-            return {
-              name,
-              type: "radio" as FieldType,
-              defaultValue: field.getSelected() ?? "",
-              options: field.getOptions(),
-              pageIndex,
-              y,
-            };
-          }
-          return { name, type: "other" as FieldType, defaultValue: "", pageIndex, y };
-        })
-        .filter((f) => f.type !== "other") as FieldInfo[];
-      // Sort fields by their visual position: top-to-bottom within each page,
-      // pages in document order. PDF y-coordinates origin is bottom-left, so a
-      // higher y value means the widget sits closer to the top of the page.
-      infos.sort((a, b) => a.pageIndex - b.pageIndex || b.y - a.y);
-
-      setFields(infos);
-      setFieldValues(Object.fromEntries(infos.map((f) => [f.name, f.defaultValue])));
-    } catch (e) {
-      setError(
-        e instanceof Error
-          ? e.message
-          : "Failed to load form fields. The file may be corrupted or password-protected.",
-      );
-      setFile(null);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const thumbnails = pdf.data?.thumbnails ?? [];
+  const thumbnailIds = pdf.data?.thumbnailIds ?? [];
+  const fields = pdf.data?.fields ?? [];
+  const loading = pdf.loading;
+  const processing = task.processing;
+  const error = pdf.loadError ?? task.error;
 
   const handleFill = useCallback(async () => {
-    if (!file) return;
-    setProcessing(true);
-    setError(null);
-    try {
+    if (!pdf.file) return;
+    const file = pdf.file;
+    await task.run(async () => {
       const result = await fillPdfForm(file, fieldValues, flatten);
-      const baseName = file.name.replace(/\.pdf$/i, "");
-      downloadPdf(result, `${baseName}_filled.pdf`);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to fill PDF. Please try again.");
-    } finally {
-      setProcessing(false);
-    }
-  }, [file, fieldValues, flatten]);
+      downloadPdf(result, pdfFilename(file, "_filled"));
+    }, "Failed to fill PDF. Please try again.");
+  }, [pdf.file, fieldValues, flatten, task]);
 
   // Count fields per page for thumbnail badges.
   const fieldCountByPage = fields.reduce<Record<number, number>>((acc, f) => {
@@ -183,29 +181,21 @@ export default function FillPdfForm() {
 
   return (
     <div className="space-y-6">
-      {!file ? (
+      {!pdf.file ? (
         <FileDropZone
           glowColor={categoryGlow.annotate}
           iconColor={categoryAccent.annotate}
           accept=".pdf,application/pdf"
-          onFiles={handleFile}
+          onFiles={pdf.onFiles}
           label="Drop a PDF file here"
           hint="PDF must contain interactive form fields"
         />
       ) : (
         <>
           <FileInfoBar
-            fileName={file.name}
-            details={formatFileSize(file.size)}
-            onChangeFile={() => {
-              revokeThumbnails(thumbnails);
-              setFile(null);
-              setThumbnails([]);
-              setThumbnailIds([]);
-              setSelectedPage(null);
-              setFields([]);
-              setFieldValues({});
-            }}
+            fileName={pdf.file.name}
+            details={formatFileSize(pdf.file.size)}
+            onChangeFile={pdf.reset}
           />
 
           {loading ? (
@@ -221,12 +211,10 @@ export default function FillPdfForm() {
                 </p>
 
                 {totalFields === 0 ? (
-                  <div className="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
-                    <p className="text-sm text-amber-600 dark:text-amber-400 mt-1">
-                      This PDF does not contain interactive form fields. Use the Add Watermark or
-                      Add Signature tools to annotate it instead.
-                    </p>
-                  </div>
+                  <InfoCallout icon={FileX} title="No fillable fields" accent="annotate">
+                    This PDF does not contain interactive form fields. Use the Add Watermark or Add
+                    Signature tools to annotate it instead.
+                  </InfoCallout>
                 ) : (
                   <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2">
                     {thumbnails.map((thumb, i) => {
@@ -425,7 +413,7 @@ export default function FillPdfForm() {
         </>
       )}
 
-      {error && <AlertBox variant="error" message={error} />}
+      {error && <AlertBox message={error} />}
     </div>
   );
 }

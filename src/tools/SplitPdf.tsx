@@ -17,46 +17,32 @@ import { FileInfoBar } from "../components/FileInfoBar.tsx";
 import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
 import { PageThumbnail } from "../components/PageThumbnail.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
-import { downloadBlob, downloadPdf } from "../utils/file-helpers.ts";
+import { useAsyncProcess } from "../hooks/useAsyncProcess.ts";
+import { usePdfFile } from "../hooks/usePdfFile.ts";
+import { downloadBlob, downloadPdf, pdfFilename } from "../utils/file-helpers.ts";
 import { extractPages } from "../utils/pdf-operations.ts";
 import { renderAllThumbnails, revokeThumbnails } from "../utils/pdf-renderer.ts";
 
 export default function SplitPdf() {
-  const [file, setFile] = useState<File | null>(null);
-  const [thumbnails, setThumbnails] = useState<string[]>([]);
   /** Set of 0-based page indices *after* which a split occurs. */
   const [splitPoints, setSplitPoints] = useState<Set<number>>(new Set());
-  const [processing, setProcessing] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [everyN, setEveryN] = useState(1);
 
-  const thumbnailKeys = useMemo(
-    () => thumbnails.map((_, i) => `${file?.name ?? "page"}-${i}`),
-    [thumbnails, file?.name],
-  );
+  const pdf = usePdfFile<string[]>({
+    load: renderAllThumbnails,
+    onReset: (thumbs) => {
+      revokeThumbnails(thumbs ?? []);
+      setSplitPoints(new Set());
+    },
+  });
+  const task = useAsyncProcess();
 
-  const handleFile = useCallback(async (files: File[]) => {
-    const pdf = files[0];
-    if (!pdf) return;
-    setFile(pdf);
-    setSplitPoints(new Set());
-    setLoading(true);
-    setError(null);
-    try {
-      const thumbs = await renderAllThumbnails(pdf);
-      setThumbnails(thumbs);
-    } catch (e) {
-      setError(
-        e instanceof Error
-          ? e.message
-          : "Failed to load PDF. The file may be corrupted or password-protected.",
-      );
-      setFile(null);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const thumbnails = pdf.data ?? [];
+
+  const thumbnailKeys = useMemo(
+    () => thumbnails.map((_, i) => `${pdf.file?.name ?? "page"}-${i}`),
+    [thumbnails, pdf.file?.name],
+  );
 
   /** Toggle a split point after the given page index. */
   const toggleSplit = useCallback((afterIndex: number) => {
@@ -87,9 +73,7 @@ export default function SplitPdf() {
     [thumbnails.length],
   );
 
-  const clearSplits = useCallback(() => {
-    setSplitPoints(new Set());
-  }, []);
+  const clearSplits = useCallback(() => setSplitPoints(new Set()), []);
 
   /** Derive page ranges (0-based index arrays) from split points. */
   const parts = useMemo(() => {
@@ -98,13 +82,11 @@ export default function SplitPdf() {
     const ranges: number[][] = [];
     let start = 0;
     for (const sp of sorted) {
-      const end = sp; // inclusive
       const indices: number[] = [];
-      for (let i = start; i <= end; i++) indices.push(i);
+      for (let i = start; i <= sp; i++) indices.push(i);
       ranges.push(indices);
-      start = end + 1;
+      start = sp + 1;
     }
-    // Remaining pages after the last split point
     if (start < thumbnails.length) {
       const indices: number[] = [];
       for (let i = start; i < thumbnails.length; i++) indices.push(i);
@@ -114,19 +96,17 @@ export default function SplitPdf() {
   }, [thumbnails.length, splitPoints]);
 
   const handleSplit = useCallback(async () => {
-    if (!file || parts.length === 0) return;
-    setProcessing(true);
-    setError(null);
-    try {
-      const baseName = file.name.replace(/\.pdf$/i, "");
+    if (!pdf.file || parts.length === 0) return;
+    const file = pdf.file;
+    await task.run(async () => {
       if (parts.length === 1) {
-        // No split points — just download the original
         const result = await extractPages(file, parts[0]);
-        downloadPdf(result, `${baseName}_split.pdf`);
+        downloadPdf(result, pdfFilename(file, "_split"));
       } else {
         const JSZip = (await import("jszip")).default;
         const zip = new JSZip();
         const padLen = String(parts.length).length;
+        const baseName = file.name.replace(/\.pdf$/i, "");
         for (let i = 0; i < parts.length; i++) {
           const result = await extractPages(file, parts[i]);
           const padded = String(i + 1).padStart(padLen, "0");
@@ -135,36 +115,26 @@ export default function SplitPdf() {
         const zipBlob = await zip.generateAsync({ type: "blob" });
         downloadBlob(zipBlob, `${baseName}_split.zip`);
       }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to split PDF. Please try again.");
-    } finally {
-      setProcessing(false);
-    }
-  }, [file, parts]);
+    }, "Failed to split PDF. Please try again.");
+  }, [pdf.file, parts, task]);
 
   return (
     <div className="space-y-6">
-      {!file ? (
+      {!pdf.file ? (
         <FileDropZone
           glowColor={categoryGlow.organise}
           iconColor={categoryAccent.organise}
           accept=".pdf,application/pdf"
-          onFiles={handleFile}
+          onFiles={pdf.onFiles}
           label="Drop a PDF file here"
           hint="Split a PDF into multiple separate files"
         />
       ) : (
         <>
-          {/* File info bar */}
           <FileInfoBar
-            fileName={file.name}
+            fileName={pdf.file.name}
             details={`${thumbnails.length} page${thumbnails.length !== 1 ? "s" : ""}`}
-            onChangeFile={() => {
-              revokeThumbnails(thumbnails);
-              setFile(null);
-              setThumbnails([]);
-              setSplitPoints(new Set());
-            }}
+            onChangeFile={pdf.reset}
             extra={
               splitPoints.size > 0 ? (
                 <span className="text-primary-600 dark:text-primary-400 ml-2">
@@ -219,8 +189,7 @@ export default function SplitPdf() {
             </div>
           )}
 
-          {/* Thumbnail grid with split dividers */}
-          {loading ? (
+          {pdf.loading ? (
             <LoadingSpinner />
           ) : (
             <>
@@ -233,7 +202,6 @@ export default function SplitPdf() {
                     <div className="w-[100px] sm:w-[120px]">
                       <PageThumbnail src={thumb} pageNumber={i + 1} />
                     </div>
-                    {/* Split divider between pages */}
                     {i < thumbnails.length - 1 && (
                       <button
                         type="button"
@@ -262,11 +230,10 @@ export default function SplitPdf() {
             </>
           )}
 
-          {/* Split button */}
           {splitPoints.size > 0 && (
             <ActionButton
               onClick={handleSplit}
-              processing={processing}
+              processing={task.processing}
               label={`Split into ${parts.length} Part${parts.length !== 1 ? "s" : ""} & Download`}
               processingLabel="Splitting..."
             />
@@ -274,7 +241,7 @@ export default function SplitPdf() {
         </>
       )}
 
-      {error && <AlertBox variant="error" message={error} />}
+      {(pdf.loadError || task.error) && <AlertBox message={pdf.loadError ?? task.error ?? ""} />}
     </div>
   );
 }

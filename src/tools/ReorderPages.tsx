@@ -8,28 +8,40 @@
  * A "Reset" button lets the user restore the original page order.
  */
 
-import { useState, useCallback } from "react";
-import { FileDropZone } from "../components/FileDropZone.tsx";
-import { SortableGrid } from "../components/SortableGrid.tsx";
-import { AlertBox } from "../components/AlertBox.tsx";
+import { useCallback, useState } from "react";
 import { ActionButton } from "../components/ActionButton.tsx";
+import { AlertBox } from "../components/AlertBox.tsx";
+import { FileDropZone } from "../components/FileDropZone.tsx";
 import { FileInfoBar } from "../components/FileInfoBar.tsx";
-import { ResetButton } from "../components/ResetButton.tsx";
 import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
+import { ResetButton } from "../components/ResetButton.tsx";
+import { SortableGrid } from "../components/SortableGrid.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
+import { useAsyncProcess } from "../hooks/useAsyncProcess.ts";
+import { usePdfFile } from "../hooks/usePdfFile.ts";
+import { useSortableDrag } from "../hooks/useSortableDrag.ts";
+import { downloadPdf, pdfFilename } from "../utils/file-helpers.ts";
 import { reorderPages } from "../utils/pdf-operations.ts";
 import { renderAllThumbnails, revokeThumbnails } from "../utils/pdf-renderer.ts";
-import { downloadPdf } from "../utils/file-helpers.ts";
-import { useSortableDrag } from "../hooks/useSortableDrag.ts";
 
 export default function ReorderPages() {
-  const [file, setFile] = useState<File | null>(null);
-  const [thumbnails, setThumbnails] = useState<string[]>([]);
   /** order[i] is the original 0-based page index at visual position i. */
   const [order, setOrder] = useState<number[]>([]);
-  const [processing, setProcessing] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+
+  const pdf = usePdfFile<string[]>({
+    load: async (file) => {
+      const thumbs = await renderAllThumbnails(file);
+      setOrder(thumbs.map((_, i) => i));
+      return thumbs;
+    },
+    onReset: (thumbs) => {
+      revokeThumbnails(thumbs ?? []);
+      setOrder([]);
+    },
+  });
+  const task = useAsyncProcess();
+
+  const thumbnails = pdf.data ?? [];
 
   const handleMove = useCallback((fromIndex: number, toSlot: number) => {
     setOrder((prev) => {
@@ -41,45 +53,16 @@ export default function ReorderPages() {
     });
   }, []);
 
-  // Drag state (desktop + mobile touch)
   const drag = useSortableDrag(handleMove);
 
-  const handleFile = useCallback(async (files: File[]) => {
-    const pdf = files[0];
-    if (!pdf) return;
-    setFile(pdf);
-    setLoading(true);
-    setError(null);
-    try {
-      const thumbs = await renderAllThumbnails(pdf);
-      setThumbnails(thumbs);
-      setOrder(thumbs.map((_, i) => i));
-    } catch (e) {
-      setError(
-        e instanceof Error
-          ? e.message
-          : "Failed to load PDF. The file may be corrupted or password-protected.",
-      );
-      setFile(null);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   const handleApply = useCallback(async () => {
-    if (!file) return;
-    setProcessing(true);
-    setError(null);
-    try {
+    if (!pdf.file) return;
+    const file = pdf.file;
+    await task.run(async () => {
       const result = await reorderPages(file, order);
-      const baseName = file.name.replace(/\.pdf$/i, "");
-      downloadPdf(result, `${baseName}_reordered.pdf`);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to reorder pages. Please try again.");
-    } finally {
-      setProcessing(false);
-    }
-  }, [file, order]);
+      downloadPdf(result, pdfFilename(file, "_reordered"));
+    }, "Failed to reorder pages. Please try again.");
+  }, [pdf.file, order, task]);
 
   const handleReset = useCallback(() => {
     setOrder(thumbnails.map((_, i) => i));
@@ -92,29 +75,24 @@ export default function ReorderPages() {
 
   return (
     <div className="space-y-6">
-      {!file ? (
+      {!pdf.file ? (
         <FileDropZone
           glowColor={categoryGlow.organise}
           iconColor={categoryAccent.organise}
           accept=".pdf,application/pdf"
-          onFiles={handleFile}
+          onFiles={pdf.onFiles}
           label="Drop a PDF file here"
           hint="Drag and drop pages to reorder them"
         />
       ) : (
         <>
           <FileInfoBar
-            fileName={file.name}
+            fileName={pdf.file.name}
             details={`${thumbnails.length} pages`}
-            onChangeFile={() => {
-              revokeThumbnails(thumbnails);
-              setFile(null);
-              setThumbnails([]);
-              setOrder([]);
-            }}
+            onChangeFile={pdf.reset}
           />
 
-          {loading ? (
+          {pdf.loading ? (
             <LoadingSpinner />
           ) : (
             <>
@@ -200,7 +178,7 @@ export default function ReorderPages() {
               {isReordered && (
                 <ActionButton
                   onClick={handleApply}
-                  processing={processing}
+                  processing={task.processing}
                   label="Apply New Order & Download"
                   processingLabel="Reordering…"
                 />
@@ -210,7 +188,7 @@ export default function ReorderPages() {
         </>
       )}
 
-      {error && <AlertBox variant="error" message={error} />}
+      {(pdf.loadError || task.error) && <AlertBox message={pdf.loadError ?? task.error ?? ""} />}
     </div>
   );
 }

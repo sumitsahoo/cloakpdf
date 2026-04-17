@@ -6,14 +6,17 @@
  * document's structure at a glance — like a photographic contact sheet.
  */
 
-import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { Grid3X3, Image, Tag } from "lucide-react";
-import { FileDropZone } from "../components/FileDropZone.tsx";
-import { AlertBox } from "../components/AlertBox.tsx";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ActionButton } from "../components/ActionButton.tsx";
+import { AlertBox } from "../components/AlertBox.tsx";
+import { FileDropZone } from "../components/FileDropZone.tsx";
 import { FileInfoBar } from "../components/FileInfoBar.tsx";
 import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
-import { categoryAccent, categoryGlow, canvas as canvasColors } from "../config/theme.ts";
+import { ProgressBar } from "../components/ProgressBar.tsx";
+import { canvas as canvasColors, categoryAccent, categoryGlow } from "../config/theme.ts";
+import { useAsyncProcess } from "../hooks/useAsyncProcess.ts";
+import { usePdfFile } from "../hooks/usePdfFile.ts";
 import { downloadBlob, formatFileSize } from "../utils/file-helpers.ts";
 import { pdfjsLib, renderAllThumbnails, revokeThumbnails } from "../utils/pdf-renderer.ts";
 
@@ -28,40 +31,26 @@ const GRID_OPTIONS: { value: GridLayout; label: string; pages: number }[] = [
 ];
 
 export default function ContactSheet() {
-  const [file, setFile] = useState<File | null>(null);
-  const [thumbnails, setThumbnails] = useState<string[]>([]);
-  const [pageCount, setPageCount] = useState(0);
   const [grid, setGrid] = useState<GridLayout>("3x3");
   const [output, setOutput] = useState<OutputFormat>("png");
   const [showLabels, setShowLabels] = useState(true);
-  const [loading, setLoading] = useState(false);
-  const [processing, setProcessing] = useState(false);
   const [progress, setProgress] = useState<{ current: number; total: number } | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const previewRef = useRef<HTMLDivElement>(null);
   const [previewWidth, setPreviewWidth] = useState(0);
 
-  const handleFile = useCallback(async (files: File[]) => {
-    const pdf = files[0];
-    if (!pdf) return;
-    setFile(pdf);
-    setError(null);
-    setLoading(true);
-    try {
-      const thumbs = await renderAllThumbnails(pdf, 0.5);
-      setThumbnails(thumbs);
-      setPageCount(thumbs.length);
-    } catch (e) {
-      setError(
-        e instanceof Error
-          ? e.message
-          : "Failed to load PDF. The file may be corrupted or password-protected.",
-      );
-      setFile(null);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const pdf = usePdfFile<string[]>({
+    load: (file) => renderAllThumbnails(file, 0.5),
+    onReset: (thumbs) => {
+      revokeThumbnails(thumbs ?? []);
+    },
+  });
+  const task = useAsyncProcess();
+
+  const thumbnails = pdf.data ?? [];
+  const pageCount = thumbnails.length;
+  const loading = pdf.loading;
+  const processing = task.processing;
+  const error = pdf.loadError ?? task.error;
 
   // Track preview container width for responsive sizing
   useEffect(() => {
@@ -92,12 +81,11 @@ export default function ContactSheet() {
   const labelHeight = showLabels ? labelFontSize + 6 : 0;
 
   const handleGenerate = useCallback(async () => {
-    if (!file) return;
-    setProcessing(true);
+    if (!pdf.file) return;
+    const file = pdf.file;
     setProgress({ current: 0, total: pageCount });
-    setError(null);
 
-    try {
+    const ok = await task.run(async () => {
       const totalSheets = Math.ceil(pageCount / perSheet);
 
       // Use the shared PDF.js instance (worker already configured)
@@ -232,39 +220,33 @@ export default function ContactSheet() {
           downloadBlob(zipBlob, `${baseName}_contact_sheets.zip`);
         }
       }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to generate contact sheet.");
-    } finally {
-      setProcessing(false);
-      setProgress(null);
-    }
-  }, [file, pageCount, grid, output, showLabels, cols, perSheet]);
+    }, "Failed to generate contact sheet.");
+
+    // Always clear progress when the run completes (success or failure).
+    void ok;
+    setProgress(null);
+  }, [pdf.file, pageCount, output, showLabels, cols, perSheet, task]);
 
   return (
     <div className="space-y-6">
-      {!file ? (
+      {!pdf.file ? (
         <FileDropZone
           glowColor={categoryGlow.transform}
           iconColor={categoryAccent.transform}
           accept=".pdf,application/pdf"
-          onFiles={handleFile}
+          onFiles={pdf.onFiles}
           label="Drop a PDF file here"
           hint="All pages will be arranged into a visual thumbnail grid"
         />
       ) : (
         <>
           <FileInfoBar
-            fileName={file.name}
+            fileName={pdf.file.name}
             details={loading ? "loading…" : `${pageCount} pages`}
-            onChangeFile={() => {
-              revokeThumbnails(thumbnails);
-              setFile(null);
-              setThumbnails([]);
-              setPageCount(0);
-            }}
+            onChangeFile={pdf.reset}
             extra={
               !loading && pageCount > 0 ? (
-                <span className="text-primary-600 ml-2">({formatFileSize(file.size)})</span>
+                <span className="text-primary-600 ml-2">({formatFileSize(pdf.file.size)})</span>
               ) : undefined
             }
           />
@@ -432,22 +414,12 @@ export default function ContactSheet() {
             </div>
           </div>
 
-          {/* Progress */}
           {processing && progress && (
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm text-slate-600 dark:text-dark-text-muted">
-                <span>Rendering pages…</span>
-                <span>
-                  {progress.current} / {progress.total}
-                </span>
-              </div>
-              <div className="w-full bg-slate-200 dark:bg-dark-border rounded-full h-2">
-                <div
-                  className="bg-violet-600 h-2 rounded-full transition-all"
-                  style={{ width: `${(progress.current / progress.total) * 100}%` }}
-                />
-              </div>
-            </div>
+            <ProgressBar
+              current={progress.current}
+              total={progress.total}
+              label="Rendering pages…"
+            />
           )}
 
           <ActionButton
@@ -461,7 +433,7 @@ export default function ContactSheet() {
         </>
       )}
 
-      {error && <AlertBox variant="error" message={error} />}
+      {error && <AlertBox message={error} />}
     </div>
   );
 }

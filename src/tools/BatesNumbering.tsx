@@ -17,11 +17,30 @@ import { LabeledSlider } from "../components/LabeledSlider.tsx";
 import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
 import { ResetButton } from "../components/ResetButton.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
+import { useAsyncProcess } from "../hooks/useAsyncProcess.ts";
+import { usePdfFile } from "../hooks/usePdfFile.ts";
 import { usePreviewScale } from "../hooks/usePreviewScale.ts";
-import { addBatesNumbers } from "../utils/pdf-operations.ts";
-import { downloadPdf } from "../utils/file-helpers.ts";
-import { renderAllThumbnails, revokeThumbnails } from "../utils/pdf-renderer.ts";
 import type { BatesNumberOptions, BatesPosition } from "../types.ts";
+import { downloadPdf, pdfFilename } from "../utils/file-helpers.ts";
+import { addBatesNumbers } from "../utils/pdf-operations.ts";
+import { PREVIEW_SCALE, renderAllThumbnails, revokeThumbnails } from "../utils/pdf-renderer.ts";
+
+/** Data loaded once per file: thumbnails + per-page dimensions in PDF points. */
+interface LoadedPdf {
+  thumbnails: string[];
+  pageDims: { width: number; height: number }[];
+}
+
+/** Load thumbnails and page dimensions together in a single pass. */
+async function loadPdfWithDims(file: File): Promise<LoadedPdf> {
+  const [thumbnails, { PDFDocument }] = await Promise.all([
+    renderAllThumbnails(file, PREVIEW_SCALE),
+    import("@pdfme/pdf-lib"),
+  ]);
+  const pdfDoc = await PDFDocument.load(await file.arrayBuffer());
+  const pageDims = pdfDoc.getPages().map((p) => p.getSize());
+  return { thumbnails, pageDims };
+}
 
 const POSITIONS: { value: BatesPosition; label: string; title: string }[] = [
   { value: "top-left", label: "↖", title: "Top left" },
@@ -73,44 +92,26 @@ function overlayStyle(
 }
 
 export default function BatesNumbering() {
-  const [file, setFile] = useState<File | null>(null);
-  const [thumbnails, setThumbnails] = useState<string[]>([]);
-  const [pageDims, setPageDims] = useState<{ width: number; height: number }[]>([]);
   const [selectedPage, setSelectedPage] = useState(0);
   const [options, setOptions] = useState<BatesNumberOptions>(DEFAULT_OPTIONS);
-  const [processing, setProcessing] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+
+  const pdf = usePdfFile<LoadedPdf>({
+    load: loadPdfWithDims,
+    onReset: (data) => {
+      revokeThumbnails(data?.thumbnails ?? []);
+      setSelectedPage(0);
+    },
+  });
+  const task = useAsyncProcess();
+
+  const thumbnails = pdf.data?.thumbnails ?? [];
+  const pageDims = pdf.data?.pageDims ?? [];
+  const loading = pdf.loading;
+  const processing = task.processing;
+  const error = pdf.loadError ?? task.error;
 
   // Scale factor: preview px / page pt — used to size the font overlay correctly
   const [previewScale, previewContainerRef] = usePreviewScale(pageDims[selectedPage]);
-
-  const handleFile = useCallback(async (files: File[]) => {
-    const pdf = files[0];
-    if (!pdf) return;
-    setFile(pdf);
-    setSelectedPage(0);
-    setError(null);
-    setLoading(true);
-    try {
-      const [thumbs, { PDFDocument }] = await Promise.all([
-        renderAllThumbnails(pdf),
-        import("@pdfme/pdf-lib"),
-      ]);
-      setThumbnails(thumbs);
-      const pdfDoc = await PDFDocument.load(await pdf.arrayBuffer());
-      setPageDims(pdfDoc.getPages().map((p) => p.getSize()));
-    } catch (e) {
-      setError(
-        e instanceof Error
-          ? e.message
-          : "Failed to load PDF. The file may be corrupted or password-protected.",
-      );
-      setFile(null);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
 
   const handleReset = useCallback(() => {
     setOptions(DEFAULT_OPTIONS);
@@ -126,19 +127,13 @@ export default function BatesNumbering() {
   );
 
   const handleApply = useCallback(async () => {
-    if (!file) return;
-    setProcessing(true);
-    setError(null);
-    try {
+    if (!pdf.file) return;
+    const file = pdf.file;
+    await task.run(async () => {
       const result = await addBatesNumbers(file, options);
-      const baseName = file.name.replace(/\.pdf$/i, "");
-      downloadPdf(result, `${baseName}_bates.pdf`);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to add Bates numbering. Please try again.");
-    } finally {
-      setProcessing(false);
-    }
-  }, [file, options]);
+      downloadPdf(result, pdfFilename(file, "_bates"));
+    }, "Failed to add Bates numbering. Please try again.");
+  }, [pdf.file, options, task]);
 
   const pageCount = thumbnails.length;
 
@@ -151,26 +146,21 @@ export default function BatesNumbering() {
 
   return (
     <div className="space-y-6">
-      {!file ? (
+      {!pdf.file ? (
         <FileDropZone
           glowColor={categoryGlow.annotate}
           iconColor={categoryAccent.annotate}
           accept=".pdf,application/pdf"
-          onFiles={handleFile}
+          onFiles={pdf.onFiles}
           label="Drop a PDF file here"
           hint="Sequential Bates numbers will be stamped on every page"
         />
       ) : (
         <>
           <FileInfoBar
-            fileName={file.name}
+            fileName={pdf.file.name}
             details={loading ? "loading…" : `${pageCount} pages`}
-            onChangeFile={() => {
-              revokeThumbnails(thumbnails);
-              setFile(null);
-              setThumbnails([]);
-              setPageDims([]);
-            }}
+            onChangeFile={pdf.reset}
           />
 
           <div className="grid md:grid-cols-2 gap-6">
@@ -377,7 +367,7 @@ export default function BatesNumbering() {
         </>
       )}
 
-      {error && <AlertBox variant="error" message={error} />}
+      {error && <AlertBox message={error} />}
     </div>
   );
 }

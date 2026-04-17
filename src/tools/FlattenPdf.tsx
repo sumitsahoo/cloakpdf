@@ -6,69 +6,55 @@
  * forms before sharing.
  */
 
-import { useState, useCallback } from "react";
-import { FileDropZone } from "../components/FileDropZone.tsx";
-import { AlertBox } from "../components/AlertBox.tsx";
+import { CheckCircle2 } from "lucide-react";
+import { useCallback, useState } from "react";
 import { ActionButton } from "../components/ActionButton.tsx";
+import { AlertBox } from "../components/AlertBox.tsx";
+import { FileDropZone } from "../components/FileDropZone.tsx";
 import { FileInfoBar } from "../components/FileInfoBar.tsx";
+import { InfoCallout } from "../components/InfoCallout.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
+import { useAsyncProcess } from "../hooks/useAsyncProcess.ts";
+import { usePdfFile } from "../hooks/usePdfFile.ts";
+import { downloadPdf, formatFileSize, pdfFilename } from "../utils/file-helpers.ts";
 import { flattenPdf } from "../utils/pdf-operations.ts";
-import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
 
 export default function FlattenPdf() {
-  const [file, setFile] = useState<File | null>(null);
-  const [processing, setProcessing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<Uint8Array | null>(null);
 
-  const handleFile = useCallback((files: File[]) => {
-    const pdf = files[0];
-    if (!pdf) return;
-    setFile(pdf);
-    setResult(null);
-    setError(null);
-  }, []);
+  const pdf = usePdfFile({ onReset: () => setResult(null) });
+  const task = useAsyncProcess();
 
   const handleFlatten = useCallback(async () => {
-    if (!file) return;
-    setProcessing(true);
-    setError(null);
-    try {
-      const data = await flattenPdf(file);
-      setResult(data);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to flatten PDF. Please try again.");
-    } finally {
-      setProcessing(false);
-    }
-  }, [file]);
+    if (!pdf.file) return;
+    const file = pdf.file;
+    await task.run(async () => {
+      setResult(await flattenPdf(file));
+    }, "Failed to flatten PDF. Please try again.");
+  }, [pdf.file, task]);
 
   const handleDownload = useCallback(() => {
-    if (!result || !file) return;
-    const baseName = file.name.replace(/\.pdf$/i, "");
-    downloadPdf(result, `${baseName}_flattened.pdf`);
-  }, [result, file]);
+    if (!result || !pdf.file) return;
+    downloadPdf(result, pdfFilename(pdf.file, "_flattened"));
+  }, [result, pdf.file]);
 
   return (
     <div className="space-y-6">
-      {!file ? (
+      {!pdf.file ? (
         <FileDropZone
           glowColor={categoryGlow.transform}
           iconColor={categoryAccent.transform}
           accept=".pdf,application/pdf"
-          onFiles={handleFile}
+          onFiles={pdf.onFiles}
           label="Drop a PDF file here"
           hint="Form fields and annotations will be converted to static content"
         />
       ) : (
         <>
           <FileInfoBar
-            fileName={file.name}
-            details={formatFileSize(file.size)}
-            onChangeFile={() => {
-              setFile(null);
-              setResult(null);
-            }}
+            fileName={pdf.file.name}
+            details={formatFileSize(pdf.file.size)}
+            onChangeFile={pdf.reset}
           />
 
           {!result ? (
@@ -199,7 +185,7 @@ export default function FlattenPdf() {
 
               <ActionButton
                 onClick={handleFlatten}
-                processing={processing}
+                processing={task.processing}
                 label="Flatten PDF"
                 processingLabel="Flattening..."
                 color="bg-violet-600 hover:bg-violet-700"
@@ -207,10 +193,9 @@ export default function FlattenPdf() {
             </div>
           ) : (
             <div className="space-y-4">
-              <AlertBox
-                variant="success"
-                message="PDF flattened successfully. All form fields and annotations have been removed."
-              />
+              <InfoCallout icon={CheckCircle2} accent="transform">
+                PDF flattened successfully. All form fields and annotations have been removed.
+              </InfoCallout>
 
               <ActionButton
                 onClick={handleDownload}
@@ -224,7 +209,7 @@ export default function FlattenPdf() {
         </>
       )}
 
-      {error && <AlertBox variant="error" message={error} />}
+      {(pdf.loadError || task.error) && <AlertBox message={pdf.loadError ?? task.error ?? ""} />}
     </div>
   );
 }

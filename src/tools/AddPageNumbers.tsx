@@ -17,11 +17,19 @@ import { LabeledSlider } from "../components/LabeledSlider.tsx";
 import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
 import { ResetButton } from "../components/ResetButton.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
+import { useAsyncProcess } from "../hooks/useAsyncProcess.ts";
+import { usePdfFile } from "../hooks/usePdfFile.ts";
 import { usePreviewScale } from "../hooks/usePreviewScale.ts";
 import type { PageNumberFormat, PageNumberOptions, PageNumberPosition } from "../types.ts";
-import { downloadPdf } from "../utils/file-helpers.ts";
+import { downloadPdf, pdfFilename } from "../utils/file-helpers.ts";
 import { addPageNumbers } from "../utils/pdf-operations.ts";
-import { renderAllThumbnails, revokeThumbnails } from "../utils/pdf-renderer.ts";
+import { PREVIEW_SCALE, renderAllThumbnails, revokeThumbnails } from "../utils/pdf-renderer.ts";
+
+/** Data loaded once per file: thumbnails + per-page dimensions in PDF points. */
+interface LoadedPdf {
+  thumbnails: string[];
+  pageDims: { width: number; height: number }[];
+}
 
 const POSITIONS: { value: PageNumberPosition; label: string; title: string }[] = [
   { value: "top-left", label: "↖", title: "Top left" },
@@ -86,49 +94,38 @@ const DEFAULT_OPTIONS: PageNumberOptions = {
   firstPage: 1,
 };
 
+/** Load thumbnails and page dimensions together in a single pass. */
+async function loadPdfWithDims(file: File): Promise<LoadedPdf> {
+  const [thumbnails, { PDFDocument }] = await Promise.all([
+    renderAllThumbnails(file, PREVIEW_SCALE),
+    import("@pdfme/pdf-lib"),
+  ]);
+  const pdfDoc = await PDFDocument.load(await file.arrayBuffer());
+  const pageDims = pdfDoc.getPages().map((p) => p.getSize());
+  return { thumbnails, pageDims };
+}
+
 export default function AddPageNumbers() {
-  const [file, setFile] = useState<File | null>(null);
-  const [thumbnails, setThumbnails] = useState<string[]>([]);
-  const [pageDims, setPageDims] = useState<{ width: number; height: number }[]>([]);
   const [selectedPage, setSelectedPage] = useState(0);
   const [options, setOptions] = useState<PageNumberOptions>(DEFAULT_OPTIONS);
-  const [processing, setProcessing] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+
+  const pdf = usePdfFile<LoadedPdf>({
+    load: loadPdfWithDims,
+    onReset: (data) => {
+      revokeThumbnails(data?.thumbnails ?? []);
+      setSelectedPage(0);
+    },
+  });
+  const task = useAsyncProcess();
+
+  const thumbnails = pdf.data?.thumbnails ?? [];
+  const pageDims = pdf.data?.pageDims ?? [];
+  const pageCount = thumbnails.length;
 
   // Scale factor: preview px / page pt — used to size the font overlay correctly
   const [previewScale, previewContainerRef] = usePreviewScale(pageDims[selectedPage]);
 
-  const handleFile = useCallback(async (files: File[]) => {
-    const pdf = files[0];
-    if (!pdf) return;
-    setFile(pdf);
-    setSelectedPage(0);
-    setError(null);
-    setLoading(true);
-    try {
-      const [thumbs, { PDFDocument }] = await Promise.all([
-        renderAllThumbnails(pdf),
-        import("@pdfme/pdf-lib"),
-      ]);
-      setThumbnails(thumbs);
-      const pdfDoc = await PDFDocument.load(await pdf.arrayBuffer());
-      setPageDims(pdfDoc.getPages().map((p) => p.getSize()));
-    } catch (e) {
-      setError(
-        e instanceof Error
-          ? e.message
-          : "Failed to load PDF. The file may be corrupted or password-protected.",
-      );
-      setFile(null);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const handleReset = useCallback(() => {
-    setOptions(DEFAULT_OPTIONS);
-  }, []);
+  const handleReset = useCallback(() => setOptions(DEFAULT_OPTIONS), []);
 
   const isDirty = JSON.stringify(options) !== JSON.stringify(DEFAULT_OPTIONS);
 
@@ -140,21 +137,13 @@ export default function AddPageNumbers() {
   );
 
   const handleApply = useCallback(async () => {
-    if (!file) return;
-    setProcessing(true);
-    setError(null);
-    try {
+    if (!pdf.file) return;
+    const file = pdf.file;
+    await task.run(async () => {
       const result = await addPageNumbers(file, options);
-      const baseName = file.name.replace(/\.pdf$/i, "");
-      downloadPdf(result, `${baseName}_numbered.pdf`);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to add page numbers. Please try again.");
-    } finally {
-      setProcessing(false);
-    }
-  }, [file, options]);
-
-  const pageCount = thumbnails.length;
+      downloadPdf(result, pdfFilename(file, "_numbered"));
+    }, "Failed to add page numbers. Please try again.");
+  }, [pdf.file, options, task]);
 
   // Page number that appears on the currently previewed page (undefined if before firstPage)
   const previewPageNum =
@@ -174,26 +163,21 @@ export default function AddPageNumbers() {
 
   return (
     <div className="space-y-6">
-      {!file ? (
+      {!pdf.file ? (
         <FileDropZone
           glowColor={categoryGlow.annotate}
           iconColor={categoryAccent.annotate}
           accept=".pdf,application/pdf"
-          onFiles={handleFile}
+          onFiles={pdf.onFiles}
           label="Drop a PDF file here"
           hint="Page numbers will be drawn on every page"
         />
       ) : (
         <>
           <FileInfoBar
-            fileName={file.name}
-            details={loading ? "loading…" : `${pageCount} pages`}
-            onChangeFile={() => {
-              revokeThumbnails(thumbnails);
-              setFile(null);
-              setThumbnails([]);
-              setPageDims([]);
-            }}
+            fileName={pdf.file.name}
+            details={pdf.loading ? "loading…" : `${pageCount} pages`}
+            onChangeFile={pdf.reset}
           />
 
           <div className="grid md:grid-cols-2 gap-6">
@@ -289,10 +273,7 @@ export default function AddPageNumbers() {
                 </p>
                 <ColorPicker
                   value={rgbToHex(options.color.r, options.color.g, options.color.b)}
-                  onChange={(hex) => {
-                    const rgb = hexToRgb(hex);
-                    setOpt("color", rgb);
-                  }}
+                  onChange={(hex) => setOpt("color", hexToRgb(hex))}
                 />
               </div>
 
@@ -377,7 +358,7 @@ export default function AddPageNumbers() {
                 )}
               </div>
 
-              {loading ? (
+              {pdf.loading ? (
                 <div className="aspect-3/4 bg-slate-100 dark:bg-dark-surface-alt rounded-lg flex items-center justify-center">
                   <LoadingSpinner color="border-emerald-200 border-t-emerald-600" />
                 </div>
@@ -410,8 +391,8 @@ export default function AddPageNumbers() {
 
           <ActionButton
             onClick={handleApply}
-            processing={processing}
-            disabled={processing || loading}
+            processing={task.processing}
+            disabled={task.processing || pdf.loading}
             label="Add Page Numbers & Download"
             processingLabel="Adding numbers…"
             color="bg-emerald-600 hover:bg-emerald-700"
@@ -419,7 +400,7 @@ export default function AddPageNumbers() {
         </>
       )}
 
-      {error && <AlertBox variant="error" message={error} />}
+      {(pdf.loadError || task.error) && <AlertBox message={pdf.loadError ?? task.error ?? ""} />}
     </div>
   );
 }

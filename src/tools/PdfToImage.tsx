@@ -6,55 +6,49 @@
  * into a ZIP file for convenience.
  */
 
-import { useState, useCallback } from "react";
 import { Image, ScanLine } from "lucide-react";
-import { FileDropZone } from "../components/FileDropZone.tsx";
-import { AlertBox } from "../components/AlertBox.tsx";
+import { useCallback, useState } from "react";
 import { ActionButton } from "../components/ActionButton.tsx";
+import { AlertBox } from "../components/AlertBox.tsx";
+import { FileDropZone } from "../components/FileDropZone.tsx";
 import { FileInfoBar } from "../components/FileInfoBar.tsx";
-import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
 import { LabeledSlider } from "../components/LabeledSlider.tsx";
-import { categoryAccent, categoryGlow } from "../config/theme.ts";
+import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
 import { PageThumbnail } from "../components/PageThumbnail.tsx";
-import { renderPagesToBlobs } from "../utils/pdf-renderer.ts";
+import { ProgressBar } from "../components/ProgressBar.tsx";
+import { ThumbnailGrid } from "../components/ThumbnailGrid.tsx";
+import { categoryAccent, categoryGlow } from "../config/theme.ts";
+import { useAsyncProcess } from "../hooks/useAsyncProcess.ts";
+import { usePdfFile } from "../hooks/usePdfFile.ts";
 import { downloadBlob, formatFileSize } from "../utils/file-helpers.ts";
-import { renderAllThumbnails, revokeThumbnails } from "../utils/pdf-renderer.ts";
+import {
+  renderAllThumbnails,
+  renderPagesToBlobs,
+  revokeThumbnails,
+} from "../utils/pdf-renderer.ts";
 
 export default function PdfToImage() {
-  const [file, setFile] = useState<File | null>(null);
-  const [thumbnails, setThumbnails] = useState<string[]>([]);
   const [selectedPages, setSelectedPages] = useState<Set<number>>(new Set());
   const [format, setFormat] = useState<"image/png" | "image/jpeg">("image/png");
   const [dpi, setDpi] = useState<72 | 150 | 300>(150);
   const [quality, setQuality] = useState(92);
-  const [loading, setLoading] = useState(false);
-  const [processing, setProcessing] = useState(false);
   const [progress, setProgress] = useState<{ rendered: number; total: number } | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
-  const handleFile = useCallback(async (files: File[]) => {
-    const pdf = files[0];
-    if (!pdf) return;
-    setFile(pdf);
-    setSelectedPages(new Set());
-    setError(null);
-    setLoading(true);
-    try {
-      const thumbs = await renderAllThumbnails(pdf);
-      setThumbnails(thumbs);
+  const pdf = usePdfFile<string[]>({
+    load: async (file) => {
+      const thumbs = await renderAllThumbnails(file);
       // Select all pages by default
       setSelectedPages(new Set(thumbs.map((_, i) => i)));
-    } catch (e) {
-      setError(
-        e instanceof Error
-          ? e.message
-          : "Failed to load PDF. The file may be corrupted or password-protected.",
-      );
-      setFile(null);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+      return thumbs;
+    },
+    onReset: (thumbs) => {
+      revokeThumbnails(thumbs ?? []);
+      setSelectedPages(new Set());
+    },
+  });
+  const task = useAsyncProcess();
+
+  const thumbnails = pdf.data ?? [];
 
   const togglePage = useCallback((idx: number) => {
     setSelectedPages((prev) => {
@@ -72,12 +66,11 @@ export default function PdfToImage() {
   }, [thumbnails]);
 
   const handleExport = useCallback(async () => {
-    if (!file || selectedPages.size === 0) return;
-    setProcessing(true);
+    if (!pdf.file || selectedPages.size === 0) return;
+    const file = pdf.file;
     setProgress({ rendered: 0, total: selectedPages.size });
-    setError(null);
 
-    try {
+    const ok = await task.run(async () => {
       const indices = Array.from(selectedPages).sort((a, b) => a - b);
       const blobs = await renderPagesToBlobs(file, indices, dpi, format, quality / 100, (r, t) =>
         setProgress({ rendered: r, total: t }),
@@ -98,36 +91,30 @@ export default function PdfToImage() {
         const zipBlob = await zip.generateAsync({ type: "blob" });
         downloadBlob(zipBlob, `${baseName}_images.zip`);
       }
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to export images. Please try again.");
-    } finally {
-      setProcessing(false);
-      setProgress(null);
-    }
-  }, [file, selectedPages, dpi, format, quality]);
+    }, "Failed to export images. Please try again.");
+
+    // Always clear progress when the run completes (success or failure).
+    void ok;
+    setProgress(null);
+  }, [pdf.file, selectedPages, dpi, format, quality, task]);
 
   return (
     <div className="space-y-6">
-      {!file ? (
+      {!pdf.file ? (
         <FileDropZone
           glowColor={categoryGlow.transform}
           iconColor={categoryAccent.transform}
           accept=".pdf,application/pdf"
-          onFiles={handleFile}
+          onFiles={pdf.onFiles}
           label="Drop a PDF file here"
           hint="Each page will be exported as a PNG or JPEG image"
         />
       ) : (
         <>
           <FileInfoBar
-            fileName={file.name}
-            details={formatFileSize(file.size)}
-            onChangeFile={() => {
-              revokeThumbnails(thumbnails);
-              setFile(null);
-              setThumbnails([]);
-              setSelectedPages(new Set());
-            }}
+            fileName={pdf.file.name}
+            details={formatFileSize(pdf.file.size)}
+            onChangeFile={pdf.reset}
             extra={
               selectedPages.size > 0 ? (
                 <span className="text-primary-600 ml-2">
@@ -137,7 +124,7 @@ export default function PdfToImage() {
             }
           />
 
-          {loading ? (
+          {pdf.loading ? (
             <LoadingSpinner color="border-violet-200 border-t-violet-600" />
           ) : (
             <>
@@ -153,7 +140,7 @@ export default function PdfToImage() {
                 </button>
               </div>
 
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+              <ThumbnailGrid>
                 {thumbnails.map((thumb, i) => (
                   <PageThumbnail
                     key={i}
@@ -163,7 +150,7 @@ export default function PdfToImage() {
                     onClick={() => togglePage(i)}
                   />
                 ))}
-              </div>
+              </ThumbnailGrid>
 
               {/* Export options */}
               <div className="bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border shadow-sm p-4 space-y-4">
@@ -233,27 +220,18 @@ export default function PdfToImage() {
                 )}
               </div>
 
-              {processing && progress && (
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm text-slate-600 dark:text-dark-text-muted">
-                    <span>Rendering pages…</span>
-                    <span>
-                      {progress.rendered} / {progress.total}
-                    </span>
-                  </div>
-                  <div className="w-full bg-slate-200 dark:bg-dark-border rounded-full h-2">
-                    <div
-                      className="bg-violet-600 h-2 rounded-full transition-all"
-                      style={{ width: `${(progress.rendered / progress.total) * 100}%` }}
-                    />
-                  </div>
-                </div>
+              {task.processing && progress && (
+                <ProgressBar
+                  current={progress.rendered}
+                  total={progress.total}
+                  label="Rendering pages…"
+                />
               )}
 
               <ActionButton
                 onClick={handleExport}
-                processing={processing}
-                disabled={processing || selectedPages.size === 0}
+                processing={task.processing}
+                disabled={task.processing || selectedPages.size === 0}
                 label={
                   selectedPages.size === 1
                     ? "Export Image"
@@ -267,7 +245,7 @@ export default function PdfToImage() {
         </>
       )}
 
-      {error && <AlertBox variant="error" message={error} />}
+      {(pdf.loadError || task.error) && <AlertBox message={pdf.loadError ?? task.error ?? ""} />}
     </div>
   );
 }

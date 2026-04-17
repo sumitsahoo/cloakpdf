@@ -15,6 +15,7 @@ import {
   BadgeCheck,
   Building2,
   Calendar,
+  CheckCircle2,
   Clock,
   Eye,
   EyeOff,
@@ -35,8 +36,10 @@ import { ActionButton } from "../components/ActionButton.tsx";
 import { AlertBox } from "../components/AlertBox.tsx";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { FileInfoBar } from "../components/FileInfoBar.tsx";
+import { InfoCallout } from "../components/InfoCallout.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
-import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
+import { useAsyncProcess } from "../hooks/useAsyncProcess.ts";
+import { downloadPdf, formatFileSize, pdfFilename } from "../utils/file-helpers.ts";
 import {
   type CertificateInfo,
   type ExistingSignature,
@@ -105,21 +108,28 @@ export default function DigitalSignature() {
   const [location, setLocation] = useState("");
   const [contactInfo, setContactInfo] = useState("");
 
-  // Processing state
-  const [processing, setProcessing] = useState(false);
+  // PDF-signing state is managed by `task`; certificate-loading state stays
+  // local because the cert parsing errors use a separate panel from the
+  // signing error.
+  const task = useAsyncProcess();
+  const processing = task.processing;
+  const error = task.error;
+  const setError = task.setError;
   const [certLoading, setCertLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [certError, setCertError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  const handleFile = useCallback((files: File[]) => {
-    const pdf = files[0];
-    if (!pdf) return;
-    setFile(pdf);
-    setExistingSignatures([]);
-    setError(null);
-    setSuccess(false);
-  }, []);
+  const handleFile = useCallback(
+    (files: File[]) => {
+      const pdf = files[0];
+      if (!pdf) return;
+      setFile(pdf);
+      setExistingSignatures([]);
+      setError(null);
+      setSuccess(false);
+    },
+    [setError],
+  );
 
   // Detect existing signatures when a file is loaded
   useEffect(() => {
@@ -161,7 +171,7 @@ export default function DigitalSignature() {
     setError(null);
     setCertError(null);
     setSuccess(false);
-  }, []);
+  }, [setError]);
 
   const handleCertFile = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -242,24 +252,17 @@ export default function DigitalSignature() {
 
   const handleSign = useCallback(async () => {
     if (!file || !privateKey || !certificate) return;
-    setProcessing(true);
-    setError(null);
     setSuccess(false);
-    try {
+    const ok = await task.run(async () => {
       const data = await signPdf(file, privateKey, certificate, certChain, {
         reason: reason || undefined,
         location: location || undefined,
         contactInfo: contactInfo || undefined,
       });
-      const baseName = file.name.replace(/\.pdf$/i, "");
-      downloadPdf(data, `${baseName}_signed.pdf`);
-      setSuccess(true);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to sign PDF.");
-    } finally {
-      setProcessing(false);
-    }
-  }, [file, privateKey, certificate, certChain, reason, location, contactInfo]);
+      downloadPdf(data, pdfFilename(file, "_signed"));
+    }, "Failed to sign PDF.");
+    if (ok) setSuccess(true);
+  }, [file, privateKey, certificate, certChain, reason, location, contactInfo, task]);
 
   const canSign = file && privateKey && certificate;
 
@@ -465,23 +468,11 @@ export default function DigitalSignature() {
 
           {/* Warning if already signed */}
           {!detectingSignatures && existingSignatures.length > 0 && (
-            <div className="flex gap-3 rounded-xl border-2 border-amber-300 dark:border-amber-600 bg-amber-50/80 dark:bg-amber-900/20 p-4">
-              <div className="shrink-0 mt-0.5">
-                <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-800/40 flex items-center justify-center">
-                  <ShieldCheck className="w-4.5 h-4.5 text-amber-600 dark:text-amber-400" />
-                </div>
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-amber-800 dark:text-amber-200">
-                  This PDF is already signed
-                </p>
-                <p className="text-sm text-amber-700/80 dark:text-amber-300/80 mt-0.5">
-                  Adding another signature will invalidate the existing{" "}
-                  {existingSignatures.length === 1 ? "signature" : "signatures"}. Use a different
-                  file if you want to preserve {existingSignatures.length === 1 ? "it" : "them"}.
-                </p>
-              </div>
-            </div>
+            <InfoCallout icon={ShieldCheck} title="This PDF is already signed" accent="warning">
+              Adding another signature will invalidate the existing{" "}
+              {existingSignatures.length === 1 ? "signature" : "signatures"}. Use a different file
+              if you want to preserve {existingSignatures.length === 1 ? "it" : "them"}.
+            </InfoCallout>
           )}
 
           {/* Step 2: Certificate source */}
@@ -607,10 +598,14 @@ export default function DigitalSignature() {
             {/* Generate form */}
             {certSource === "generate" && (
               <div className="bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border p-4 space-y-4">
-                <AlertBox
-                  variant="info"
-                  message="Self-signed certificates are suitable for personal use. Recipients will see the signature is not from a trusted authority."
-                />
+                <InfoCallout
+                  icon={ShieldQuestion}
+                  title="Self-signed certificate"
+                  accent="security"
+                >
+                  Suitable for personal use. Recipients will see the signature is not from a trusted
+                  certificate authority.
+                </InfoCallout>
 
                 <div>
                   <label
@@ -650,7 +645,7 @@ export default function DigitalSignature() {
               </div>
             )}
 
-            {certError && <AlertBox variant="error" message={certError} />}
+            {certError && <AlertBox message={certError} />}
 
             {/* Certificate info display */}
             {certInfo && (
@@ -770,12 +765,14 @@ export default function DigitalSignature() {
           />
 
           {success && (
-            <AlertBox variant="success" message="PDF signed and downloaded successfully." />
+            <InfoCallout icon={CheckCircle2} accent="security">
+              PDF signed and downloaded successfully.
+            </InfoCallout>
           )}
         </>
       )}
 
-      {error && <AlertBox variant="error" message={error} />}
+      {error && <AlertBox message={error} />}
     </div>
   );
 }

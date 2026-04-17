@@ -5,29 +5,38 @@
  * embedded in a PDF. Uses the @pdfme/pdf-lib attach() API.
  */
 
+import { CheckCircle2, Download, Paperclip, Plus, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { Download, Paperclip, Plus, Trash2 } from "lucide-react";
-import { FileDropZone } from "../components/FileDropZone.tsx";
-import { AlertBox } from "../components/AlertBox.tsx";
 import { ActionButton } from "../components/ActionButton.tsx";
+import { AlertBox } from "../components/AlertBox.tsx";
+import { FileDropZone } from "../components/FileDropZone.tsx";
 import { FileInfoBar } from "../components/FileInfoBar.tsx";
+import { InfoCallout } from "../components/InfoCallout.tsx";
 import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
+import { useAsyncProcess } from "../hooks/useAsyncProcess.ts";
+import { downloadBlob, downloadPdf, errorMessage, pdfFilename } from "../utils/file-helpers.ts";
+import { formatFileSize } from "../utils/file-helpers.ts";
 import type { PdfAttachment } from "../utils/pdf-operations.ts";
 import {
   attachFilesToPdf,
   listPdfAttachments,
   removeAttachmentsFromPdf,
 } from "../utils/pdf-operations.ts";
-import { downloadBlob, downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
 
 export default function FileAttachment() {
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [attachments, setAttachments] = useState<PdfAttachment[]>([]);
   const [loading, setLoading] = useState(false);
-  const [processing, setProcessing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  // `pdfFile` is re-assigned after every add/remove because the PDF bytes
+  // themselves change — that's why this tool uses plain `useState` instead
+  // of the `usePdfFile` hook. Only the add/remove/download handlers benefit
+  // from the shared async helper.
+  const task = useAsyncProcess();
+  const processing = task.processing;
+  const error = task.error;
 
   // Load existing attachments when a PDF is selected
   useEffect(() => {
@@ -37,12 +46,12 @@ export default function FileAttachment() {
 
     async function load() {
       setLoading(true);
-      setError(null);
+      task.setError(null);
       try {
         const list = await listPdfAttachments(currentFile);
         if (!cancelled) setAttachments(list);
       } catch (e) {
-        if (!cancelled) setError(e instanceof Error ? e.message : "Failed to read attachments.");
+        if (!cancelled) task.setError(errorMessage(e, "Failed to read attachments."));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -52,25 +61,26 @@ export default function FileAttachment() {
     return () => {
       cancelled = true;
     };
-  }, [pdfFile]);
+  }, [pdfFile, task]);
 
-  const handlePdfFile = useCallback((files: File[]) => {
-    const pdf = files[0];
-    if (!pdf) return;
-    setPdfFile(pdf);
-    setAttachments([]);
-    setError(null);
-    setSuccess(null);
-  }, []);
+  const handlePdfFile = useCallback(
+    (files: File[]) => {
+      const pdf = files[0];
+      if (!pdf) return;
+      setPdfFile(pdf);
+      setAttachments([]);
+      task.setError(null);
+      setSuccess(null);
+    },
+    [task],
+  );
 
   const handleAddFiles = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
       if (!pdfFile || !e.target.files?.length) return;
       const filesToAttach = Array.from(e.target.files);
-      setProcessing(true);
-      setError(null);
       setSuccess(null);
-      try {
+      await task.run(async () => {
         const data = await attachFilesToPdf(pdfFile, filesToAttach);
         const newFile = new window.File([data as BlobPart], pdfFile.name, {
           type: "application/pdf",
@@ -82,36 +92,26 @@ export default function FileAttachment() {
             ? `Added "${names[0]}".`
             : `Added ${names.length} files: ${names.join(", ")}.`,
         );
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Failed to attach files.");
-      } finally {
-        setProcessing(false);
-        e.target.value = "";
-      }
+      }, "Failed to attach files.");
+      e.target.value = "";
     },
-    [pdfFile],
+    [pdfFile, task],
   );
 
   const handleRemove = useCallback(
     async (name: string) => {
       if (!pdfFile) return;
-      setProcessing(true);
-      setError(null);
       setSuccess(null);
-      try {
+      await task.run(async () => {
         const data = await removeAttachmentsFromPdf(pdfFile, new Set([name]));
         const newFile = new window.File([data as BlobPart], pdfFile.name, {
           type: "application/pdf",
         });
         setPdfFile(newFile);
         setSuccess(`Removed "${name}".`);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Failed to remove attachment.");
-      } finally {
-        setProcessing(false);
-      }
+      }, "Failed to remove attachment.");
     },
-    [pdfFile],
+    [pdfFile, task],
   );
 
   const handleExtract = useCallback((attachment: PdfAttachment) => {
@@ -122,8 +122,7 @@ export default function FileAttachment() {
   const handleDownloadPdf = useCallback(async () => {
     if (!pdfFile) return;
     const buf = await pdfFile.arrayBuffer();
-    const baseName = pdfFile.name.replace(/\.pdf$/i, "");
-    downloadPdf(new Uint8Array(buf), `${baseName}_attachments.pdf`);
+    downloadPdf(new Uint8Array(buf), pdfFilename(pdfFile, "_attachments"));
   }, [pdfFile]);
 
   return (
@@ -146,7 +145,7 @@ export default function FileAttachment() {
               setPdfFile(null);
               setAttachments([]);
               setSuccess(null);
-              setError(null);
+              task.setError(null);
             }}
           />
 
@@ -239,9 +238,13 @@ export default function FileAttachment() {
         </>
       )}
 
-      {success && <AlertBox variant="success" message={success} />}
+      {success && (
+        <InfoCallout icon={CheckCircle2} accent="organise">
+          {success}
+        </InfoCallout>
+      )}
 
-      {error && <AlertBox variant="error" message={error} />}
+      {error && <AlertBox message={error} />}
     </div>
   );
 }

@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { defineConfig } from "vite-plus";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
@@ -5,8 +6,15 @@ import { VitePWA } from "vite-plugin-pwa";
 
 declare const process: { env: Record<string, string | undefined> };
 
+const pkg = JSON.parse(readFileSync(new URL("./package.json", import.meta.url), "utf-8")) as {
+  version: string;
+};
+
 export default defineConfig({
   base: process.env.VITE_APP_BASE_PATH || "/",
+  define: {
+    __APP_VERSION__: JSON.stringify(pkg.version),
+  },
   server: {
     allowedHosts: true,
   },
@@ -78,24 +86,36 @@ export default defineConfig({
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/unpkg\.com\/.*/i,
-            handler: "CacheFirst",
+            handler: "StaleWhileRevalidate",
             options: {
               cacheName: "unpkg-cache",
               expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
+                maxEntries: 20,
+                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
               },
               cacheableResponse: { statuses: [0, 200] },
             },
           },
           {
             urlPattern: /^https:\/\/cdn\.jsdelivr\.net\/.*/i,
-            handler: "CacheFirst",
+            handler: "StaleWhileRevalidate",
             options: {
               cacheName: "jsdelivr-cache",
               expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365,
+                maxEntries: 20,
+                maxAgeSeconds: 60 * 60 * 24 * 30,
+              },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          {
+            urlPattern: /^https:\/\/tessdata\.projectnaptha\.com\/.*/i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "tesseract-lang-cache",
+              expiration: {
+                maxEntries: 30,
+                maxAgeSeconds: 60 * 60 * 24 * 365, // language data is versioned by URL
               },
               cacheableResponse: { statuses: [0, 200] },
             },

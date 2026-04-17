@@ -5,15 +5,18 @@
  * Shows a before/after preview of the first and last page thumbnails.
  */
 
+import { ArrowRight, CheckCircle2 } from "lucide-react";
 import { useCallback, useState } from "react";
-import { ArrowRight } from "lucide-react";
-import { FileDropZone } from "../components/FileDropZone.tsx";
-import { AlertBox } from "../components/AlertBox.tsx";
 import { ActionButton } from "../components/ActionButton.tsx";
+import { AlertBox } from "../components/AlertBox.tsx";
+import { FileDropZone } from "../components/FileDropZone.tsx";
 import { FileInfoBar } from "../components/FileInfoBar.tsx";
+import { InfoCallout } from "../components/InfoCallout.tsx";
 import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
-import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
+import { useAsyncProcess } from "../hooks/useAsyncProcess.ts";
+import { usePdfFile } from "../hooks/usePdfFile.ts";
+import { downloadPdf, formatFileSize, pdfFilename } from "../utils/file-helpers.ts";
 import { reversePages } from "../utils/pdf-operations.ts";
 import { getPageCount, renderSpecificThumbnails, revokeThumbnails } from "../utils/pdf-renderer.ts";
 
@@ -24,86 +27,67 @@ interface PreviewThumbs {
   pageCount: number;
 }
 
+/**
+ * Read the page count and render just the first + last page thumbnails.
+ *
+ * getPageCount loads the PDF briefly to read numPages then destroys it.
+ * renderSpecificThumbnails then loads it again and renders pages from a
+ * single document — avoids the ArrayBuffer-detach error that happens
+ * when the same buffer is transferred to the PDF.js Worker twice in parallel.
+ */
+async function loadPreview(file: File): Promise<PreviewThumbs> {
+  const count = await getPageCount(file);
+  const pageNums = count > 1 ? [1, count] : [1];
+  const thumbs = await renderSpecificThumbnails(file, pageNums, 0.4);
+  return { first: thumbs[0], last: thumbs[1] ?? "", pageCount: count };
+}
+
 export default function ReversePages() {
-  const [file, setFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<PreviewThumbs | null>(null);
-  const [processing, setProcessing] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
 
-  const handleFile = useCallback(async (files: File[]) => {
-    const pdf = files[0];
-    if (!pdf) return;
-    setFile(pdf);
-    setDone(false);
-    setLoading(true);
-    setError(null);
-    try {
-      // getPageCount loads the PDF briefly to read numPages, then destroys it.
-      // renderSpecificThumbnails then loads it again and renders pages sequentially
-      // from a single document — avoids the ArrayBuffer-detach error that happens
-      // when the same buffer is transferred to the PDF.js Worker twice in parallel.
-      const count = await getPageCount(pdf);
-      const pageNums = count > 1 ? [1, count] : [1];
-      const thumbs = await renderSpecificThumbnails(pdf, pageNums, 0.4);
-      setPreview({ first: thumbs[0], last: thumbs[1] ?? "", pageCount: count });
-    } catch (e) {
-      setError(
-        e instanceof Error
-          ? e.message
-          : "Failed to load PDF. The file may be corrupted or password-protected.",
-      );
-      setFile(null);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const pdf = usePdfFile<PreviewThumbs>({
+    load: loadPreview,
+    onReset: (data) => {
+      if (data) revokeThumbnails([data.first, data.last].filter(Boolean));
+      setDone(false);
+    },
+  });
+  const task = useAsyncProcess();
 
   const handleReverse = useCallback(async () => {
-    if (!file) return;
-    setProcessing(true);
-    setError(null);
+    if (!pdf.file) return;
+    const file = pdf.file;
     setDone(false);
-    try {
+    const ok = await task.run(async () => {
       const result = await reversePages(file);
-      const baseName = file.name.replace(/\.pdf$/i, "");
-      downloadPdf(result, `${baseName}_reversed.pdf`);
-      setDone(true);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to reverse pages. Please try again.");
-    } finally {
-      setProcessing(false);
-    }
-  }, [file]);
+      downloadPdf(result, pdfFilename(file, "_reversed"));
+    }, "Failed to reverse pages. Please try again.");
+    if (ok) setDone(true);
+  }, [pdf.file, task]);
 
+  const preview = pdf.data;
   const pageCount = preview?.pageCount ?? 0;
 
   return (
     <div className="space-y-6">
-      {!file ? (
+      {!pdf.file ? (
         <FileDropZone
           glowColor={categoryGlow.organise}
           iconColor={categoryAccent.organise}
           accept=".pdf,application/pdf"
-          onFiles={handleFile}
+          onFiles={pdf.onFiles}
           label="Drop a PDF file here"
           hint="Reverse the order of all pages in one click"
         />
       ) : (
         <>
           <FileInfoBar
-            fileName={file.name}
-            details={`${formatFileSize(file.size)}, ${pageCount} pages`}
-            onChangeFile={() => {
-              revokeThumbnails(preview ? [preview.first, preview.last].filter(Boolean) : []);
-              setFile(null);
-              setPreview(null);
-              setDone(false);
-            }}
+            fileName={pdf.file.name}
+            details={`${formatFileSize(pdf.file.size)}, ${pageCount} pages`}
+            onChangeFile={pdf.reset}
           />
 
-          {loading ? (
+          {pdf.loading ? (
             <LoadingSpinner />
           ) : preview ? (
             <div className="bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border p-4">
@@ -176,8 +160,8 @@ export default function ReversePages() {
 
           <ActionButton
             onClick={handleReverse}
-            processing={processing}
-            disabled={processing || pageCount < 2}
+            processing={task.processing}
+            disabled={task.processing || pageCount < 2}
             label="Reverse Pages & Download"
             processingLabel="Reversing..."
           />
@@ -189,15 +173,14 @@ export default function ReversePages() {
           )}
 
           {done && (
-            <AlertBox
-              variant="success"
-              message="Pages reversed successfully. The PDF has been downloaded."
-            />
+            <InfoCallout icon={CheckCircle2} accent="organise">
+              Pages reversed successfully. The PDF has been downloaded.
+            </InfoCallout>
           )}
         </>
       )}
 
-      {error && <AlertBox variant="error" message={error} />}
+      {(pdf.loadError || task.error) && <AlertBox message={pdf.loadError ?? task.error ?? ""} />}
     </div>
   );
 }

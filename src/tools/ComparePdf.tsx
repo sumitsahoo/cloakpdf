@@ -10,10 +10,11 @@
 import { ArrowLeftRight, ChevronLeft, ChevronRight, Eye, EyeOff, Layers } from "lucide-react";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import { useCallback, useMemo, useState } from "react";
-import { FileDropZone } from "../components/FileDropZone.tsx";
-import { AlertBox } from "../components/AlertBox.tsx";
 import { ActionButton } from "../components/ActionButton.tsx";
-import { categoryAccent, categoryGlow, canvas as canvasColors } from "../config/theme.ts";
+import { AlertBox } from "../components/AlertBox.tsx";
+import { FileDropZone } from "../components/FileDropZone.tsx";
+import { canvas as canvasColors, categoryAccent, categoryGlow } from "../config/theme.ts";
+import { useAsyncProcess } from "../hooks/useAsyncProcess.ts";
 import { formatFileSize } from "../utils/file-helpers.ts";
 import { pdfjsLib } from "../utils/pdf-renderer.ts";
 
@@ -208,28 +209,40 @@ export default function ComparePdf() {
   const [fileA, setFileA] = useState<File | null>(null);
   const [fileB, setFileB] = useState<File | null>(null);
   const [comparisons, setComparisons] = useState<PageComparison[]>([]);
-  const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("side-by-side");
   const [currentPage, setCurrentPage] = useState(0);
   const [showDiffOverlay, setShowDiffOverlay] = useState(true);
 
-  const handleFileA = useCallback((files: File[]) => {
-    if (files[0]) {
-      setFileA(files[0]);
-      setComparisons([]);
-      setError(null);
-    }
-  }, []);
+  // The compare workflow aliases the shared hook's "processing" as "loading"
+  // to match this tool's pre-existing vocabulary (there's no separate upload
+  // step — comparison runs in one shot).
+  const task = useAsyncProcess();
+  const loading = task.processing;
+  const error = task.error;
+  const setError = task.setError;
 
-  const handleFileB = useCallback((files: File[]) => {
-    if (files[0]) {
-      setFileB(files[0]);
-      setComparisons([]);
-      setError(null);
-    }
-  }, []);
+  const handleFileA = useCallback(
+    (files: File[]) => {
+      if (files[0]) {
+        setFileA(files[0]);
+        setComparisons([]);
+        setError(null);
+      }
+    },
+    [setError],
+  );
+
+  const handleFileB = useCallback(
+    (files: File[]) => {
+      if (files[0]) {
+        setFileB(files[0]);
+        setComparisons([]);
+        setError(null);
+      }
+    },
+    [setError],
+  );
 
   const handleCompare = useCallback(async () => {
     if (!fileA || !fileB) return;
@@ -239,13 +252,11 @@ export default function ComparePdf() {
       if (c.thumbB) URL.revokeObjectURL(c.thumbB);
       if (c.diffThumb) URL.revokeObjectURL(c.diffThumb);
     }
-    setLoading(true);
-    setError(null);
     setProgress(null);
     setComparisons([]);
     setCurrentPage(0);
 
-    try {
+    const ok = await task.run(async () => {
       const [bufA, bufB] = await Promise.all([fileA.arrayBuffer(), fileB.arrayBuffer()]);
       const [pdfA, pdfB] = await Promise.all([
         pdfjsLib.getDocument({ data: bufA }).promise,
@@ -260,17 +271,10 @@ export default function ComparePdf() {
       void pdfB.destroy();
 
       setComparisons(results);
-    } catch (e) {
-      setError(
-        e instanceof Error
-          ? e.message
-          : "Failed to compare PDFs. One of the files may be corrupted or password-protected.",
-      );
-    } finally {
-      setLoading(false);
-      setProgress(null);
-    }
-  }, [fileA, fileB, comparisons]);
+    }, "Failed to compare PDFs. One of the files may be corrupted or password-protected.");
+    void ok;
+    setProgress(null);
+  }, [fileA, fileB, comparisons, task]);
 
   const reset = useCallback(() => {
     // Revoke blob URLs to free memory
@@ -284,7 +288,7 @@ export default function ComparePdf() {
     setComparisons([]);
     setError(null);
     setCurrentPage(0);
-  }, [comparisons]);
+  }, [comparisons, setError]);
 
   const summary = useMemo(() => {
     if (comparisons.length === 0) return null;
@@ -403,7 +407,7 @@ export default function ComparePdf() {
           </>
         )}
 
-        {error && <AlertBox variant="error" message={error} />}
+        {error && <AlertBox message={error} />}
       </div>
     );
   }
@@ -662,7 +666,7 @@ export default function ComparePdf() {
         </div>
       </div>
 
-      {error && <AlertBox variant="error" message={error} />}
+      {error && <AlertBox message={error} />}
     </div>
   );
 }

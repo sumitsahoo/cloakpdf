@@ -8,92 +8,87 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
-import { FileDropZone } from "../components/FileDropZone.tsx";
-import { AlertBox } from "../components/AlertBox.tsx";
 import { ActionButton } from "../components/ActionButton.tsx";
+import { AlertBox } from "../components/AlertBox.tsx";
+import { FileDropZone } from "../components/FileDropZone.tsx";
 import { FileInfoBar } from "../components/FileInfoBar.tsx";
+import { ProgressBar } from "../components/ProgressBar.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
-import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
+import { useAsyncProcess } from "../hooks/useAsyncProcess.ts";
+import { usePdfFile } from "../hooks/usePdfFile.ts";
+import { downloadPdf, formatFileSize, pdfFilename } from "../utils/file-helpers.ts";
 import { grayscalePdf } from "../utils/pdf-operations.ts";
-import { renderPageThumbnail, revokeThumbnails } from "../utils/pdf-renderer.ts";
+import { PREVIEW_SCALE, renderPageThumbnail, revokeThumbnails } from "../utils/pdf-renderer.ts";
 
 export default function GrayscalePdf() {
-  const [file, setFile] = useState<File | null>(null);
-  const [processing, setProcessing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<Uint8Array | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [progress, setProgress] = useState<{ current: number; total: number } | null>(null);
 
-  const handleFile = useCallback((files: File[]) => {
-    const pdf = files[0];
-    if (!pdf) return;
-    setFile(pdf);
-    setResult(null);
-    setError(null);
-    setPreview(null);
-  }, []);
+  const pdf = usePdfFile({
+    onReset: () => {
+      revokeThumbnails(preview ? [preview] : []);
+      setResult(null);
+      setPreview(null);
+    },
+  });
+  const task = useAsyncProcess();
 
-  // Render first page thumbnail whenever a file is selected
+  // Render first page thumbnail whenever a file is selected. Kept as a side
+  // effect because the preview is best-effort and shouldn't block the main
+  // conversion workflow — if preview rendering fails, the user can still
+  // convert.
   useEffect(() => {
+    const file = pdf.file;
     if (!file) return;
     let cancelled = false;
     file
       .arrayBuffer()
-      .then((buf) => renderPageThumbnail(buf, 1, 0.6))
+      .then((buf) => renderPageThumbnail(buf, 1, PREVIEW_SCALE))
       .then((url) => {
         if (!cancelled) setPreview(url);
       })
       .catch(() => {
-        // Preview is best-effort; a failure here doesn't block conversion
+        // Preview is best-effort; a failure here doesn't block conversion.
       });
     return () => {
       cancelled = true;
     };
-  }, [file]);
+  }, [pdf.file]);
 
   const handleConvert = useCallback(async () => {
-    if (!file) return;
-    setProcessing(true);
-    setError(null);
-    try {
+    if (!pdf.file) return;
+    const file = pdf.file;
+    const ok = await task.run(async () => {
       const data = await grayscalePdf(file, (current, total) => setProgress({ current, total }));
       setResult(data);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to convert PDF. Please try again.");
-    } finally {
-      setProcessing(false);
-      setProgress(null);
-    }
-  }, [file]);
+    }, "Failed to convert PDF. Please try again.");
+    void ok;
+    setProgress(null);
+  }, [pdf.file, task]);
 
   const handleDownload = useCallback(() => {
-    if (!result || !file) return;
-    const baseName = file.name.replace(/\.pdf$/i, "");
-    downloadPdf(result, `${baseName}_grayscale.pdf`);
-  }, [result, file]);
+    if (!result || !pdf.file) return;
+    downloadPdf(result, pdfFilename(pdf.file, "_grayscale"));
+  }, [result, pdf.file]);
 
   return (
     <div className="space-y-6">
-      {!file ? (
+      {!pdf.file ? (
         <FileDropZone
           glowColor={categoryGlow.transform}
           iconColor={categoryAccent.transform}
           accept=".pdf,application/pdf"
-          onFiles={handleFile}
+          onFiles={pdf.onFiles}
           label="Drop a PDF file here"
           hint="All pages will be converted to grayscale — colour information is permanently removed"
         />
       ) : (
         <>
           <FileInfoBar
-            fileName={file.name}
-            details={formatFileSize(file.size)}
-            onChangeFile={() => {
-              revokeThumbnails(preview ? [preview] : []);
-              setFile(null);
-              setResult(null);
-            }}
+            fileName={pdf.file.name}
+            details={formatFileSize(pdf.file.size)}
+            onChangeFile={pdf.reset}
           />
 
           {/* Before / After preview */}
@@ -123,26 +118,17 @@ export default function GrayscalePdf() {
 
           {!result ? (
             <div className="space-y-4">
-              {processing && progress && (
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm text-slate-600 dark:text-dark-text-muted">
-                    <span>Processing pages…</span>
-                    <span>
-                      {progress.current} / {progress.total}
-                    </span>
-                  </div>
-                  <div className="w-full bg-slate-200 dark:bg-dark-border rounded-full h-2">
-                    <div
-                      className="bg-violet-600 h-2 rounded-full transition-all"
-                      style={{ width: `${(progress.current / progress.total) * 100}%` }}
-                    />
-                  </div>
-                </div>
+              {task.processing && progress && (
+                <ProgressBar
+                  current={progress.current}
+                  total={progress.total}
+                  label="Processing pages…"
+                />
               )}
 
               <ActionButton
                 onClick={handleConvert}
-                processing={processing}
+                processing={task.processing}
                 label="Convert to Grayscale"
                 processingLabel="Converting… (this may take a moment)"
                 color="bg-violet-600 hover:bg-violet-700"
@@ -172,7 +158,7 @@ export default function GrayscalePdf() {
         </>
       )}
 
-      {error && <AlertBox variant="error" message={error} />}
+      {(pdf.loadError || task.error) && <AlertBox message={pdf.loadError ?? task.error ?? ""} />}
     </div>
   );
 }

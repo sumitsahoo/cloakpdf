@@ -8,20 +8,22 @@
  * rendered or printed.
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Check, Scissors } from "lucide-react";
-import { FileDropZone } from "../components/FileDropZone.tsx";
-import { AlertBox } from "../components/AlertBox.tsx";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ActionButton } from "../components/ActionButton.tsx";
+import { AlertBox } from "../components/AlertBox.tsx";
+import { FileDropZone } from "../components/FileDropZone.tsx";
 import { FileInfoBar } from "../components/FileInfoBar.tsx";
 import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
+import { PageThumbnail } from "../components/PageThumbnail.tsx";
 import { ResetButton } from "../components/ResetButton.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
-import { PageThumbnail } from "../components/PageThumbnail.tsx";
-import { cropPages, uncropPages } from "../utils/pdf-operations.ts";
-import { renderAllThumbnails, revokeThumbnails } from "../utils/pdf-renderer.ts";
-import { downloadPdf, formatFileSize } from "../utils/file-helpers.ts";
+import { useAsyncProcess } from "../hooks/useAsyncProcess.ts";
+import { usePdfFile } from "../hooks/usePdfFile.ts";
 import type { CropMargins } from "../types.ts";
+import { downloadPdf, formatFileSize, pdfFilename } from "../utils/file-helpers.ts";
+import { cropPages, uncropPages } from "../utils/pdf-operations.ts";
+import { PREVIEW_SCALE, renderAllThumbnails, revokeThumbnails } from "../utils/pdf-renderer.ts";
 
 const MM_TO_PT = 2.83465;
 
@@ -30,54 +32,49 @@ interface PageDims {
   height: number;
 }
 
+/** Data loaded once per file: full thumbnails + first-page dimensions. */
+interface LoadedPdf {
+  thumbnails: string[];
+  pageDims: PageDims;
+}
+
+/** Load all thumbnails plus the first page's dimensions in one pass. */
+async function loadPdf(file: File): Promise<LoadedPdf> {
+  const [thumbnails, { PDFDocument }] = await Promise.all([
+    renderAllThumbnails(file, PREVIEW_SCALE),
+    import("@pdfme/pdf-lib"),
+  ]);
+  const pdfDoc = await PDFDocument.load(await file.arrayBuffer());
+  const pageDims = pdfDoc.getPage(0).getSize();
+  return { thumbnails, pageDims };
+}
+
 export default function CropPages() {
-  const [file, setFile] = useState<File | null>(null);
-  const [allThumbs, setAllThumbs] = useState<string[]>([]);
-  const [pageDims, setPageDims] = useState<PageDims | null>(null);
   // Margins in mm (user input)
   const [marginMode, setMarginMode] = useState<"uniform" | "custom">("uniform");
   const [allSides, setAllSides] = useState<number>(0);
   const [margins, setMargins] = useState<CropMargins>({ top: 0, right: 0, bottom: 0, left: 0 });
   const [applyToAll, setApplyToAll] = useState(true);
   const [selectedPages, setSelectedPages] = useState<Set<number>>(new Set());
-  const [loading, setLoading] = useState(false);
-  const [processing, setProcessing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const previewRef = useRef<HTMLDivElement>(null);
 
-  const handleFile = useCallback(async (files: File[]) => {
-    const pdf = files[0];
-    if (!pdf) return;
-    setFile(pdf);
-    setAllThumbs([]);
-    setPageDims(null);
-    setMarginMode("uniform");
-    setAllSides(0);
-    setMargins({ top: 0, right: 0, bottom: 0, left: 0 });
-    setSelectedPages(new Set());
-    setError(null);
-    setLoading(true);
-    try {
-      const thumbs = await renderAllThumbnails(pdf, 0.5);
-      setAllThumbs(thumbs);
+  const pdf = usePdfFile<LoadedPdf>({
+    load: loadPdf,
+    onReset: (data) => {
+      revokeThumbnails(data?.thumbnails ?? []);
+      setMarginMode("uniform");
+      setAllSides(0);
+      setMargins({ top: 0, right: 0, bottom: 0, left: 0 });
+      setSelectedPages(new Set());
+    },
+  });
+  const task = useAsyncProcess();
 
-      // Get page dimensions from pdf-lib
-      const { PDFDocument } = await import("@pdfme/pdf-lib");
-      const arrayBuffer = await pdf.arrayBuffer();
-      const pdfDoc = await PDFDocument.load(arrayBuffer);
-      const dims = pdfDoc.getPage(0).getSize();
-      setPageDims(dims);
-    } catch (e) {
-      setError(
-        e instanceof Error
-          ? e.message
-          : "Failed to load PDF. The file may be corrupted or password-protected.",
-      );
-      setFile(null);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const allThumbs = pdf.data?.thumbnails ?? [];
+  const pageDims = pdf.data?.pageDims ?? null;
+  const loading = pdf.loading;
+  const processing = task.processing;
+  const error = pdf.loadError ?? task.error;
 
   const handleReset = useCallback(() => {
     setMarginMode("uniform");
@@ -152,36 +149,24 @@ export default function CropPages() {
   const isValid = marginsValid && (applyToAll || selectedPages.size > 0);
 
   const handleCrop = useCallback(async () => {
-    if (!file || !isValid) return;
-    setProcessing(true);
-    setError(null);
-    try {
+    if (!pdf.file || !isValid) return;
+    const file = pdf.file;
+    await task.run(async () => {
       const pageIndices = applyToAll ? undefined : Array.from(selectedPages).sort((a, b) => a - b);
       const result = await cropPages(file, marginsInPt, pageIndices);
-      const baseName = file.name.replace(/\.pdf$/i, "");
-      downloadPdf(result, `${baseName}_cropped.pdf`);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to crop pages. Please try again.");
-    } finally {
-      setProcessing(false);
-    }
-  }, [file, marginsInPt, applyToAll, selectedPages, isValid]);
+      downloadPdf(result, pdfFilename(file, "_cropped"));
+    }, "Failed to crop pages. Please try again.");
+  }, [pdf.file, marginsInPt, applyToAll, selectedPages, isValid, task]);
 
   const handleUncrop = useCallback(async () => {
-    if (!file) return;
-    setProcessing(true);
-    setError(null);
-    try {
+    if (!pdf.file) return;
+    const file = pdf.file;
+    await task.run(async () => {
       const pageIndices = applyToAll ? undefined : Array.from(selectedPages).sort((a, b) => a - b);
       const result = await uncropPages(file, pageIndices);
-      const baseName = file.name.replace(/\.pdf$/i, "");
-      downloadPdf(result, `${baseName}_uncropped.pdf`);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to remove crop. Please try again.");
-    } finally {
-      setProcessing(false);
-    }
-  }, [file, applyToAll, selectedPages]);
+      downloadPdf(result, pdfFilename(file, "_uncropped"));
+    }, "Failed to remove crop. Please try again.");
+  }, [pdf.file, applyToAll, selectedPages, task]);
 
   const inputClass =
     "w-full border border-slate-300 dark:border-dark-border rounded-lg px-3 py-2 text-sm bg-white dark:bg-dark-surface text-slate-800 dark:text-dark-text focus:outline-none focus:ring-2 focus:ring-primary-500";
@@ -193,24 +178,21 @@ export default function CropPages() {
 
   return (
     <div className="space-y-6">
-      {!file ? (
+      {!pdf.file ? (
         <FileDropZone
           glowColor={categoryGlow.transform}
           iconColor={categoryAccent.transform}
           accept=".pdf,application/pdf"
-          onFiles={handleFile}
+          onFiles={pdf.onFiles}
           label="Drop a PDF file here"
           hint="Set margins to crop the visible area of each page"
         />
       ) : (
         <>
           <FileInfoBar
-            fileName={file.name}
-            details={formatFileSize(file.size)}
-            onChangeFile={() => {
-              revokeThumbnails(allThumbs);
-              setFile(null);
-            }}
+            fileName={pdf.file.name}
+            details={formatFileSize(pdf.file.size)}
+            onChangeFile={pdf.reset}
           />
 
           {loading ? (
@@ -543,7 +525,7 @@ export default function CropPages() {
         </>
       )}
 
-      {error && <AlertBox variant="error" message={error} />}
+      {error && <AlertBox message={error} />}
     </div>
   );
 }
