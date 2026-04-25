@@ -5,17 +5,16 @@
   <p>A fast, modern, and privacy-focused PDF toolkit that runs entirely in your browser.<br>
   No uploads, no servers, no tracking — your files never leave your device.</p>
 
-  <p><strong>Try it here →</strong> <a href="https://cloakpdf.app/">cloakpdf.app</a></p>
+  <p><strong>Try it here →</strong> <a href="https://pdf.cloakyard.com/">pdf.cloakyard.com</a></p>
 
   <p>
-    <img src="https://img.shields.io/github/actions/workflow/status/sumitsahoo/cloakpdf/deploy.yml?label=build" alt="Build status" />
-    <img src="https://img.shields.io/github/deployments/sumitsahoo/cloakpdf/github-pages?label=deploy" alt="Deployment" />
     <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/license-MIT-yellow.svg" alt="MIT License" /></a>
+    <img src="https://img.shields.io/badge/deploy-Cloudflare%20Workers-F38020?logo=cloudflare&logoColor=white" alt="Deployed on Cloudflare Workers" />
+    <img src="https://img.shields.io/badge/platform-Web%20%7C%20PWA-blue" alt="Platform: Web & PWA" />
   </p>
   <p>
-    <img src="https://img.shields.io/github/actions/workflow/status/sumitsahoo/cloakpdf/security.yml?label=security%20audit" alt="Security audit" />
-    <a href="https://securityscorecards.dev/viewer/?uri=github.com/sumitsahoo/cloakpdf"><img src="https://api.securityscorecards.dev/projects/github.com/sumitsahoo/cloakpdf/badge" alt="OpenSSF Scorecard" /></a>
-    <img src="https://img.shields.io/badge/platform-Web%20%7C%20PWA-blue" alt="Platform: Web & PWA" />
+    <img src="https://img.shields.io/github/actions/workflow/status/cloakyard/cloakpdf/security.yml?label=security%20audit" alt="Security audit" />
+    <a href="https://securityscorecards.dev/viewer/?uri=github.com/cloakyard/cloakpdf"><img src="https://api.securityscorecards.dev/projects/github.com/cloakyard/cloakpdf/badge" alt="OpenSSF Scorecard" /></a>
   </p>
 
 </div>
@@ -135,7 +134,7 @@ _Protect your PDFs and manage metadata_
 
 ```bash
 # Clone the repository
-git clone https://github.com/sumitsahoo/cloakpdf.git
+git clone https://github.com/cloakyard/cloakpdf.git
 cd cloakpdf
 
 # Install dependencies
@@ -193,14 +192,9 @@ All operations happen in-memory using the browser's `FileReader` API and `ArrayB
 
 ## 🚢 Deployment
 
-CloakPDF is deployed to **GitHub Pages** via a CI/CD workflow on every push to `main`.
+CloakPDF is deployed to **Cloudflare Workers** (with [Static Assets](https://developers.cloudflare.com/workers/static-assets/)) at [pdf.cloakyard.com](https://pdf.cloakyard.com/). Cloudflare's Workers Builds Git integration auto-builds and deploys every push to `main`, with preview deployments for pull requests.
 
-The deployment pipeline:
-
-1. Checks out the code
-2. Installs dependencies with `vp install`
-3. Builds the production bundle with Vite
-4. Deploys the `dist/` folder to GitHub Pages
+The deploy is driven by [`wrangler.jsonc`](./wrangler.jsonc) — Cloudflare reads this file, runs the build, and serves the `dist/` folder as static assets straight from the Worker runtime on Cloudflare's edge network.
 
 ---
 
