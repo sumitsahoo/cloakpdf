@@ -64,20 +64,25 @@
  *
  * ─────────────────────────────────────────────────────────────────────────────
  */
-/** Spotlight glow color per tool category, used by FileDropZone and ToolCard. */
+/**
+ * Unified primary glow color used for the cursor/touch spotlight on
+ * FileDropZone and ToolCard. Per-category coloring was retired in
+ * favour of a single, calmer accent — the keys remain so call-sites
+ * keep working without edits, but every key resolves to the same value.
+ */
 export const categoryGlow = {
   organise: "rgba(37,99,235,0.18)",
-  transform: "rgba(124,58,237,0.18)",
-  annotate: "rgba(16,185,129,0.18)",
-  security: "rgba(245,158,11,0.18)",
+  transform: "rgba(37,99,235,0.18)",
+  annotate: "rgba(37,99,235,0.18)",
+  security: "rgba(37,99,235,0.18)",
 } as const;
 
-/** Solid accent color per tool category, used for icon tints in FileDropZone. */
+/** Unified primary accent color (matches `categoryGlow` semantics). */
 export const categoryAccent = {
   organise: "rgb(37,99,235)",
-  transform: "rgb(124,58,237)",
-  annotate: "rgb(16,185,129)",
-  security: "rgb(245,158,11)",
+  transform: "rgb(37,99,235)",
+  annotate: "rgb(37,99,235)",
+  security: "rgb(37,99,235)",
 } as const;
 
 export const colors = {
