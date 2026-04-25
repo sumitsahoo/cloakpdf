@@ -1,120 +1,104 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
-      <stop offset="0%" stop-color="#F8FAFC" />
-      <stop offset="50%" stop-color="#EEF2FF" />
-      <stop offset="100%" stop-color="#F8FAFC" />
+    <!-- Base background -->
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="630" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="100%" stop-color="#FAFAFB" />
     </linearGradient>
+
+    <!-- Aurora blobs -->
+    <radialGradient id="auroraPink" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FBCFE8" stop-opacity="0.85" />
+      <stop offset="60%" stop-color="#FBCFE8" stop-opacity="0.18" />
+      <stop offset="100%" stop-color="#FBCFE8" stop-opacity="0" />
+    </radialGradient>
+    <radialGradient id="auroraPurple" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#C4B5FD" stop-opacity="0.85" />
+      <stop offset="60%" stop-color="#C4B5FD" stop-opacity="0.18" />
+      <stop offset="100%" stop-color="#C4B5FD" stop-opacity="0" />
+    </radialGradient>
+    <radialGradient id="auroraBlue" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#BFDBFE" stop-opacity="0.85" />
+      <stop offset="60%" stop-color="#BFDBFE" stop-opacity="0.20" />
+      <stop offset="100%" stop-color="#BFDBFE" stop-opacity="0" />
+    </radialGradient>
+    <radialGradient id="auroraMint" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#BBF7D0" stop-opacity="0.65" />
+      <stop offset="60%" stop-color="#BBF7D0" stop-opacity="0.15" />
+      <stop offset="100%" stop-color="#BBF7D0" stop-opacity="0" />
+    </radialGradient>
+    <radialGradient id="auroraPeach" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FED7AA" stop-opacity="0.55" />
+      <stop offset="60%" stop-color="#FED7AA" stop-opacity="0.12" />
+      <stop offset="100%" stop-color="#FED7AA" stop-opacity="0" />
+    </radialGradient>
+
+    <!-- Shield gradient -->
     <linearGradient id="shieldGrad" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="#3B82F6" />
       <stop offset="100%" stop-color="#1D4ED8" />
     </linearGradient>
-    <radialGradient id="glow" cx="50%" cy="40%" r="45%">
-      <stop offset="0%" stop-color="#818CF8" stop-opacity="0.08" />
-      <stop offset="100%" stop-color="#818CF8" stop-opacity="0" />
-    </radialGradient>
   </defs>
 
-  <!-- Background -->
+  <!-- Base background -->
   <rect width="1200" height="630" fill="url(#bg)" />
-  <rect width="1200" height="630" fill="url(#glow)" />
 
-  <!-- Logo (scaled 3.5x, exact copy from logo.svg) -->
-  <g transform="translate(516, 40) scale(3.5)">
-    <!-- SHIELD -->
-    <path d="M24 3
-       L41 10
-       V25
-       C41 36 33 42.5 24 45.5
-       C15 42.5 7 36 7 25
-       V10
-       L24 3Z"
+  <!-- Aurora blobs -->
+  <ellipse cx="980"  cy="180" rx="360" ry="280" fill="url(#auroraPink)" />
+  <ellipse cx="1100" cy="420" rx="380" ry="300" fill="url(#auroraPurple)" />
+  <ellipse cx="120"  cy="500" rx="340" ry="280" fill="url(#auroraPeach)" />
+  <ellipse cx="200"  cy="120" rx="320" ry="240" fill="url(#auroraBlue)" />
+  <ellipse cx="850"  cy="560" rx="300" ry="220" fill="url(#auroraMint)" />
+  <ellipse cx="600"  cy="320" rx="420" ry="240" fill="url(#auroraPurple)" />
+
+  <!-- Top bar: Logo + Privacy badge -->
+  <!-- Shield logo -->
+  <g transform="translate(60, 38) scale(1.05)">
+    <path d="M24 3 L41 10 V25 C41 36 33 42.5 24 45.5 C15 42.5 7 36 7 25 V10 L24 3Z"
           fill="url(#shieldGrad)" />
-
-    <!-- DOCUMENT -->
-    <path d="M16.5 12
-             L28 12
-             L33 17
-             L33 34.5
-             A1.5 1.5 0 0 1 31.5 36
-             L16.5 36
-             A1.5 1.5 0 0 1 15 34.5
-             L15 13.5
-             A1.5 1.5 0 0 1 16.5 12
-             Z"
-          fill="#FFFFFF"
-          opacity="0.95" />
-
-    <!-- FOLDED FLAP -->
-    <path d="M28 12
-             L28 15.5
-             A1.5 1.5 0 0 0 29.5 17
-             L33 17
-             Z"
-          fill="#DBEAFE"
-          opacity="0.85" />
-
-    <!-- REDACTED LINES -->
+    <path d="M16.5 12 L28 12 L33 17 L33 34.5 A1.5 1.5 0 0 1 31.5 36 L16.5 36 A1.5 1.5 0 0 1 15 34.5 L15 13.5 A1.5 1.5 0 0 1 16.5 12 Z"
+          fill="#FFFFFF" opacity="0.95" />
+    <path d="M28 12 L28 15.5 A1.5 1.5 0 0 0 29.5 17 L33 17 Z"
+          fill="#DBEAFE" opacity="0.85" />
     <g fill="#1D4ED8" opacity="0.8">
-        <rect x="19" y="19" width="10" height="1.8" rx="0.9" />
-        <rect x="19" y="23" width="8"  height="1.8" rx="0.9" />
-        <rect x="19" y="27" width="11" height="1.8" rx="0.9" />
-        <rect x="19" y="31" width="6"  height="1.8" rx="0.9" />
+      <rect x="19" y="19" width="10" height="1.8" rx="0.9" />
+      <rect x="19" y="23" width="8"  height="1.8" rx="0.9" />
+      <rect x="19" y="27" width="11" height="1.8" rx="0.9" />
+      <rect x="19" y="31" width="6"  height="1.8" rx="0.9" />
     </g>
   </g>
+  <text x="120" y="78" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="26" font-weight="700" fill="#0F172A" letter-spacing="-0.5">
+    Cloak<tspan fill="#2563EB">PDF</tspan>
+  </text>
 
-  <!-- App name -->
-  <text x="600" y="280" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="64" font-weight="700" fill="#1E293B" letter-spacing="-1.5">CloakPDF</text>
+  <!-- Hero: "PDF tools that stay on your device." -->
+  <text x="600" y="245" text-anchor="middle"
+        font-family="system-ui, -apple-system, 'Segoe UI', sans-serif"
+        font-size="84" font-weight="700" fill="#0F172A" letter-spacing="-2.5">
+    PDF tools that <tspan font-family="Georgia, 'Times New Roman', serif" font-style="italic" font-weight="400" fill="#2563EB">stay on your</tspan>
+  </text>
+  <text x="600" y="340" text-anchor="middle"
+        font-family="Georgia, 'Times New Roman', serif"
+        font-size="84" font-style="italic" font-weight="400" fill="#2563EB" letter-spacing="-2">
+    device<tspan fill="#0F172A" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-style="normal" font-weight="700">.</tspan>
+  </text>
 
-  <!-- Tagline -->
-  <text x="600" y="320" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="22" font-weight="400" fill="#6366F1">34+ Offline PDF Tools — 100% Private, Runs in Your Browser</text>
+  <!-- Subtitle -->
+  <text x="600" y="410" text-anchor="middle"
+        font-family="system-ui, -apple-system, 'Segoe UI', sans-serif"
+        font-size="24" font-weight="400" fill="#475569">
+    Edit, merge, sign, secure, and convert PDFs entirely in your browser.
+  </text>
+  <text x="600" y="443" text-anchor="middle"
+        font-family="system-ui, -apple-system, 'Segoe UI', sans-serif"
+        font-size="24" font-weight="400" fill="#475569">
+    No uploads, no accounts, no tracking.
+  </text>
 
-  <!-- Subtle divider -->
-  <rect x="530" y="342" width="140" height="1.5" rx="0.75" fill="#C7D2FE" fill-opacity="0.5" />
-
-  <!-- Category cards — 2x2 grid -->
-  <g font-family="system-ui, -apple-system, 'Segoe UI', sans-serif">
-    <!-- Organise & Edit — blue -->
-    <rect x="220" y="365" width="340" height="60" rx="16" fill="#EFF6FF" stroke="#BFDBFE" stroke-width="1.2" />
-    <circle cx="258" cy="395" r="15" fill="#DBEAFE" />
-    <g transform="translate(250.5, 387.5) scale(0.625)" fill="none" stroke="#2563EB" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
-      <path d="m6 14 1.5-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.54 6a2 2 0 0 1-1.95 1.5H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3.9a2 2 0 0 1 1.69.9l.81 1.2a2 2 0 0 0 1.67.9H18a2 2 0 0 1 2 2v2"/>
-    </g>
-    <text x="284" y="391" font-size="17" font-weight="600" fill="#1E40AF">Organise &amp; Edit</text>
-    <text x="284" y="408" font-size="12" font-weight="400" fill="#3B82F6">Merge, split, reorder, bookmarks &amp; more</text>
-
-    <!-- Transform & Convert — violet -->
-    <rect x="640" y="365" width="340" height="60" rx="16" fill="#F5F3FF" stroke="#DDD6FE" stroke-width="1.2" />
-    <circle cx="678" cy="395" r="15" fill="#EDE9FE" />
-    <g transform="translate(670.5, 387.5) scale(0.625)" fill="none" stroke="#7C3AED" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
-      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
-    </g>
-    <text x="704" y="391" font-size="17" font-weight="600" fill="#5B21B6">Transform &amp; Convert</text>
-    <text x="704" y="408" font-size="12" font-weight="400" fill="#7C3AED">Compress, convert, OCR &amp; extract</text>
-
-    <!-- Annotate & Sign — emerald -->
-    <rect x="220" y="440" width="340" height="60" rx="16" fill="#ECFDF5" stroke="#A7F3D0" stroke-width="1.2" />
-    <circle cx="258" cy="470" r="15" fill="#D1FAE5" />
-    <g transform="translate(250.5, 462.5) scale(0.625)" fill="none" stroke="#059669" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/>
-      <path d="m15 5 4 4"/>
-    </g>
-    <text x="284" y="466" font-size="17" font-weight="600" fill="#065F46">Annotate &amp; Sign</text>
-    <text x="284" y="483" font-size="12" font-weight="400" fill="#059669">Sign, watermark, headers &amp; numbering</text>
-
-    <!-- Security & Properties — amber -->
-    <rect x="640" y="440" width="340" height="60" rx="16" fill="#FFFBEB" stroke="#FDE68A" stroke-width="1.2" />
-    <circle cx="678" cy="470" r="15" fill="#FEF3C7" />
-    <g transform="translate(670.5, 462.5) scale(0.625)" fill="none" stroke="#B45309" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>
-    </g>
-    <text x="704" y="466" font-size="17" font-weight="600" fill="#92400E">Security &amp; Properties</text>
-    <text x="704" y="483" font-size="12" font-weight="400" fill="#B45309">Encrypt, sign, redact, compare &amp; inspect</text>
-  </g>
-
-  <!-- Privacy line -->
-  <text x="600" y="555" text-anchor="middle" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="15" font-weight="500" fill="#64748B">No uploads  ·  No servers  ·  Works offline  ·  Open source</text>
-
-  <!-- Bottom accent line -->
-  <rect x="450" y="580" width="300" height="3" rx="1.5" fill="#818CF8" fill-opacity="0.3" />
+  <!-- Footer meta -->
+  <text x="600" y="575" text-anchor="middle"
+        font-family="system-ui, -apple-system, 'Segoe UI', sans-serif"
+        font-size="15" font-weight="600" fill="#64748B" letter-spacing="2.5">
+    35 OFFLINE PDF TOOLS  ·  WORKS OFFLINE  ·  OPEN SOURCE
+  </text>
 </svg>
