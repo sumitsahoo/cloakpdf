@@ -37,6 +37,11 @@ export default function FileAttachment() {
   const task = useAsyncProcess();
   const processing = task.processing;
   const error = task.error;
+  // Pull the stable setter out of `task` — including the whole `task`
+  // object in deps would re-fire the effect on every render (the object
+  // is a fresh literal each time) and spin the tool in an infinite
+  // load → setState → re-render loop.
+  const { setError: setTaskError } = task;
 
   // Load existing attachments when a PDF is selected
   useEffect(() => {
@@ -46,12 +51,12 @@ export default function FileAttachment() {
 
     async function load() {
       setLoading(true);
-      task.setError(null);
+      setTaskError(null);
       try {
         const list = await listPdfAttachments(currentFile);
         if (!cancelled) setAttachments(list);
       } catch (e) {
-        if (!cancelled) task.setError(errorMessage(e, "Failed to read attachments."));
+        if (!cancelled) setTaskError(errorMessage(e, "Failed to read attachments."));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -61,7 +66,7 @@ export default function FileAttachment() {
     return () => {
       cancelled = true;
     };
-  }, [pdfFile, task]);
+  }, [pdfFile, setTaskError]);
 
   const handlePdfFile = useCallback(
     (files: File[]) => {
