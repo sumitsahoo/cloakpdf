@@ -83,7 +83,7 @@ export default function NupPages() {
           />
 
           {pdf.loading ? (
-            <LoadingSpinner color="border-violet-200 border-t-violet-600" />
+            <LoadingSpinner />
           ) : (
             <>
               {/* Layout selector */}
@@ -143,7 +143,6 @@ export default function NupPages() {
                 disabled={task.processing || pageCount === 0}
                 label={`Create ${selected.label} PDF`}
                 processingLabel="Processing..."
-                color="bg-violet-600 hover:bg-violet-700"
               />
 
               {done && (

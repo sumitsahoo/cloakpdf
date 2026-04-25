@@ -560,7 +560,6 @@ export default function AddSignature() {
                       </div>
                       {loading ? (
                         <LoadingSpinner
-                          color="border-emerald-200 border-t-emerald-600"
                           size="sm"
                           className="flex items-center justify-center py-8"
                         />
@@ -575,8 +574,8 @@ export default function AddSignature() {
                               onClick={() => togglePage(i)}
                               overlay={
                                 selectedPages.has(i) ? (
-                                  <div className="bg-emerald-600/20 inset-0 absolute flex items-center justify-center">
-                                    <div className="w-5 h-5 rounded-full bg-emerald-600 flex items-center justify-center shadow">
+                                  <div className="bg-primary-600/20 inset-0 absolute flex items-center justify-center">
+                                    <div className="w-5 h-5 rounded-full bg-primary-600 flex items-center justify-center shadow">
                                       <Check className="w-3 h-3 text-white" strokeWidth={3} />
                                     </div>
                                   </div>
@@ -597,10 +596,7 @@ export default function AddSignature() {
                 Preview — {applyToAllPages ? "All Pages" : `Page ${selectedPage + 1}`}
               </p>
               {loading ? (
-                <LoadingSpinner
-                  color="border-emerald-200 border-t-emerald-600"
-                  className="aspect-3/4 bg-slate-100 dark:bg-dark-surface-alt rounded-lg flex items-center justify-center"
-                />
+                <LoadingSpinner className="aspect-3/4 bg-slate-100 dark:bg-dark-surface-alt rounded-lg flex items-center justify-center" />
               ) : thumbnails[selectedPage] ? (
                 <div
                   ref={previewRef}
@@ -651,7 +647,6 @@ export default function AddSignature() {
             }
             label="Apply Signature & Download"
             processingLabel="Applying..."
-            color="bg-emerald-600 hover:bg-emerald-700"
           />
         </>
       )}

@@ -360,7 +360,7 @@ export default function AddPageNumbers() {
 
               {pdf.loading ? (
                 <div className="aspect-3/4 bg-slate-100 dark:bg-dark-surface-alt rounded-lg flex items-center justify-center">
-                  <LoadingSpinner color="border-emerald-200 border-t-emerald-600" />
+                  <LoadingSpinner />
                 </div>
               ) : thumbnails[selectedPage] ? (
                 <div
@@ -395,7 +395,6 @@ export default function AddPageNumbers() {
             disabled={task.processing || pdf.loading}
             label="Add Page Numbers & Download"
             processingLabel="Adding numbers…"
-            color="bg-emerald-600 hover:bg-emerald-700"
           />
         </>
       )}

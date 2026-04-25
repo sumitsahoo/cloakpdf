@@ -116,33 +116,33 @@ export default function CompressPdf() {
                       }`}
                     >
                       {/* Mini document preview showing sharpness */}
-                      <div className="mb-2.5 rounded-md overflow-hidden border border-violet-100 dark:border-violet-900/50 bg-violet-50/40 dark:bg-violet-950/20 w-full aspect-video flex flex-col p-1.5 gap-1">
+                      <div className="mb-2.5 rounded-md overflow-hidden border border-primary-100 dark:border-primary-900/50 bg-primary-50/40 dark:bg-primary-900/20 w-full aspect-video flex flex-col p-1.5 gap-1">
                         <div
-                          className="w-full h-1.5 rounded-full bg-violet-700 dark:bg-violet-300"
+                          className="w-full h-1.5 rounded-full bg-primary-700 dark:bg-primary-300"
                           style={{ filter: opt.blur }}
                         />
                         <div
-                          className="w-4/5 h-1.5 rounded-full bg-violet-400 dark:bg-violet-500"
+                          className="w-4/5 h-1.5 rounded-full bg-primary-400 dark:bg-primary-500"
                           style={{ filter: opt.blur }}
                         />
                         <div
-                          className="w-full h-1.5 rounded-full bg-violet-200 dark:bg-violet-700"
+                          className="w-full h-1.5 rounded-full bg-primary-200 dark:bg-primary-700"
                           style={{ filter: opt.blur }}
                         />
                         <div
-                          className="w-3/5 h-1.5 rounded-full bg-violet-200 dark:bg-violet-700"
+                          className="w-3/5 h-1.5 rounded-full bg-primary-200 dark:bg-primary-700"
                           style={{ filter: opt.blur }}
                         />
                         <div
-                          className="mt-0.5 w-full h-5 rounded bg-violet-100 dark:bg-violet-900/50"
+                          className="mt-0.5 w-full h-5 rounded bg-primary-100 dark:bg-primary-900/50"
                           style={{ filter: opt.blur }}
                         />
                         <div
-                          className="w-full h-1.5 rounded-full bg-violet-200 dark:bg-violet-700"
+                          className="w-full h-1.5 rounded-full bg-primary-200 dark:bg-primary-700"
                           style={{ filter: opt.blur }}
                         />
                         <div
-                          className="w-2/3 h-1.5 rounded-full bg-violet-200 dark:bg-violet-700"
+                          className="w-2/3 h-1.5 rounded-full bg-primary-200 dark:bg-primary-700"
                           style={{ filter: opt.blur }}
                         />
                       </div>
@@ -172,7 +172,6 @@ export default function CompressPdf() {
                 processing={processing}
                 label="Compress PDF"
                 processingLabel="Compressing... (this may take a moment)"
-                color="bg-violet-600 hover:bg-violet-700"
               />
             </div>
           ) : (
@@ -212,7 +211,6 @@ export default function CompressPdf() {
                 processing={false}
                 label="Download Compressed PDF"
                 processingLabel=""
-                color="bg-violet-600 hover:bg-violet-700"
               />
             </div>
           )}

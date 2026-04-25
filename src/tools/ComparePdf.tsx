@@ -308,7 +308,7 @@ export default function ComparePdf() {
           {/* File A */}
           <div className="space-y-2">
             <p className="text-sm font-medium text-slate-700 dark:text-dark-text flex items-center gap-2">
-              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 text-xs font-bold">
+              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300 text-xs font-bold">
                 A
               </span>
               Original PDF
@@ -344,7 +344,7 @@ export default function ComparePdf() {
           {/* File B */}
           <div className="space-y-2">
             <p className="text-sm font-medium text-slate-700 dark:text-dark-text flex items-center gap-2">
-              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 text-xs font-bold">
+              <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300 text-xs font-bold">
                 B
               </span>
               Modified PDF
@@ -385,7 +385,6 @@ export default function ComparePdf() {
               processing={loading}
               label="Compare PDFs"
               processingLabel="Comparing…"
-              color="bg-amber-600 hover:bg-amber-700"
             />
 
             {loading && progress && (
@@ -398,7 +397,7 @@ export default function ComparePdf() {
                 </div>
                 <div className="w-full bg-slate-200 dark:bg-dark-border rounded-full h-2">
                   <div
-                    className="bg-amber-600 h-2 rounded-full transition-all"
+                    className="bg-primary-600 h-2 rounded-full transition-all"
                     style={{ width: `${(progress.done / progress.total) * 100}%` }}
                   />
                 </div>
@@ -456,7 +455,7 @@ export default function ComparePdf() {
             onClick={() => setViewMode("side-by-side")}
             className={`flex items-center gap-1.5 rounded-lg py-1.5 px-3 text-sm transition-all duration-150 ${
               viewMode === "side-by-side"
-                ? "font-semibold text-white bg-amber-600 shadow-sm"
+                ? "font-semibold text-white bg-primary-600 shadow-sm"
                 : "font-medium text-slate-500 dark:text-dark-text-muted hover:text-slate-700 dark:hover:text-dark-text hover:bg-white/60 dark:hover:bg-dark-surface-alt"
             }`}
           >
@@ -468,7 +467,7 @@ export default function ComparePdf() {
             onClick={() => setViewMode("diff-overlay")}
             className={`flex items-center gap-1.5 rounded-lg py-1.5 px-3 text-sm transition-all duration-150 ${
               viewMode === "diff-overlay"
-                ? "font-semibold text-white bg-amber-600 shadow-sm"
+                ? "font-semibold text-white bg-primary-600 shadow-sm"
                 : "font-medium text-slate-500 dark:text-dark-text-muted hover:text-slate-700 dark:hover:text-dark-text hover:bg-white/60 dark:hover:bg-dark-surface-alt"
             }`}
           >
@@ -532,7 +531,7 @@ export default function ComparePdf() {
               {/* File A */}
               <div className="space-y-1.5">
                 <p className="text-xs font-medium text-slate-500 dark:text-dark-text-muted flex items-center gap-1.5">
-                  <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 text-[10px] font-bold">
+                  <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300 text-[10px] font-bold">
                     A
                   </span>
                   Original
@@ -555,7 +554,7 @@ export default function ComparePdf() {
               {/* File B */}
               <div className="space-y-1.5">
                 <p className="text-xs font-medium text-slate-500 dark:text-dark-text-muted flex items-center gap-1.5">
-                  <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 text-[10px] font-bold">
+                  <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300 text-[10px] font-bold">
                     B
                   </span>
                   Modified
@@ -632,8 +631,8 @@ export default function ComparePdf() {
               onClick={() => setCurrentPage(comp.page - 1)}
               className={`relative shrink-0 w-14 rounded-md overflow-hidden border-2 transition-[border-color,box-shadow] ${
                 comp.page - 1 === currentPage
-                  ? "border-amber-500 ring-2 ring-amber-200 dark:ring-amber-800"
-                  : "border-slate-200 dark:border-dark-border hover:border-amber-300"
+                  ? "border-primary-500 ring-2 ring-primary-200 dark:ring-primary-800"
+                  : "border-slate-200 dark:border-dark-border hover:border-primary-300"
               }`}
               aria-label={`Page ${comp.page}`}
             >

@@ -329,7 +329,7 @@ export default function BatesNumbering() {
 
               {loading ? (
                 <div className="aspect-3/4 bg-slate-100 dark:bg-dark-surface-alt rounded-lg flex items-center justify-center">
-                  <LoadingSpinner color="border-emerald-200 border-t-emerald-600" />
+                  <LoadingSpinner />
                 </div>
               ) : thumbnails[selectedPage] ? (
                 <div
@@ -362,7 +362,6 @@ export default function BatesNumbering() {
             disabled={processing || loading}
             label="Add Bates Numbers & Download"
             processingLabel="Adding Bates numbers…"
-            color="bg-emerald-600 hover:bg-emerald-700"
           />
         </>
       )}

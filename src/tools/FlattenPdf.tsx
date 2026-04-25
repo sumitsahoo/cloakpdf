@@ -62,24 +62,24 @@ export default function FlattenPdf() {
               {/* Visual: before → after flattening */}
               <div className="grid grid-cols-2 gap-3">
                 {/* Before — interactive */}
-                <div className="rounded-xl border border-violet-100 dark:border-violet-900/50 bg-violet-50/40 dark:bg-violet-950/20 p-3 flex flex-col gap-2">
-                  <p className="text-[10px] font-semibold uppercase tracking-widest text-violet-400 dark:text-violet-500">
+                <div className="rounded-xl border border-primary-100 dark:border-primary-900/50 bg-primary-50/40 dark:bg-primary-900/20 p-3 flex flex-col gap-2">
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-primary-400 dark:text-primary-500">
                     Before
                   </p>
                   {/* title line */}
-                  <div className="h-1.5 w-3/4 rounded-full bg-violet-700 dark:bg-violet-300" />
+                  <div className="h-1.5 w-3/4 rounded-full bg-primary-700 dark:bg-primary-300" />
                   {/* body text */}
-                  <div className="h-1 w-full rounded-full bg-violet-200 dark:bg-violet-700" />
+                  <div className="h-1 w-full rounded-full bg-primary-200 dark:bg-primary-700" />
                   {/* text input — dashed outline with cursor */}
-                  <div className="h-4 w-full rounded border border-dashed border-violet-400 dark:border-violet-500 bg-white dark:bg-violet-950/30 flex items-center px-1.5 gap-0.5">
-                    <div className="h-1 w-2/5 rounded-full bg-violet-300 dark:bg-violet-600" />
-                    <div className="h-2.5 w-px bg-violet-500 dark:bg-violet-400" />
+                  <div className="h-4 w-full rounded border border-dashed border-primary-400 dark:border-primary-500 bg-white dark:bg-primary-900/30 flex items-center px-1.5 gap-0.5">
+                    <div className="h-1 w-2/5 rounded-full bg-primary-300 dark:bg-primary-600" />
+                    <div className="h-2.5 w-px bg-primary-500 dark:bg-primary-400" />
                   </div>
                   {/* dropdown — dashed outline with chevron */}
-                  <div className="h-4 w-full rounded border border-dashed border-violet-400 dark:border-violet-500 bg-white dark:bg-violet-950/30 flex items-center justify-between px-1.5">
-                    <div className="h-1 w-1/3 rounded-full bg-violet-300 dark:bg-violet-600" />
+                  <div className="h-4 w-full rounded border border-dashed border-primary-400 dark:border-primary-500 bg-white dark:bg-primary-900/30 flex items-center justify-between px-1.5">
+                    <div className="h-1 w-1/3 rounded-full bg-primary-300 dark:bg-primary-600" />
                     <svg
-                      className="w-2 h-2 text-violet-400"
+                      className="w-2 h-2 text-primary-400"
                       fill="none"
                       viewBox="0 0 8 8"
                       aria-hidden="true"
@@ -96,19 +96,19 @@ export default function FlattenPdf() {
                   {/* radio buttons */}
                   <div className="flex items-center gap-3">
                     <div className="flex items-center gap-1">
-                      <div className="h-2.5 w-2.5 rounded-full border-2 border-violet-500 dark:border-violet-400 bg-violet-500 dark:bg-violet-400 flex items-center justify-center">
+                      <div className="h-2.5 w-2.5 rounded-full border-2 border-primary-500 dark:border-primary-400 bg-primary-500 dark:bg-primary-400 flex items-center justify-center">
                         <div className="h-1 w-1 rounded-full bg-white" />
                       </div>
-                      <div className="h-1 w-4 rounded-full bg-violet-200 dark:bg-violet-700" />
+                      <div className="h-1 w-4 rounded-full bg-primary-200 dark:bg-primary-700" />
                     </div>
                     <div className="flex items-center gap-1">
-                      <div className="h-2.5 w-2.5 rounded-full border-2 border-violet-300 dark:border-violet-600 bg-white dark:bg-transparent" />
-                      <div className="h-1 w-4 rounded-full bg-violet-200 dark:bg-violet-700" />
+                      <div className="h-2.5 w-2.5 rounded-full border-2 border-primary-300 dark:border-primary-600 bg-white dark:bg-transparent" />
+                      <div className="h-1 w-4 rounded-full bg-primary-200 dark:bg-primary-700" />
                     </div>
                   </div>
                   {/* checkbox row — checked */}
                   <div className="flex items-center gap-1.5">
-                    <div className="h-3 w-3 rounded border-2 border-violet-500 dark:border-violet-400 bg-violet-500 dark:bg-violet-400 flex items-center justify-center">
+                    <div className="h-3 w-3 rounded border-2 border-primary-500 dark:border-primary-400 bg-primary-500 dark:bg-primary-400 flex items-center justify-center">
                       <svg
                         className="w-2 h-2 text-white"
                         fill="none"
@@ -124,50 +124,50 @@ export default function FlattenPdf() {
                         />
                       </svg>
                     </div>
-                    <div className="h-1 w-2/3 rounded-full bg-violet-200 dark:bg-violet-700" />
+                    <div className="h-1 w-2/3 rounded-full bg-primary-200 dark:bg-primary-700" />
                   </div>
                   {/* button */}
-                  <div className="h-4 w-2/3 rounded border border-violet-400 dark:border-violet-500 bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center">
-                    <div className="h-1 w-1/2 rounded-full bg-violet-500 dark:bg-violet-400" />
+                  <div className="h-4 w-2/3 rounded border border-primary-400 dark:border-primary-500 bg-primary-100 dark:bg-primary-900/40 flex items-center justify-center">
+                    <div className="h-1 w-1/2 rounded-full bg-primary-500 dark:bg-primary-400" />
                   </div>
                 </div>
 
                 {/* After — flat */}
-                <div className="rounded-xl border border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-900/20 p-3 flex flex-col gap-2">
-                  <p className="text-[10px] font-semibold uppercase tracking-widest text-violet-600 dark:text-violet-400">
+                <div className="rounded-xl border border-primary-200 dark:border-primary-800 bg-primary-50 dark:bg-primary-900/20 p-3 flex flex-col gap-2">
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-primary-600 dark:text-primary-400">
                     After
                   </p>
                   {/* title line */}
-                  <div className="h-1.5 w-3/4 rounded-full bg-violet-700 dark:bg-violet-300" />
+                  <div className="h-1.5 w-3/4 rounded-full bg-primary-700 dark:bg-primary-300" />
                   {/* body text */}
-                  <div className="h-1 w-full rounded-full bg-violet-200 dark:bg-violet-700" />
+                  <div className="h-1 w-full rounded-full bg-primary-200 dark:bg-primary-700" />
                   {/* flattened text input — plain filled area */}
-                  <div className="h-4 w-full rounded bg-violet-100 dark:bg-violet-900/40 flex items-center px-1.5">
-                    <div className="h-1 w-2/5 rounded-full bg-violet-500 dark:bg-violet-400" />
+                  <div className="h-4 w-full rounded bg-primary-100 dark:bg-primary-900/40 flex items-center px-1.5">
+                    <div className="h-1 w-2/5 rounded-full bg-primary-500 dark:bg-primary-400" />
                   </div>
                   {/* flattened dropdown — no chevron, just text */}
-                  <div className="h-4 w-full rounded bg-violet-100 dark:bg-violet-900/40 flex items-center px-1.5">
-                    <div className="h-1 w-1/3 rounded-full bg-violet-400 dark:bg-violet-500" />
+                  <div className="h-4 w-full rounded bg-primary-100 dark:bg-primary-900/40 flex items-center px-1.5">
+                    <div className="h-1 w-1/3 rounded-full bg-primary-400 dark:bg-primary-500" />
                   </div>
                   {/* flattened radio — just solid dots + lines */}
                   <div className="flex items-center gap-3">
                     <div className="flex items-center gap-1">
-                      <div className="h-2.5 w-2.5 rounded-full bg-violet-300 dark:bg-violet-600" />
-                      <div className="h-1 w-4 rounded-full bg-violet-200 dark:bg-violet-700" />
+                      <div className="h-2.5 w-2.5 rounded-full bg-primary-300 dark:bg-primary-600" />
+                      <div className="h-1 w-4 rounded-full bg-primary-200 dark:bg-primary-700" />
                     </div>
                     <div className="flex items-center gap-1">
-                      <div className="h-2.5 w-2.5 rounded-full bg-violet-200 dark:bg-violet-700" />
-                      <div className="h-1 w-4 rounded-full bg-violet-200 dark:bg-violet-700" />
+                      <div className="h-2.5 w-2.5 rounded-full bg-primary-200 dark:bg-primary-700" />
+                      <div className="h-1 w-4 rounded-full bg-primary-200 dark:bg-primary-700" />
                     </div>
                   </div>
                   {/* flattened checkbox — solid square */}
                   <div className="flex items-center gap-1.5">
-                    <div className="h-3 w-3 rounded bg-violet-300 dark:bg-violet-600" />
-                    <div className="h-1 w-2/3 rounded-full bg-violet-200 dark:bg-violet-700" />
+                    <div className="h-3 w-3 rounded bg-primary-300 dark:bg-primary-600" />
+                    <div className="h-1 w-2/3 rounded-full bg-primary-200 dark:bg-primary-700" />
                   </div>
                   {/* button gone — just a muted line */}
-                  <div className="h-4 w-2/3 rounded bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center">
-                    <div className="h-1 w-1/2 rounded-full bg-violet-300 dark:bg-violet-600" />
+                  <div className="h-4 w-2/3 rounded bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
+                    <div className="h-1 w-1/2 rounded-full bg-primary-300 dark:bg-primary-600" />
                   </div>
                 </div>
               </div>
@@ -188,7 +188,6 @@ export default function FlattenPdf() {
                 processing={task.processing}
                 label="Flatten PDF"
                 processingLabel="Flattening..."
-                color="bg-violet-600 hover:bg-violet-700"
               />
             </div>
           ) : (
@@ -202,7 +201,6 @@ export default function FlattenPdf() {
                 processing={false}
                 label="Download Flattened PDF"
                 processingLabel=""
-                color="bg-violet-600 hover:bg-violet-700"
               />
             </div>
           )}
