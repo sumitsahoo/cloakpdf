@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://cloakpdf.app/sitemap.xml
+Sitemap: https://pdf.cloakyard.com/sitemap.xml

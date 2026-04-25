@@ -13,7 +13,7 @@ import { AuroraBackground } from "./AuroraBackground";
 
 declare const __APP_VERSION__: string;
 
-const REPO_URL = "https://github.com/sumitsahoo/cloakpdf";
+const REPO_URL = "https://github.com/cloakyard/cloakpdf";
 const CLOAKYARD_URL = "https://github.com/cloakyard";
 const AUTHOR_URL = "https://github.com/sumitsahoo";
 
