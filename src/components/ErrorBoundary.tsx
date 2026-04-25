@@ -3,7 +3,7 @@ import { Component, createRef, type ErrorInfo, type ReactNode } from "react";
 
 declare const __APP_VERSION__: string;
 
-const REPO_URL = "https://github.com/sumitsahoo/cloakpdf";
+const REPO_URL = "https://github.com/cloakyard/cloakpdf";
 
 interface Props {
   children: ReactNode;
