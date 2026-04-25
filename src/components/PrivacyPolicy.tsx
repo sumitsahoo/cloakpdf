@@ -91,12 +91,12 @@ export function PrivacyPolicy() {
           <p>
             CloakPDF is open source. You can inspect the full source code at{" "}
             <a
-              href="https://github.com/sumitsahoo/cloakpdf"
+              href="https://github.com/cloakyard/cloakpdf"
               target="_blank"
               rel="noopener noreferrer"
               className="text-primary-600 dark:text-primary-400 hover:underline"
             >
-              github.com/sumitsahoo/cloakpdf
+              github.com/cloakyard/cloakpdf
             </a>{" "}
             to verify these claims independently.
           </p>
@@ -111,7 +111,7 @@ export function PrivacyPolicy() {
             correct, or delete on your behalf. If you have questions about this policy, you can
             reach out via{" "}
             <a
-              href="https://github.com/sumitsahoo/cloakpdf/issues"
+              href="https://github.com/cloakyard/cloakpdf/issues"
               target="_blank"
               rel="noopener noreferrer"
               className="text-primary-600 dark:text-primary-400 hover:underline"

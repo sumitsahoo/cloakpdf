@@ -10,7 +10,7 @@
 
 If you discover a security vulnerability in CloakPDF, please **do not** open a public GitHub issue.
 
-Instead, report it privately via [GitHub Security Advisories](https://github.com/sumitsahoo/cloakpdf/security/advisories/new).
+Instead, report it privately via [GitHub Security Advisories](https://github.com/cloakyard/cloakpdf/security/advisories/new).
 
 You can expect:
 
