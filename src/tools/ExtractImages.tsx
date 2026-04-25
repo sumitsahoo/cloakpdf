@@ -322,7 +322,7 @@ export default function ExtractImages() {
             onChangeFile={pdf.reset}
             extra={
               !loading && images.length > 0 ? (
-                <span className="text-violet-600 ml-2">
+                <span className="text-primary-600 ml-2">
                   ({images.length} image{images.length !== 1 && "s"} found)
                 </span>
               ) : undefined
@@ -331,7 +331,7 @@ export default function ExtractImages() {
 
           {loading ? (
             <div className="flex flex-col items-center justify-center py-12 gap-3">
-              <LoadingSpinner color="border-violet-200 border-t-violet-600" className="" />
+              <LoadingSpinner className="" />
               {progress && (
                 <p className="text-sm text-slate-500 dark:text-dark-text-muted">
                   Scanning page {progress.done} of {progress.total}…
@@ -374,8 +374,8 @@ export default function ExtractImages() {
                     aria-pressed={selected.has(i)}
                     className={`relative group rounded-lg overflow-hidden border-2 transition-[border-color,box-shadow] cursor-pointer text-left w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 ${
                       selected.has(i)
-                        ? "border-violet-500 ring-2 ring-violet-200 dark:ring-violet-800"
-                        : "border-slate-200 dark:border-dark-border hover:border-violet-300 dark:hover:border-violet-600"
+                        ? "border-primary-500 ring-2 ring-primary-200 dark:ring-primary-800"
+                        : "border-slate-200 dark:border-dark-border hover:border-primary-300 dark:hover:border-primary-600"
                     }`}
                   >
                     <div className="aspect-square bg-slate-50 dark:bg-dark-surface flex items-center justify-center p-2">
@@ -407,7 +407,7 @@ export default function ExtractImages() {
                       {formatFileSize(totalSize)}
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <ImageDown className="w-4 h-4 text-violet-500" />
+                      <ImageDown className="w-4 h-4 text-primary-500" />
                       <span className="text-xs font-medium text-slate-500 dark:text-dark-text-muted">
                         PNG
                       </span>
@@ -419,7 +419,7 @@ export default function ExtractImages() {
               <button
                 onClick={handleDownload}
                 disabled={downloading || selected.size === 0}
-                className="w-full bg-violet-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+                className="w-full bg-primary-600 text-white py-3 px-6 rounded-xl font-medium hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
               >
                 {downloading ? (
                   <>

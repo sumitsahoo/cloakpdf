@@ -6,8 +6,8 @@
  * `current / total` ratio; if `total` is 0 the bar is rendered empty
  * rather than NaN-filled.
  *
- * Styling follows the app's violet "transform" accent by default;
- * override via the `color` prop (a Tailwind background class).
+ * Styling follows the app's primary accent by default; override via
+ * the `color` prop (a Tailwind background class).
  */
 interface ProgressBarProps {
   /** Completed units (e.g. rendered page count). */
@@ -18,7 +18,7 @@ interface ProgressBarProps {
   label?: string;
   /**
    * Tailwind background class for the filled portion of the bar.
-   * Defaults to the app's violet transform accent.
+   * Defaults to the app's primary accent.
    */
   color?: string;
 }
@@ -27,7 +27,7 @@ export function ProgressBar({
   current,
   total,
   label = "Processing…",
-  color = "bg-violet-600",
+  color = "bg-primary-600",
 }: ProgressBarProps) {
   const percent = total > 0 ? Math.min(100, Math.max(0, (current / total) * 100)) : 0;
   return (

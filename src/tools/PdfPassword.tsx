@@ -301,7 +301,7 @@ export default function PdfPassword() {
               </span>
             )}
             {pdfState === "encrypted" && (
-              <span className="text-xs font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-full px-2 py-0.5">
+              <span className="text-xs font-medium text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/30 border border-primary-200 dark:border-primary-800 rounded-full px-2 py-0.5">
                 Password protected
               </span>
             )}
@@ -319,15 +319,15 @@ export default function PdfPassword() {
       {/* Panel: Add Password (unencrypted PDF) */}
       {pdfState === "unencrypted" && (
         <div className="bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border divide-y divide-slate-100 dark:divide-dark-border">
-          <div className="flex items-center gap-3 px-4 py-3 bg-amber-50 dark:bg-amber-900/20 rounded-t-xl">
-            <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-amber-100 dark:bg-amber-900/40">
-              <Lock className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+          <div className="flex items-center gap-3 px-4 py-3 bg-primary-50 dark:bg-primary-900/20 rounded-t-xl">
+            <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-primary-100 dark:bg-primary-900/40">
+              <Lock className="w-4 h-4 text-primary-600 dark:text-primary-400" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+              <p className="text-sm font-semibold text-primary-800 dark:text-primary-300">
                 Add Password
               </p>
-              <p className="text-xs text-amber-600/80 dark:text-amber-400/70">
+              <p className="text-xs text-primary-600/80 dark:text-primary-400/70">
                 Encrypt with AES-256
               </p>
             </div>
@@ -384,8 +384,8 @@ export default function PdfPassword() {
                     className="flex items-center justify-between gap-3 px-4 py-3 cursor-pointer hover:bg-slate-50 dark:hover:bg-dark-surface-alt transition-colors"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-amber-50 dark:bg-amber-900/20 shrink-0">
-                        <Icon className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
+                      <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-primary-50 dark:bg-primary-900/20 shrink-0">
+                        <Icon className="w-3.5 h-3.5 text-primary-500 dark:text-primary-400" />
                       </div>
                       <div>
                         <p className="text-sm font-medium text-slate-700 dark:text-dark-text">
@@ -400,7 +400,7 @@ export default function PdfPassword() {
                       type="checkbox"
                       checked={permissions[key]}
                       onChange={() => togglePermission(key)}
-                      className="accent-amber-500 w-4 h-4 rounded shrink-0"
+                      className="accent-primary-500 w-4 h-4 rounded shrink-0"
                     />
                   </label>
                 ))}
@@ -418,15 +418,15 @@ export default function PdfPassword() {
       {/* Panel: Remove Password (encrypted PDF) */}
       {pdfState === "encrypted" && (
         <div className="bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border divide-y divide-slate-100 dark:divide-dark-border">
-          <div className="flex items-center gap-3 px-4 py-3 bg-amber-50 dark:bg-amber-900/20 rounded-t-xl">
-            <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-amber-100 dark:bg-amber-900/40">
-              <LockOpen className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+          <div className="flex items-center gap-3 px-4 py-3 bg-primary-50 dark:bg-primary-900/20 rounded-t-xl">
+            <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-primary-100 dark:bg-primary-900/40">
+              <LockOpen className="w-4 h-4 text-primary-600 dark:text-primary-400" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">
+              <p className="text-sm font-semibold text-primary-800 dark:text-primary-300">
                 Remove Password
               </p>
-              <p className="text-xs text-amber-600/80 dark:text-amber-400/70">
+              <p className="text-xs text-primary-600/80 dark:text-primary-400/70">
                 Decrypt and save an unlocked copy
               </p>
             </div>
@@ -455,7 +455,6 @@ export default function PdfPassword() {
             pdfState === "unencrypted" ? "Protect PDF & Download" : "Remove Password & Download"
           }
           processingLabel={pdfState === "unencrypted" ? "Protecting…" : "Unlocking…"}
-          color="bg-amber-600 hover:bg-amber-700"
         />
       )}
 

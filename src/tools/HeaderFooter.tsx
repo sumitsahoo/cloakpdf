@@ -146,7 +146,7 @@ export default function HeaderFooter() {
   }, [pdf.file, options, task]);
 
   const slotClass =
-    "w-full border border-slate-300 dark:border-dark-border rounded-lg px-2.5 py-1.5 text-sm bg-white dark:bg-dark-surface text-slate-800 dark:text-dark-text focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-400 placeholder:text-slate-300 dark:placeholder:text-dark-text-muted transition-colors";
+    "w-full border border-slate-300 dark:border-dark-border rounded-lg px-2.5 py-1.5 text-sm bg-white dark:bg-dark-surface text-slate-800 dark:text-dark-text focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-400 placeholder:text-slate-300 dark:placeholder:text-dark-text-muted transition-colors";
 
   const makeInputProps = (field: keyof HeaderFooterOptions) => ({
     onFocus: (e: React.FocusEvent<HTMLInputElement>) => {
@@ -201,9 +201,9 @@ export default function HeaderFooter() {
 
               {/* Header row */}
               <div className="bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border shadow-sm overflow-hidden">
-                <div className="flex items-center gap-2 px-4 py-2.5 bg-emerald-50 dark:bg-emerald-900/20 border-b border-emerald-100 dark:border-emerald-800/40">
-                  <PanelTop className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                  <p className="text-xs font-semibold uppercase tracking-widest text-emerald-700 dark:text-emerald-400">
+                <div className="flex items-center gap-2 px-4 py-2.5 bg-primary-50 dark:bg-primary-900/20 border-b border-primary-100 dark:border-primary-800/40">
+                  <PanelTop className="w-3.5 h-3.5 text-primary-600 dark:text-primary-400" />
+                  <p className="text-xs font-semibold uppercase tracking-widest text-primary-700 dark:text-primary-400">
                     Header
                   </p>
                 </div>
@@ -239,9 +239,9 @@ export default function HeaderFooter() {
 
               {/* Footer row */}
               <div className="bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border shadow-sm overflow-hidden">
-                <div className="flex items-center gap-2 px-4 py-2.5 bg-emerald-50 dark:bg-emerald-900/20 border-b border-emerald-100 dark:border-emerald-800/40">
-                  <PanelBottom className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                  <p className="text-xs font-semibold uppercase tracking-widest text-emerald-700 dark:text-emerald-400">
+                <div className="flex items-center gap-2 px-4 py-2.5 bg-primary-50 dark:bg-primary-900/20 border-b border-primary-100 dark:border-primary-800/40">
+                  <PanelBottom className="w-3.5 h-3.5 text-primary-600 dark:text-primary-400" />
+                  <p className="text-xs font-semibold uppercase tracking-widest text-primary-700 dark:text-primary-400">
                     Footer
                   </p>
                 </div>
@@ -286,7 +286,7 @@ export default function HeaderFooter() {
                     type="button"
                     title={description}
                     onClick={() => insertToken(token)}
-                    className="inline-flex items-center gap-1 rounded-md bg-white dark:bg-dark-surface border border-slate-300 dark:border-dark-border px-2 py-0.5 text-xs font-mono text-slate-700 dark:text-dark-text hover:border-emerald-400 hover:text-emerald-700 dark:hover:border-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors cursor-pointer shadow-sm"
+                    className="inline-flex items-center gap-1 rounded-md bg-white dark:bg-dark-surface border border-slate-300 dark:border-dark-border px-2 py-0.5 text-xs font-mono text-slate-700 dark:text-dark-text hover:border-primary-400 hover:text-primary-700 dark:hover:border-primary-600 dark:hover:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors cursor-pointer shadow-sm"
                   >
                     {label}
                   </button>
@@ -305,7 +305,7 @@ export default function HeaderFooter() {
                   max={20}
                   unit="pt"
                   onChange={(v) => setOpt("fontSize", v)}
-                  accent="accent-emerald-600"
+                  accent="accent-primary-600"
                 />
                 <LabeledSlider
                   id="hf-margin"
@@ -315,7 +315,7 @@ export default function HeaderFooter() {
                   max={72}
                   unit="pt"
                   onChange={(v) => setOpt("margin", v)}
-                  accent="accent-emerald-600"
+                  accent="accent-primary-600"
                 />
               </div>
 
@@ -339,7 +339,7 @@ export default function HeaderFooter() {
                 description="Useful when the first page is a cover or title page"
                 checked={options.skipFirstPage}
                 onChange={(v) => setOpt("skipFirstPage", v)}
-                accent="accent-emerald-600"
+                accent="accent-primary-600"
               />
             </div>
 
@@ -378,7 +378,7 @@ export default function HeaderFooter() {
 
               {loading ? (
                 <div className="aspect-3/4 bg-slate-100 dark:bg-dark-surface-alt rounded-lg flex items-center justify-center">
-                  <LoadingSpinner color="border-emerald-200 border-t-emerald-600" />
+                  <LoadingSpinner />
                 </div>
               ) : thumbnails[selectedPage] ? (
                 <div
@@ -492,7 +492,6 @@ export default function HeaderFooter() {
             disabled={processing || loading}
             label="Apply Header & Footer & Download"
             processingLabel="Applying…"
-            color="bg-emerald-600 hover:bg-emerald-700"
           />
         </>
       )}

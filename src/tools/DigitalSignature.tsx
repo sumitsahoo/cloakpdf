@@ -297,17 +297,17 @@ export default function DigitalSignature() {
           {!detectingSignatures && existingSignatures.length > 0 && (
             <div className="space-y-3">
               <h3 className="text-sm font-semibold text-slate-700 dark:text-dark-text flex items-center gap-2">
-                <BadgeCheck className="w-4 h-4 text-amber-500" />
+                <BadgeCheck className="w-4 h-4 text-primary-500" />
                 Existing Signatures ({existingSignatures.length})
               </h3>
               {existingSignatures.map((sig, idx) => (
                 <div
                   key={`sig-${sig.signerName || "unknown"}-${sig.date || "nodate"}-${sig.filter}-${sig.subFilter}`}
-                  className="bg-amber-50/60 dark:bg-amber-900/10 rounded-xl border border-amber-200 dark:border-amber-700/40 p-4"
+                  className="bg-primary-50/60 dark:bg-primary-900/10 rounded-xl border border-primary-200 dark:border-primary-700/40 p-4"
                 >
                   <div className="flex items-center gap-2 mb-3">
-                    <ShieldCheck className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                    <span className="text-sm font-semibold text-amber-700 dark:text-amber-300">
+                    <ShieldCheck className="w-4 h-4 text-primary-600 dark:text-primary-400" />
+                    <span className="text-sm font-semibold text-primary-700 dark:text-primary-300">
                       Signature {existingSignatures.length > 1 ? `#${idx + 1}` : ""}
                       {sig.signerName ? ` — ${sig.signerName}` : ""}
                     </span>
@@ -315,7 +315,7 @@ export default function DigitalSignature() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 text-sm">
                     {sig.signerName && (
                       <div className="flex items-center gap-1.5">
-                        <User className="w-3.5 h-3.5 text-amber-400 dark:text-amber-500 shrink-0" />
+                        <User className="w-3.5 h-3.5 text-primary-400 dark:text-primary-500 shrink-0" />
                         <span className="text-slate-500 dark:text-dark-text-muted">Signer:</span>
                         <span className="text-slate-700 dark:text-dark-text font-medium">
                           {sig.signerName}
@@ -324,28 +324,28 @@ export default function DigitalSignature() {
                     )}
                     {sig.date && (
                       <div className="flex items-center gap-1.5">
-                        <Clock className="w-3.5 h-3.5 text-amber-400 dark:text-amber-500 shrink-0" />
+                        <Clock className="w-3.5 h-3.5 text-primary-400 dark:text-primary-500 shrink-0" />
                         <span className="text-slate-500 dark:text-dark-text-muted">Date:</span>
                         <span className="text-slate-700 dark:text-dark-text">{sig.date}</span>
                       </div>
                     )}
                     {sig.reason && (
                       <div className="flex items-center gap-1.5">
-                        <MessageSquareText className="w-3.5 h-3.5 text-amber-400 dark:text-amber-500 shrink-0" />
+                        <MessageSquareText className="w-3.5 h-3.5 text-primary-400 dark:text-primary-500 shrink-0" />
                         <span className="text-slate-500 dark:text-dark-text-muted">Reason:</span>
                         <span className="text-slate-700 dark:text-dark-text">{sig.reason}</span>
                       </div>
                     )}
                     {sig.location && (
                       <div className="flex items-center gap-1.5">
-                        <MapPin className="w-3.5 h-3.5 text-amber-400 dark:text-amber-500 shrink-0" />
+                        <MapPin className="w-3.5 h-3.5 text-primary-400 dark:text-primary-500 shrink-0" />
                         <span className="text-slate-500 dark:text-dark-text-muted">Location:</span>
                         <span className="text-slate-700 dark:text-dark-text">{sig.location}</span>
                       </div>
                     )}
                     {sig.contactInfo && (
                       <div className="flex items-center gap-1.5">
-                        <Mail className="w-3.5 h-3.5 text-amber-400 dark:text-amber-500 shrink-0" />
+                        <Mail className="w-3.5 h-3.5 text-primary-400 dark:text-primary-500 shrink-0" />
                         <span className="text-slate-500 dark:text-dark-text-muted">Contact:</span>
                         <span className="text-slate-700 dark:text-dark-text">
                           {sig.contactInfo}
@@ -354,7 +354,7 @@ export default function DigitalSignature() {
                     )}
                     {(sig.filter || sig.subFilter) && (
                       <div className="flex items-center gap-1.5">
-                        <ShieldCheck className="w-3.5 h-3.5 text-amber-400 dark:text-amber-500 shrink-0" />
+                        <ShieldCheck className="w-3.5 h-3.5 text-primary-400 dark:text-primary-500 shrink-0" />
                         <span className="text-slate-500 dark:text-dark-text-muted">Standard:</span>
                         <span className="text-slate-700 dark:text-dark-text">
                           {formatSignatureStandard(sig.filter, sig.subFilter)}
@@ -365,13 +365,13 @@ export default function DigitalSignature() {
 
                   {/* Certificate details */}
                   {sig.certDetails && (
-                    <div className="mt-3 pt-3 border-t border-amber-200/60 dark:border-amber-700/30">
-                      <p className="text-xs font-medium text-amber-600 dark:text-amber-400 mb-1.5">
+                    <div className="mt-3 pt-3 border-t border-primary-200/60 dark:border-primary-700/30">
+                      <p className="text-xs font-medium text-primary-600 dark:text-primary-400 mb-1.5">
                         Certificate Details
                       </p>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5 text-sm">
                         <div className="flex items-center gap-1.5">
-                          <User className="w-3.5 h-3.5 text-amber-400 dark:text-amber-500 shrink-0" />
+                          <User className="w-3.5 h-3.5 text-primary-400 dark:text-primary-500 shrink-0" />
                           <span className="text-slate-500 dark:text-dark-text-muted">Name:</span>
                           <span className="text-slate-700 dark:text-dark-text font-medium">
                             {sig.certDetails.commonName}
@@ -379,7 +379,7 @@ export default function DigitalSignature() {
                         </div>
                         {sig.certDetails.organisation && (
                           <div className="flex items-center gap-1.5">
-                            <Building2 className="w-3.5 h-3.5 text-amber-400 dark:text-amber-500 shrink-0" />
+                            <Building2 className="w-3.5 h-3.5 text-primary-400 dark:text-primary-500 shrink-0" />
                             <span className="text-slate-500 dark:text-dark-text-muted">Org:</span>
                             <span className="text-slate-700 dark:text-dark-text">
                               {sig.certDetails.organisation}
@@ -388,7 +388,7 @@ export default function DigitalSignature() {
                         )}
                         {sig.certDetails.email && (
                           <div className="flex items-center gap-1.5">
-                            <Mail className="w-3.5 h-3.5 text-amber-400 dark:text-amber-500 shrink-0" />
+                            <Mail className="w-3.5 h-3.5 text-primary-400 dark:text-primary-500 shrink-0" />
                             <span className="text-slate-500 dark:text-dark-text-muted">Email:</span>
                             <span className="text-slate-700 dark:text-dark-text">
                               {sig.certDetails.email}
@@ -399,7 +399,7 @@ export default function DigitalSignature() {
                           sig.certDetails.state ||
                           sig.certDetails.locality) && (
                           <div className="flex items-center gap-1.5">
-                            <Globe className="w-3.5 h-3.5 text-amber-400 dark:text-amber-500 shrink-0" />
+                            <Globe className="w-3.5 h-3.5 text-primary-400 dark:text-primary-500 shrink-0" />
                             <span className="text-slate-500 dark:text-dark-text-muted">
                               Location:
                             </span>
@@ -415,7 +415,7 @@ export default function DigitalSignature() {
                           </div>
                         )}
                         <div className="flex items-center gap-1.5">
-                          <ShieldQuestion className="w-3.5 h-3.5 text-amber-400 dark:text-amber-500 shrink-0" />
+                          <ShieldQuestion className="w-3.5 h-3.5 text-primary-400 dark:text-primary-500 shrink-0" />
                           <span className="text-slate-500 dark:text-dark-text-muted">Issuer:</span>
                           <span className="text-slate-700 dark:text-dark-text">
                             {sig.certDetails.issuer}
@@ -424,14 +424,14 @@ export default function DigitalSignature() {
                               ` (${sig.certDetails.issuerOrganisation})`}
                           </span>
                           {sig.certDetails.isSelfSigned && (
-                            <span className="ml-1 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300">
+                            <span className="ml-1 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300">
                               Self-Signed
                             </span>
                           )}
                         </div>
                         {sig.certDetails.serialNumber && (
                           <div className="flex items-center gap-1.5">
-                            <Hash className="w-3.5 h-3.5 text-amber-400 dark:text-amber-500 shrink-0" />
+                            <Hash className="w-3.5 h-3.5 text-primary-400 dark:text-primary-500 shrink-0" />
                             <span className="text-slate-500 dark:text-dark-text-muted">
                               Serial:
                             </span>
@@ -441,7 +441,7 @@ export default function DigitalSignature() {
                           </div>
                         )}
                         <div className="flex items-center gap-1.5">
-                          <Calendar className="w-3.5 h-3.5 text-amber-400 dark:text-amber-500 shrink-0" />
+                          <Calendar className="w-3.5 h-3.5 text-primary-400 dark:text-primary-500 shrink-0" />
                           <span className="text-slate-500 dark:text-dark-text-muted">Valid:</span>
                           <span className="text-slate-700 dark:text-dark-text">
                             {sig.certDetails.validFrom} – {sig.certDetails.validTo}
@@ -449,7 +449,7 @@ export default function DigitalSignature() {
                         </div>
                         {sig.certDetails.signatureAlgorithm && (
                           <div className="flex items-center gap-1.5">
-                            <Lock className="w-3.5 h-3.5 text-amber-400 dark:text-amber-500 shrink-0" />
+                            <Lock className="w-3.5 h-3.5 text-primary-400 dark:text-primary-500 shrink-0" />
                             <span className="text-slate-500 dark:text-dark-text-muted">
                               Algorithm:
                             </span>
@@ -478,7 +478,7 @@ export default function DigitalSignature() {
           {/* Step 2: Certificate source */}
           <div className="space-y-4">
             <h3 className="text-sm font-semibold text-slate-700 dark:text-dark-text flex items-center gap-2">
-              <FileKey2 className="w-4 h-4 text-amber-500" />
+              <FileKey2 className="w-4 h-4 text-primary-500" />
               Certificate
             </h3>
 
@@ -499,7 +499,7 @@ export default function DigitalSignature() {
                 }}
                 className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors ${
                   certSource === "upload"
-                    ? "bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300"
+                    ? "bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300"
                     : "bg-white dark:bg-dark-surface text-slate-500 dark:text-dark-text-muted hover:bg-slate-50 dark:hover:bg-dark-surface-alt"
                 }`}
               >
@@ -522,7 +522,7 @@ export default function DigitalSignature() {
                 }}
                 className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium transition-colors border-l border-slate-200 dark:border-dark-border ${
                   certSource === "generate"
-                    ? "bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300"
+                    ? "bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300"
                     : "bg-white dark:bg-dark-surface text-slate-500 dark:text-dark-text-muted hover:bg-slate-50 dark:hover:bg-dark-surface-alt"
                 }`}
               >
@@ -564,7 +564,7 @@ export default function DigitalSignature() {
                       value={certPassword}
                       onChange={(e) => setCertPassword(e.target.value)}
                       placeholder="Enter certificate password"
-                      className="w-full px-3 py-2 pr-10 rounded-lg border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-bg text-sm text-slate-800 dark:text-dark-text placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-400/50 focus:border-transparent transition-all"
+                      className="w-full px-3 py-2 pr-10 rounded-lg border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-bg text-sm text-slate-800 dark:text-dark-text placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-400/50 focus:border-transparent transition-all"
                     />
                     <button
                       type="button"
@@ -582,7 +582,7 @@ export default function DigitalSignature() {
                     type="button"
                     onClick={handleLoadCert}
                     disabled={certLoading || !certPassword}
-                    className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     {certLoading ? (
                       <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -622,7 +622,7 @@ export default function DigitalSignature() {
                       value={commonName}
                       onChange={(e) => setCommonName(e.target.value)}
                       placeholder="e.g. Jane Doe"
-                      className="w-full pl-10 pr-3 py-2 rounded-lg border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-bg text-sm text-slate-800 dark:text-dark-text placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-400/50 focus:border-transparent transition-all"
+                      className="w-full pl-10 pr-3 py-2 rounded-lg border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-bg text-sm text-slate-800 dark:text-dark-text placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-400/50 focus:border-transparent transition-all"
                     />
                   </div>
                 </div>
@@ -632,7 +632,7 @@ export default function DigitalSignature() {
                     type="button"
                     onClick={handleGenerateCert}
                     disabled={certLoading || !commonName.trim()}
-                    className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     {certLoading ? (
                       <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -691,7 +691,7 @@ export default function DigitalSignature() {
           {certInfo && (
             <div className="space-y-4">
               <h3 className="text-sm font-semibold text-slate-700 dark:text-dark-text flex items-center gap-2">
-                <MessageSquareText className="w-4 h-4 text-amber-500" />
+                <MessageSquareText className="w-4 h-4 text-primary-500" />
                 Signature Details
                 <span className="text-xs font-normal text-slate-400 dark:text-dark-text-muted">
                   (optional)
@@ -704,7 +704,7 @@ export default function DigitalSignature() {
                     htmlFor="sig-reason"
                     className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-dark-text sm:w-28 shrink-0"
                   >
-                    <MessageSquareText className="w-4 h-4 text-amber-500" />
+                    <MessageSquareText className="w-4 h-4 text-primary-500" />
                     Reason
                   </label>
                   <input
@@ -713,7 +713,7 @@ export default function DigitalSignature() {
                     value={reason}
                     onChange={(e) => setReason(e.target.value)}
                     placeholder="e.g. I approve this document"
-                    className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-bg text-sm text-slate-800 dark:text-dark-text placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-400/50 focus:border-transparent transition-all"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-bg text-sm text-slate-800 dark:text-dark-text placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-400/50 focus:border-transparent transition-all"
                   />
                 </div>
                 <div className="p-4 flex flex-col sm:flex-row sm:items-center gap-2">
@@ -721,7 +721,7 @@ export default function DigitalSignature() {
                     htmlFor="sig-location"
                     className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-dark-text sm:w-28 shrink-0"
                   >
-                    <MapPin className="w-4 h-4 text-amber-500" />
+                    <MapPin className="w-4 h-4 text-primary-500" />
                     Location
                   </label>
                   <input
@@ -730,7 +730,7 @@ export default function DigitalSignature() {
                     value={location}
                     onChange={(e) => setLocation(e.target.value)}
                     placeholder="e.g. New York, NY"
-                    className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-bg text-sm text-slate-800 dark:text-dark-text placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-400/50 focus:border-transparent transition-all"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-bg text-sm text-slate-800 dark:text-dark-text placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-400/50 focus:border-transparent transition-all"
                   />
                 </div>
                 <div className="p-4 flex flex-col sm:flex-row sm:items-center gap-2">
@@ -738,7 +738,7 @@ export default function DigitalSignature() {
                     htmlFor="sig-contact"
                     className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-dark-text sm:w-28 shrink-0"
                   >
-                    <User className="w-4 h-4 text-amber-500" />
+                    <User className="w-4 h-4 text-primary-500" />
                     Contact
                   </label>
                   <input
@@ -747,7 +747,7 @@ export default function DigitalSignature() {
                     value={contactInfo}
                     onChange={(e) => setContactInfo(e.target.value)}
                     placeholder="e.g. jane@example.com"
-                    className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-bg text-sm text-slate-800 dark:text-dark-text placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-400/50 focus:border-transparent transition-all"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-bg text-sm text-slate-800 dark:text-dark-text placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-400/50 focus:border-transparent transition-all"
                   />
                 </div>
               </div>
@@ -761,7 +761,6 @@ export default function DigitalSignature() {
             disabled={!canSign}
             label="Sign & Download PDF"
             processingLabel="Signing..."
-            color="bg-amber-600 hover:bg-amber-700"
           />
 
           {success && (

@@ -44,7 +44,7 @@ function InfoRow({
   return (
     <div className="flex flex-col sm:flex-row sm:items-center gap-1 py-3 px-4">
       <span className="text-sm font-medium text-slate-500 dark:text-dark-text-muted sm:w-40 shrink-0 flex items-center gap-1.5">
-        {Icon && <Icon className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400 shrink-0" />}
+        {Icon && <Icon className="w-3.5 h-3.5 text-primary-500 dark:text-primary-400 shrink-0" />}
         {label}
       </span>
       <span className="text-sm text-slate-800 dark:text-dark-text break-all">{value}</span>
@@ -72,14 +72,14 @@ export default function PdfInspector() {
         hint="Inspect version, page count, dimensions, metadata, and more"
       />
 
-      {pdf.loading && <LoadingSpinner color="border-amber-200 border-t-amber-600" />}
+      {pdf.loading && <LoadingSpinner />}
 
       {info && !pdf.loading && (
         <div className="space-y-4">
           {/* Document summary */}
           <div className="bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border divide-y divide-slate-100 dark:divide-dark-border">
             <div className="px-4 py-2.5 bg-slate-50 dark:bg-dark-surface-alt rounded-t-xl flex items-center gap-1.5">
-              <FileText className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
+              <FileText className="w-3.5 h-3.5 text-primary-500 dark:text-primary-400" />
               <p className="text-xs font-semibold text-slate-500 dark:text-dark-text-muted uppercase tracking-wide">
                 Document
               </p>
@@ -107,7 +107,7 @@ export default function PdfInspector() {
           {(info.title || info.author || info.subject || info.creator || info.producer) && (
             <div className="bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border divide-y divide-slate-100 dark:divide-dark-border">
               <div className="px-4 py-2.5 bg-slate-50 dark:bg-dark-surface-alt rounded-t-xl flex items-center gap-1.5">
-                <Tag className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
+                <Tag className="w-3.5 h-3.5 text-primary-500 dark:text-primary-400" />
                 <p className="text-xs font-semibold text-slate-500 dark:text-dark-text-muted uppercase tracking-wide">
                   Metadata
                 </p>
@@ -124,7 +124,7 @@ export default function PdfInspector() {
           {info.pages.length > 0 && (
             <div className="bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border overflow-hidden">
               <div className="px-4 py-2.5 bg-slate-50 dark:bg-dark-surface-alt flex items-center gap-1.5">
-                <Ruler className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
+                <Ruler className="w-3.5 h-3.5 text-primary-500 dark:text-primary-400" />
                 <p className="text-xs font-semibold text-slate-500 dark:text-dark-text-muted uppercase tracking-wide">
                   Page Dimensions
                 </p>
@@ -133,7 +133,7 @@ export default function PdfInspector() {
                 {info.pages.map((dim, i) => (
                   <div key={i} className="flex items-center justify-between px-4 py-2.5">
                     <span className="text-sm text-slate-500 dark:text-dark-text-muted flex items-center gap-1.5">
-                      <FileText className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400 shrink-0" />
+                      <FileText className="w-3.5 h-3.5 text-primary-500 dark:text-primary-400 shrink-0" />
                       Page {i + 1}
                     </span>
                     <span className="text-sm text-slate-800 dark:text-dark-text font-mono">
