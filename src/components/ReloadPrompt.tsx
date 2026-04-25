@@ -3,6 +3,7 @@ import { useCallback, useEffect } from "react";
 import { useRegisterSW } from "virtual:pwa-register/react";
 
 const UPDATE_CHECK_INTERVAL_MS = 10 * 60 * 1000; // Check every 10 minutes
+const RELOAD_FALLBACK_MS = 1500;
 
 export function ReloadPrompt() {
   const {
@@ -16,14 +17,21 @@ export function ReloadPrompt() {
       setInterval(async () => {
         if (registration.installing || !navigator) return;
         if ("connection" in navigator && !navigator.onLine) return;
-        const resp = await fetch(swUrl, {
-          cache: "no-store",
-          headers: { cache: "no-store" },
-        });
+        const resp = await fetch(swUrl, { cache: "no-store" });
         if (resp.status === 200) await registration.update();
       }, UPDATE_CHECK_INTERVAL_MS);
     },
   });
+
+  // workbox-window's reload-on-update relies on a `controlling` event firing
+  // with `isUpdate=true`; on the freshly-launched pdf.cloakyard.com origin a
+  // few users hit edge cases where that event never reaches the page (first
+  // SW on origin, aggressive edge caching of sw.js). Fall back to an explicit
+  // reload so the button is never a no-op.
+  const handleUpdate = useCallback(() => {
+    void updateServiceWorker(true);
+    setTimeout(() => window.location.reload(), RELOAD_FALLBACK_MS);
+  }, [updateServiceWorker]);
 
   const close = useCallback(() => {
     setOfflineReady(false);
@@ -56,7 +64,7 @@ export function ReloadPrompt() {
         {needRefresh && (
           <button
             type="button"
-            onClick={() => updateServiceWorker(true)}
+            onClick={handleUpdate}
             className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-semibold rounded-full bg-primary-600 hover:bg-primary-700 text-white transition-colors"
           >
             <RefreshCw className="w-3.5 h-3.5" />
