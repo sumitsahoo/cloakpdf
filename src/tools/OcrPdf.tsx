@@ -199,7 +199,7 @@ export default function OcrPdf() {
                       disabled={processing}
                       className={`px-3.5 py-1.5 rounded-full text-sm font-medium transition-all ${
                         language === lang.code
-                          ? "bg-violet-600 text-white shadow-sm"
+                          ? "bg-primary-600 text-white shadow-sm"
                           : "bg-slate-100 dark:bg-dark-bg text-slate-600 dark:text-dark-text-muted border border-slate-200 dark:border-dark-border hover:bg-slate-200 dark:hover:bg-dark-border"
                       } disabled:opacity-50 disabled:cursor-not-allowed`}
                     >
@@ -220,7 +220,7 @@ export default function OcrPdf() {
                   </div>
                   <div className="w-full bg-slate-200 dark:bg-dark-border rounded-full h-2.5 overflow-hidden">
                     <div
-                      className="bg-violet-600 h-full rounded-full transition-all duration-300"
+                      className="bg-primary-600 h-full rounded-full transition-all duration-300"
                       style={{ width: `${progressPercent}%` }}
                     />
                   </div>
@@ -230,7 +230,7 @@ export default function OcrPdf() {
               {/* Initializing spinner */}
               {processing && (!progress || progress.total === 0) && (
                 <div className="flex items-center gap-3 py-4">
-                  <div className="w-5 h-5 border-2 border-violet-200 border-t-violet-600 rounded-full animate-spin" />
+                  <div className="w-5 h-5 border-2 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
                   <span className="text-sm text-slate-600 dark:text-dark-text-muted">
                     {progressStatus || "Initializing OCR engine…"}
                   </span>
@@ -242,7 +242,6 @@ export default function OcrPdf() {
                 processing={processing}
                 label="Extract Text"
                 processingLabel="Extracting Text..."
-                color="bg-violet-600 hover:bg-violet-700"
               />
             </div>
           ) : (
@@ -356,7 +355,7 @@ export default function OcrPdf() {
                 <button
                   onClick={handleDownloadSearchablePdf}
                   disabled={creatingPdf}
-                  className="bg-violet-600 text-white py-3 px-4 rounded-xl font-medium hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
+                  className="bg-primary-600 text-white py-3 px-4 rounded-xl font-medium hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
                 >
                   {creatingPdf ? "Creating…" : "📄 Searchable PDF"}
                 </button>

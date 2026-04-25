@@ -9,8 +9,12 @@ import type { ReactNode } from "react";
  * - `error` (red) → {@link AlertBox} · universal, attention-grabbing.
  * - `warning` (amber) → this component with `accent="warning"` · universal,
  *   amber regardless of tool so the caution signal is preserved.
- * - `info` / `success` → this component with `accent="<tool category>"` ·
- *   themed so the banner harmonises with the surrounding page.
+ * - `info` / `success` → this component with `accent="primary"` (default).
+ *
+ * The legacy per-category accent values (`organise` / `transform` /
+ * `annotate` / `security`) are accepted for backwards compatibility but
+ * all resolve to `primary` — per-category coloring was retired in
+ * favour of a single, calmer accent.
  *
  * Title is optional — omit it for short single-line success/info messages,
  * include it for richer multi-line callouts that benefit from a headline.
@@ -22,47 +26,27 @@ interface InfoCalloutProps {
   icon: LucideIcon;
   /** Optional headline. Omit for short one-liner messages. */
   title?: string;
-  /** Tool category for theming, `warning` for universal amber, or `primary` (default). */
+  /** `warning` for universal amber, otherwise primary (default). */
   accent?: Accent;
   children: ReactNode;
 }
+
+const PRIMARY_STYLE = {
+  container: "bg-primary-50 dark:bg-primary-900/20 border-primary-200 dark:border-primary-800/60",
+  icon: "text-primary-600 dark:text-primary-400",
+  title: "text-primary-800 dark:text-primary-200",
+  body: "text-primary-700/90 dark:text-primary-300/90",
+};
 
 const accentStyles: Record<
   Accent,
   { container: string; icon: string; title: string; body: string }
 > = {
-  primary: {
-    container: "bg-primary-50 dark:bg-primary-900/20 border-primary-200 dark:border-primary-800/60",
-    icon: "text-primary-600 dark:text-primary-400",
-    title: "text-primary-800 dark:text-primary-200",
-    body: "text-primary-700/90 dark:text-primary-300/90",
-  },
-  organise: {
-    container: "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800/60",
-    icon: "text-blue-600 dark:text-blue-400",
-    title: "text-blue-800 dark:text-blue-200",
-    body: "text-blue-700/90 dark:text-blue-300/90",
-  },
-  transform: {
-    container: "bg-violet-50 dark:bg-violet-900/20 border-violet-200 dark:border-violet-800/60",
-    icon: "text-violet-600 dark:text-violet-400",
-    title: "text-violet-800 dark:text-violet-200",
-    body: "text-violet-700/90 dark:text-violet-300/90",
-  },
-  annotate: {
-    container: "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800/60",
-    icon: "text-emerald-600 dark:text-emerald-400",
-    title: "text-emerald-800 dark:text-emerald-200",
-    body: "text-emerald-700/90 dark:text-emerald-300/90",
-  },
-  security: {
-    container: "bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800/60",
-    icon: "text-amber-600 dark:text-amber-400",
-    title: "text-amber-800 dark:text-amber-200",
-    body: "text-amber-700/90 dark:text-amber-300/90",
-  },
-  // Visually identical to `security` — aliased so the universal-warning intent
-  // reads clearly in tool code (e.g. `accent="warning"`).
+  primary: PRIMARY_STYLE,
+  organise: PRIMARY_STYLE,
+  transform: PRIMARY_STYLE,
+  annotate: PRIMARY_STYLE,
+  security: PRIMARY_STYLE,
   warning: {
     container: "bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800/60",
     icon: "text-amber-600 dark:text-amber-400",

@@ -131,7 +131,6 @@ export default function GrayscalePdf() {
                 processing={task.processing}
                 label="Convert to Grayscale"
                 processingLabel="Converting… (this may take a moment)"
-                color="bg-violet-600 hover:bg-violet-700"
               />
             </div>
           ) : (
@@ -151,7 +150,6 @@ export default function GrayscalePdf() {
                 processing={false}
                 label="Download Grayscale PDF"
                 processingLabel=""
-                color="bg-violet-600 hover:bg-violet-700"
               />
             </div>
           )}

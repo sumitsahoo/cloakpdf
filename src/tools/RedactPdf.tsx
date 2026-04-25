@@ -265,7 +265,7 @@ export default function RedactPdf() {
       </div>
 
       {pdf.loading ? (
-        <LoadingSpinner color="border-amber-200 border-t-amber-600" />
+        <LoadingSpinner />
       ) : editingPage !== null ? (
         // ── Redact editor for a single page ──────────────────────────────────
         <div className="space-y-3">

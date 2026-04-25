@@ -16,10 +16,12 @@ import {
   PDFArray,
   PDFName,
   PDFNumber,
+  PDFRawStream,
   PDFString,
   PDFRef,
   PDFOperator,
   PDFOperatorNames,
+  decodePDFRawStream,
   rgb,
   degrees,
   StandardFonts,
@@ -1911,14 +1913,20 @@ export async function listPdfAttachments(file: File): Promise<PdfAttachment[]> {
     if (!(efObj instanceof PDFDict)) continue;
 
     const stream = efObj.lookup(PDFName.of("F"));
-    if (!stream || !("getContents" in stream)) continue;
+    if (!(stream instanceof PDFRawStream)) continue;
 
-    const data = (stream as unknown as { getContents(): Uint8Array }).getContents();
-    const streamDict = stream as unknown as PDFDict;
-    const paramsDict = streamDict.lookup?.(PDFName.of("Params"), PDFDict);
-    const sizeNum = paramsDict?.lookup(PDFName.of("Size"), PDFNumber);
+    // `getContents()` returns the raw, still-encoded bytes — embedded files
+    // are typically FlateDecode-compressed, so we must run the stream's
+    // filter chain to recover the original file bytes.
+    const data = decodePDFRawStream(stream).decode();
+    const streamDict = stream.dict;
+    // `Params` and `Subtype` are optional in the EmbeddedFile stream dict,
+    // so use `lookupMaybe` — the typed `lookup` overload throws when the
+    // key is absent.
+    const paramsDict = streamDict.lookupMaybe(PDFName.of("Params"), PDFDict);
+    const sizeNum = paramsDict?.lookupMaybe(PDFName.of("Size"), PDFNumber);
 
-    const subtypeObj = streamDict.lookup?.(PDFName.of("Subtype"), PDFName);
+    const subtypeObj = streamDict.lookupMaybe(PDFName.of("Subtype"), PDFName);
     const mimeType = subtypeObj
       ? subtypeObj.decodeText().replace(/^\//, "")
       : "application/octet-stream";

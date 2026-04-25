@@ -199,7 +199,7 @@ export default function FillPdfForm() {
           />
 
           {loading ? (
-            <LoadingSpinner color="border-emerald-200 border-t-emerald-600" />
+            <LoadingSpinner />
           ) : (
             <>
               {/* Page selector */}
@@ -238,7 +238,7 @@ export default function FillPdfForm() {
                               alt={`Page ${i + 1}`}
                             />
                             {count > 0 && (
-                              <span className="absolute top-0.5 right-0.5 bg-emerald-600 text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center leading-none">
+                              <span className="absolute top-0.5 right-0.5 bg-primary-600 text-white text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center leading-none">
                                 {count}
                               </span>
                             )}
@@ -404,7 +404,6 @@ export default function FillPdfForm() {
                     processing={processing}
                     label="Fill & Download PDF"
                     processingLabel="Filling…"
-                    color="bg-emerald-600 hover:bg-emerald-700"
                   />
                 </div>
               )}

@@ -125,7 +125,7 @@ export default function PdfToImage() {
           />
 
           {pdf.loading ? (
-            <LoadingSpinner color="border-violet-200 border-t-violet-600" />
+            <LoadingSpinner />
           ) : (
             <>
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
@@ -167,7 +167,7 @@ export default function PdfToImage() {
                           onClick={() => setFormat(f)}
                           className={`flex-1 rounded-lg py-1.5 px-3 text-sm transition-all duration-150 ${
                             format === f
-                              ? "font-semibold text-white bg-violet-600 shadow-sm"
+                              ? "font-semibold text-white bg-primary-600 shadow-sm"
                               : "font-medium text-slate-500 dark:text-dark-text-muted hover:text-slate-700 dark:hover:text-dark-text hover:bg-white/60 dark:hover:bg-dark-surface-alt"
                           }`}
                         >
@@ -189,7 +189,7 @@ export default function PdfToImage() {
                           onClick={() => setDpi(d)}
                           className={`flex-1 rounded-lg py-1.5 px-3 text-sm transition-all duration-150 ${
                             dpi === d
-                              ? "font-semibold text-white bg-violet-600 shadow-sm"
+                              ? "font-semibold text-white bg-primary-600 shadow-sm"
                               : "font-medium text-slate-500 dark:text-dark-text-muted hover:text-slate-700 dark:hover:text-dark-text hover:bg-white/60 dark:hover:bg-dark-surface-alt"
                           }`}
                         >
@@ -238,7 +238,6 @@ export default function PdfToImage() {
                     : `Export ${selectedPages.size} Images as ZIP`
                 }
                 processingLabel="Exporting…"
-                color="bg-violet-600 hover:bg-violet-700"
               />
             </>
           )}

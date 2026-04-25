@@ -196,7 +196,7 @@ export default function CropPages() {
           />
 
           {loading ? (
-            <LoadingSpinner color="border-violet-200 border-t-violet-600" />
+            <LoadingSpinner />
           ) : (
             <>
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
@@ -458,7 +458,6 @@ export default function CropPages() {
                       disabled={processing || !isValid}
                       label="Crop & Download"
                       processingLabel="Processing…"
-                      color="bg-violet-600 hover:bg-violet-700"
                     />
                     <button
                       type="button"

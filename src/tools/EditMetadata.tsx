@@ -179,7 +179,7 @@ export default function EditMetadata() {
 
           {pdf.loading ? (
             <div className="flex items-center justify-center py-12">
-              <LoadingSpinner color="border-amber-200 border-t-amber-600" />
+              <LoadingSpinner />
             </div>
           ) : metadata ? (
             <div className="space-y-4">
@@ -207,18 +207,18 @@ export default function EditMetadata() {
                   return (
                     <div
                       key={field.key}
-                      className={`p-4 flex flex-col sm:flex-row sm:items-center gap-2 transition-colors ${isFieldDirty ? "bg-amber-50/60 dark:bg-amber-900/10" : ""}`}
+                      className={`p-4 flex flex-col sm:flex-row sm:items-center gap-2 transition-colors ${isFieldDirty ? "bg-primary-50/60 dark:bg-primary-900/10" : ""}`}
                     >
                       <label
                         htmlFor={`meta-${field.key}`}
                         className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-dark-text sm:w-44 shrink-0"
                       >
                         <field.icon
-                          className={`w-4 h-4 transition-colors ${isFieldDirty ? "text-amber-500 dark:text-amber-400" : "text-amber-600 dark:text-amber-400"}`}
+                          className={`w-4 h-4 transition-colors ${isFieldDirty ? "text-primary-500 dark:text-primary-400" : "text-primary-600 dark:text-primary-400"}`}
                         />
                         {field.label}
                         {isFieldDirty && (
-                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 dark:bg-amber-400 ml-auto" />
+                          <span className="w-1.5 h-1.5 rounded-full bg-primary-500 dark:bg-primary-400 ml-auto" />
                         )}
                       </label>
                       {field.type === "datetime-local" ? (
@@ -248,7 +248,6 @@ export default function EditMetadata() {
                 disabled={!isDirty}
                 label="Save & Download PDF"
                 processingLabel="Saving..."
-                color="bg-amber-600 hover:bg-amber-700"
               />
 
               {saved && (

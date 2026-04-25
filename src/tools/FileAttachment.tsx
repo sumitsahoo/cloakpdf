@@ -37,6 +37,11 @@ export default function FileAttachment() {
   const task = useAsyncProcess();
   const processing = task.processing;
   const error = task.error;
+  // Pull the stable setter out of `task` — including the whole `task`
+  // object in deps would re-fire the effect on every render (the object
+  // is a fresh literal each time) and spin the tool in an infinite
+  // load → setState → re-render loop.
+  const { setError: setTaskError } = task;
 
   // Load existing attachments when a PDF is selected
   useEffect(() => {
@@ -46,12 +51,12 @@ export default function FileAttachment() {
 
     async function load() {
       setLoading(true);
-      task.setError(null);
+      setTaskError(null);
       try {
         const list = await listPdfAttachments(currentFile);
         if (!cancelled) setAttachments(list);
       } catch (e) {
-        if (!cancelled) task.setError(errorMessage(e, "Failed to read attachments."));
+        if (!cancelled) setTaskError(errorMessage(e, "Failed to read attachments."));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -61,7 +66,7 @@ export default function FileAttachment() {
     return () => {
       cancelled = true;
     };
-  }, [pdfFile, task]);
+  }, [pdfFile, setTaskError]);
 
   const handlePdfFile = useCallback(
     (files: File[]) => {
@@ -150,7 +155,7 @@ export default function FileAttachment() {
           />
 
           {loading ? (
-            <LoadingSpinner color="border-blue-200 border-t-blue-600" />
+            <LoadingSpinner />
           ) : (
             <div className="space-y-4">
               {/* Header with add button */}
@@ -160,7 +165,7 @@ export default function FileAttachment() {
                     ? "No attachments found"
                     : `${attachments.length} attachment${attachments.length > 1 ? "s" : ""}`}
                 </p>
-                <label className="inline-flex items-center gap-1.5 text-sm font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 cursor-pointer transition-colors">
+                <label className="inline-flex items-center gap-1.5 text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 cursor-pointer transition-colors">
                   <Plus className="w-4 h-4" />
                   Add files
                   <input
@@ -178,8 +183,8 @@ export default function FileAttachment() {
                 <div className="bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border divide-y divide-slate-100 dark:divide-dark-border">
                   {attachments.map((att, idx) => (
                     <div key={`${att.name}-${idx}`} className="p-4 flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center shrink-0">
-                        <Paperclip className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                      <div className="w-8 h-8 rounded-lg bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center shrink-0">
+                        <Paperclip className="w-4 h-4 text-primary-600 dark:text-primary-400" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-slate-700 dark:text-dark-text truncate">
@@ -231,7 +236,6 @@ export default function FileAttachment() {
                 processing={processing}
                 label="Download PDF"
                 processingLabel="Processing..."
-                color="bg-blue-600 hover:bg-blue-700"
               />
             </div>
           )}

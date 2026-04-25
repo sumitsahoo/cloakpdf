@@ -105,7 +105,6 @@ export default function RepairPdf() {
             processing={task.processing}
             label="Repair & Download PDF"
             processingLabel="Repairing..."
-            color="bg-violet-600 hover:bg-violet-700"
           />
 
           {done && (

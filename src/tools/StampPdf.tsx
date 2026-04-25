@@ -350,7 +350,7 @@ export default function StampPdf() {
                       onClick={() => setStampStyle(style)}
                       className={`flex-1 rounded-lg py-1.5 px-3 text-sm transition-all duration-150 ${
                         stampStyle === style
-                          ? "font-semibold text-white bg-emerald-600 shadow-sm"
+                          ? "font-semibold text-white bg-primary-600 shadow-sm"
                           : "font-medium text-slate-500 dark:text-dark-text-muted hover:text-slate-700 dark:hover:text-dark-text hover:bg-white/60 dark:hover:bg-dark-surface-alt"
                       }`}
                     >
@@ -524,10 +524,7 @@ export default function StampPdf() {
                       </div>
                       {loading ? (
                         <div className="flex items-center justify-center py-8">
-                          <LoadingSpinner
-                            size="sm"
-                            color="border-emerald-200 border-t-emerald-600"
-                          />
+                          <LoadingSpinner size="sm" />
                         </div>
                       ) : (
                         <div className="grid grid-cols-3 gap-2">
@@ -542,8 +539,8 @@ export default function StampPdf() {
                                 onClick={() => togglePage(i)}
                                 overlay={
                                   selectedPages.has(i) ? (
-                                    <div className="bg-emerald-600/20 inset-0 absolute flex items-center justify-center">
-                                      <div className="w-5 h-5 rounded-full bg-emerald-600 flex items-center justify-center shadow">
+                                    <div className="bg-primary-600/20 inset-0 absolute flex items-center justify-center">
+                                      <div className="w-5 h-5 rounded-full bg-primary-600 flex items-center justify-center shadow">
                                         <Check className="w-3 h-3 text-white" strokeWidth={3} />
                                       </div>
                                     </div>
@@ -567,7 +564,7 @@ export default function StampPdf() {
               </p>
               {loading ? (
                 <div className="aspect-3/4 bg-slate-100 dark:bg-dark-surface-alt rounded-lg flex items-center justify-center">
-                  <LoadingSpinner color="border-emerald-200 border-t-emerald-600" />
+                  <LoadingSpinner />
                 </div>
               ) : thumbnails[selectedPage] ? (
                 <div
@@ -665,7 +662,6 @@ export default function StampPdf() {
                 : `Apply "${selectedStamp.label}" Stamp & Download`
             }
             processingLabel="Applying..."
-            color="bg-emerald-600 hover:bg-emerald-700"
           />
         </>
       )}
