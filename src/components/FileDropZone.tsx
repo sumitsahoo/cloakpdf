@@ -129,8 +129,8 @@ export function FileDropZone({
         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400 focus-visible:ring-offset-2
         ${
           isDragOver
-            ? "border-primary-400 bg-primary-50/50 dark:bg-primary-900/30 scale-[1.005]"
-            : "border-slate-300 dark:border-dark-border hover:border-primary-300 hover:bg-slate-50 dark:hover:bg-dark-surface active:border-primary-300 active:bg-slate-50 dark:active:bg-dark-surface"
+            ? "border-primary-400 bg-primary-50/80 dark:bg-primary-900/40 scale-[1.005]"
+            : "border-slate-300 dark:border-dark-border bg-white/70 dark:bg-dark-surface/70 hover:border-primary-300 hover:bg-white/90 dark:hover:bg-dark-surface/90 active:border-primary-300 active:bg-white/90 dark:active:bg-dark-surface/90"
         }`}
     >
       {/* Cursor / touch spotlight glow */}
