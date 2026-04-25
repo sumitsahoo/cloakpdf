@@ -9,6 +9,7 @@
 
 import { ChevronLeft, ShieldCheck } from "lucide-react";
 import type { ReactNode } from "react";
+import { AuroraBackground } from "./AuroraBackground";
 
 declare const __APP_VERSION__: string;
 
@@ -38,15 +39,10 @@ function GithubMark({ className = "" }: { className?: string }) {
 export function Layout({ children, onHome, showBack, onPrivacy }: LayoutProps) {
   return (
     <div className="relative min-h-screen bg-linear-to-br from-slate-50 via-white to-primary-50/40 dark:from-dark-bg dark:via-dark-bg dark:to-dark-surface/60 flex flex-col">
-      {/* Aurora — morphing liquid-drop blobs. Six fixed divs each run
-          two uncorrelated loops (border-radius morph + transform drift)
-          so silhouettes feel organic. mix-blend-mode is themed in CSS. */}
-      <div aria-hidden="true" className="aurora-blob aurora-blob-1" />
-      <div aria-hidden="true" className="aurora-blob aurora-blob-2" />
-      <div aria-hidden="true" className="aurora-blob aurora-blob-3" />
-      <div aria-hidden="true" className="aurora-blob aurora-blob-4" />
-      <div aria-hidden="true" className="aurora-blob aurora-blob-5" />
-      <div aria-hidden="true" className="aurora-blob aurora-blob-6" />
+      {/* Aurora backdrop — self-contained component. mix-blend-mode is
+          themed via the surrounding `--aurora-blend` token (light:
+          multiply, dark: screen) defined in index.css. */}
+      <AuroraBackground />
 
       <header className="relative z-50 bg-white/85 dark:bg-dark-surface/85 backdrop-blur-md border-b border-slate-200/80 dark:border-dark-border sticky top-0 shadow-sm shadow-slate-100/50 dark:shadow-black/20">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center gap-3">
@@ -104,7 +100,15 @@ export function Layout({ children, onHome, showBack, onPrivacy }: LayoutProps) {
         {children}
       </main>
 
-      <footer className="relative z-10 border-t border-slate-200/60 dark:border-dark-border bg-[color-mix(in_oklab,white_55%,transparent)] dark:bg-[color-mix(in_oklab,var(--color-dark-surface)_55%,transparent)] backdrop-blur-sm">
+      {/* Footer bg bumped to ~92% opaque (was 55%) so the orange aurora
+          blob anchored at the bottom-left can't bleed through into iOS
+          Safari's bottom-toolbar tint sampling. `safe-area-inset-bottom`
+          extends the painted area into the home-indicator zone so the
+          toolbar always samples the footer's surface color. */}
+      <footer
+        className="relative z-10 border-t border-slate-200/60 dark:border-dark-border bg-[color-mix(in_oklab,white_92%,transparent)] dark:bg-[color-mix(in_oklab,var(--color-dark-surface)_92%,transparent)] backdrop-blur-md"
+        style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+      >
         <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-10 pb-7 sm:pt-12 sm:pb-8">
           {/* Top row: brand + privacy link */}
           <div className="flex flex-col sm:flex-row sm:items-start gap-6 sm:gap-10">
