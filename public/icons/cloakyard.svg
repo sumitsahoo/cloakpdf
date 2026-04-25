@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg width="100%" height="100%" viewBox="0 0 512 512" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+    <g transform="matrix(10.666667,0,0,10.666667,0,0)">
+        <path d="M24,3L41,10L41,25C41,36 33,42.5 24,45.5C15,42.5 7,36 7,25L7,10L24,3Z" style="fill:url(#_Linear1);fill-rule:nonzero;"/>
+    </g>
+    <g transform="matrix(10.666667,0,0,10.666667,0,0)">
+        <path d="M18.5,17.5L18.5,15.5C18.5,13.167 20.333,12 24,12C27.667,12 29.5,13.167 29.5,15.5L29.5,17.5L27.3,17.5L27.3,15.8C27.3,14.733 26.2,14.2 24,14.2C21.8,14.2 20.7,14.733 20.7,15.8L20.7,17.5L18.5,17.5Z" style="fill:white;fill-opacity:0.95;fill-rule:nonzero;"/>
+    </g>
+    <g transform="matrix(10.666667,0,0,10.666667,0,0)">
+        <rect x="12" y="17.5" width="24" height="6.5" style="fill:white;fill-opacity:0.95;fill-rule:nonzero;"/>
+    </g>
+    <g transform="matrix(10.666667,0,0,10.666667,0,0)">
+        <rect x="12" y="17.5" width="24" height="2" style="fill:white;fill-rule:nonzero;"/>
+    </g>
+    <g transform="matrix(10.666667,0,0,10.666667,0,0)">
+        <path d="M12,24L36,24L36,34C36,35 35.5,35.5 34.5,35.5L13.5,35.5C12.5,35.5 12,35 12,34L12,24Z" style="fill:white;fill-opacity:0.88;fill-rule:nonzero;"/>
+    </g>
+    <g transform="matrix(10.666667,0,0,10.666667,0,0)">
+        <rect x="12" y="23.6" width="24" height="0.8" style="fill:rgb(29,78,216);fill-opacity:0.35;"/>
+    </g>
+    <g transform="matrix(10.666667,0,0,10.666667,0,2.133333)">
+        <path d="M26,22.256L26,25.344C26,25.375 25.975,25.4 25.944,25.4L22.056,25.4C22.025,25.4 22,25.375 22,25.344L22,22.256C22,22.225 22.025,22.2 22.056,22.2L25.944,22.2C25.975,22.2 26,22.225 26,22.256Z" style="fill:rgb(29,78,216);fill-opacity:0.55;"/>
+    </g>
+    <g transform="matrix(10.666667,0,0,10.666667,0,2)">
+        <circle cx="24" cy="23.8" r="0.5" style="fill:white;fill-opacity:0.9;"/>
+    </g>
+    <g transform="matrix(10.666667,0,0,10.666667,0,0)">
+        <rect x="16" y="28" width="16" height="0.8" style="fill:rgb(29,78,216);fill-opacity:0.18;"/>
+    </g>
+    <defs>
+        <linearGradient id="_Linear1" x1="0" y1="0" x2="1" y2="0" gradientUnits="userSpaceOnUse" gradientTransform="matrix(0,42.5,-42.5,0,7,3)"><stop offset="0" style="stop-color:rgb(59,130,246);stop-opacity:1"/><stop offset="1" style="stop-color:rgb(29,78,216);stop-opacity:1"/></linearGradient>
+    </defs>
+</svg>

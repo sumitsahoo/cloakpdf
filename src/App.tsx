@@ -44,34 +44,38 @@ import {
   FileImage,
   FileKey2,
   FileOutput,
-  ImageDown,
-  FileSearch,
   FilePlus,
+  FileSearch,
   FileText,
   FileX,
-  FolderOpen,
+  GitFork,
   GitMerge,
   Hash,
+  ImageDown,
   Images,
+  Laptop,
   Layers,
   LayoutDashboard,
   LayoutGrid,
   Lock,
+  MonitorSmartphone,
   Paperclip,
-  Pencil,
   PenTool,
   Repeat2,
   RotateCw,
+  Rocket,
   Scale,
   ScanText,
   Scissors,
   Search,
-  Shield,
+  ShieldCheck,
+  Sparkles,
   Stamp,
   Trash2,
+  UserRoundCheck,
+  WifiOff,
   Wrench,
   X,
-  Zap,
 } from "lucide-react";
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Layout } from "./components/Layout.tsx";
@@ -392,33 +396,21 @@ const categories = [
     key: "organise",
     label: "Organise & Edit",
     description: "Rearrange, combine, and manage your PDF pages",
-    icon: FolderOpen,
-    iconBg: "bg-blue-50 dark:bg-blue-900/30",
-    iconColor: "text-blue-600 dark:text-blue-400",
   },
   {
     key: "transform",
     label: "Transform & Convert",
     description: "Compress, convert, and extract content",
-    icon: Zap,
-    iconBg: "bg-violet-50 dark:bg-violet-900/30",
-    iconColor: "text-violet-600 dark:text-violet-400",
   },
   {
     key: "annotate",
     label: "Annotate & Sign",
     description: "Add watermarks, signatures, and overlays",
-    icon: Pencil,
-    iconBg: "bg-emerald-50 dark:bg-emerald-900/30",
-    iconColor: "text-emerald-600 dark:text-emerald-400",
   },
   {
     key: "security",
     label: "Security & Properties",
     description: "Protect your PDFs and manage metadata",
-    icon: Shield,
-    iconBg: "bg-amber-50 dark:bg-amber-900/30",
-    iconColor: "text-amber-600 dark:text-amber-400",
   },
 ];
 
@@ -481,26 +473,6 @@ function LoadingSpinner() {
   );
 }
 
-/** Per-category icon background and foreground colours (mirrors ToolCard theme). */
-const categoryAccent: Record<string, { iconBg: string; iconColor: string }> = {
-  organise: {
-    iconBg: "bg-blue-50 dark:bg-blue-900/30",
-    iconColor: "text-blue-600 dark:text-blue-400",
-  },
-  transform: {
-    iconBg: "bg-violet-50 dark:bg-violet-900/30",
-    iconColor: "text-violet-600 dark:text-violet-400",
-  },
-  annotate: {
-    iconBg: "bg-emerald-50 dark:bg-emerald-900/30",
-    iconColor: "text-emerald-600 dark:text-emerald-400",
-  },
-  security: {
-    iconBg: "bg-amber-50 dark:bg-amber-900/30",
-    iconColor: "text-amber-600 dark:text-amber-400",
-  },
-};
-
 // ── ToolView ─────────────────────────────────────────────────────
 
 interface ToolViewProps {
@@ -515,18 +487,17 @@ interface ToolViewProps {
  * lazily-loaded component wrapped in a `Suspense` boundary.
  */
 function ToolView({ tool, Component }: ToolViewProps) {
-  const accent = categoryAccent[tool.category ?? ""] ?? categoryAccent.organise;
   const Icon = tool.icon;
   return (
     <div>
       <div className="flex items-center gap-4 mb-6">
-        <div
-          className={`w-12 h-12 ${accent.iconBg} rounded-xl flex items-center justify-center shrink-0`}
-        >
-          <Icon className={`w-6 h-6 ${accent.iconColor}`} />
+        <div className="w-12 h-12 bg-slate-100 dark:bg-dark-surface-alt rounded-xl flex items-center justify-center shrink-0">
+          <Icon className="w-6 h-6 text-slate-700 dark:text-dark-text" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-slate-800 dark:text-dark-text">{tool.title}</h1>
+          <h1 className="text-2xl font-semibold tracking-[-0.015em] text-slate-800 dark:text-dark-text">
+            {tool.title}
+          </h1>
           <p className="text-slate-500 dark:text-dark-text-muted mt-0.5">{tool.description}</p>
         </div>
       </div>
@@ -585,30 +556,34 @@ function HomeScreen({ onSelectTool }: HomeScreenProps) {
   return (
     <div>
       {/* ── Hero ────────────────────────────────────────── */}
-      <div className="text-center mb-10">
+      <section className="pt-6 sm:pt-10 md:pt-14 pb-8 sm:pb-10">
         <h1
-          className="text-3xl sm:text-4xl font-bold animate-gradient-text animate-fade-in-up mb-2 leading-tight"
+          className="text-center text-[34px] sm:text-[46px] md:text-[60px] lg:text-[64px] font-semibold text-slate-900 dark:text-dark-text tracking-[-0.03em] leading-[1.05] m-0 max-w-225 mx-auto animate-fade-in-up"
           style={{ animationDelay: "0ms" }}
         >
-          All-in-One PDF Tools That Respect Your Privacy
+          PDF tools that{" "}
+          <em className="font-serif italic font-normal text-primary-600 dark:text-primary-400">
+            stay on your device
+          </em>
+          .
         </h1>
+
         <p
-          className="text-base text-slate-500 dark:text-dark-text-muted max-w-2xl mx-auto animate-fade-in-up"
+          className="text-center text-slate-500 dark:text-dark-text-muted text-[15px] sm:text-[17px] md:text-[18px] leading-[1.55] max-w-160 mx-auto mt-5 sm:mt-6 animate-fade-in-up"
           style={{ animationDelay: "80ms" }}
         >
-          Edit, merge, sign, secure, and convert PDFs entirely in your browser. Your files never
-          leave your device.
+          Edit, merge, sign, secure, and convert PDFs entirely in your browser. No uploads, no
+          accounts, no tracking.
         </p>
-      </div>
+      </section>
 
       {/* ── Search Bar ──────────────────────────────────── */}
       <div
-        className="max-w-xl mx-auto mb-10 animate-fade-in-up"
+        className="max-w-xl mx-auto mb-12 sm:mb-14 animate-fade-in-up"
         style={{ animationDelay: "160ms" }}
       >
-        <div className="relative group search-focus-pulse">
-          {/* Search icon */}
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 dark:text-dark-text-muted group-focus-within:text-primary-500 transition-colors duration-200" />
+        <div className="relative group">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-slate-400 dark:text-dark-text-muted group-focus-within:text-primary-500 transition-colors duration-200" />
 
           <input
             ref={searchInputRef}
@@ -616,11 +591,10 @@ function HomeScreen({ onSelectTool }: HomeScreenProps) {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search tools…"
-            className="w-full pl-12 pr-24 py-3.5 rounded-2xl bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border text-slate-800 dark:text-dark-text placeholder-slate-400 dark:placeholder-dark-text-muted shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-400/50 focus:border-primary-300 dark:focus:border-primary-600 transition-all duration-200 text-base"
+            className="w-full pl-11 pr-24 py-3 rounded-xl bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border text-slate-800 dark:text-dark-text placeholder-slate-400 dark:placeholder-dark-text-muted shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-400/40 focus:border-primary-300 dark:focus:border-primary-600 transition-[border-color,box-shadow] duration-200 text-[15px]"
             aria-label="Search PDF tools"
           />
 
-          {/* Right side: clear button or keyboard shortcut hint */}
           <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
             {searchQuery ? (
               <button
@@ -642,7 +616,6 @@ function HomeScreen({ onSelectTool }: HomeScreenProps) {
           </div>
         </div>
 
-        {/* Result count while filtering */}
         {searchQuery && (
           <p className="text-center text-sm text-slate-400 dark:text-dark-text-muted mt-2 animate-fade-in-up">
             {filteredTools.length} {filteredTools.length === 1 ? "tool" : "tools"} found
@@ -665,7 +638,7 @@ function HomeScreen({ onSelectTool }: HomeScreenProps) {
           </p>
         </div>
       ) : (
-        <div className="space-y-10">
+        <div className="space-y-12 sm:space-y-14">
           {categories.map((cat, catIdx) => {
             const catTools = filteredTools.filter((t) => t.category === cat.key);
             if (catTools.length === 0) return null;
@@ -675,29 +648,16 @@ function HomeScreen({ onSelectTool }: HomeScreenProps) {
                 className="animate-fade-in-up"
                 style={{ animationDelay: `${catIdx * 80}ms` }}
               >
-                <div className="flex items-center gap-3 mb-4">
-                  <div
-                    className={`w-10 h-10 ${cat.iconBg} rounded-xl flex items-center justify-center shrink-0 animate-scale-in`}
-                    style={{ animationDelay: `${catIdx * 80}ms` }}
-                    aria-hidden="true"
-                  >
-                    <cat.icon className={`w-5 h-5 ${cat.iconColor}`} />
+                <div className="mb-5 sm:mb-6">
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-primary-600 dark:text-primary-400 mb-2">
+                    {cat.label}
+                    <span className="ml-2 text-slate-400 dark:text-dark-text-muted font-medium tracking-normal normal-case">
+                      · {catTools.length}
+                    </span>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <h2 className="text-lg font-semibold text-slate-800 dark:text-dark-text">
-                        {cat.label}
-                      </h2>
-                      <span
-                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${cat.iconBg} ${cat.iconColor}`}
-                      >
-                        {catTools.length}
-                      </span>
-                    </div>
-                    <p className="text-sm text-slate-400 dark:text-dark-text-muted">
-                      {cat.description}
-                    </p>
-                  </div>
+                  <h2 className="text-[22px] sm:text-[26px] font-semibold tracking-[-0.02em] leading-[1.2] text-slate-900 dark:text-dark-text m-0">
+                    {cat.description}.
+                  </h2>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {catTools.map((tool) => (
@@ -707,9 +667,191 @@ function HomeScreen({ onSelectTool }: HomeScreenProps) {
               </section>
             );
           })}
+
+          {/* ── Why CloakPDF — multi-colored feature grid ── */}
+          {!searchQuery && (
+            <section
+              className="pt-6 sm:pt-10 animate-fade-in-up"
+              style={{ animationDelay: `${categories.length * 80}ms` }}
+            >
+              <div className="text-center mb-8 sm:mb-12">
+                <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-primary-600 dark:text-primary-400 mb-2.5">
+                  Why CloakPDF
+                </div>
+                <h2 className="text-[24px] sm:text-[30px] md:text-[36px] font-semibold tracking-[-0.02em] leading-[1.15] text-slate-900 dark:text-dark-text m-0">
+                  Everything you need, nothing you don&rsquo;t.
+                </h2>
+                <p className="text-slate-500 dark:text-dark-text-muted text-[14px] sm:text-[15.5px] leading-[1.55] max-w-140 mx-auto mt-3">
+                  A modern PDF toolkit that respects your privacy — built for people who care about
+                  their data and their craft.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-7 sm:gap-y-8">
+                <FeatureItem
+                  icon={<UserRoundCheck className="w-5 h-5" />}
+                  iconBg="bg-[color-mix(in_oklab,#059669_14%,transparent)]"
+                  iconFg="text-[#059669] dark:text-[#34d399]"
+                  title="No sign-up"
+                  description="No accounts, no email, no passwords. Start using the moment the page loads."
+                />
+                <FeatureItem
+                  icon={<EyeOff className="w-5 h-5" />}
+                  iconBg="bg-[color-mix(in_oklab,#7c3aed_14%,transparent)]"
+                  iconFg="text-[#7c3aed] dark:text-[#a78bfa]"
+                  title="No tracking"
+                  description="Zero analytics, zero telemetry, zero third-party scripts. You stay invisible."
+                />
+                <FeatureItem
+                  icon={<ShieldCheck className="w-5 h-5" />}
+                  iconBg="bg-[color-mix(in_oklab,#16a34a_14%,transparent)]"
+                  iconFg="text-[#16a34a] dark:text-[#4ade80]"
+                  title="Local-first"
+                  description="Every byte stays in your browser. Nothing is ever uploaded to any server."
+                />
+                <FeatureItem
+                  icon={<WifiOff className="w-5 h-5" />}
+                  iconBg="bg-[color-mix(in_oklab,#ea580c_14%,transparent)]"
+                  iconFg="text-[#ea580c] dark:text-[#fb923c]"
+                  title="Works offline"
+                  description="Once cached, keep editing and exporting without a connection — flights, trains, anywhere."
+                />
+                <FeatureItem
+                  icon={<Rocket className="w-5 h-5" />}
+                  iconBg="bg-[color-mix(in_oklab,#8b5cf6_14%,transparent)]"
+                  iconFg="text-[#8b5cf6] dark:text-[#c4b5fd]"
+                  title="Installable as a PWA"
+                  description="Add CloakPDF to your home screen for a full-screen, app-like experience that launches in one tap."
+                />
+                <FeatureItem
+                  icon={<MonitorSmartphone className="w-5 h-5" />}
+                  iconBg="bg-[color-mix(in_oklab,#eab308_14%,transparent)]"
+                  iconFg="text-[#ca8a04] dark:text-[#facc15]"
+                  title="Mobile, tablet & desktop"
+                  description="Every tool adapts fluidly across screen sizes — edit on the go, finalise at your desk."
+                />
+                <FeatureItem
+                  icon={<Sparkles className="w-5 h-5" />}
+                  iconBg="bg-[color-mix(in_oklab,#db2777_14%,transparent)]"
+                  iconFg="text-[#db2777] dark:text-[#f472b6]"
+                  title="35+ PDF tools"
+                  description="Merge, split, sign, redact, OCR, compress, convert — one workspace for every PDF chore."
+                />
+                <FeatureItem
+                  icon={<Laptop className="w-5 h-5" />}
+                  iconBg="bg-[color-mix(in_oklab,#0891b2_14%,transparent)]"
+                  iconFg="text-[#0891b2] dark:text-[#67e8f9]"
+                  title="Light & dark mode"
+                  description="Thoughtful theming that follows your system preference automatically."
+                />
+                <FeatureItem
+                  icon={<GitFork className="w-5 h-5" />}
+                  iconBg="bg-[color-mix(in_oklab,#475569_14%,transparent)]"
+                  iconFg="text-[#475569] dark:text-[#cbd5e1]"
+                  title="Free & open source"
+                  description="MIT-licensed and on GitHub. Fork it, self-host it, or audit every byte — nothing is hidden."
+                />
+              </div>
+            </section>
+          )}
+
+          {/* ── How it works ──────────────────────────────── */}
+          {!searchQuery && (
+            <section
+              className="pt-2 sm:pt-4 animate-fade-in-up"
+              style={{ animationDelay: `${(categories.length + 1) * 80}ms` }}
+            >
+              <div className="border border-slate-200 dark:border-dark-border bg-white/70 dark:bg-dark-surface/70 backdrop-blur-sm rounded-2xl shadow-sm px-5 py-8 sm:px-10 sm:py-12">
+                <div className="text-center mb-8 sm:mb-10">
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-primary-600 dark:text-primary-400 mb-2.5">
+                    How it works
+                  </div>
+                  <h2 className="text-[22px] sm:text-[28px] md:text-[32px] font-semibold tracking-[-0.02em] leading-[1.2] text-slate-900 dark:text-dark-text m-0">
+                    From upload to download, in three steps.
+                  </h2>
+                </div>
+
+                <ol className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6 list-none p-0 m-0">
+                  <Step
+                    n={1}
+                    title="Pick a tool"
+                    description="Browse 35+ PDF utilities organised by what you want to do — all in one place."
+                  />
+                  <Step
+                    n={2}
+                    title="Drop your PDF"
+                    description="Files are processed entirely in your browser. Nothing ever leaves your device."
+                  />
+                  <Step
+                    n={3}
+                    title="Download the result"
+                    description="Polished output with no watermarks, no sign-ups, no waiting in a queue."
+                  />
+                </ol>
+              </div>
+            </section>
+          )}
         </div>
       )}
     </div>
+  );
+}
+
+// ── HomeScreen sub-components ────────────────────────────────────
+
+interface FeatureItemProps {
+  icon: React.ReactNode;
+  iconBg: string;
+  iconFg: string;
+  title: string;
+  description: string;
+}
+
+function FeatureItem({ icon, iconBg, iconFg, title, description }: FeatureItemProps) {
+  return (
+    <div className="flex items-start gap-3.5">
+      <span
+        className={`shrink-0 w-10 h-10 rounded-lg grid place-items-center ${iconBg} ${iconFg}`}
+        aria-hidden="true"
+      >
+        {icon}
+      </span>
+      <div className="min-w-0">
+        <div className="text-[14.5px] font-semibold tracking-[-0.005em] text-slate-800 dark:text-dark-text mb-1">
+          {title}
+        </div>
+        <div className="text-[13.5px] leading-[1.55] text-slate-500 dark:text-dark-text-muted">
+          {description}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+interface StepProps {
+  n: number;
+  title: string;
+  description: string;
+}
+
+function Step({ n, title, description }: StepProps) {
+  return (
+    <li className="flex items-start gap-4">
+      <span
+        className="shrink-0 w-9 h-9 rounded-full grid place-items-center font-serif italic text-[17px] font-semibold text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/40 border border-primary-100 dark:border-primary-800/60"
+        aria-hidden="true"
+      >
+        {n}
+      </span>
+      <div>
+        <div className="text-[15px] font-semibold tracking-[-0.005em] text-slate-800 dark:text-dark-text mb-1">
+          {title}
+        </div>
+        <div className="text-[13.5px] leading-[1.55] text-slate-500 dark:text-dark-text-muted">
+          {description}
+        </div>
+      </div>
+    </li>
   );
 }
 
@@ -759,51 +901,9 @@ export function App() {
 
   const ToolComponent = activeTool ? toolComponents[activeTool] : null;
 
-  /** Map category accent colours to the badge shape expected by Layout. */
-  const badgeAccent = useMemo(() => {
-    if (!activeMeta?.category) return undefined;
-    const cat = categories.find((c) => c.key === activeMeta.category);
-    if (!cat) return undefined;
-    const colorMap: Record<
-      string,
-      { bg: string; border: string; text: string; logoFilter?: string }
-    > = {
-      organise: {
-        bg: "bg-blue-50 dark:bg-blue-900/30",
-        border: "border-blue-200 dark:border-blue-700/60",
-        text: "text-blue-700 dark:text-blue-300",
-      },
-      transform: {
-        bg: "bg-violet-50 dark:bg-violet-900/30",
-        border: "border-violet-200 dark:border-violet-700/60",
-        text: "text-violet-700 dark:text-violet-300",
-        logoFilter: "hue-rotate(40deg)",
-      },
-      annotate: {
-        bg: "bg-emerald-50 dark:bg-emerald-900/30",
-        border: "border-emerald-200 dark:border-emerald-700/60",
-        text: "text-emerald-700 dark:text-emerald-300",
-        logoFilter: "hue-rotate(-70deg)",
-      },
-      security: {
-        bg: "bg-amber-50 dark:bg-amber-900/30",
-        border: "border-amber-200 dark:border-amber-700/60",
-        text: "text-amber-700 dark:text-amber-300",
-        logoFilter: "hue-rotate(-185deg) saturate(1.5)",
-      },
-    };
-    return colorMap[cat.key];
-  }, [activeMeta]);
-
   return (
     <>
-      <Layout
-        onHome={goHome}
-        showBack={!!activeTool || showPrivacy}
-        onPrivacy={handlePrivacy}
-        badgeAccent={badgeAccent}
-        activeCategory={activeMeta?.category}
-      >
+      <Layout onHome={goHome} showBack={!!activeTool || showPrivacy} onPrivacy={handlePrivacy}>
         {activeTool && ToolComponent && activeMeta ? (
           <ToolView tool={activeMeta} Component={ToolComponent} />
         ) : showPrivacy ? (
