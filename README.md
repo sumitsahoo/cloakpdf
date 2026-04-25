@@ -27,7 +27,7 @@
 
 ## ✨ Features
 
-CloakPDF offers **34 powerful PDF tools**, all running 100% client-side:
+CloakPDF offers **35 powerful PDF tools**, all running 100% client-side:
 
 ### 🗂️ Organise & Edit
 
