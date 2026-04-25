@@ -13,7 +13,7 @@
   "dependencies": {
     "@pdfme/pdf-lib": "^6.0.6",
     "jszip": "^3.10.1",
-    "lucide-react": "^1.8.0",
+    "lucide-react": "^1.11.0",
     "node-forge": "^1.4.0",
     "pdfjs-dist": "^5.6.205",
     "react": "^19.2.5",
@@ -22,24 +22,24 @@
     "workbox-window": "^7.4.0"
   },
   "devDependencies": {
-    "@tailwindcss/vite": "^4.2.2",
+    "@tailwindcss/vite": "^4.2.4",
     "@types/node-forge": "^1.3.14",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vite-pwa/assets-generator": "^1.0.2",
     "@vitejs/plugin-react": "^6.0.1",
-    "@voidzero-dev/vite-plus-core": "^0.1.18",
-    "tailwindcss": "^4.2.2",
+    "@voidzero-dev/vite-plus-core": "^0.1.19",
+    "tailwindcss": "^4.2.4",
     "typescript": "^6.0.3",
-    "vite": "npm:@voidzero-dev/vite-plus-core@^0.1.18",
+    "vite": "npm:@voidzero-dev/vite-plus-core@^0.1.19",
     "vite-plugin-pwa": "^1.2.0",
-    "vite-plus": "latest"
+    "vite-plus": "^0.1.19"
   },
   "packageManager": "pnpm@10.32.1",
   "pnpm": {
     "overrides": {
-      "vite": "npm:@voidzero-dev/vite-plus-core@latest",
-      "vitest": "npm:@voidzero-dev/vite-plus-test@latest",
+      "vite": "npm:@voidzero-dev/vite-plus-core@^0.1.19",
+      "vitest": "npm:@voidzero-dev/vite-plus-test@^0.1.19",
       "serialize-javascript": ">=7.0.3"
     }
   }
