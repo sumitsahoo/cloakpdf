@@ -210,50 +210,39 @@ const STYLESHEET = `
     aurora-breathe var(--breathe-dur, 12s) ease-in-out infinite var(--breathe-delay, 0s);
 }
 /* Mobile budget: shrink the blur (the heaviest GPU op) and drop the
-   two smallest blobs that mostly add density rather than silhouette. */
+   two smallest blobs that mostly add density rather than silhouette.
+
+   Mobile bottom boundary: on phones the floating iOS Safari URL bar
+   samples the page color directly behind it. To keep blobs from being
+   sampled, the aurora-root becomes a fixed clipping container that
+   stops short of the URL-bar zone, and blobs switch to position:
+   absolute so they're clipped at the container's bottom edge. The
+   blobs still animate through their full keyframe range -- they just
+   get clipped where they would have crossed into the bar's sample
+   area. No overlay, no fade, no color shift in the visible region. */
 @media (max-width: 640px) {
   .aurora-blob { filter: blur(36px); }
   .aurora-blob-mobile-hide { display: none; }
+  .aurora-root {
+    position: fixed;
+    /* Bottom inset = approximate iOS Safari URL bar height + home
+       indicator safe area. Tuned to the bar's collapsed/expanded
+       range so blobs don't graze the sample zone in either state. */
+    inset: 0 0 calc(72px + env(safe-area-inset-bottom, 0px)) 0;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .aurora-blob {
+    /* Inside the fixed clipping container; percentages now resolve
+       against the container, not the viewport. The shift is small
+       (only the bottom inset is removed from the height) so the
+       composition stays visually equivalent to desktop. */
+    position: absolute;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .aurora-blob { animation: none; }
-}
-/* iOS Safari URL-bar tint shield. The floating bottom URL bar in iOS
-   Safari samples the page color directly underneath it and saturation-
-   boosts it to tint the bar. Any aurora blob that animates through the
-   bottom strip (orange, purple, green all do at some keyframe) gets
-   amplified into a vivid bar tint. This shield is a fixed gradient
-   that fades the page background up over the bottom ~120px so Safari
-   samples a near-solid surface color regardless of where the blobs
-   currently are. Sits above blobs (z:1) but below all page content
-   (header z:50, main/footer z:10), so content stays crisp. Phone-only
-   because iPad/desktop Safari use theme-color, not page sampling. */
-.aurora-url-bar-shield { display: none; }
-@media (max-width: 640px) {
-  .aurora-url-bar-shield {
-    display: block;
-    position: fixed;
-    inset: auto 0 0 0;
-    height: calc(120px + env(safe-area-inset-bottom, 0px));
-    pointer-events: none;
-    z-index: 1;
-    background: linear-gradient(
-      to bottom,
-      rgb(255 255 255 / 0) 0%,
-      rgb(255 255 255 / 0.6) 50%,
-      rgb(255 255 255 / 0.95) 100%
-    );
-  }
-}
-@media (max-width: 640px) and (prefers-color-scheme: dark) {
-  .aurora-url-bar-shield {
-    background: linear-gradient(
-      to bottom,
-      rgb(15 23 42 / 0) 0%,
-      rgb(15 23 42 / 0.6) 50%,
-      rgb(15 23 42 / 0.95) 100%
-    );
-  }
 }
 `;
 
@@ -289,7 +278,6 @@ export function AuroraBackground({
           />
         );
       })}
-      <div className="aurora-url-bar-shield" />
     </div>
   );
 }
