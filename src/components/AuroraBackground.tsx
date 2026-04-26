@@ -66,24 +66,9 @@ interface Props {
  * for the perf budget. Negative animation-delays decorrelate the loops
  * so the composite never visibly repeats.
  * ──────────────────────────────────────────────────────────────── */
-interface BlobAnchor {
-  top?: string;
-  right?: string;
-  bottom?: string;
-  left?: string;
-}
-
 interface BlobConfig {
   size: string;
-  pos: BlobAnchor;
-  /**
-   * Optional mobile (<= 640px) position override. When set, REPLACES `pos`
-   * on small screens — fields not specified here resolve to `auto`, so a
-   * blob can flip from bottom-anchored to top-anchored without inheriting
-   * the desktop `bottom` value. Use this to keep an animated blob away
-   * from iOS Safari's bottom URL-bar color-sampling zone on phones.
-   */
-  posMobile?: BlobAnchor;
+  pos: { top?: string; right?: string; bottom?: string; left?: string };
   colorIndex: number;
   morph: string;
   flow: string;
@@ -124,17 +109,8 @@ const BLOBS: readonly BlobConfig[] = [
     hideMobile: true,
   },
   {
-    // Re-anchored to the top on mobile: the warm orange (#ea580c) bleeds
-    // into iOS Safari's floating URL-bar color-sampling zone when this
-    // blob sits bottom-anchored on phones (the +65vh down-translate plus
-    // 1.2x scale at the 25% keyframe sweep its bounding box through the
-    // bottom 80px of the viewport). Flipping the anchor on narrow screens
-    // keeps the same animation playing in the upper half of the viewport,
-    // so the blob is still part of the composition but never reaches the
-    // URL bar sample area.
     size: "clamp(300px, 46vw, 660px)",
     pos: { bottom: "-10%", left: "-8%" },
-    posMobile: { top: "-10%", left: "-8%" },
     colorIndex: 3,
     morph: "aurora-morph-b 19s ease-in-out infinite -2s",
     flow: "aurora-flow-a 54s linear infinite -28s",
@@ -221,13 +197,6 @@ const STYLESHEET = `
      explicit z-index >= 1 paints above; siblings with no z paint above
      by tree order (since the blobs render first in this component). */
   z-index: 0;
-  /* Anchor offsets come in as inline custom properties so a media query
-     can swap the mobile set in without fighting inline-style specificity.
-     Each blob sets only the sides it uses; the rest are 'auto'. */
-  top: var(--top, auto);
-  right: var(--right, auto);
-  bottom: var(--bottom, auto);
-  left: var(--left, auto);
   width: var(--w);
   height: var(--w);
   background: var(--bg);
@@ -241,22 +210,50 @@ const STYLESHEET = `
     aurora-breathe var(--breathe-dur, 12s) ease-in-out infinite var(--breathe-delay, 0s);
 }
 /* Mobile budget: shrink the blur (the heaviest GPU op) and drop the
-   two smallest blobs that mostly add density rather than silhouette.
-   Blobs that ship a posMobile config override their anchor offsets
-   here, so they can be re-anchored (e.g. bottom -> top) to dodge iOS
-   Safari's URL-bar color-sampling zone without disappearing entirely. */
+   two smallest blobs that mostly add density rather than silhouette. */
 @media (max-width: 640px) {
   .aurora-blob { filter: blur(36px); }
-  .aurora-blob {
-    top: var(--top-m, var(--top, auto));
-    right: var(--right-m, var(--right, auto));
-    bottom: var(--bottom-m, var(--bottom, auto));
-    left: var(--left-m, var(--left, auto));
-  }
   .aurora-blob-mobile-hide { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   .aurora-blob { animation: none; }
+}
+/* iOS Safari URL-bar tint shield. The floating bottom URL bar in iOS
+   Safari samples the page color directly underneath it and saturation-
+   boosts it to tint the bar. Any aurora blob that animates through the
+   bottom strip (orange, purple, green all do at some keyframe) gets
+   amplified into a vivid bar tint. This shield is a fixed gradient
+   that fades the page background up over the bottom ~120px so Safari
+   samples a near-solid surface color regardless of where the blobs
+   currently are. Sits above blobs (z:1) but below all page content
+   (header z:50, main/footer z:10), so content stays crisp. Phone-only
+   because iPad/desktop Safari use theme-color, not page sampling. */
+.aurora-url-bar-shield { display: none; }
+@media (max-width: 640px) {
+  .aurora-url-bar-shield {
+    display: block;
+    position: fixed;
+    inset: auto 0 0 0;
+    height: calc(120px + env(safe-area-inset-bottom, 0px));
+    pointer-events: none;
+    z-index: 1;
+    background: linear-gradient(
+      to bottom,
+      rgb(255 255 255 / 0) 0%,
+      rgb(255 255 255 / 0.6) 50%,
+      rgb(255 255 255 / 0.95) 100%
+    );
+  }
+}
+@media (max-width: 640px) and (prefers-color-scheme: dark) {
+  .aurora-url-bar-shield {
+    background: linear-gradient(
+      to bottom,
+      rgb(15 23 42 / 0) 0%,
+      rgb(15 23 42 / 0.6) 50%,
+      rgb(15 23 42 / 0.95) 100%
+    );
+  }
 }
 `;
 
@@ -275,20 +272,8 @@ export function AuroraBackground({
     <div aria-hidden="true" className={`aurora-root ${className ?? ""}`} style={rootStyle}>
       <style precedence="aurora-background">{STYLESHEET}</style>
       {BLOBS.map((b) => {
-        // When posMobile is set it REPLACES pos at <=640px — unspecified
-        // sides resolve to 'auto' (not the desktop value), so a blob can
-        // flip anchors (e.g. bottom -> top) without inheriting the
-        // opposite side from the desktop config.
-        const mobile = b.posMobile ?? b.pos;
         const blobStyle: CSSProperties = {
-          "--top": b.pos.top ?? "auto",
-          "--right": b.pos.right ?? "auto",
-          "--bottom": b.pos.bottom ?? "auto",
-          "--left": b.pos.left ?? "auto",
-          "--top-m": mobile.top ?? "auto",
-          "--right-m": mobile.right ?? "auto",
-          "--bottom-m": mobile.bottom ?? "auto",
-          "--left-m": mobile.left ?? "auto",
+          ...b.pos,
           "--w": b.size,
           "--bg": colors[b.colorIndex],
           "--morph": b.morph,
@@ -304,6 +289,7 @@ export function AuroraBackground({
           />
         );
       })}
+      <div className="aurora-url-bar-shield" />
     </div>
   );
 }
