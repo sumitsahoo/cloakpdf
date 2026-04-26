@@ -100,11 +100,13 @@ export function Layout({ children, onHome, showBack, onPrivacy }: LayoutProps) {
         {children}
       </main>
 
-      {/* Footer bg bumped to ~92% opaque (was 55%) so the orange aurora
-          blob anchored at the bottom-left can't bleed through into iOS
-          Safari's bottom-toolbar tint sampling. `safe-area-inset-bottom`
-          extends the painted area into the home-indicator zone so the
-          toolbar always samples the footer's surface color. */}
+      {/* Footer bg kept ~92% opaque so it reads as a solid surface over
+          the aurora when scrolled into view. iOS Safari URL-bar tint
+          sampling is handled inside AuroraBackground itself: on mobile,
+          the aurora-root is a fixed clipping container that stops above
+          the URL bar zone, so no blob ever paints into Safari's sample
+          area. The `safe-area-inset-bottom` padding here still extends
+          the footer's painted area into the home-indicator zone. */}
       <footer
         className="relative z-10 border-t border-slate-200/60 dark:border-dark-border bg-[color-mix(in_oklab,white_92%,transparent)] dark:bg-[color-mix(in_oklab,var(--color-dark-surface)_92%,transparent)] backdrop-blur-md"
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
