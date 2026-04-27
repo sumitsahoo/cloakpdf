@@ -124,7 +124,7 @@ export function ToolPickerModal({ onPick, onClose, alreadyAdded }: ToolPickerMod
 
   return (
     <div
-      className="fixed inset-0 z-200 flex items-end sm:items-center justify-center sm:px-4 md:px-6 sm:py-6 animate-fade-in bg-slate-900/30 dark:bg-black/50"
+      className="fixed inset-0 z-200 flex items-end sm:items-center justify-center sm:px-4 md:px-6 sm:py-6 animate-scale-in bg-slate-900/30 dark:bg-black/50"
       style={{
         // Inline style for backdrop-filter so we get the `-webkit-`
         // prefix automatically (Safari) and we don't depend on the
@@ -132,6 +132,12 @@ export function ToolPickerModal({ onPick, onClose, alreadyAdded }: ToolPickerMod
         // context surprises. 14px reads as a clear, modern blur.
         backdropFilter: "blur(14px)",
         WebkitBackdropFilter: "blur(14px)",
+        // The wrapper is also where the entrance animation lives. The
+        // sheet itself stays animation-free so the drag handler's
+        // inline `transform: translateY(...)` isn't overridden by an
+        // animation's `transform: scale(1)` end state — animations
+        // beat inline styles in the CSS cascade.
+        transformOrigin: "center bottom",
       }}
       role="presentation"
     >
@@ -150,7 +156,7 @@ export function ToolPickerModal({ onPick, onClose, alreadyAdded }: ToolPickerMod
         role="dialog"
         aria-modal="true"
         aria-label="Pick a tool"
-        className="relative flex flex-col w-full sm:w-[min(720px,100%)] lg:w-[min(820px,100%)] max-h-[92svh] sm:max-h-[min(720px,calc(100svh-64px))] overflow-hidden rounded-t-2xl sm:rounded-2xl border border-slate-200/80 dark:border-dark-border bg-white/85 dark:bg-dark-surface/85 backdrop-blur-xl shadow-2xl animate-scale-in"
+        className="relative flex flex-col w-full sm:w-[min(720px,100%)] lg:w-[min(820px,100%)] max-h-[92svh] sm:max-h-[min(720px,calc(100svh-64px))] overflow-hidden rounded-t-2xl sm:rounded-2xl border border-slate-200/80 dark:border-dark-border bg-white/85 dark:bg-dark-surface/85 backdrop-blur-xl shadow-2xl"
       >
         {/* Mobile drag-handle. The hit area is intentionally taller than
             the visible bar (py-3) so a finger doesn't have to land on
