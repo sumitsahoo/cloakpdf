@@ -711,8 +711,8 @@ function HomeScreen({ onSelectTool }: HomeScreenProps) {
                 />
                 <FeatureItem
                   icon={<WifiOff className="w-5 h-5" />}
-                  iconBg="bg-[color-mix(in_oklab,#ea580c_14%,transparent)]"
-                  iconFg="text-[#ea580c] dark:text-[#fb923c]"
+                  iconBg="bg-[color-mix(in_oklab,#0891b2_14%,transparent)]"
+                  iconFg="text-[#0891b2] dark:text-[#22d3ee]"
                   title="Works offline"
                   description="Once cached, keep editing and exporting without a connection — flights, trains, anywhere."
                 />

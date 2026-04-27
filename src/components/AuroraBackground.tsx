@@ -211,33 +211,34 @@ const STYLESHEET = `
 }
 /* Mobile budget: shrink the blur (the heaviest GPU op) and drop the
    two smallest blobs that mostly add density rather than silhouette.
-
-   Mobile bottom boundary: on phones the floating iOS Safari URL bar
-   samples the page color directly behind it. To keep blobs from being
-   sampled, the aurora-root becomes a fixed clipping container that
-   stops short of the URL-bar zone, and blobs switch to position:
-   absolute so they're clipped at the container's bottom edge. The
-   blobs still animate through their full keyframe range -- they just
-   get clipped where they would have crossed into the bar's sample
-   area. No overlay, no fade, no color shift in the visible region. */
+   Aurora-root is fixed-positioned with overflow:hidden, and a vertical
+   alpha mask fades the blobs to fully transparent across the URL-bar
+   sample zone -- no blob colour reaches iOS Safari's bottom bar. The
+   page-bg gradient (radials + cool slate base) is what the bar
+   actually samples. */
 @media (max-width: 640px) {
   .aurora-blob { filter: blur(36px); }
   .aurora-blob-mobile-hide { display: none; }
   .aurora-root {
     position: fixed;
-    /* Bottom inset = approximate iOS Safari URL bar height + home
-       indicator safe area. Tuned to the bar's collapsed/expanded
-       range so blobs don't graze the sample zone in either state. */
-    inset: 0 0 calc(72px + env(safe-area-inset-bottom, 0px)) 0;
+    inset: 0;
     overflow: hidden;
     pointer-events: none;
     z-index: 0;
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      black 0,
+      black calc(100% - 200px - env(safe-area-inset-bottom, 0px)),
+      transparent calc(100% - 72px - env(safe-area-inset-bottom, 0px))
+    );
+    mask-image: linear-gradient(
+      to bottom,
+      black 0,
+      black calc(100% - 200px - env(safe-area-inset-bottom, 0px)),
+      transparent calc(100% - 72px - env(safe-area-inset-bottom, 0px))
+    );
   }
   .aurora-blob {
-    /* Inside the fixed clipping container; percentages now resolve
-       against the container, not the viewport. The shift is small
-       (only the bottom inset is removed from the height) so the
-       composition stays visually equivalent to desktop. */
     position: absolute;
   }
 }

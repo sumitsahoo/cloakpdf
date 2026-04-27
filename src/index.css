@@ -59,6 +59,49 @@
 
 @custom-variant dark (@media (prefers-color-scheme: dark));
 
+/* Page backdrop -- matches CloakResume's --onboarding-bg pattern
+   exactly. Two faint blue radials over a cool-slate linear base; the
+   bottom-right radial sits where iOS Safari's URL bar samples page
+   colour, so a vivid icon scrolling into that zone mixes with the
+   blue underlay into a near-grey tint instead of saturating the bar
+   that colour. */
+:root {
+  --page-bg:
+    radial-gradient(ellipse at 20% 0%, rgba(37, 99, 235, 0.08), transparent 55%),
+    radial-gradient(ellipse at 80% 100%, rgba(37, 99, 235, 0.05), transparent 55%),
+    linear-gradient(180deg, #fafbfc 0%, #f1f5f9 100%);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --page-bg:
+      radial-gradient(ellipse at 20% 0%, rgba(59, 130, 246, 0.18), transparent 55%),
+      radial-gradient(ellipse at 80% 100%, rgba(37, 99, 235, 0.1), transparent 55%),
+      linear-gradient(180deg, #0f172a 0%, #060912 100%);
+  }
+}
+
+/* Root stack heights and base background. Mirrors CloakResume's
+   index.css: html/body/#app are sized to 100% of their parent so
+   100svh on the layout wrapper resolves cleanly, and body carries a
+   solid colour so any area iOS Safari samples below the React tree
+   (e.g. when the URL bar collapses and reveals more height than the
+   wrapper covers) shows the same slate as the wrapper bottom -- no
+   bare-white strip. */
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+  background: #f1f5f9;
+}
+@media (prefers-color-scheme: dark) {
+  html,
+  body,
+  #app {
+    background: #060912;
+  }
+}
+
 body {
   font-family:
     "Inter",
