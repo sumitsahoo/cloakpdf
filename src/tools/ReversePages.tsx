@@ -16,7 +16,8 @@ import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { useAsyncProcess } from "../hooks/useAsyncProcess.ts";
 import { usePdfFile } from "../hooks/usePdfFile.ts";
-import { downloadPdf, formatFileSize, pdfFilename } from "../utils/file-helpers.ts";
+import { useToolOutput } from "../hooks/useToolOutput.ts";
+import { formatFileSize } from "../utils/file-helpers.ts";
 import { reversePages } from "../utils/pdf-operations.ts";
 import { getPageCount, renderSpecificThumbnails, revokeThumbnails } from "../utils/pdf-renderer.ts";
 
@@ -53,6 +54,7 @@ export default function ReversePages() {
     },
   });
   const task = useAsyncProcess();
+  const output = useToolOutput();
 
   const handleReverse = useCallback(async () => {
     if (!pdf.file) return;
@@ -60,10 +62,10 @@ export default function ReversePages() {
     setDone(false);
     const ok = await task.run(async () => {
       const result = await reversePages(file);
-      downloadPdf(result, pdfFilename(file, "_reversed"));
+      output.deliver(result, "_reversed", file);
     }, "Failed to reverse pages. Please try again.");
     if (ok) setDone(true);
-  }, [pdf.file, task]);
+  }, [pdf.file, task, output]);
 
   const preview = pdf.data;
   const pageCount = preview?.pageCount ?? 0;
@@ -162,7 +164,13 @@ export default function ReversePages() {
             onClick={handleReverse}
             processing={task.processing}
             disabled={task.processing || pageCount < 2}
-            label="Reverse Pages & Download"
+            label={
+              output.inWorkflow
+                ? output.isLastStep
+                  ? "Reverse Pages & Download"
+                  : "Reverse & Continue"
+                : "Reverse Pages & Download"
+            }
             processingLabel="Reversing..."
           />
 

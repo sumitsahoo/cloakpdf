@@ -16,7 +16,8 @@ import { ProgressBar } from "../components/ProgressBar.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { useAsyncProcess } from "../hooks/useAsyncProcess.ts";
 import { usePdfFile } from "../hooks/usePdfFile.ts";
-import { downloadPdf, formatFileSize, pdfFilename } from "../utils/file-helpers.ts";
+import { useToolOutput } from "../hooks/useToolOutput.ts";
+import { formatFileSize } from "../utils/file-helpers.ts";
 import { grayscalePdf } from "../utils/pdf-operations.ts";
 import { PREVIEW_SCALE, renderPageThumbnail, revokeThumbnails } from "../utils/pdf-renderer.ts";
 
@@ -33,6 +34,7 @@ export default function GrayscalePdf() {
     },
   });
   const task = useAsyncProcess();
+  const output = useToolOutput();
 
   // Render first page thumbnail whenever a file is selected. Kept as a side
   // effect because the preview is best-effort and shouldn't block the main
@@ -61,16 +63,20 @@ export default function GrayscalePdf() {
     const file = pdf.file;
     const ok = await task.run(async () => {
       const data = await grayscalePdf(file, (current, total) => setProgress({ current, total }));
-      setResult(data);
+      if (output.inWorkflow) {
+        output.deliver(data, "_grayscale", file);
+      } else {
+        setResult(data);
+      }
     }, "Failed to convert PDF. Please try again.");
     void ok;
     setProgress(null);
-  }, [pdf.file, task]);
+  }, [pdf.file, task, output]);
 
   const handleDownload = useCallback(() => {
     if (!result || !pdf.file) return;
-    downloadPdf(result, pdfFilename(pdf.file, "_grayscale"));
-  }, [result, pdf.file]);
+    output.deliver(result, "_grayscale", pdf.file);
+  }, [result, pdf.file, output]);
 
   return (
     <div className="space-y-6">
