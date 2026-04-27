@@ -104,7 +104,22 @@ export function WorkflowsHome({ onCreate, onEdit, onRun }: WorkflowsHomeProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start gap-4 mb-2">
+      {/* Single hidden file input — both the header "Import" button and
+          the empty-state CTA trigger it via fileInputRef. */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="application/json,.json"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) handleImportFile(f);
+          e.target.value = "";
+        }}
+        className="hidden"
+        aria-label="Import workflow JSON"
+      />
+
+      <div className="flex items-start gap-4">
         <div className="w-12 h-12 bg-primary-50 dark:bg-primary-900/30 rounded-xl flex items-center justify-center shrink-0">
           <WorkflowIcon className="w-6 h-6 text-primary-600 dark:text-primary-400" />
         </div>
@@ -116,24 +131,36 @@ export function WorkflowsHome({ onCreate, onEdit, onRun }: WorkflowsHomeProps) {
             Chain tools together and run them on a single PDF in sequence.
           </p>
         </div>
+
+        {/* Header-right action cluster — same placement pattern as
+            FileInfoBar's "Change file" and ToolView's controls. Hidden
+            in the empty state because the empty hero owns those CTAs. */}
+        {workflows.length > 0 && (
+          <div className="hidden sm:flex shrink-0 items-center gap-2">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-dark-surface-alt hover:bg-slate-200 dark:hover:bg-dark-border text-slate-700 dark:text-dark-text text-[13px] font-medium transition-colors"
+            >
+              <Upload className="w-3.5 h-3.5" />
+              Import
+            </button>
+            <button
+              type="button"
+              onClick={handleExportAll}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-dark-surface-alt hover:bg-slate-200 dark:hover:bg-dark-border text-slate-700 dark:text-dark-text text-[13px] font-medium transition-colors"
+            >
+              <Download className="w-3.5 h-3.5" />
+              Export all
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Toolbar — import / export. Hidden in the empty state because
-          the empty hero already owns the visual focus. */}
+      {/* Mobile-only action row — the same Import / Export controls
+          appear here when the header is too narrow to fit them. */}
       {workflows.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="application/json,.json"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) handleImportFile(f);
-              e.target.value = "";
-            }}
-            className="hidden"
-            aria-label="Import workflow JSON"
-          />
+        <div className="sm:hidden flex items-center gap-2">
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
@@ -150,19 +177,22 @@ export function WorkflowsHome({ onCreate, onEdit, onRun }: WorkflowsHomeProps) {
             <Download className="w-3.5 h-3.5" />
             Export all
           </button>
-          {notice && (
-            <span
-              role="status"
-              className={`ml-auto text-[12.5px] font-medium ${
-                notice.kind === "ok"
-                  ? "text-emerald-600 dark:text-emerald-400"
-                  : "text-red-600 dark:text-red-400"
-              }`}
-            >
-              {notice.text}
-            </span>
-          )}
         </div>
+      )}
+
+      {/* Inline status — sits right where the toolbar was so the user's
+          eye lands on it after clicking Import. Auto-dismisses after 4s. */}
+      {notice && (
+        <p
+          role="status"
+          className={`text-[12.5px] font-medium ${
+            notice.kind === "ok"
+              ? "text-emerald-600 dark:text-emerald-400"
+              : "text-red-600 dark:text-red-400"
+          }`}
+        >
+          {notice.text}
+        </p>
       )}
 
       {workflows.length === 0 ? (
@@ -181,36 +211,6 @@ export function WorkflowsHome({ onCreate, onEdit, onRun }: WorkflowsHomeProps) {
             />
           ))}
         </div>
-      )}
-
-      {/* Hidden file input that EmptyState's "Import" button also drives.
-          Lives outside the toolbar branch so the empty state can use it. */}
-      {workflows.length === 0 && (
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="application/json,.json"
-          onChange={(e) => {
-            const f = e.target.files?.[0];
-            if (f) handleImportFile(f);
-            e.target.value = "";
-          }}
-          className="hidden"
-          aria-label="Import workflow JSON"
-        />
-      )}
-
-      {workflows.length === 0 && notice && (
-        <p
-          role="status"
-          className={`text-center text-[13px] font-medium ${
-            notice.kind === "ok"
-              ? "text-emerald-600 dark:text-emerald-400"
-              : "text-red-600 dark:text-red-400"
-          }`}
-        >
-          {notice.text}
-        </p>
       )}
     </div>
   );
