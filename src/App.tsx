@@ -1,458 +1,40 @@
 /**
  * Root application module.
  *
- * Exports the `App` component which manages which tool (if any) is
- * active and delegates rendering to either `HomeScreen` (categorised
- * tool grid with live search) or `ToolView` (the selected tool).
+ * Manages which view is active (home / tool / privacy / workflows-home /
+ * workflow-builder / workflow-runner) and delegates rendering to the
+ * matching child component.
  *
- * All tool components are lazy-loaded via `React.lazy` so that only
- * the code for the active tool is fetched from the server.
- *
- * Key architectural decisions for performance:
- *
- *  - **Component extraction** – `HomeScreen` and `ToolView` are
- *    defined at module level (not nested inside `App`), so React
- *    never recreates them and their identity stays stable across
- *    renders.
- *
- *  - **Isolated search state** – The search query lives exclusively
- *    inside `HomeScreen`, meaning typing never re-renders the `App`
- *    root or the `Layout` shell.  When the user navigates to a tool,
- *    `HomeScreen` unmounts and its state is discarded; returning to
- *    the home screen starts with a fresh (empty) search.
- *
- *  - **Stable callbacks** – `handleSelectTool` is wrapped in
- *    `useCallback` so that every `ToolCard` (which is `React.memo`'d)
- *    receives the same function reference and can bail out of
- *    re-renders.
- *
- *  - **Memoised metadata lookup** – `activeMeta` uses `useMemo` to
- *    avoid a redundant `Array.find` on every unrelated render.
+ * Tool metadata and lazy components live in `config/tool-registry.ts`
+ * so that workflow code can render any tool by id without pulling
+ * App.tsx into its dependency graph.
  */
 
 import {
-  AlignCenter,
-  Archive,
-  ArrowLeftRight,
-  ArrowUpDown,
-  BookMarked,
-  ClipboardList,
-  Contrast,
-  Copy,
-  Crop,
-  EyeOff,
-  FileImage,
-  FileKey2,
-  FileOutput,
-  FilePlus,
-  FileSearch,
-  FileText,
-  FileX,
+  ArrowRight,
   GitFork,
-  GitMerge,
-  Hash,
-  ImageDown,
-  Images,
   Laptop,
-  Layers,
-  LayoutDashboard,
-  LayoutGrid,
-  Lock,
   MonitorSmartphone,
-  Paperclip,
-  PenTool,
-  Repeat2,
-  RotateCw,
   Rocket,
-  Scale,
-  ScanText,
-  Scissors,
   Search,
   ShieldCheck,
   Sparkles,
-  Stamp,
-  Trash2,
   UserRoundCheck,
   WifiOff,
-  Wrench,
+  EyeOff,
+  Workflow as WorkflowIcon,
   X,
 } from "lucide-react";
-import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Layout } from "./components/Layout.tsx";
 import { PrivacyPolicy } from "./components/PrivacyPolicy.tsx";
 import { ReloadPrompt } from "./components/ReloadPrompt.tsx";
 import { ToolCard } from "./components/ToolCard.tsx";
+import { categories, findTool, findToolComponent, tools } from "./config/tool-registry.ts";
 import type { Tool, ToolId } from "./types.ts";
-
-// ── Lazy-loaded tool components (code-split per tool) ────────────
-
-const MergePdf = lazy(() => import("./tools/MergePdf.tsx"));
-const CompressPdf = lazy(() => import("./tools/CompressPdf.tsx"));
-const RotatePages = lazy(() => import("./tools/RotatePages.tsx"));
-const DeletePages = lazy(() => import("./tools/DeletePages.tsx"));
-const ReorderPages = lazy(() => import("./tools/ReorderPages.tsx"));
-const ImagesToPdf = lazy(() => import("./tools/ImagesToPdf.tsx"));
-const AddSignature = lazy(() => import("./tools/AddSignature.tsx"));
-const EditMetadata = lazy(() => import("./tools/EditMetadata.tsx"));
-const OcrPdf = lazy(() => import("./tools/OcrPdf.tsx"));
-const PdfPassword = lazy(() => import("./tools/PdfPassword.tsx"));
-const FlattenPdf = lazy(() => import("./tools/FlattenPdf.tsx"));
-const AddBlankPage = lazy(() => import("./tools/AddBlankPage.tsx"));
-const DuplicatePage = lazy(() => import("./tools/DuplicatePage.tsx"));
-const AddPageNumbers = lazy(() => import("./tools/AddPageNumbers.tsx"));
-const HeaderFooter = lazy(() => import("./tools/HeaderFooter.tsx"));
-const CropPages = lazy(() => import("./tools/CropPages.tsx"));
-const PdfToImage = lazy(() => import("./tools/PdfToImage.tsx"));
-const FillPdfForm = lazy(() => import("./tools/FillPdfForm.tsx"));
-const ExtractPages = lazy(() => import("./tools/ExtractPages.tsx"));
-const ReversePages = lazy(() => import("./tools/ReversePages.tsx"));
-const RedactPdf = lazy(() => import("./tools/RedactPdf.tsx"));
-const StampPdf = lazy(() => import("./tools/StampPdf.tsx"));
-const AddBookmarks = lazy(() => import("./tools/AddBookmarks.tsx"));
-const PdfInspector = lazy(() => import("./tools/PdfInspector.tsx"));
-const RepairPdf = lazy(() => import("./tools/RepairPdf.tsx"));
-const NupPages = lazy(() => import("./tools/NupPages.tsx"));
-const RemoveBlankPages = lazy(() => import("./tools/RemoveBlankPages.tsx"));
-const BatesNumbering = lazy(() => import("./tools/BatesNumbering.tsx"));
-const ContactSheet = lazy(() => import("./tools/ContactSheet.tsx"));
-const GrayscalePdf = lazy(() => import("./tools/GrayscalePdf.tsx"));
-const FileAttachment = lazy(() => import("./tools/FileAttachment.tsx"));
-const SplitPdf = lazy(() => import("./tools/SplitPdf.tsx"));
-const ExtractImages = lazy(() => import("./tools/ExtractImages.tsx"));
-const ComparePdf = lazy(() => import("./tools/ComparePdf.tsx"));
-const DigitalSignature = lazy(() => import("./tools/DigitalSignature.tsx"));
-
-// ── Tool metadata displayed on the home screen grid ──────────────
-// Tools within each category are ordered by importance / frequency of use.
-
-const tools: Tool[] = [
-  // ── Organise & Edit ──────────────────────────────────────
-  // Combine / Split / Extract are the most common operations
-  {
-    id: "merge",
-    title: "Merge PDFs",
-    description: "Combine multiple PDF files into one document",
-    icon: GitMerge,
-    category: "organise",
-  },
-  {
-    id: "split-pdf",
-    title: "Split PDF",
-    description: "Divide a PDF into multiple separate files at chosen pages",
-    icon: Scissors,
-    category: "organise",
-  },
-  {
-    id: "extract-pages",
-    title: "Extract Pages",
-    description: "Select specific pages and save them as a new PDF",
-    icon: FileOutput,
-    category: "organise",
-  },
-  // Page-level manipulation
-  {
-    id: "reorder",
-    title: "Reorder Pages",
-    description: "Drag and drop to rearrange page order",
-    icon: ArrowUpDown,
-    category: "organise",
-  },
-  {
-    id: "delete",
-    title: "Delete Pages",
-    description: "Remove unwanted pages from a PDF",
-    icon: Trash2,
-    category: "organise",
-  },
-  {
-    id: "rotate",
-    title: "Rotate Pages",
-    description: "Rotate individual pages in any direction",
-    icon: RotateCw,
-    category: "organise",
-  },
-  {
-    id: "reverse-pages",
-    title: "Reverse Pages",
-    description: "Flip the page order of a PDF in one click",
-    icon: Repeat2,
-    category: "organise",
-  },
-  // Add / duplicate pages
-  {
-    id: "add-blank-page",
-    title: "Add Blank Page",
-    description: "Insert a blank page at any position in the document",
-    icon: FilePlus,
-    category: "organise",
-  },
-  {
-    id: "duplicate-page",
-    title: "Duplicate Page",
-    description: "Copy a page and insert it at any position",
-    icon: Copy,
-    category: "organise",
-  },
-  {
-    id: "remove-blank-pages",
-    title: "Remove Blank Pages",
-    description: "Auto-detect and remove empty pages from a PDF",
-    icon: FileX,
-    category: "organise",
-  },
-  // Navigation & attachments
-  {
-    id: "add-bookmarks",
-    title: "Add Bookmarks",
-    description: "Add a clickable outline for quick in-document navigation",
-    icon: BookMarked,
-    category: "organise",
-  },
-  {
-    id: "file-attachment",
-    title: "File Attachments",
-    description: "View, add, extract, or remove files embedded in a PDF",
-    icon: Paperclip,
-    category: "organise",
-  },
-
-  // ── Transform & Convert ──────────────────────────────────
-  // Compression is the most common transform
-  {
-    id: "compress",
-    title: "Compress PDF",
-    description: "Reduce PDF file size for easier sharing",
-    icon: Archive,
-    category: "transform",
-  },
-  // Format conversions grouped together
-  {
-    id: "pdf-to-image",
-    title: "PDF to Image",
-    description: "Export pages as PNG or JPEG images",
-    icon: FileImage,
-    category: "transform",
-  },
-  {
-    id: "images-to-pdf",
-    title: "Images to PDF",
-    description: "Convert images into a PDF document",
-    icon: Images,
-    category: "transform",
-  },
-  {
-    id: "ocr",
-    title: "OCR PDF",
-    description: "Extract text from scanned PDFs using OCR",
-    icon: ScanText,
-    category: "transform",
-  },
-  {
-    id: "extract-images",
-    title: "Extract Images",
-    description: "Pull all embedded images from a PDF and download as PNG or ZIP",
-    icon: ImageDown,
-    category: "transform",
-  },
-  // Page-level transforms
-  {
-    id: "crop-pages",
-    title: "Crop Pages",
-    description: "Trim page margins by adjusting the visible area",
-    icon: Crop,
-    category: "transform",
-  },
-  {
-    id: "flatten",
-    title: "Flatten PDF",
-    description: "Remove form fields and annotations, making the PDF non-editable",
-    icon: Layers,
-    category: "transform",
-  },
-  {
-    id: "grayscale",
-    title: "Grayscale PDF",
-    description: "Convert all pages to grayscale, removing all colour information",
-    icon: Contrast,
-    category: "transform",
-  },
-  // Layout & printing
-  {
-    id: "nup-pages",
-    title: "N-up Pages",
-    description: "Arrange multiple pages onto a single sheet for compact printing",
-    icon: LayoutGrid,
-    category: "transform",
-  },
-  {
-    id: "contact-sheet",
-    title: "Contact Sheet",
-    description: "Render all pages as a thumbnail grid for quick visual review",
-    icon: LayoutDashboard,
-    category: "transform",
-  },
-  {
-    id: "repair-pdf",
-    title: "Repair PDF",
-    description: "Fix structural issues in corrupted or malformed PDFs",
-    icon: Wrench,
-    category: "transform",
-  },
-
-  // ── Annotate & Sign ──────────────────────────────────────
-  {
-    id: "signature",
-    title: "Add Signature",
-    description: "Draw or upload a custom signature image and place it on a page",
-    icon: PenTool,
-    category: "annotate",
-  },
-  {
-    id: "fill-pdf-form",
-    title: "Fill PDF Form",
-    description: "Fill interactive form fields in existing PDFs",
-    icon: ClipboardList,
-    category: "annotate",
-  },
-  {
-    id: "stamp-pdf",
-    title: "Stamp & Watermark",
-    description: "Apply pre-built stamps or custom text watermarks with configurable style",
-    icon: Stamp,
-    category: "annotate",
-  },
-  // Numbering & headers grouped together
-  {
-    id: "add-page-numbers",
-    title: "Add Page Numbers",
-    description: "Insert page numbers with custom position and format",
-    icon: Hash,
-    category: "annotate",
-  },
-  {
-    id: "header-footer",
-    title: "Header & Footer",
-    description: "Add repeating text at the top and/or bottom of every page",
-    icon: AlignCenter,
-    category: "annotate",
-  },
-  {
-    id: "bates-numbering",
-    title: "Bates Numbering",
-    description: "Stamp sequential identifiers for legal and compliance workflows",
-    icon: Scale,
-    category: "annotate",
-  },
-
-  // ── Security & Properties ────────────────────────────────
-  {
-    id: "pdf-password",
-    title: "PDF Password",
-    description: "Add or remove a password and control print, copy, and edit rights",
-    icon: Lock,
-    category: "security",
-  },
-  {
-    id: "redact-pdf",
-    title: "Redact PDF",
-    description: "Permanently black out sensitive text and images",
-    icon: EyeOff,
-    category: "security",
-  },
-  {
-    id: "metadata",
-    title: "Edit Metadata",
-    description: "View, edit, or redact PDF document properties for privacy",
-    icon: FileText,
-    category: "security",
-  },
-  {
-    id: "compare-pdf",
-    title: "Compare PDFs",
-    description: "Visual side-by-side diff of two PDFs with pixel-level change detection",
-    icon: ArrowLeftRight,
-    category: "security",
-  },
-  {
-    id: "digital-signature",
-    title: "Digital Signature",
-    description: "Sign PDFs with a cryptographic certificate for authenticity verification",
-    icon: FileKey2,
-    category: "security",
-  },
-  {
-    id: "pdf-inspector",
-    title: "PDF Inspector",
-    description: "View version, page dimensions, metadata, and encryption status",
-    icon: FileSearch,
-    category: "security",
-  },
-];
-
-// ── Category definitions for the home screen ─────────────────────
-
-const categories = [
-  {
-    key: "organise",
-    label: "Organise & Edit",
-    description: "Rearrange, combine, and manage your PDF pages",
-  },
-  {
-    key: "transform",
-    label: "Transform & Convert",
-    description: "Compress, convert, and extract content",
-  },
-  {
-    key: "annotate",
-    label: "Annotate & Sign",
-    description: "Add watermarks, signatures, and overlays",
-  },
-  {
-    key: "security",
-    label: "Security & Properties",
-    description: "Protect your PDFs and manage metadata",
-  },
-];
-
-// ── Map tool IDs → lazy-loaded components ────────────────────────
-
-const toolComponents: Record<string, React.LazyExoticComponent<React.ComponentType>> = {
-  merge: MergePdf,
-  compress: CompressPdf,
-  rotate: RotatePages,
-  delete: DeletePages,
-  reorder: ReorderPages,
-  "images-to-pdf": ImagesToPdf,
-  signature: AddSignature,
-  metadata: EditMetadata,
-  ocr: OcrPdf,
-  "pdf-password": PdfPassword,
-  flatten: FlattenPdf,
-  "add-blank-page": AddBlankPage,
-  "duplicate-page": DuplicatePage,
-  "add-page-numbers": AddPageNumbers,
-  "header-footer": HeaderFooter,
-  "crop-pages": CropPages,
-  "pdf-to-image": PdfToImage,
-  "fill-pdf-form": FillPdfForm,
-  "extract-pages": ExtractPages,
-  "reverse-pages": ReversePages,
-  "redact-pdf": RedactPdf,
-  "stamp-pdf": StampPdf,
-  "add-bookmarks": AddBookmarks,
-  "pdf-inspector": PdfInspector,
-  "repair-pdf": RepairPdf,
-  "nup-pages": NupPages,
-  "remove-blank-pages": RemoveBlankPages,
-  "bates-numbering": BatesNumbering,
-  "contact-sheet": ContactSheet,
-  grayscale: GrayscalePdf,
-  "file-attachment": FileAttachment,
-  "split-pdf": SplitPdf,
-  "extract-images": ExtractImages,
-  "compare-pdf": ComparePdf,
-  "digital-signature": DigitalSignature,
-};
+import { WorkflowBuilder } from "./workflow/WorkflowBuilder.tsx";
+import { WorkflowRunner } from "./workflow/WorkflowRunner.tsx";
+import { WorkflowsHome } from "./workflow/WorkflowsHome.tsx";
 
 // ── Platform detection (module-level, computed once) ──────────────
 
@@ -513,18 +95,21 @@ function ToolView({ tool, Component }: ToolViewProps) {
 interface HomeScreenProps {
   /** Stable callback invoked with a tool ID when the user picks a tool. */
   onSelectTool: (id: ToolId) => void;
+  /** Open the workflows landing page. */
+  onOpenWorkflows: () => void;
 }
 
 /**
- * Landing page showing the hero headline, a live-search bar with
- * ⌘K / Ctrl+K shortcut, and a categorised grid of tool cards.
+ * Landing page showing the hero headline, the workflow hero card, a
+ * live-search bar with ⌘K / Ctrl+K shortcut, and a categorised grid
+ * of tool cards.
  *
  * Search state is local to this component so that typing never
  * re-renders the parent `App` or the `Layout` shell. When the user
  * navigates to a tool this component unmounts, naturally discarding
  * the query; returning to the home screen starts with a fresh search.
  */
-function HomeScreen({ onSelectTool }: HomeScreenProps) {
+function HomeScreen({ onSelectTool, onOpenWorkflows }: HomeScreenProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -576,6 +161,16 @@ function HomeScreen({ onSelectTool }: HomeScreenProps) {
           accounts, no tracking.
         </p>
       </section>
+
+      {/* ── Workflow Hero Card ──────────────────────────── */}
+      {!searchQuery && (
+        <div
+          className="max-w-3xl mx-auto mb-8 sm:mb-10 animate-fade-in-up"
+          style={{ animationDelay: "120ms" }}
+        >
+          <WorkflowHeroCard onOpen={onOpenWorkflows} />
+        </div>
+      )}
 
       {/* ── Search Bar ──────────────────────────────────── */}
       <div
@@ -855,64 +450,180 @@ function Step({ n, title, description }: StepProps) {
   );
 }
 
+// ── WorkflowHeroCard ─────────────────────────────────────────────
+
+interface WorkflowHeroCardProps {
+  onOpen: () => void;
+}
+
+/**
+ * A single prominent card on the home screen that introduces the
+ * Workflows feature. Same design language as ToolCard: rounded-2xl,
+ * subtle border, hover lift; visually amplified with a primary-tinted
+ * gradient panel and an arrow CTA.
+ */
+function WorkflowHeroCard({ onOpen }: WorkflowHeroCardProps) {
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      className="group relative w-full overflow-hidden bg-gradient-to-br from-primary-50 via-white to-white dark:from-primary-900/30 dark:via-dark-surface dark:to-dark-surface border border-primary-200/70 dark:border-primary-800/60 rounded-2xl px-5 py-5 sm:px-6 sm:py-5 text-left cursor-pointer transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:border-primary-400 dark:hover:border-primary-600 hover:shadow-md flex items-center gap-4"
+    >
+      <span className="shrink-0 w-12 h-12 rounded-xl grid place-items-center bg-primary-100 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400 transition-[transform,background-color] duration-200 group-hover:-translate-y-px group-hover:scale-105">
+        <WorkflowIcon className="w-6 h-6" />
+      </span>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 mb-0.5">
+          <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-primary-700 dark:text-primary-300">
+            New
+          </span>
+          <span className="h-1 w-1 rounded-full bg-primary-400 dark:bg-primary-500" />
+          <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-dark-text-muted">
+            Workflows
+          </span>
+        </div>
+        <div className="text-[15px] sm:text-[16px] font-semibold tracking-[-0.005em] text-slate-800 dark:text-dark-text">
+          Chain tools together and run them in one go.
+        </div>
+        <div className="text-[12.5px] sm:text-[13px] text-slate-500 dark:text-dark-text-muted mt-0.5">
+          Save your favourite sequences as reusable workflows — clean, compress, and watermark in a
+          single click.
+        </div>
+      </div>
+      <ArrowRight className="hidden sm:block shrink-0 w-5 h-5 text-primary-600 dark:text-primary-400 transition-transform duration-200 group-hover:translate-x-0.5" />
+    </button>
+  );
+}
+
 // ═══════════════════════════════════════════════════════════════════
 //  Root component
 // ═══════════════════════════════════════════════════════════════════
 
 /**
+ * View state for the app — discriminated union so the active payload
+ * (active tool id, edited workflow id) lives next to the view tag.
+ *
+ * Kept here at module scope rather than as a `type View = ...` inside
+ * `App` so the union is easier to read in isolation.
+ */
+type View =
+  | { kind: "home" }
+  | { kind: "tool"; toolId: ToolId }
+  | { kind: "privacy" }
+  | { kind: "workflows-home" }
+  | { kind: "workflow-builder"; workflowId: string | null }
+  | { kind: "workflow-runner"; workflowId: string };
+
+/**
  * Root application component.
  *
- * Manages which tool (if any) is active and delegates rendering to
- * either `HomeScreen` or `ToolView`. Keeps its own state minimal so
- * that child-local state (e.g. search) doesn't bubble up unnecessarily.
+ * Manages which view is active and delegates rendering to the matching
+ * child component. Keeps its own state minimal so that child-local
+ * state (e.g. search) doesn't bubble up unnecessarily.
  */
 export function App() {
-  const [activeTool, setActiveTool] = useState<ToolId | null>(null);
-  const [showPrivacy, setShowPrivacy] = useState(false);
+  const [view, setView] = useState<View>({ kind: "home" });
 
-  /** Navigate back to the home screen (clears the active tool and privacy view). */
-  const goHome = useCallback(() => {
-    setActiveTool(null);
-    setShowPrivacy(false);
-  }, []);
+  const goHome = useCallback(() => setView({ kind: "home" }), []);
 
-  /** Stable callback shared by every `ToolCard` via `React.memo`. */
   const handleSelectTool = useCallback((id: ToolId) => {
-    setShowPrivacy(false);
-    setActiveTool(id);
+    setView({ kind: "tool", toolId: id });
   }, []);
 
   const handlePrivacy = useCallback(() => {
-    setActiveTool(null);
-    setShowPrivacy(true);
+    setView({ kind: "privacy" });
+  }, []);
+
+  const openWorkflowsHome = useCallback(() => {
+    setView({ kind: "workflows-home" });
+  }, []);
+
+  const openWorkflowBuilder = useCallback((workflowId: string | null) => {
+    setView({ kind: "workflow-builder", workflowId });
+  }, []);
+
+  const openWorkflowRunner = useCallback((workflowId: string) => {
+    setView({ kind: "workflow-runner", workflowId });
   }, []);
 
   /** Scroll to top whenever the view changes. */
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- activeTool and showPrivacy are intentional trigger deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- view is intentionally the trigger; identity changes per setView call
   useEffect(() => {
     window.scrollTo(0, 0);
-  }, [activeTool, showPrivacy]);
+  }, [view]);
 
-  /** Metadata for the active tool (memoised to avoid redundant lookups). */
-  const activeMeta = useMemo(
-    () => (activeTool ? (tools.find((t) => t.id === activeTool) ?? null) : null),
-    [activeTool],
-  );
-
-  const ToolComponent = activeTool ? toolComponents[activeTool] : null;
+  const showBack = view.kind !== "home";
 
   return (
     <>
-      <Layout onHome={goHome} showBack={!!activeTool || showPrivacy} onPrivacy={handlePrivacy}>
-        {activeTool && ToolComponent && activeMeta ? (
-          <ToolView tool={activeMeta} Component={ToolComponent} />
-        ) : showPrivacy ? (
-          <PrivacyPolicy />
-        ) : (
-          <HomeScreen onSelectTool={handleSelectTool} />
-        )}
+      <Layout onHome={goHome} showBack={showBack} onPrivacy={handlePrivacy}>
+        <ViewContent
+          view={view}
+          onSelectTool={handleSelectTool}
+          onOpenWorkflowsHome={openWorkflowsHome}
+          onOpenWorkflowBuilder={openWorkflowBuilder}
+          onOpenWorkflowRunner={openWorkflowRunner}
+          onGoHome={goHome}
+        />
       </Layout>
       <ReloadPrompt />
     </>
   );
+}
+
+interface ViewContentProps {
+  view: View;
+  onSelectTool: (id: ToolId) => void;
+  onOpenWorkflowsHome: () => void;
+  onOpenWorkflowBuilder: (workflowId: string | null) => void;
+  onOpenWorkflowRunner: (workflowId: string) => void;
+  onGoHome: () => void;
+}
+
+function ViewContent({
+  view,
+  onSelectTool,
+  onOpenWorkflowsHome,
+  onOpenWorkflowBuilder,
+  onOpenWorkflowRunner,
+  onGoHome,
+}: ViewContentProps) {
+  switch (view.kind) {
+    case "home":
+      return <HomeScreen onSelectTool={onSelectTool} onOpenWorkflows={onOpenWorkflowsHome} />;
+    case "tool": {
+      const meta = findTool(view.toolId);
+      const Component = findToolComponent(view.toolId);
+      if (!meta || !Component)
+        return <HomeScreen onSelectTool={onSelectTool} onOpenWorkflows={onOpenWorkflowsHome} />;
+      return <ToolView tool={meta} Component={Component} />;
+    }
+    case "privacy":
+      return <PrivacyPolicy />;
+    case "workflows-home":
+      return (
+        <WorkflowsHome
+          onCreate={() => onOpenWorkflowBuilder(null)}
+          onEdit={(id) => onOpenWorkflowBuilder(id)}
+          onRun={(id) => onOpenWorkflowRunner(id)}
+        />
+      );
+    case "workflow-builder":
+      return (
+        <WorkflowBuilder
+          workflowId={view.workflowId}
+          onCancel={onOpenWorkflowsHome}
+          onSaved={onOpenWorkflowsHome}
+        />
+      );
+    case "workflow-runner":
+      return <WorkflowRunner workflowId={view.workflowId} onExit={onOpenWorkflowsHome} />;
+    default: {
+      // Exhaustiveness check — TypeScript will flag missing cases.
+      const _exhaustive: never = view;
+      void _exhaustive;
+      void onGoHome;
+      return null;
+    }
+  }
 }

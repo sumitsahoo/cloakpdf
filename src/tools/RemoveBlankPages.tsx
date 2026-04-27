@@ -20,7 +20,8 @@ import { ThumbnailGrid } from "../components/ThumbnailGrid.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { useAsyncProcess } from "../hooks/useAsyncProcess.ts";
 import { usePdfFile } from "../hooks/usePdfFile.ts";
-import { downloadPdf, formatFileSize, pdfFilename } from "../utils/file-helpers.ts";
+import { useToolOutput } from "../hooks/useToolOutput.ts";
+import { formatFileSize } from "../utils/file-helpers.ts";
 import { deletePages } from "../utils/pdf-operations.ts";
 import { renderThumbnailsAndScores, revokeThumbnails } from "../utils/pdf-renderer.ts";
 
@@ -44,6 +45,7 @@ export default function RemoveBlankPages() {
     },
   });
   const task = useAsyncProcess();
+  const output = useToolOutput();
 
   const thumbnails = pdf.data?.thumbnails ?? [];
   const scores = pdf.data?.scores ?? [];
@@ -56,6 +58,20 @@ export default function RemoveBlankPages() {
       new Set(scores.map((s, i) => (s >= threshold ? i : -1)).filter((i) => i >= 0)),
     );
   }, [scores, threshold]);
+
+  // In workflow mode, if analysis finished and no blank pages were
+  // detected, auto-skip to the next step (req #4). Standalone keeps the
+  // existing "no blank pages detected" message — same UI, same words.
+  const [skipFired, setSkipFired] = useState(false);
+  useEffect(() => {
+    if (!output.inWorkflow) return;
+    if (pdf.loading || pageCount === 0) return;
+    if (skipFired) return;
+    if (selectedPages.size === 0) {
+      setSkipFired(true);
+      output.skip("No blank pages detected");
+    }
+  }, [output, pdf.loading, pageCount, selectedPages.size, skipFired]);
 
   const togglePage = useCallback((pageIndex: number) => {
     setSelectedPages((prev) => {
@@ -73,10 +89,10 @@ export default function RemoveBlankPages() {
     setDone(false);
     const ok = await task.run(async () => {
       const result = await deletePages(file, Array.from(selectedPages));
-      downloadPdf(result, pdfFilename(file, "_cleaned"));
+      output.deliver(result, "_cleaned", file);
     }, "Failed to remove pages. Please try again.");
     if (ok) setDone(true);
-  }, [pdf.file, selectedPages, pageCount, task]);
+  }, [pdf.file, selectedPages, pageCount, task, output]);
 
   return (
     <div className="space-y-6">

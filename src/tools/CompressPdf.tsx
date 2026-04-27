@@ -16,7 +16,8 @@ import { ProgressBar } from "../components/ProgressBar.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { useAsyncProcess } from "../hooks/useAsyncProcess.ts";
 import { usePdfFile } from "../hooks/usePdfFile.ts";
-import { downloadPdf, formatFileSize, pdfFilename } from "../utils/file-helpers.ts";
+import { useToolOutput } from "../hooks/useToolOutput.ts";
+import { formatFileSize } from "../utils/file-helpers.ts";
 import { compressPdf } from "../utils/pdf-operations.ts";
 
 export default function CompressPdf() {
@@ -32,6 +33,7 @@ export default function CompressPdf() {
     onReset: () => setResult(null),
   });
   const task = useAsyncProcess();
+  const output = useToolOutput();
   const processing = task.processing;
   const error = task.error;
 
@@ -43,16 +45,22 @@ export default function CompressPdf() {
       const data = await compressPdf(file, quality, (current, total) =>
         setProgress({ current, total }),
       );
-      setResult({ original: file.size, compressed: data.length, data });
+      // Workflow mode bypasses the savings panel — the user picked a
+      // quality preset, the result is the result, advance the runner.
+      if (output.inWorkflow) {
+        output.deliver(data, "_compressed", file);
+      } else {
+        setResult({ original: file.size, compressed: data.length, data });
+      }
     }, "Failed to compress PDF. Please try again.");
     void ok;
     setProgress(null);
-  }, [pdf.file, quality, task]);
+  }, [pdf.file, quality, task, output]);
 
   const handleDownload = useCallback(() => {
     if (!result || !pdf.file) return;
-    downloadPdf(result.data, pdfFilename(pdf.file, "_compressed"));
-  }, [result, pdf.file]);
+    output.deliver(result.data, "_compressed", pdf.file);
+  }, [result, pdf.file, output]);
 
   // Clamp to 0 so we never show negative savings when the output is larger
   const savings = result

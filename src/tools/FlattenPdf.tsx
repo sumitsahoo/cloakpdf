@@ -16,7 +16,8 @@ import { InfoCallout } from "../components/InfoCallout.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { useAsyncProcess } from "../hooks/useAsyncProcess.ts";
 import { usePdfFile } from "../hooks/usePdfFile.ts";
-import { downloadPdf, formatFileSize, pdfFilename } from "../utils/file-helpers.ts";
+import { useToolOutput } from "../hooks/useToolOutput.ts";
+import { formatFileSize } from "../utils/file-helpers.ts";
 import { flattenPdf } from "../utils/pdf-operations.ts";
 
 export default function FlattenPdf() {
@@ -24,19 +25,27 @@ export default function FlattenPdf() {
 
   const pdf = usePdfFile({ onReset: () => setResult(null) });
   const task = useAsyncProcess();
+  const output = useToolOutput();
 
   const handleFlatten = useCallback(async () => {
     if (!pdf.file) return;
     const file = pdf.file;
     await task.run(async () => {
-      setResult(await flattenPdf(file));
+      const data = await flattenPdf(file);
+      // In workflow mode, skip the success/download panel and forward
+      // straight to the next step — keeps the runner moving.
+      if (output.inWorkflow) {
+        output.deliver(data, "_flattened", file);
+      } else {
+        setResult(data);
+      }
     }, "Failed to flatten PDF. Please try again.");
-  }, [pdf.file, task]);
+  }, [pdf.file, task, output]);
 
   const handleDownload = useCallback(() => {
     if (!result || !pdf.file) return;
-    downloadPdf(result, pdfFilename(pdf.file, "_flattened"));
-  }, [result, pdf.file]);
+    output.deliver(result, "_flattened", pdf.file);
+  }, [result, pdf.file, output]);
 
   return (
     <div className="space-y-6">
