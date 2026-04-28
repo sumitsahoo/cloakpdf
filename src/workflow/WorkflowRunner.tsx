@@ -362,7 +362,7 @@ function FinalState({ originalFile, onRunAgain, onExit }: FinalStateProps) {
         <button
           type="button"
           onClick={onExit}
-          className="shrink-0 whitespace-nowrap w-full sm:w-auto sm:min-w-55 px-4 py-3 rounded-xl bg-slate-100 dark:bg-dark-surface-alt hover:bg-slate-200 dark:hover:bg-dark-border text-slate-700 dark:text-dark-text font-medium text-[14px] transition-colors flex items-center justify-center gap-1.5"
+          className="inline-flex items-center justify-center gap-1.5 w-full sm:w-auto sm:min-w-55 px-8 py-3 rounded-xl bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border hover:border-slate-300 dark:hover:border-dark-text-muted hover:bg-slate-50 dark:hover:bg-dark-surface-alt text-slate-700 dark:text-dark-text font-medium transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to workflows
