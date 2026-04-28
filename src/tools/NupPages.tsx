@@ -143,7 +143,7 @@ export default function NupPages() {
                 onClick={handleProcess}
                 processing={task.processing}
                 disabled={task.processing || pageCount === 0}
-                label={`Create ${selected.label} PDF`}
+                label={`Create ${selected.label} PDF & ${output.deliveryWord}`}
                 processingLabel="Processing..."
               />
 

@@ -135,7 +135,7 @@ export default function GrayscalePdf() {
               <ActionButton
                 onClick={handleConvert}
                 processing={task.processing}
-                label="Convert to Grayscale"
+                label={`Convert to Grayscale & ${output.deliveryWord}`}
                 processingLabel="Converting… (this may take a moment)"
               />
             </div>
