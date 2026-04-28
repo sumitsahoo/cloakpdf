@@ -458,7 +458,7 @@ function Step({ n, title, description }: StepProps) {
   return (
     <li className="flex items-start gap-4">
       <span
-        className="shrink-0 w-9 h-9 rounded-full grid place-items-center font-serif italic text-[17px] font-semibold text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/40 border border-primary-100 dark:border-primary-800/60"
+        className="shrink-0 w-9 h-9 rounded-full inline-flex items-center justify-center text-[15px] font-semibold leading-none tabular-nums text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/40 border border-primary-100 dark:border-primary-800/60"
         aria-hidden="true"
       >
         {n}
