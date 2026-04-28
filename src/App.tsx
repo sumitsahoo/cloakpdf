@@ -566,6 +566,9 @@ function WorkflowHeroCard({ onOpen }: WorkflowHeroCardProps) {
             <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-dark-text-muted">
               Workflows
             </span>
+            <span className="inline-flex items-center rounded-full border border-primary-200 dark:border-primary-700/60 bg-primary-50 dark:bg-primary-900/30 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-primary-600 dark:text-primary-400">
+              New
+            </span>
           </div>
           <h3 className="text-[15px] sm:text-[16px] font-semibold tracking-[-0.005em] text-slate-800 dark:text-dark-text">
             Chain tools together and run them in one go.
@@ -575,15 +578,10 @@ function WorkflowHeroCard({ onOpen }: WorkflowHeroCardProps) {
             single click. A few tools — multi-file or non-PDF — stay standalone.
           </p>
         </div>
-        <div className="shrink-0 flex flex-col items-end gap-3 self-stretch">
-          <span className="inline-flex items-center rounded-full border border-primary-200 dark:border-primary-700/60 bg-primary-50 dark:bg-primary-900/30 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-primary-600 dark:text-primary-400">
-            New
-          </span>
-          <ArrowRight
-            className="hidden sm:block mt-auto w-5 h-5 text-slate-400 dark:text-dark-text-muted transition-[transform,color] duration-200 group-hover:translate-x-0.5 group-hover:text-primary-600 dark:group-hover:text-primary-400 group-active:text-primary-600 dark:group-active:text-primary-400"
-            aria-hidden="true"
-          />
-        </div>
+        <ArrowRight
+          className="hidden sm:block shrink-0 self-end w-5 h-5 text-slate-400 dark:text-dark-text-muted transition-[transform,color] duration-200 group-hover:translate-x-0.5 group-hover:text-primary-600 dark:group-hover:text-primary-400 group-active:text-primary-600 dark:group-active:text-primary-400"
+          aria-hidden="true"
+        />
       </div>
     </button>
   );
