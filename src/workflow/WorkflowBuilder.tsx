@@ -201,27 +201,27 @@ export function WorkflowBuilder({ workflowId, onCancel, onSaved }: WorkflowBuild
         </div>
       </div>
 
-      <div className="flex flex-col-reverse sm:flex-row sm:items-center gap-3 pt-1">
-        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+      <div className="flex flex-col items-stretch gap-3 pt-1">
+        <div className="flex flex-col-reverse items-stretch sm:flex-row sm:items-center sm:justify-center gap-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="inline-flex items-center justify-center gap-1.5 w-full sm:w-auto sm:min-w-55 px-8 py-3 rounded-xl bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border hover:border-slate-300 dark:hover:border-dark-text-muted hover:bg-slate-50 dark:hover:bg-dark-surface-alt text-slate-700 dark:text-dark-text font-medium transition-colors"
+          >
+            Cancel
+          </button>
           <button
             type="button"
             onClick={handleSave}
             disabled={!canSave}
-            className="inline-flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium text-[14px] transition-colors"
+            className="inline-flex items-center justify-center gap-1.5 w-full sm:w-auto sm:min-w-55 px-8 py-3 rounded-xl bg-primary-600 hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium transition-colors"
           >
             <Check className="w-4 h-4" />
             Save workflow
           </button>
-          <button
-            type="button"
-            onClick={onCancel}
-            className="inline-flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-xl bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border hover:border-slate-300 dark:hover:border-dark-text-muted hover:bg-slate-50 dark:hover:bg-dark-surface-alt text-slate-700 dark:text-dark-text font-medium text-[14px] transition-colors"
-          >
-            Cancel
-          </button>
         </div>
         {missingHint && (
-          <p className="text-[12.5px] text-slate-500 dark:text-dark-text-muted sm:ml-1">
+          <p className="text-[12.5px] text-slate-500 dark:text-dark-text-muted text-center">
             {missingHint}
           </p>
         )}
