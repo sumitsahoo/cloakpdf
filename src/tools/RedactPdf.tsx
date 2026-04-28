@@ -237,7 +237,7 @@ export default function RedactPdf() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <p className="text-sm text-slate-600 dark:text-dark-text-muted break-all sm:break-normal">
+        <p className="text-sm text-slate-600 dark:text-dark-text-muted wrap-anywhere min-w-0 flex-1">
           <span className="font-medium">{pdf.file.name}</span> — {thumbnails.length} pages
           {totalRedactions > 0 && (
             <span className="text-red-600 dark:text-red-400 ml-2">
