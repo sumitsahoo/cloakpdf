@@ -557,16 +557,12 @@ function WorkflowHeroCard({ onOpen }: WorkflowHeroCardProps) {
         style={glowStyle}
       />
 
-      <div className="relative z-10 flex items-center gap-4">
+      <div className="relative z-10 flex items-start gap-4">
         <span className="shrink-0 w-11 h-11 rounded-xl grid place-items-center bg-slate-100 dark:bg-dark-surface-alt text-slate-700 dark:text-dark-text transition-[transform,background-color,color] duration-200 group-hover:-translate-y-px group-hover:scale-105 group-hover:bg-primary-50 dark:group-hover:bg-primary-900/30 group-hover:text-primary-600 dark:group-hover:text-primary-400 group-active:bg-primary-50 dark:group-active:bg-primary-900/30 group-active:text-primary-600 dark:group-active:text-primary-400">
           <WorkflowIcon className="w-5 h-5" />
         </span>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-0.5">
-            <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-primary-600 dark:text-primary-400">
-              New
-            </span>
-            <span className="h-1 w-1 rounded-full bg-slate-300 dark:bg-dark-border" />
             <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-dark-text-muted">
               Workflows
             </span>
@@ -579,10 +575,15 @@ function WorkflowHeroCard({ onOpen }: WorkflowHeroCardProps) {
             single click. A few tools — multi-file or non-PDF — stay standalone.
           </p>
         </div>
-        <ArrowRight
-          className="hidden sm:block shrink-0 w-5 h-5 text-slate-400 dark:text-dark-text-muted transition-[transform,color] duration-200 group-hover:translate-x-0.5 group-hover:text-primary-600 dark:group-hover:text-primary-400 group-active:text-primary-600 dark:group-active:text-primary-400"
-          aria-hidden="true"
-        />
+        <div className="shrink-0 flex flex-col items-end gap-3 self-stretch">
+          <span className="inline-flex items-center rounded-full border border-primary-200 dark:border-primary-700/60 bg-primary-50 dark:bg-primary-900/30 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-primary-600 dark:text-primary-400">
+            New
+          </span>
+          <ArrowRight
+            className="hidden sm:block mt-auto w-5 h-5 text-slate-400 dark:text-dark-text-muted transition-[transform,color] duration-200 group-hover:translate-x-0.5 group-hover:text-primary-600 dark:group-hover:text-primary-400 group-active:text-primary-600 dark:group-active:text-primary-400"
+            aria-hidden="true"
+          />
+        </div>
       </div>
     </button>
   );
