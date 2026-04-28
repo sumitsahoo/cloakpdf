@@ -15,6 +15,7 @@
 import {
   Download,
   FileJson,
+  Info,
   Pencil,
   Play,
   Plus,
@@ -24,6 +25,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ConfirmDialog } from "../components/ConfirmDialog.tsx";
+import { InfoCallout } from "../components/InfoCallout.tsx";
 import { findTool } from "../config/tool-registry.ts";
 import { downloadBlob } from "../utils/file-helpers.ts";
 import {
@@ -133,6 +135,13 @@ export function WorkflowsHome({ onCreate, onEdit, onRun }: WorkflowsHomeProps) {
           </p>
         </div>
       </div>
+
+      <InfoCallout icon={Info} title="Not every tool can be chained">
+        Workflows operate on a single PDF in, single PDF out. Tools that take multiple files (Merge,
+        Images to PDF), need a second PDF (Compare), produce non-PDF output (PDF to Image, Extract
+        Images, Contact Sheet), or are read-only / security-sensitive (Inspector, Password, Digital
+        Signature) are excluded — the picker only shows workflow-eligible tools.
+      </InfoCallout>
 
       {/* Options row — sits beneath the title card, the same pattern
           tools use for their option controls (e.g. compression-level

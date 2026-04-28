@@ -164,7 +164,10 @@ function HomeScreen({ onSelectTool, onOpenWorkflows }: HomeScreenProps) {
 
       {/* ── Workflow Hero Card ──────────────────────────── */}
       {!searchQuery && (
-        <div className="mb-8 sm:mb-10 animate-fade-in-up" style={{ animationDelay: "120ms" }}>
+        <div
+          className="max-w-2xl mx-auto mb-8 sm:mb-10 animate-fade-in-up"
+          style={{ animationDelay: "120ms" }}
+        >
           <WorkflowHeroCard onOpen={onOpenWorkflows} />
         </div>
       )}

@@ -256,7 +256,7 @@ function Stepper({ steps, currentIndex, done }: StepperProps) {
       </div>
 
       {/* Desktop: numbered circles + connecting lines + labels */}
-      <ol className="hidden sm:flex items-start gap-0 overflow-x-auto pb-1">
+      <ol className="hidden sm:flex items-start gap-0 overflow-x-auto px-1 py-1">
         {steps.map((toolId, i) => {
           const meta = findTool(toolId);
           const isCurrent = !done && i === currentIndex;
@@ -291,9 +291,9 @@ function Stepper({ steps, currentIndex, done }: StepperProps) {
               </div>
               {!isLast && (
                 <div
-                  className={`h-px w-6 lg:w-10 mt-3.5 mx-1 transition-colors ${
+                  className={`h-0.5 w-6 lg:w-10 mt-3 mx-1 rounded-full transition-colors ${
                     isComplete
-                      ? "bg-emerald-300 dark:bg-emerald-700"
+                      ? "bg-emerald-500 dark:bg-emerald-500"
                       : "bg-slate-200 dark:bg-dark-border"
                   }`}
                 />
@@ -358,21 +358,21 @@ function FinalState({ originalFile, onRunAgain, onExit }: FinalStateProps) {
           <span className="font-semibold">{originalFile.name}</span>) has been downloaded.
         </span>
       </InfoCallout>
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+      <div className="flex flex-col-reverse items-stretch sm:flex-row sm:items-center sm:justify-center gap-2">
+        <button
+          type="button"
+          onClick={onExit}
+          className="shrink-0 whitespace-nowrap w-full sm:w-auto sm:min-w-55 px-4 py-3 rounded-xl bg-slate-100 dark:bg-dark-surface-alt hover:bg-slate-200 dark:hover:bg-dark-border text-slate-700 dark:text-dark-text font-medium text-[14px] transition-colors flex items-center justify-center gap-1.5"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to workflows
+        </button>
         <ActionButton
           onClick={onRunAgain}
           processing={false}
           label="Run on another file"
           processingLabel=""
         />
-        <button
-          type="button"
-          onClick={onExit}
-          className="shrink-0 whitespace-nowrap px-4 py-3 rounded-xl bg-slate-100 dark:bg-dark-surface-alt hover:bg-slate-200 dark:hover:bg-dark-border text-slate-700 dark:text-dark-text font-medium text-[14px] transition-colors flex items-center justify-center gap-1.5"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to workflows
-        </button>
       </div>
     </div>
   );
