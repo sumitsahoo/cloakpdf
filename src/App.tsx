@@ -575,8 +575,8 @@ function WorkflowHeroCard({ onOpen }: WorkflowHeroCardProps) {
             Chain tools together and run them in one go.
           </h3>
           <p className="text-[12.5px] sm:text-[13px] leading-normal text-slate-500 dark:text-dark-text-muted mt-0.5">
-            Build reusable sequences from any of the tools below and turn a multi-step PDF task into
-            a single click.
+            Build reusable sequences from supported tools and turn a multi-step PDF task into a
+            single click. A few tools — multi-file or non-PDF — stay standalone.
           </p>
         </div>
         <ArrowRight

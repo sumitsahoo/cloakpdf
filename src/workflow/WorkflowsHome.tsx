@@ -15,7 +15,6 @@
 import {
   Download,
   FileJson,
-  Info,
   Pencil,
   Play,
   Plus,
@@ -25,7 +24,6 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ConfirmDialog } from "../components/ConfirmDialog.tsx";
-import { InfoCallout } from "../components/InfoCallout.tsx";
 import { findTool } from "../config/tool-registry.ts";
 import { downloadBlob } from "../utils/file-helpers.ts";
 import {
@@ -131,17 +129,12 @@ export function WorkflowsHome({ onCreate, onEdit, onRun }: WorkflowsHomeProps) {
             Workflows
           </h1>
           <p className="text-slate-500 dark:text-dark-text-muted mt-0.5">
-            Chain tools together and run them on a single PDF in sequence.
+            Chain tools together and run them on a single PDF in sequence. Multi-file, non-PDF, and
+            security-sensitive tools stay standalone — the picker only shows workflow-eligible
+            tools.
           </p>
         </div>
       </div>
-
-      <InfoCallout icon={Info} title="Not every tool can be chained">
-        Workflows operate on a single PDF in, single PDF out. Tools that take multiple files (Merge,
-        Images to PDF), need a second PDF (Compare), produce non-PDF output (PDF to Image, Extract
-        Images, Contact Sheet), or are read-only / security-sensitive (Inspector, Password, Digital
-        Signature) are excluded — the picker only shows workflow-eligible tools.
-      </InfoCallout>
 
       {/* Options row — sits beneath the title card, the same pattern
           tools use for their option controls (e.g. compression-level
@@ -151,26 +144,10 @@ export function WorkflowsHome({ onCreate, onEdit, onRun }: WorkflowsHomeProps) {
           that produced it. */}
       {workflows.length > 0 && (
         <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-dark-surface-alt hover:bg-slate-200 dark:hover:bg-dark-border text-slate-700 dark:text-dark-text text-[13px] font-medium transition-colors"
-          >
-            <Upload className="w-3.5 h-3.5" />
-            Import
-          </button>
-          <button
-            type="button"
-            onClick={handleExportAll}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-dark-surface-alt hover:bg-slate-200 dark:hover:bg-dark-border text-slate-700 dark:text-dark-text text-[13px] font-medium transition-colors"
-          >
-            <Download className="w-3.5 h-3.5" />
-            Export all
-          </button>
           {notice && (
             <span
               role="status"
-              className={`ml-1 text-[12.5px] font-medium ${
+              className={`text-[12.5px] font-medium ${
                 notice.kind === "ok"
                   ? "text-emerald-600 dark:text-emerald-400"
                   : "text-red-600 dark:text-red-400"
@@ -179,6 +156,24 @@ export function WorkflowsHome({ onCreate, onEdit, onRun }: WorkflowsHomeProps) {
               {notice.text}
             </span>
           )}
+          <div className="ml-auto flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-dark-surface-alt hover:bg-slate-200 dark:hover:bg-dark-border text-slate-700 dark:text-dark-text text-[13px] font-medium transition-colors"
+            >
+              <Upload className="w-3.5 h-3.5" />
+              Import
+            </button>
+            <button
+              type="button"
+              onClick={handleExportAll}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-dark-surface-alt hover:bg-slate-200 dark:hover:bg-dark-border text-slate-700 dark:text-dark-text text-[13px] font-medium transition-colors"
+            >
+              <Download className="w-3.5 h-3.5" />
+              Export all
+            </button>
+          </div>
         </div>
       )}
 
