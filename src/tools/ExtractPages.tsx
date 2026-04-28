@@ -18,7 +18,7 @@ import { ThumbnailGrid } from "../components/ThumbnailGrid.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { useAsyncProcess } from "../hooks/useAsyncProcess.ts";
 import { usePdfFile } from "../hooks/usePdfFile.ts";
-import { downloadPdf, pdfFilename } from "../utils/file-helpers.ts";
+import { useToolOutput } from "../hooks/useToolOutput.ts";
 import { extractPages } from "../utils/pdf-operations.ts";
 import { renderAllThumbnails, revokeThumbnails } from "../utils/pdf-renderer.ts";
 
@@ -52,6 +52,7 @@ export default function ExtractPages() {
     },
   });
   const task = useAsyncProcess();
+  const output = useToolOutput();
 
   const thumbnails = pdf.data ?? [];
 
@@ -89,9 +90,9 @@ export default function ExtractPages() {
     const file = pdf.file;
     await task.run(async () => {
       const result = await extractPages(file, indices);
-      downloadPdf(result, pdfFilename(file, "_extracted"));
+      output.deliver(result, "_extracted", file);
     }, "Failed to extract pages. Please try again.");
-  }, [pdf.file, selectedPages, rangeInput, thumbnails.length, task]);
+  }, [pdf.file, selectedPages, rangeInput, thumbnails.length, task, output]);
 
   const hasSelection = rangeInput.trim().length > 0 || selectedPages.size > 0;
 
@@ -114,7 +115,7 @@ export default function ExtractPages() {
       ) : (
         <>
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <p className="text-sm text-slate-600 dark:text-dark-text-muted break-all sm:break-normal">
+            <p className="text-sm text-slate-600 dark:text-dark-text-muted wrap-anywhere min-w-0 flex-1">
               <span className="font-medium">{pdf.file.name}</span> — {thumbnails.length} pages
               {selectedPages.size > 0 && !rangeInput.trim() && (
                 <span className="text-primary-600 dark:text-primary-400 ml-2">
@@ -139,13 +140,15 @@ export default function ExtractPages() {
                 <X className="w-4 h-4" />
                 Clear
               </button>
-              <button
-                type="button"
-                onClick={pdf.reset}
-                className="text-sm text-primary-600 hover:text-primary-700"
-              >
-                Change file
-              </button>
+              {!output.inWorkflow && (
+                <button
+                  type="button"
+                  onClick={pdf.reset}
+                  className="text-sm text-primary-600 hover:text-primary-700"
+                >
+                  Change file
+                </button>
+              )}
             </div>
           </div>
 
@@ -198,7 +201,7 @@ export default function ExtractPages() {
             <ActionButton
               onClick={handleExtract}
               processing={task.processing}
-              label={`Extract ${effectiveCount} Page${effectiveCount !== 1 ? "s" : ""} & Download`}
+              label={`Extract ${effectiveCount} Page${effectiveCount !== 1 ? "s" : ""} & ${output.deliveryWord}`}
               processingLabel="Extracting..."
             />
           )}

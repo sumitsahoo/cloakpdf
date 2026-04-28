@@ -19,7 +19,8 @@ import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { useAsyncProcess } from "../hooks/useAsyncProcess.ts";
 import { usePdfFile } from "../hooks/usePdfFile.ts";
 import { useSortableDrag } from "../hooks/useSortableDrag.ts";
-import { downloadPdf, formatFileSize, pdfFilename } from "../utils/file-helpers.ts";
+import { useToolOutput } from "../hooks/useToolOutput.ts";
+import { formatFileSize } from "../utils/file-helpers.ts";
 import { addBlankPages } from "../utils/pdf-operations.ts";
 import { renderAllThumbnails, revokeThumbnails } from "../utils/pdf-renderer.ts";
 
@@ -49,6 +50,7 @@ export default function AddBlankPage() {
     },
   });
   const task = useAsyncProcess();
+  const output = useToolOutput();
 
   const thumbnails = pdf.data ?? [];
 
@@ -94,9 +96,9 @@ export default function AddBlankPage() {
         }
       }
       const result = await addBlankPages(file, positions);
-      downloadPdf(result, pdfFilename(file, "_blank_added"));
+      output.deliver(result, "_blank_added", file);
     }, "Failed to insert blank pages. Please try again.");
-  }, [pdf.file, hasBlankPages, items, task]);
+  }, [pdf.file, hasBlankPages, items, task, output]);
 
   return (
     <div className="space-y-6">
@@ -266,7 +268,7 @@ export default function AddBlankPage() {
                 <ActionButton
                   onClick={handleApply}
                   processing={task.processing}
-                  label="Insert Blank Pages & Download"
+                  label={`Insert Blank Pages & ${output.deliveryWord}`}
                   processingLabel="Inserting…"
                 />
               )}
