@@ -48,6 +48,7 @@ const ELIGIBLE_TOOL_IDS: ReadonlyArray<ToolId> = [
   "header-footer",
   "bates-numbering",
   "stamp-pdf",
+  "signature",
   // Security
   "metadata",
 ];
