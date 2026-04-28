@@ -115,7 +115,7 @@ export default function ExtractPages() {
       ) : (
         <>
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <p className="text-sm text-slate-600 dark:text-dark-text-muted break-all sm:break-normal">
+            <p className="text-sm text-slate-600 dark:text-dark-text-muted wrap-anywhere min-w-0 flex-1">
               <span className="font-medium">{pdf.file.name}</span> — {thumbnails.length} pages
               {selectedPages.size > 0 && !rangeInput.trim() && (
                 <span className="text-primary-600 dark:text-primary-400 ml-2">

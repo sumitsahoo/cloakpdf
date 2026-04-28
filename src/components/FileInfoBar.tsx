@@ -27,7 +27,7 @@ export function FileInfoBar({ fileName, details, onChangeFile, extra }: FileInfo
   if (useWorkflowSlot() !== null) return null;
   return (
     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-      <p className="text-sm text-slate-600 dark:text-dark-text-muted break-all sm:break-normal">
+      <p className="text-sm text-slate-600 dark:text-dark-text-muted wrap-anywhere min-w-0">
         <span className="font-medium">{fileName}</span> — {details}
         {extra}
       </p>

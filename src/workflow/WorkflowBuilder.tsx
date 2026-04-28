@@ -91,6 +91,18 @@ export function WorkflowBuilder({ workflowId, onCancel, onSaved }: WorkflowBuild
 
   const canSave = steps.length > 0 && name.trim().length > 0;
 
+  // Hint string surfaced near the Save button when it's disabled — tells
+  // the user *which* requirement is missing instead of just dimming the
+  // button silently.
+  const missingHint =
+    name.trim().length === 0 && steps.length === 0
+      ? "Name your workflow and add at least one step."
+      : name.trim().length === 0
+        ? "Give your workflow a name to save it."
+        : steps.length === 0
+          ? "Add at least one step to save."
+          : null;
+
   return (
     <div className="space-y-6">
       <div className="flex items-start gap-4">
@@ -107,82 +119,112 @@ export function WorkflowBuilder({ workflowId, onCancel, onSaved }: WorkflowBuild
         </div>
       </div>
 
-      <label className="block">
-        <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-dark-text-muted">
-          Name
-        </span>
-        <input
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="e.g. Clean & ship"
-          className="mt-2 w-full px-4 py-2.5 rounded-xl bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border text-slate-800 dark:text-dark-text placeholder-slate-400 dark:placeholder-dark-text-muted shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-400/40 focus:border-primary-300 dark:focus:border-primary-600 transition-[border-color,box-shadow] duration-200 text-[15px]"
-        />
-      </label>
-
-      <div>
-        <div className="flex items-center justify-between mb-3">
+      <div className="bg-white/70 dark:bg-dark-surface/70 backdrop-blur-sm border border-slate-200 dark:border-dark-border rounded-2xl p-5 sm:p-6 space-y-6">
+        <label className="block">
           <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-dark-text-muted">
-            Steps
-            {steps.length > 0 && (
-              <span className="ml-2 text-slate-500 dark:text-dark-text-muted font-medium tracking-normal normal-case">
-                · {steps.length}
-              </span>
-            )}
+            Name
           </span>
-          <button
-            type="button"
-            onClick={() => setPickerOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary-600 hover:bg-primary-700 text-white text-[13px] font-medium transition-colors"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            Add step
-          </button>
-        </div>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="e.g. Clean & ship"
+            maxLength={60}
+            className="mt-2 w-full px-4 py-2.5 rounded-xl bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border text-slate-800 dark:text-dark-text placeholder-slate-400 dark:placeholder-dark-text-muted shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-400/40 focus:border-primary-300 dark:focus:border-primary-600 transition-[border-color,box-shadow] duration-200 text-[15px]"
+          />
+          <span className="mt-1.5 flex items-center justify-between gap-2 text-[11.5px] text-slate-400 dark:text-dark-text-muted">
+            <span>Used in the workflows list and the run header.</span>
+            <span className="tabular-nums shrink-0">{name.length}/60</span>
+          </span>
+        </label>
 
-        {steps.length === 0 ? (
-          <div className="bg-white/70 dark:bg-dark-surface/70 backdrop-blur-sm border border-dashed border-slate-300 dark:border-dark-border rounded-2xl p-10 text-center">
-            <p className="text-[14px] text-slate-500 dark:text-dark-text-muted">
-              No steps yet. Click{" "}
-              <span className="font-semibold text-primary-600 dark:text-primary-400">Add step</span>{" "}
-              to begin.
-            </p>
+        <div>
+          <div className="flex items-center justify-between gap-2 mb-3">
+            <span className="inline-flex items-center gap-2">
+              <span className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-dark-text-muted">
+                Steps
+              </span>
+              {steps.length > 0 && (
+                <span className="px-1.5 py-0.5 rounded-md bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 text-[11px] font-semibold tabular-nums">
+                  {steps.length}
+                </span>
+              )}
+            </span>
+            {steps.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setPickerOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary-600 hover:bg-primary-700 text-white text-[13px] font-medium transition-colors"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Add step
+              </button>
+            )}
           </div>
-        ) : (
-          <ol className="space-y-2">
-            {steps.map((step, index) => (
-              <StepRow
-                key={`${step.tool}-${index}`}
-                index={index}
-                step={step}
-                isFirst={index === 0}
-                isLast={index === steps.length - 1}
-                onUp={() => moveStep(index, -1)}
-                onDown={() => moveStep(index, 1)}
-                onRemove={() => removeStep(index)}
-              />
-            ))}
-          </ol>
-        )}
+
+          {steps.length === 0 ? (
+            <div className="bg-slate-50/70 dark:bg-dark-surface-alt/40 border border-dashed border-slate-300 dark:border-dark-border rounded-2xl px-6 py-10 sm:py-12 text-center">
+              <div className="w-12 h-12 mx-auto rounded-2xl bg-primary-50 dark:bg-primary-900/30 flex items-center justify-center mb-3">
+                <WorkflowIcon className="w-6 h-6 text-primary-600 dark:text-primary-400" />
+              </div>
+              <h3 className="text-[15px] font-semibold tracking-[-0.005em] text-slate-800 dark:text-dark-text">
+                No steps yet
+              </h3>
+              <p className="text-[13px] text-slate-500 dark:text-dark-text-muted mt-1 max-w-sm mx-auto leading-[1.55]">
+                Pick tools in the order you want them to run — each step's output feeds the next.
+              </p>
+              <button
+                type="button"
+                onClick={() => setPickerOpen(true)}
+                className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-[14px] font-medium transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                Add your first step
+              </button>
+            </div>
+          ) : (
+            <ol className="space-y-2">
+              {steps.map((step, index) => (
+                <StepRow
+                  key={`${step.tool}-${index}`}
+                  index={index}
+                  step={step}
+                  isFirst={index === 0}
+                  isLast={index === steps.length - 1}
+                  onUp={() => moveStep(index, -1)}
+                  onDown={() => moveStep(index, 1)}
+                  onRemove={() => removeStep(index)}
+                />
+              ))}
+            </ol>
+          )}
+        </div>
       </div>
 
-      <div className="flex items-center gap-2 pt-2">
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={!canSave}
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary-600 hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium text-[14px] transition-colors"
-        >
-          <Check className="w-4 h-4" />
-          Save workflow
-        </button>
-        <button
-          type="button"
-          onClick={onCancel}
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-100 dark:bg-dark-surface-alt hover:bg-slate-200 dark:hover:bg-dark-border text-slate-700 dark:text-dark-text font-medium text-[14px] transition-colors"
-        >
-          Cancel
-        </button>
+      <div className="flex flex-col-reverse sm:flex-row sm:items-center gap-3 pt-1">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={!canSave}
+            className="inline-flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium text-[14px] transition-colors"
+          >
+            <Check className="w-4 h-4" />
+            Save workflow
+          </button>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="inline-flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-xl bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border hover:border-slate-300 dark:hover:border-dark-text-muted hover:bg-slate-50 dark:hover:bg-dark-surface-alt text-slate-700 dark:text-dark-text font-medium text-[14px] transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
+        {missingHint && (
+          <p className="text-[12.5px] text-slate-500 dark:text-dark-text-muted sm:ml-1">
+            {missingHint}
+          </p>
+        )}
       </div>
 
       {pickerOpen && (
