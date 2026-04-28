@@ -20,8 +20,8 @@ import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { useAsyncProcess } from "../hooks/useAsyncProcess.ts";
 import { usePdfFile } from "../hooks/usePdfFile.ts";
 import { usePreviewScale } from "../hooks/usePreviewScale.ts";
+import { useToolOutput } from "../hooks/useToolOutput.ts";
 import type { BatesNumberOptions, BatesPosition } from "../types.ts";
-import { downloadPdf, pdfFilename } from "../utils/file-helpers.ts";
 import { addBatesNumbers } from "../utils/pdf-operations.ts";
 import { PREVIEW_SCALE, renderAllThumbnails, revokeThumbnails } from "../utils/pdf-renderer.ts";
 
@@ -103,6 +103,7 @@ export default function BatesNumbering() {
     },
   });
   const task = useAsyncProcess();
+  const output = useToolOutput();
 
   const thumbnails = pdf.data?.thumbnails ?? [];
   const pageDims = pdf.data?.pageDims ?? [];
@@ -131,9 +132,9 @@ export default function BatesNumbering() {
     const file = pdf.file;
     await task.run(async () => {
       const result = await addBatesNumbers(file, options);
-      downloadPdf(result, pdfFilename(file, "_bates"));
+      output.deliver(result, "_bates", file);
     }, "Failed to add Bates numbering. Please try again.");
-  }, [pdf.file, options, task]);
+  }, [pdf.file, options, task, output]);
 
   const pageCount = thumbnails.length;
 
@@ -360,7 +361,7 @@ export default function BatesNumbering() {
             onClick={handleApply}
             processing={processing}
             disabled={processing || loading}
-            label="Add Bates Numbers & Download"
+            label={`Add Bates Numbers & ${output.deliveryWord}`}
             processingLabel="Adding Bates numbers…"
           />
         </>

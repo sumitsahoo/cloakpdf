@@ -250,6 +250,44 @@ body {
   }
 }
 
+/*
+ * Thin, theme-aware scrollbar for in-modal / in-card overflow areas.
+ * The default browser bar looks chunky and out of place against
+ * translucent surfaces (modals, glass cards). This class swaps it for
+ * a slim slate thumb.
+ *
+ * Use sparingly: only on overflow containers inside surfaces, never on
+ * the page itself — users expect their browser's default scrollbar at
+ * the document level.
+ */
+.thin-scrollbar {
+  /* Firefox */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(100, 116, 139, 0.35) transparent;
+}
+.thin-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.thin-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.thin-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.3);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+@media (prefers-color-scheme: dark) {
+  .thin-scrollbar {
+    scrollbar-color: rgba(148, 163, 184, 0.3) transparent;
+  }
+  .thin-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.3);
+    background-clip: padding-box;
+  }
+}
+
 /* ────────────────────────────────────────────────────────────────
  * Aurora — animated drifting blobs for the page backdrop — has been
  * extracted into the self-contained `AuroraBackground` component

@@ -20,7 +20,7 @@ import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { useAsyncProcess } from "../hooks/useAsyncProcess.ts";
 import { usePdfFile } from "../hooks/usePdfFile.ts";
 import { useSortableDrag } from "../hooks/useSortableDrag.ts";
-import { downloadPdf, pdfFilename } from "../utils/file-helpers.ts";
+import { useToolOutput } from "../hooks/useToolOutput.ts";
 import { reorderPages } from "../utils/pdf-operations.ts";
 import { renderAllThumbnails, revokeThumbnails } from "../utils/pdf-renderer.ts";
 
@@ -40,6 +40,7 @@ export default function ReorderPages() {
     },
   });
   const task = useAsyncProcess();
+  const output = useToolOutput();
 
   const thumbnails = pdf.data ?? [];
 
@@ -60,9 +61,9 @@ export default function ReorderPages() {
     const file = pdf.file;
     await task.run(async () => {
       const result = await reorderPages(file, order);
-      downloadPdf(result, pdfFilename(file, "_reordered"));
+      output.deliver(result, "_reordered", file);
     }, "Failed to reorder pages. Please try again.");
-  }, [pdf.file, order, task]);
+  }, [pdf.file, order, task, output]);
 
   const handleReset = useCallback(() => {
     setOrder(thumbnails.map((_, i) => i));
@@ -179,7 +180,7 @@ export default function ReorderPages() {
                 <ActionButton
                   onClick={handleApply}
                   processing={task.processing}
-                  label="Apply New Order & Download"
+                  label={`Apply New Order & ${output.deliveryWord}`}
                   processingLabel="Reordering…"
                 />
               )}
