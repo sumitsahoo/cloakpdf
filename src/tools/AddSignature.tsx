@@ -24,7 +24,7 @@ import { SignaturePad } from "../components/SignaturePad.tsx";
 import { categoryAccent, categoryGlow, colorPresets } from "../config/theme.ts";
 import { useAsyncProcess } from "../hooks/useAsyncProcess.ts";
 import { usePdfFile } from "../hooks/usePdfFile.ts";
-import { downloadPdf, pdfFilename } from "../utils/file-helpers.ts";
+import { useToolOutput } from "../hooks/useToolOutput.ts";
 import { addSignature } from "../utils/pdf-operations.ts";
 import { PREVIEW_SCALE, renderAllThumbnails, revokeThumbnails } from "../utils/pdf-renderer.ts";
 
@@ -123,6 +123,7 @@ export default function AddSignature() {
     },
   });
   const task = useAsyncProcess();
+  const output = useToolOutput();
 
   const thumbnails = pdf.data?.thumbnails ?? [];
   const pageDims = pdf.data?.pageDims ?? [];
@@ -285,7 +286,7 @@ export default function AddSignature() {
           width: sigSize.width,
           height: sigSize.height,
         });
-        downloadPdf(result, pdfFilename(file, "_signed"));
+        output.deliver(result, "_signed", file);
       } else {
         // Per-page positions
         const positionMap = new Map<
@@ -307,7 +308,7 @@ export default function AddSignature() {
         }
 
         const result = await addSignature(file, signatureDataUrl, pageIndices, positionMap);
-        downloadPdf(result, pdfFilename(file, "_signed"));
+        output.deliver(result, "_signed", file);
       }
     }, "Failed to add signature. Please try again.");
   }, [
@@ -319,6 +320,7 @@ export default function AddSignature() {
     selectedPages,
     pagePositions,
     task,
+    output,
   ]);
 
   return (
@@ -645,7 +647,7 @@ export default function AddSignature() {
               !signatureDataUrl ||
               (!applyToAllPages && thumbnails.length > 1 && selectedPages.size === 0)
             }
-            label="Apply Signature & Download"
+            label={`Apply Signature & ${output.deliveryWord}`}
             processingLabel="Applying..."
           />
         </>

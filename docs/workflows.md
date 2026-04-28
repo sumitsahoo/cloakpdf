@@ -242,7 +242,8 @@ brief notice. See
 deliver to the runner; the user picks one per run).
 
 **Annotate** — `add-page-numbers`, `header-footer`, `bates-numbering`,
-`stamp-pdf` (covers seal / rectangle / watermark stamp styles).
+`stamp-pdf` (covers seal / rectangle / watermark stamp styles),
+`signature`.
 
 **Security** — `metadata`.
 
@@ -259,7 +260,7 @@ deliver to the runner; the user picks one per run).
 ### Not yet migrated (eligible candidates)
 
 PDF-in / PDF-out tools that just need the three-step migration above:
-`ocr`, `signature`, `fill-pdf-form`, `redact-pdf`, `split-pdf`.
+`ocr`, `fill-pdf-form`, `redact-pdf`, `split-pdf`.
 
 (Note: `split-pdf` produces multiple PDFs — would need a "first match"
 or "concatenate splits" decision before it can chain. Probably exclude.
@@ -554,7 +555,8 @@ src/
    ├─ EditMetadata.tsx              ── migrated (Pattern B)
    ├─ AddBookmarks.tsx              ── migrated (Pattern B)
    ├─ CropPages.tsx                 ── migrated (Pattern B; dual delivery — Crop / Remove Crop)
-   └─ FileAttachment.tsx            ── migrated (Pattern B; manual injectedFile wiring, useState-based file)
+   ├─ FileAttachment.tsx            ── migrated (Pattern B; manual injectedFile wiring, useState-based file)
+   └─ AddSignature.tsx              ── migrated (Pattern B)
 ```
 
 ---
@@ -564,9 +566,9 @@ src/
 If you're continuing this work, the obvious next moves are:
 
 1. **Migrate more tools.** Pick from §4's "Not yet migrated" list. The
-   remaining tools (`ocr`, `signature`, `fill-pdf-form`, `redact-pdf`,
-   `split-pdf`) all need a small design decision before migration — see
-   the notes in §4. Once decided, each is still the §3 three-step recipe.
+   remaining tools (`ocr`, `fill-pdf-form`, `redact-pdf`, `split-pdf`)
+   all need a small design decision before migration — see the notes
+   in §4. Once decided, each is still the §3 three-step recipe.
    When migrating, follow the [§7.12 design checklist](#712-checklist-when-adding-controls-to-a-workflow-page)
    for any new controls you introduce.
 2. **Per-step config persistence.** See §5 for the approach. Capture the

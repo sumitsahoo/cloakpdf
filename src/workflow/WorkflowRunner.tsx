@@ -21,7 +21,7 @@
  * happened from the filename alone (e.g. `report_cleaned_compressed.pdf`).
  */
 
-import { Check, ChevronRight, FileUp, X } from "lucide-react";
+import { ArrowLeft, Check, FileUp } from "lucide-react";
 import { Suspense, useCallback, useMemo, useState } from "react";
 import { ActionButton } from "../components/ActionButton.tsx";
 import { AlertBox } from "../components/AlertBox.tsx";
@@ -207,39 +207,102 @@ interface StepperProps {
   done: boolean;
 }
 
+/**
+ * Responsive workflow stepper.
+ *
+ * Phone: a compact "Step X of Y" header with a thin progress bar and
+ * the current step's name + icon — full chip chain on a 320px screen
+ * just becomes a horizontal scroll graveyard.
+ *
+ * Desktop (sm+): numbered circles connected by progress lines, with
+ * the tool title beneath each circle. Completed segments fill green;
+ * the current circle is ringed for emphasis.
+ */
 function Stepper({ steps, currentIndex, done }: StepperProps) {
+  const total = steps.length;
+  const completedCount = done ? total : currentIndex;
+  const progressPct = total <= 1 ? (done ? 100 : 0) : (completedCount / (total - 1)) * 100;
+  const currentMeta = findTool(steps[currentIndex] ?? "");
+  const CurrentIcon = currentMeta?.icon;
+
   return (
-    <ol className="flex items-center gap-1.5 overflow-x-auto pb-1">
-      {steps.map((toolId, i) => {
-        const meta = findTool(toolId);
-        const Icon = meta?.icon;
-        const isCurrent = !done && i === currentIndex;
-        const isComplete = done || i < currentIndex;
-        return (
-          <li key={`${toolId}-${i}`} className="flex items-center gap-1.5 shrink-0">
-            <div
-              className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border text-[12px] font-medium transition-colors ${
-                isCurrent
-                  ? "border-primary-300 dark:border-primary-600 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300"
-                  : isComplete
-                    ? "border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300"
-                    : "border-slate-200 dark:border-dark-border bg-white dark:bg-dark-surface text-slate-500 dark:text-dark-text-muted"
-              }`}
-            >
-              {isComplete ? (
-                <Check className="w-3.5 h-3.5" />
-              ) : Icon ? (
-                <Icon className="w-3.5 h-3.5" />
-              ) : null}
-              <span className="whitespace-nowrap">{meta?.title ?? toolId}</span>
-            </div>
-            {i < steps.length - 1 && (
-              <ChevronRight className="w-3.5 h-3.5 text-slate-300 dark:text-dark-border shrink-0" />
-            )}
-          </li>
-        );
-      })}
-    </ol>
+    <div>
+      {/* Mobile: condensed progress view */}
+      <div className="sm:hidden">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-[12px] font-semibold text-slate-700 dark:text-dark-text">
+            {done ? "Completed" : `Step ${currentIndex + 1} of ${total}`}
+          </span>
+          <span className="text-[11px] text-slate-500 dark:text-dark-text-muted tabular-nums">
+            {completedCount} / {total}
+          </span>
+        </div>
+        <div className="h-1.5 bg-slate-100 dark:bg-dark-surface-alt rounded-full overflow-hidden">
+          <div
+            className={`h-full rounded-full transition-all duration-300 ${
+              done
+                ? "bg-emerald-500"
+                : "bg-linear-to-r from-primary-400 to-primary-600 dark:from-primary-500 dark:to-primary-400"
+            }`}
+            style={{ width: `${progressPct}%` }}
+          />
+        </div>
+        {!done && currentMeta && (
+          <div className="mt-2.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary-50 dark:bg-primary-900/30 border border-primary-200 dark:border-primary-800/60 text-[12px] font-medium text-primary-700 dark:text-primary-300">
+            {CurrentIcon && <CurrentIcon className="w-3.5 h-3.5" />}
+            <span>{currentMeta.title}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Desktop: numbered circles + connecting lines + labels */}
+      <ol className="hidden sm:flex items-start gap-0 overflow-x-auto pb-1">
+        {steps.map((toolId, i) => {
+          const meta = findTool(toolId);
+          const isCurrent = !done && i === currentIndex;
+          const isComplete = done || i < currentIndex;
+          const isLast = i === steps.length - 1;
+          return (
+            <li key={`${toolId}-${i}`} className="flex items-start shrink-0 min-w-0">
+              <div className="flex flex-col items-center min-w-0 max-w-34 lg:max-w-40">
+                <div
+                  className={`flex items-center justify-center w-7 h-7 rounded-full text-[11px] font-semibold transition-colors ${
+                    isCurrent
+                      ? "bg-primary-500 text-white ring-4 ring-primary-100 dark:ring-primary-900/40"
+                      : isComplete
+                        ? "bg-emerald-500 text-white"
+                        : "bg-white dark:bg-dark-surface text-slate-500 dark:text-dark-text-muted border border-slate-200 dark:border-dark-border"
+                  }`}
+                >
+                  {isComplete ? <Check className="w-3.5 h-3.5" /> : i + 1}
+                </div>
+                <span
+                  className={`mt-1.5 px-1 text-[11.5px] font-medium text-center leading-tight truncate w-full ${
+                    isCurrent
+                      ? "text-primary-700 dark:text-primary-300"
+                      : isComplete
+                        ? "text-emerald-700 dark:text-emerald-400"
+                        : "text-slate-500 dark:text-dark-text-muted"
+                  }`}
+                  title={meta?.title ?? toolId}
+                >
+                  {meta?.title ?? toolId}
+                </span>
+              </div>
+              {!isLast && (
+                <div
+                  className={`h-px w-6 lg:w-10 mt-3.5 mx-1 transition-colors ${
+                    isComplete
+                      ? "bg-emerald-300 dark:bg-emerald-700"
+                      : "bg-slate-200 dark:bg-dark-border"
+                  }`}
+                />
+              )}
+            </li>
+          );
+        })}
+      </ol>
+    </div>
   );
 }
 
@@ -290,10 +353,12 @@ function FinalState({ originalFile, onRunAgain, onExit }: FinalStateProps) {
   return (
     <div className="space-y-4">
       <InfoCallout icon={Check} accent="transform">
-        Workflow finished. Your processed PDF (based on{" "}
-        <span className="font-semibold">{originalFile.name}</span>) has been downloaded.
+        <span className="wrap-anywhere">
+          Workflow finished. Your processed PDF (based on{" "}
+          <span className="font-semibold">{originalFile.name}</span>) has been downloaded.
+        </span>
       </InfoCallout>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
         <ActionButton
           onClick={onRunAgain}
           processing={false}
@@ -303,10 +368,10 @@ function FinalState({ originalFile, onRunAgain, onExit }: FinalStateProps) {
         <button
           type="button"
           onClick={onExit}
-          className="px-4 py-3 rounded-xl bg-slate-100 dark:bg-dark-surface-alt hover:bg-slate-200 dark:hover:bg-dark-border text-slate-700 dark:text-dark-text font-medium text-[14px] transition-colors flex items-center gap-1.5"
+          className="shrink-0 whitespace-nowrap px-4 py-3 rounded-xl bg-slate-100 dark:bg-dark-surface-alt hover:bg-slate-200 dark:hover:bg-dark-border text-slate-700 dark:text-dark-text font-medium text-[14px] transition-colors flex items-center justify-center gap-1.5"
         >
-          <X className="w-4 h-4" />
-          Exit
+          <ArrowLeft className="w-4 h-4" />
+          Back to workflows
         </button>
       </div>
     </div>
