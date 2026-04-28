@@ -170,7 +170,12 @@ export function WorkflowRunner({ workflowId, onExit }: WorkflowRunnerProps) {
           <FileInfoBar
             fileName={originalFile.name}
             details={formatFileSize(originalFile.size)}
-            onChangeFile={handleReset}
+            // Only the first step's PDF is the user's actual upload —
+            // from step 2 onward the file is an intermediate, so
+            // "Change file" would be misleading. Pass undefined so
+            // FileInfoBar hides the link (resetting mid-run is still
+            // available via the back-arrow / exiting the workflow).
+            onChangeFile={stepIndex === 0 ? handleReset : undefined}
             extra={
               <>
                 {" · step "}

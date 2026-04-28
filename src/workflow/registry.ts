@@ -25,11 +25,28 @@
 import type { ToolId } from "../types.ts";
 
 const ELIGIBLE_TOOL_IDS: ReadonlyArray<ToolId> = [
-  "compress",
+  // Organise
+  "extract-pages",
+  "reorder",
+  "delete",
+  "rotate",
   "reverse-pages",
+  "add-blank-page",
+  "duplicate-page",
+  "remove-blank-pages",
+  // Transform
+  "compress",
   "flatten",
   "grayscale",
-  "remove-blank-pages",
+  "nup-pages",
+  "repair-pdf",
+  // Annotate
+  "add-page-numbers",
+  "header-footer",
+  "bates-numbering",
+  "stamp-pdf",
+  // Security
+  "metadata",
 ];
 
 const ELIGIBLE_SET: ReadonlySet<string> = new Set(ELIGIBLE_TOOL_IDS);

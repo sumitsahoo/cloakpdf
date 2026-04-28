@@ -164,21 +164,43 @@ function HomeScreen({ onSelectTool, onOpenWorkflows }: HomeScreenProps) {
 
       {/* ── Workflow Hero Card ──────────────────────────── */}
       {!searchQuery && (
-        <div
-          className="max-w-3xl mx-auto mb-8 sm:mb-10 animate-fade-in-up"
-          style={{ animationDelay: "120ms" }}
-        >
+        <div className="mb-8 sm:mb-10 animate-fade-in-up" style={{ animationDelay: "120ms" }}>
           <WorkflowHeroCard onOpen={onOpenWorkflows} />
+        </div>
+      )}
+
+      {/* ── "Or pick a single tool" section header ──────── */}
+      {!searchQuery && (
+        <div
+          className="max-w-2xl mx-auto text-center mb-5 sm:mb-6 animate-fade-in-up"
+          style={{ animationDelay: "140ms" }}
+        >
+          <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary-600 dark:text-primary-400 mb-2">
+            Or pick a single tool
+          </div>
+          <p className="text-[13.5px] sm:text-[14px] leading-[1.55] text-slate-500 dark:text-dark-text-muted">
+            Browse the full toolbox below, or jump straight to the one you need.
+          </p>
         </div>
       )}
 
       {/* ── Search Bar ──────────────────────────────────── */}
       <div
-        className="max-w-xl mx-auto mb-12 sm:mb-14 animate-fade-in-up"
+        className="max-w-2xl mx-auto mb-12 sm:mb-14 animate-fade-in-up"
         style={{ animationDelay: "160ms" }}
       >
         <div className="relative group">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-slate-400 dark:text-dark-text-muted group-focus-within:text-primary-500 transition-colors duration-200" />
+          {/* Soft primary glow that intensifies on focus — gives the
+              field presence without leaning on a heavy border. */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute -inset-px rounded-2xl bg-linear-to-r from-primary-500/0 via-primary-500/0 to-primary-500/0 opacity-0 blur-md transition-opacity duration-300 group-focus-within:opacity-100 group-focus-within:from-primary-500/20 group-focus-within:via-primary-400/15 group-focus-within:to-primary-500/20"
+          />
+
+          <Search
+            className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-900 dark:text-dark-text group-focus-within:text-primary-500 dark:group-focus-within:text-primary-400 transition-colors duration-200"
+            strokeWidth={2.5}
+          />
 
           <input
             ref={searchInputRef}
@@ -186,7 +208,7 @@ function HomeScreen({ onSelectTool, onOpenWorkflows }: HomeScreenProps) {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search tools…"
-            className="w-full pl-11 pr-24 py-3 rounded-xl bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border text-slate-800 dark:text-dark-text placeholder-slate-400 dark:placeholder-dark-text-muted shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-400/40 focus:border-primary-300 dark:focus:border-primary-600 transition-[border-color,box-shadow] duration-200 text-[15px]"
+            className="relative w-full pl-13 pr-28 py-4 rounded-2xl bg-white/90 dark:bg-dark-surface/90 backdrop-blur-sm border border-slate-200 dark:border-dark-border text-slate-800 dark:text-dark-text placeholder-slate-400 dark:placeholder-dark-text-muted shadow-sm hover:border-slate-300 dark:hover:border-dark-border focus:outline-none focus:border-primary-300 dark:focus:border-primary-600 focus:shadow-md transition-[border-color,box-shadow] duration-200 text-[15.5px]"
             aria-label="Search PDF tools"
           />
 
@@ -204,7 +226,7 @@ function HomeScreen({ onSelectTool, onOpenWorkflows }: HomeScreenProps) {
                 <X className="w-4 h-4" />
               </button>
             ) : (
-              <kbd className="hidden sm:inline-flex items-center gap-0.5 px-2 py-1 rounded-lg bg-slate-100 dark:bg-dark-surface-alt border border-slate-200 dark:border-dark-border text-xs text-slate-400 dark:text-dark-text-muted font-mono select-none">
+              <kbd className="hidden sm:inline-flex items-center gap-0.5 px-2 py-1 rounded-md bg-slate-50 dark:bg-dark-surface-alt border border-slate-200 dark:border-dark-border text-[11px] font-medium text-slate-500 dark:text-dark-text-muted font-mono tabular-nums tracking-tight select-none">
                 {isMac ? "⌘" : "Ctrl"}K
               </kbd>
             )}
@@ -212,7 +234,7 @@ function HomeScreen({ onSelectTool, onOpenWorkflows }: HomeScreenProps) {
         </div>
 
         {searchQuery && (
-          <p className="text-center text-sm text-slate-400 dark:text-dark-text-muted mt-2 animate-fade-in-up">
+          <p className="text-center text-sm text-slate-400 dark:text-dark-text-muted mt-3 animate-fade-in-up">
             {filteredTools.length} {filteredTools.length === 1 ? "tool" : "tools"} found
           </p>
         )}
@@ -457,40 +479,108 @@ interface WorkflowHeroCardProps {
 }
 
 /**
+ * Same primary-tinted spotlight glow used by `ToolCard`. Kept inline
+ * here (not extracted) since the two cards share little else.
+ */
+const WORKFLOW_HERO_GLOW = "rgba(37,99,235,0.16)";
+
+/**
  * A single prominent card on the home screen that introduces the
- * Workflows feature. Same design language as ToolCard: rounded-2xl,
- * subtle border, hover lift; visually amplified with a primary-tinted
- * gradient panel and an arrow CTA.
+ * Workflows feature. Matches `ToolCard`'s design — white surface,
+ * slate border, cursor-tracking spotlight glow on hover — but stays
+ * full-width with a horizontal layout so the "New · Workflows" label
+ * and supporting copy can breathe.
  */
 function WorkflowHeroCard({ onOpen }: WorkflowHeroCardProps) {
+  const cardRef = useRef<HTMLButtonElement>(null);
+  const [glowStyle, setGlowStyle] = useState<React.CSSProperties>({ opacity: 0 });
+
+  const setGlowAt = useCallback((clientX: number, clientY: number) => {
+    const card = cardRef.current;
+    if (!card) return;
+    const rect = card.getBoundingClientRect();
+    setGlowStyle({
+      opacity: 1,
+      background: `radial-gradient(420px circle at ${clientX - rect.left}px ${clientY - rect.top}px, ${WORKFLOW_HERO_GLOW}, transparent 70%)`,
+    });
+  }, []);
+
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent<HTMLButtonElement>) => setGlowAt(e.clientX, e.clientY),
+    [setGlowAt],
+  );
+
+  const handleMouseLeave = useCallback(() => {
+    setGlowStyle({ opacity: 0 });
+  }, []);
+
+  const handleTouchStart = useCallback(
+    (e: React.TouchEvent<HTMLButtonElement>) => {
+      const t = e.touches[0];
+      setGlowAt(t.clientX, t.clientY);
+    },
+    [setGlowAt],
+  );
+
+  const handleTouchMove = useCallback(
+    (e: React.TouchEvent<HTMLButtonElement>) => {
+      const t = e.touches[0];
+      setGlowAt(t.clientX, t.clientY);
+    },
+    [setGlowAt],
+  );
+
+  const handleTouchEnd = useCallback(() => {
+    setGlowStyle({ opacity: 0 });
+  }, []);
+
   return (
     <button
       type="button"
+      ref={cardRef}
       onClick={onOpen}
-      className="group relative w-full overflow-hidden bg-gradient-to-br from-primary-50 via-white to-white dark:from-primary-900/30 dark:via-dark-surface dark:to-dark-surface border border-primary-200/70 dark:border-primary-800/60 rounded-2xl px-5 py-5 sm:px-6 sm:py-5 text-left cursor-pointer transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:border-primary-400 dark:hover:border-primary-600 hover:shadow-md flex items-center gap-4"
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      onTouchCancel={handleTouchEnd}
+      className="group relative w-full overflow-hidden bg-white dark:bg-dark-surface rounded-2xl border border-slate-200 dark:border-dark-border px-5 py-5 sm:px-6 sm:py-6 text-left cursor-pointer transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:border-primary-300 dark:hover:border-primary-600 hover:shadow-md active:-translate-y-0.5 active:border-primary-300 dark:active:border-primary-600 active:shadow-md"
     >
-      <span className="shrink-0 w-12 h-12 rounded-xl grid place-items-center bg-primary-100 dark:bg-primary-900/50 text-primary-600 dark:text-primary-400 transition-[transform,background-color] duration-200 group-hover:-translate-y-px group-hover:scale-105">
-        <WorkflowIcon className="w-6 h-6" />
-      </span>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-0.5">
-          <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-primary-700 dark:text-primary-300">
-            New
-          </span>
-          <span className="h-1 w-1 rounded-full bg-primary-400 dark:bg-primary-500" />
-          <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-dark-text-muted">
-            Workflows
-          </span>
+      {/* Cursor / touch spotlight glow */}
+      <div
+        className="pointer-events-none absolute inset-0 rounded-[inherit] transition-opacity duration-300"
+        aria-hidden="true"
+        style={glowStyle}
+      />
+
+      <div className="relative z-10 flex items-center gap-4">
+        <span className="shrink-0 w-11 h-11 rounded-xl grid place-items-center bg-slate-100 dark:bg-dark-surface-alt text-slate-700 dark:text-dark-text transition-[transform,background-color,color] duration-200 group-hover:-translate-y-px group-hover:scale-105 group-hover:bg-primary-50 dark:group-hover:bg-primary-900/30 group-hover:text-primary-600 dark:group-hover:text-primary-400 group-active:bg-primary-50 dark:group-active:bg-primary-900/30 group-active:text-primary-600 dark:group-active:text-primary-400">
+          <WorkflowIcon className="w-5 h-5" />
+        </span>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-0.5">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-primary-600 dark:text-primary-400">
+              New
+            </span>
+            <span className="h-1 w-1 rounded-full bg-slate-300 dark:bg-dark-border" />
+            <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-dark-text-muted">
+              Workflows
+            </span>
+          </div>
+          <h3 className="text-[15px] sm:text-[16px] font-semibold tracking-[-0.005em] text-slate-800 dark:text-dark-text">
+            Chain tools together and run them in one go.
+          </h3>
+          <p className="text-[12.5px] sm:text-[13px] leading-normal text-slate-500 dark:text-dark-text-muted mt-0.5">
+            Build reusable sequences from any of the tools below and turn a multi-step PDF task into
+            a single click.
+          </p>
         </div>
-        <div className="text-[15px] sm:text-[16px] font-semibold tracking-[-0.005em] text-slate-800 dark:text-dark-text">
-          Chain tools together and run them in one go.
-        </div>
-        <div className="text-[12.5px] sm:text-[13px] text-slate-500 dark:text-dark-text-muted mt-0.5">
-          Save your favourite sequences as reusable workflows — clean, compress, and watermark in a
-          single click.
-        </div>
+        <ArrowRight
+          className="hidden sm:block shrink-0 w-5 h-5 text-slate-400 dark:text-dark-text-muted transition-[transform,color] duration-200 group-hover:translate-x-0.5 group-hover:text-primary-600 dark:group-hover:text-primary-400 group-active:text-primary-600 dark:group-active:text-primary-400"
+          aria-hidden="true"
+        />
       </div>
-      <ArrowRight className="hidden sm:block shrink-0 w-5 h-5 text-primary-600 dark:text-primary-400 transition-transform duration-200 group-hover:translate-x-0.5" />
     </button>
   );
 }
