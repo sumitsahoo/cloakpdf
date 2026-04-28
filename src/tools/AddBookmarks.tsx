@@ -22,7 +22,8 @@ import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { useAsyncProcess } from "../hooks/useAsyncProcess.ts";
 import { usePdfFile } from "../hooks/usePdfFile.ts";
-import { downloadPdf, formatFileSize, pdfFilename } from "../utils/file-helpers.ts";
+import { useToolOutput } from "../hooks/useToolOutput.ts";
+import { formatFileSize } from "../utils/file-helpers.ts";
 import { addPdfBookmarks } from "../utils/pdf-operations.ts";
 import { PREVIEW_SCALE, renderAllThumbnails, revokeThumbnails } from "../utils/pdf-renderer.ts";
 
@@ -60,6 +61,7 @@ export default function AddBookmarks() {
     loadErrorMessage: "Failed to load PDF.",
   });
   const task = useAsyncProcess();
+  const output = useToolOutput();
 
   const thumbnails = pdf.data?.thumbnails ?? [];
   const pageCount = thumbnails.length;
@@ -109,10 +111,10 @@ export default function AddBookmarks() {
         pageIndex: Math.max(0, Math.min(parseInt(b.pageNumber, 10) || 1, pageCount) - 1),
       }));
       const result = await addPdfBookmarks(file, entries);
-      downloadPdf(result, pdfFilename(file, "_bookmarks"));
+      output.deliver(result, "_bookmarks", file);
     }, "Failed to add bookmarks. Please try again.");
     if (ok) setDone(true);
-  }, [pdf.file, bookmarks, pageCount, task]);
+  }, [pdf.file, bookmarks, pageCount, task, output]);
 
   const validCount = bookmarks.filter((b) => b.title.trim()).length;
 
@@ -284,7 +286,7 @@ export default function AddBookmarks() {
                 onClick={handleApply}
                 processing={task.processing}
                 disabled={task.processing || validCount === 0}
-                label={`Add ${validCount} Bookmark${validCount !== 1 ? "s" : ""} & Download`}
+                label={`Add ${validCount} Bookmark${validCount !== 1 ? "s" : ""} & ${output.deliveryWord}`}
                 processingLabel="Adding Bookmarks..."
               />
 

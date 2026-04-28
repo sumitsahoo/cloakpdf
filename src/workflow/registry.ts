@@ -34,12 +34,15 @@ const ELIGIBLE_TOOL_IDS: ReadonlyArray<ToolId> = [
   "add-blank-page",
   "duplicate-page",
   "remove-blank-pages",
+  "add-bookmarks",
+  "file-attachment",
   // Transform
   "compress",
   "flatten",
   "grayscale",
   "nup-pages",
   "repair-pdf",
+  "crop-pages",
   // Annotate
   "add-page-numbers",
   "header-footer",
