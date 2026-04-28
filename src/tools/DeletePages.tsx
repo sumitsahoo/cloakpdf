@@ -19,7 +19,7 @@ import { ThumbnailGrid } from "../components/ThumbnailGrid.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { useAsyncProcess } from "../hooks/useAsyncProcess.ts";
 import { usePdfFile } from "../hooks/usePdfFile.ts";
-import { downloadPdf, pdfFilename } from "../utils/file-helpers.ts";
+import { useToolOutput } from "../hooks/useToolOutput.ts";
 import { deletePages } from "../utils/pdf-operations.ts";
 import { renderAllThumbnails, revokeThumbnails } from "../utils/pdf-renderer.ts";
 
@@ -34,6 +34,7 @@ export default function DeletePages() {
     },
   });
   const task = useAsyncProcess();
+  const output = useToolOutput();
 
   const thumbnails = pdf.data ?? [];
 
@@ -56,9 +57,9 @@ export default function DeletePages() {
     const file = pdf.file;
     await task.run(async () => {
       const result = await deletePages(file, Array.from(selectedPages));
-      downloadPdf(result, pdfFilename(file, "_edited"));
+      output.deliver(result, "_edited", file);
     }, "Failed to delete pages. Please try again.");
-  }, [pdf.file, selectedPages, thumbnails.length, task]);
+  }, [pdf.file, selectedPages, thumbnails.length, task, output]);
 
   return (
     <div className="space-y-6">
@@ -121,7 +122,7 @@ export default function DeletePages() {
             <ActionButton
               onClick={handleDelete}
               processing={task.processing}
-              label={`Remove ${selectedPages.size} Page${selectedPages.size > 1 ? "s" : ""} & Download`}
+              label={`Remove ${selectedPages.size} Page${selectedPages.size > 1 ? "s" : ""} & ${output.deliveryWord}`}
               processingLabel="Removing..."
               color="bg-red-600 hover:bg-red-700"
             />

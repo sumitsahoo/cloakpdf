@@ -20,8 +20,9 @@ import { ResetButton } from "../components/ResetButton.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { useAsyncProcess } from "../hooks/useAsyncProcess.ts";
 import { usePdfFile } from "../hooks/usePdfFile.ts";
+import { useToolOutput } from "../hooks/useToolOutput.ts";
 import type { CropMargins } from "../types.ts";
-import { downloadPdf, formatFileSize, pdfFilename } from "../utils/file-helpers.ts";
+import { formatFileSize } from "../utils/file-helpers.ts";
 import { cropPages, uncropPages } from "../utils/pdf-operations.ts";
 import { PREVIEW_SCALE, renderAllThumbnails, revokeThumbnails } from "../utils/pdf-renderer.ts";
 
@@ -69,6 +70,7 @@ export default function CropPages() {
     },
   });
   const task = useAsyncProcess();
+  const output = useToolOutput();
 
   const allThumbs = pdf.data?.thumbnails ?? [];
   const pageDims = pdf.data?.pageDims ?? null;
@@ -154,9 +156,9 @@ export default function CropPages() {
     await task.run(async () => {
       const pageIndices = applyToAll ? undefined : Array.from(selectedPages).sort((a, b) => a - b);
       const result = await cropPages(file, marginsInPt, pageIndices);
-      downloadPdf(result, pdfFilename(file, "_cropped"));
+      output.deliver(result, "_cropped", file);
     }, "Failed to crop pages. Please try again.");
-  }, [pdf.file, marginsInPt, applyToAll, selectedPages, isValid, task]);
+  }, [pdf.file, marginsInPt, applyToAll, selectedPages, isValid, task, output]);
 
   const handleUncrop = useCallback(async () => {
     if (!pdf.file) return;
@@ -164,9 +166,9 @@ export default function CropPages() {
     await task.run(async () => {
       const pageIndices = applyToAll ? undefined : Array.from(selectedPages).sort((a, b) => a - b);
       const result = await uncropPages(file, pageIndices);
-      downloadPdf(result, pdfFilename(file, "_uncropped"));
+      output.deliver(result, "_uncropped", file);
     }, "Failed to remove crop. Please try again.");
-  }, [pdf.file, applyToAll, selectedPages, task]);
+  }, [pdf.file, applyToAll, selectedPages, task, output]);
 
   const inputClass =
     "w-full border border-slate-300 dark:border-dark-border rounded-lg px-3 py-2 text-sm bg-white dark:bg-dark-surface text-slate-800 dark:text-dark-text focus:outline-none focus:ring-2 focus:ring-primary-500";
@@ -456,7 +458,7 @@ export default function CropPages() {
                       onClick={handleCrop}
                       processing={processing}
                       disabled={processing || !isValid}
-                      label="Crop & Download"
+                      label={`Crop & ${output.deliveryWord}`}
                       processingLabel="Processing…"
                     />
                     <button
@@ -465,7 +467,7 @@ export default function CropPages() {
                       disabled={processing || (!applyToAll && selectedPages.size === 0)}
                       className="w-full bg-slate-100 dark:bg-dark-surface text-slate-700 dark:text-dark-text py-3 px-6 rounded-xl font-medium hover:bg-slate-200 dark:hover:bg-dark-border disabled:opacity-50 disabled:cursor-not-allowed transition-colors border border-slate-200 dark:border-dark-border"
                     >
-                      {processing ? "Processing…" : "Remove Crop & Download"}
+                      {processing ? "Processing…" : `Remove Crop & ${output.deliveryWord}`}
                     </button>
                   </div>
                 </div>

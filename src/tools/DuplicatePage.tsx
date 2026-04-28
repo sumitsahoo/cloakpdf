@@ -18,7 +18,8 @@ import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { useAsyncProcess } from "../hooks/useAsyncProcess.ts";
 import { usePdfFile } from "../hooks/usePdfFile.ts";
 import { useSortableDrag } from "../hooks/useSortableDrag.ts";
-import { downloadPdf, formatFileSize, pdfFilename } from "../utils/file-helpers.ts";
+import { useToolOutput } from "../hooks/useToolOutput.ts";
+import { formatFileSize } from "../utils/file-helpers.ts";
 import { duplicatePages } from "../utils/pdf-operations.ts";
 import { renderAllThumbnails, revokeThumbnails } from "../utils/pdf-renderer.ts";
 
@@ -46,6 +47,7 @@ export default function DuplicatePage() {
     },
   });
   const task = useAsyncProcess();
+  const output = useToolOutput();
 
   const thumbnails = pdf.data ?? [];
 
@@ -94,9 +96,9 @@ export default function DuplicatePage() {
         }
       }
       const result = await duplicatePages(file, copies);
-      downloadPdf(result, pdfFilename(file, "_duplicated"));
+      output.deliver(result, "_duplicated", file);
     }, "Failed to duplicate pages. Please try again.");
-  }, [pdf.file, hasCopies, items, task]);
+  }, [pdf.file, hasCopies, items, task, output]);
 
   return (
     <div className="space-y-6">
@@ -284,7 +286,7 @@ export default function DuplicatePage() {
                 <ActionButton
                   onClick={handleApply}
                   processing={task.processing}
-                  label="Duplicate Pages & Download"
+                  label={`Duplicate Pages & ${output.deliveryWord}`}
                   processingLabel="Duplicating…"
                 />
               )}
