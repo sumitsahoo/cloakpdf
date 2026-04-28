@@ -13,8 +13,10 @@
 
 import { ArrowDown, ArrowUp, Check, Plus, Trash2, Workflow as WorkflowIcon } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { AlertBox } from "../components/AlertBox.tsx";
 import { findTool } from "../config/tool-registry.ts";
 import type { ToolId } from "../types.ts";
+import { errorMessage } from "../utils/file-helpers.ts";
 import { loadWorkflows, newWorkflowId, upsertWorkflow } from "./storage.ts";
 import { ToolPickerModal } from "./ToolPickerModal.tsx";
 import type { Workflow, WorkflowStep } from "./types.ts";
@@ -29,7 +31,9 @@ interface WorkflowBuilderProps {
 export function WorkflowBuilder({ workflowId, onCancel, onSaved }: WorkflowBuilderProps) {
   const [name, setName] = useState("");
   const [steps, setSteps] = useState<WorkflowStep[]>([]);
+  const [createdAt, setCreatedAt] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   // Hydrate from storage when editing. `workflowId` is stable for the
   // lifetime of this view (App.tsx remounts the builder when switching
@@ -40,6 +44,7 @@ export function WorkflowBuilder({ workflowId, onCancel, onSaved }: WorkflowBuild
     if (found) {
       setName(found.name);
       setSteps(found.steps);
+      setCreatedAt(found.createdAt);
     }
   }, [workflowId]);
 
@@ -70,24 +75,21 @@ export function WorkflowBuilder({ workflowId, onCancel, onSaved }: WorkflowBuild
   const handleSave = useCallback(() => {
     const trimmedName = name.trim() || "Untitled workflow";
     const now = new Date().toISOString();
-    const workflow: Workflow = workflowId
-      ? {
-          id: workflowId,
-          name: trimmedName,
-          createdAt: loadWorkflows().find((w) => w.id === workflowId)?.createdAt ?? now,
-          updatedAt: now,
-          steps,
-        }
-      : {
-          id: newWorkflowId(),
-          name: trimmedName,
-          createdAt: now,
-          updatedAt: now,
-          steps,
-        };
-    upsertWorkflow(workflow);
+    const workflow: Workflow = {
+      id: workflowId ?? newWorkflowId(),
+      name: trimmedName,
+      createdAt: createdAt ?? now,
+      updatedAt: now,
+      steps,
+    };
+    try {
+      upsertWorkflow(workflow);
+    } catch (e) {
+      setSaveError(errorMessage(e, "Couldn't save the workflow."));
+      return;
+    }
     onSaved();
-  }, [name, steps, workflowId, onSaved]);
+  }, [name, steps, workflowId, createdAt, onSaved]);
 
   const canSave = steps.length > 0 && name.trim().length > 0;
 
@@ -202,6 +204,7 @@ export function WorkflowBuilder({ workflowId, onCancel, onSaved }: WorkflowBuild
       </div>
 
       <div className="flex flex-col items-stretch gap-3 pt-1">
+        {saveError && <AlertBox message={saveError} />}
         <div className="flex flex-col-reverse items-stretch sm:flex-row sm:items-center sm:justify-center gap-2">
           <button
             type="button"

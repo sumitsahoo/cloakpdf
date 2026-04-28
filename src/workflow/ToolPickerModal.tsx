@@ -98,27 +98,37 @@ export function ToolPickerModal({ onPick, onClose, alreadyAdded }: ToolPickerMod
     };
   }, []);
 
+  // Built once per mount — `eligibleToolIds()` is a static list, so
+  // grouping by category doesn't depend on `query`. The query-aware
+  // memo below just narrows each bucket.
+  const eligibleByCategory = useMemo(() => {
+    const map = new Map<string, NonNullable<ReturnType<typeof findTool>>[]>();
+    for (const id of eligibleToolIds()) {
+      const tool = findTool(id);
+      if (!tool?.category) continue;
+      const list = map.get(tool.category) ?? [];
+      list.push(tool);
+      map.set(tool.category, list);
+    }
+    return map;
+  }, []);
+
   const grouped = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const eligible = new Set<string>(eligibleToolIds());
     return categories
       .map((category) => {
-        const tools = eligibleToolIds()
-          .map((id) => findTool(id))
-          .filter((t): t is NonNullable<typeof t> => t !== null && t.category === category.key)
-          .filter((t) => {
-            if (!q) return true;
-            return (
-              t.title.toLowerCase().includes(q) ||
-              t.description.toLowerCase().includes(q) ||
-              category.label.toLowerCase().includes(q)
-            );
-          });
+        const tools = (eligibleByCategory.get(category.key) ?? []).filter((t) => {
+          if (!q) return true;
+          return (
+            t.title.toLowerCase().includes(q) ||
+            t.description.toLowerCase().includes(q) ||
+            category.label.toLowerCase().includes(q)
+          );
+        });
         return { category, tools };
       })
-      .filter((g) => g.tools.length > 0)
-      .filter(() => eligible.size > 0);
-  }, [query]);
+      .filter((g) => g.tools.length > 0);
+  }, [query, eligibleByCategory]);
 
   const totalShown = grouped.reduce((sum, g) => sum + g.tools.length, 0);
 

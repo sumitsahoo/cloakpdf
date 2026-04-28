@@ -38,10 +38,26 @@ export function loadWorkflows(): Workflow[] {
   return [...store.workflows].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }
 
-/** Persist the full list (replaces whatever is currently stored). */
+/**
+ * Persist the full list (replaces whatever is currently stored).
+ *
+ * Throws a friendly `Error` when the browser refuses the write — most
+ * commonly `QuotaExceededError` when storage is full, or `SecurityError`
+ * in Safari private browsing. Callers surface the message to the user.
+ */
 export function saveWorkflows(workflows: Workflow[]): void {
   const envelope: WorkflowStore = { version: 1, workflows };
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(envelope));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(envelope));
+  } catch (e) {
+    if (
+      e instanceof DOMException &&
+      (e.name === "QuotaExceededError" || e.name === "NS_ERROR_DOM_QUOTA_REACHED")
+    ) {
+      throw new Error("Browser storage is full — delete an old workflow and try again.");
+    }
+    throw new Error("Couldn't save to browser storage. Private browsing may be blocking it.");
+  }
 }
 
 /** Insert a new workflow or update the one whose id matches. */
