@@ -17,7 +17,8 @@ import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { useAsyncProcess } from "../hooks/useAsyncProcess.ts";
 import { usePdfFile } from "../hooks/usePdfFile.ts";
-import { downloadPdf, formatFileSize, pdfFilename } from "../utils/file-helpers.ts";
+import { useToolOutput } from "../hooks/useToolOutput.ts";
+import { formatFileSize } from "../utils/file-helpers.ts";
 import { nupPages } from "../utils/pdf-operations.ts";
 import { getPageCount } from "../utils/pdf-renderer.ts";
 
@@ -45,6 +46,7 @@ export default function NupPages() {
     onReset: () => setDone(false),
   });
   const task = useAsyncProcess();
+  const output = useToolOutput();
 
   const pageCount = pdf.data ?? 0;
 
@@ -54,10 +56,10 @@ export default function NupPages() {
     setDone(false);
     const ok = await task.run(async () => {
       const result = await nupPages(file, layout);
-      downloadPdf(result, pdfFilename(file, `_${layout}`));
+      output.deliver(result, `_${layout}`, file);
     }, "Failed to create N-up PDF. Please try again.");
     if (ok) setDone(true);
-  }, [pdf.file, layout, task]);
+  }, [pdf.file, layout, task, output]);
 
   const selected = LAYOUTS.find((l) => l.value === layout)!;
   const perSheet = selected.cols * selected.rows;

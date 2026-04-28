@@ -164,13 +164,7 @@ export default function ReversePages() {
             onClick={handleReverse}
             processing={task.processing}
             disabled={task.processing || pageCount < 2}
-            label={
-              output.inWorkflow
-                ? output.isLastStep
-                  ? "Reverse Pages & Download"
-                  : "Reverse & Continue"
-                : "Reverse Pages & Download"
-            }
+            label={`Reverse Pages & ${output.deliveryWord}`}
             processingLabel="Reversing..."
           />
 

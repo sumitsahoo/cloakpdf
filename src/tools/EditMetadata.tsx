@@ -32,8 +32,9 @@ import { ResetButton } from "../components/ResetButton.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { useAsyncProcess } from "../hooks/useAsyncProcess.ts";
 import { usePdfFile } from "../hooks/usePdfFile.ts";
+import { useToolOutput } from "../hooks/useToolOutput.ts";
 import type { PdfMetadata } from "../types.ts";
-import { downloadPdf, formatFileSize, pdfFilename } from "../utils/file-helpers.ts";
+import { formatFileSize } from "../utils/file-helpers.ts";
 import { getPdfMetadata, setPdfMetadata } from "../utils/pdf-operations.ts";
 
 /** Field configuration for rendering the metadata form. */
@@ -119,6 +120,7 @@ export default function EditMetadata() {
     loadErrorMessage: "Failed to read metadata.",
   });
   const task = useAsyncProcess();
+  const output = useToolOutput();
 
   const originalMetadata = pdf.data;
 
@@ -148,10 +150,10 @@ export default function EditMetadata() {
     const file = pdf.file;
     const ok = await task.run(async () => {
       const data = await setPdfMetadata(file, metadata);
-      downloadPdf(data, pdfFilename(file, "_metadata"));
+      output.deliver(data, "_metadata", file);
     }, "Failed to update metadata.");
     if (ok) setSaved(true);
-  }, [pdf.file, metadata, task]);
+  }, [pdf.file, metadata, task, output]);
 
   const isDirty =
     metadata !== null &&
@@ -246,7 +248,7 @@ export default function EditMetadata() {
                 onClick={handleSave}
                 processing={task.processing}
                 disabled={!isDirty}
-                label="Save & Download PDF"
+                label={`Save & ${output.deliveryWord} PDF`}
                 processingLabel="Saving..."
               />
 

@@ -96,11 +96,11 @@ unchanged in workflows**. There is no separate "workflow tool"
 component, no `configOnly` prop, no extracted options panel. Three
 files do all the work:
 
-| File                                                                    | Role                                                                                                                                                                          |
-| ----------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [src/workflow/WorkflowContext.tsx](../src/workflow/WorkflowContext.tsx) | A React context. When non-null, the surrounding tool is being run as a workflow step. Carries `injectedFile`, `onComplete`, `onSkip`, `isLastStep`.                           |
-| [src/hooks/usePdfFile.ts](../src/hooks/usePdfFile.ts)                   | Reads the context. If `injectedFile` is set, drives the same `onFiles` lifecycle internally — the tool's "file loaded" UI mounts immediately, and the dropzone never appears. |
-| [src/hooks/useToolOutput.ts](../src/hooks/useToolOutput.ts)             | The single seam for delivering a result. Standalone → `downloadPdf(...)`. Workflow → `slot.onComplete(...)`. Tools call `output.deliver(bytes, suffix, sourceFile)`.          |
+| File                                                                    | Role                                                                                                                                                                                                                                                                                                          |
+| ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [src/workflow/WorkflowContext.tsx](../src/workflow/WorkflowContext.tsx) | A React context. When non-null, the surrounding tool is being run as a workflow step. Carries `injectedFile`, `onComplete`, `onSkip`, `isLastStep`.                                                                                                                                                           |
+| [src/hooks/usePdfFile.ts](../src/hooks/usePdfFile.ts)                   | Reads the context. If `injectedFile` is set, drives the same `onFiles` lifecycle internally — the tool's "file loaded" UI mounts immediately, and the dropzone never appears.                                                                                                                                 |
+| [src/hooks/useToolOutput.ts](../src/hooks/useToolOutput.ts)             | The single seam for delivering a result. Standalone → `downloadPdf(...)`. Workflow → `slot.onComplete(...)`. Tools call `output.deliver(bytes, suffix, sourceFile)` and use `output.deliveryWord` for action-button labels (see §3 — resolves to `"Continue"` on intermediate steps, `"Download"` otherwise). |
 
 ### 2.4 What the runner does
 
@@ -194,25 +194,29 @@ Single-stage tools (Pattern B — e.g.
 Add the tool's id to `ELIGIBLE_TOOL_IDS` in
 [src/workflow/registry.ts](../src/workflow/registry.ts).
 
-### Optional — relabel the action button
+### Required — workflow-aware action label
 
-For tools where the standalone label says "X & Download", consider a
-workflow-aware label so the user understands the button advances them
-rather than downloading. See
-[ReversePages](../src/tools/ReversePages.tsx) for the pattern:
+If the tool's action button ends in "& Download", swap that tail for
+`output.deliveryWord`. The helper resolves to `"Continue"` on
+intermediate workflow steps and `"Download"` everywhere else
+(standalone, or the final step of a workflow). One expression, no
+manual branching:
 
 ```tsx
 <ActionButton
-  label={
-    output.inWorkflow
-      ? output.isLastStep
-        ? "Reverse Pages & Download"
-        : "Reverse & Continue"
-      : "Reverse Pages & Download"
-  }
+  label={`Apply Header & Footer & ${output.deliveryWord}`}
   // …
 />
 ```
+
+This replaces the older three-branch pattern. Examples in the codebase:
+[HeaderFooter](../src/tools/HeaderFooter.tsx),
+[BatesNumbering](../src/tools/BatesNumbering.tsx),
+[StampPdf](../src/tools/StampPdf.tsx),
+[RepairPdf](../src/tools/RepairPdf.tsx).
+
+If the action does not download in any mode (e.g. NupPages's
+`Create 2-up PDF`), no relabel is needed.
 
 ### Optional — exit early when the step is a no-op
 
@@ -226,13 +230,19 @@ brief notice. See
 
 ## 4. Current state
 
-### Eligible tools (Phase 1)
+### Eligible tools
 
-- `compress`
-- `reverse-pages`
-- `flatten`
-- `grayscale`
-- `remove-blank-pages` (also exercises the `onSkip` path)
+**Organise** — `extract-pages`, `reorder`, `delete`, `rotate`,
+`reverse-pages`, `add-blank-page`, `duplicate-page`,
+`remove-blank-pages` (exercises the `onSkip` path).
+
+**Transform** — `compress`, `flatten`, `grayscale`, `nup-pages`,
+`repair-pdf`.
+
+**Annotate** — `add-page-numbers`, `header-footer`, `bates-numbering`,
+`stamp-pdf` (covers seal / rectangle / watermark stamp styles).
+
+**Security** — `metadata`.
 
 ### Excluded by design
 
@@ -247,14 +257,13 @@ brief notice. See
 ### Not yet migrated (eligible candidates)
 
 PDF-in / PDF-out tools that just need the three-step migration above:
-`rotate`, `delete`, `reorder`, `extract-pages`, `add-blank-page`,
-`duplicate-page`, `add-bookmarks`, `file-attachment`, `crop-pages`,
-`ocr`, `nup-pages`, `repair-pdf`, `signature`, `fill-pdf-form`,
-`stamp-pdf`, `add-page-numbers`, `header-footer`, `bates-numbering`,
-`redact-pdf`, `metadata`, `split-pdf`.
+`add-bookmarks`, `file-attachment`, `crop-pages`, `ocr`, `signature`,
+`fill-pdf-form`, `redact-pdf`, `split-pdf`.
 
 (Note: `split-pdf` produces multiple PDFs — would need a "first match"
-or "concatenate splits" decision before it can chain. Probably exclude.)
+or "concatenate splits" decision before it can chain. Probably exclude.
+`ocr` has two output paths — text-only and searchable PDF — so its
+migration also needs a decision about which one workflow mode delivers.)
 
 ---
 
@@ -415,7 +424,33 @@ The cloakresume-derived pattern for all picker / chooser modals:
 - **Grid**: `grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4` for
   cards. Use 2-column inside narrower modals (`grid-cols-1 sm:grid-cols-2 gap-2`).
 
-### 7.8 Status & feedback
+### 7.8 Workflow-aware shared components (auto-hide / auto-relabel)
+
+A handful of shared components know about `WorkflowContext` directly so
+that no per-tool branching is needed. Tools migrated into the workflow
+system inherit these behaviours for free:
+
+- **[FileDropZone](../src/components/FileDropZone.tsx)** — returns
+  `null` when rendered inside a `WorkflowContext`. The runner has
+  already injected the file, so the dropzone is unreachable.
+- **[FileInfoBar](../src/components/FileInfoBar.tsx)** — returns
+  `null` inside a `WorkflowContext`. The runner shows the file
+  metadata in its own header above the inflated tool, so a second
+  copy would just duplicate it. `onChangeFile` is also optional now;
+  the runner's own `FileInfoBar` passes `undefined` for steps 2+ to
+  hide "Change file" (the displayed file is an intermediate, not a
+  user choice).
+- **[useToolOutput](../src/hooks/useToolOutput.ts)** — exposes
+  `output.deliveryWord` ("Continue" / "Download") so action-button
+  labels switch correctly between intermediate workflow steps and
+  the final / standalone case (see §3).
+
+Custom file-info panels (e.g. [RepairPdf](../src/tools/RepairPdf.tsx))
+that don't go through `FileInfoBar` need to gate their own "Change"
+control on `output.inWorkflow` manually — keep this in mind when
+migrating new tools.
+
+### 7.9 Status & feedback
 
 - **Inline notice** (transient, top-right of toolbar): green for success
   (`text-emerald-600 dark:text-emerald-400`), red for error
@@ -429,7 +464,7 @@ The cloakresume-derived pattern for all picker / chooser modals:
   primary + secondary CTAs centered. See `EmptyState` in
   [WorkflowsHome](../src/workflow/WorkflowsHome.tsx).
 
-### 7.9 Animations
+### 7.10 Animations
 
 Defined in [`src/index.css`](../src/index.css):
 
@@ -440,7 +475,7 @@ Defined in [`src/index.css`](../src/index.css):
 - `animate-popover-in` — small floating popovers.
 - All animations respect `prefers-reduced-motion` automatically.
 
-### 7.10 Tokens & theme references
+### 7.11 Tokens & theme references
 
 - **Primary**: blue scale `primary-{50,100,…,900}` — defined in
   [src/config/theme.ts](../src/config/theme.ts).
@@ -452,7 +487,7 @@ Defined in [`src/index.css`](../src/index.css):
   `categoryGlow` (see `theme.ts`); don't introduce per-category colours
   in new workflow UI — keep it primary-blue across the board.
 
-### 7.11 Checklist when adding controls to a workflow page
+### 7.12 Checklist when adding controls to a workflow page
 
 - [ ] Header uses the [§7.7 page header pattern](#77-layout-containers).
 - [ ] All buttons use one of the [§7.4 button roles](#74-buttons).
@@ -462,6 +497,10 @@ Defined in [`src/index.css`](../src/index.css):
       ad-hoc grey/black values.
 - [ ] Modals use the [§7.6 pattern](#76-modals): translucent surface,
       separate backdrop button, scroll lock, Escape closes.
+- [ ] Action-button label uses `output.deliveryWord` instead of a
+      hard-coded "& Download" (see [§7.8](#78-workflow-aware-shared-components-auto-hide--auto-relabel)).
+- [ ] Custom "Change file" / file-pickup affordances are gated on
+      `output.inWorkflow` (only `FileInfoBar` / `FileDropZone` auto-hide).
 - [ ] No emojis; icons come from `lucide-react`.
 - [ ] Light + dark variants exist for every coloured class.
 
@@ -491,7 +530,20 @@ src/
    ├─ FlattenPdf.tsx                ── migrated (Pattern A)
    ├─ GrayscalePdf.tsx              ── migrated (Pattern A)
    ├─ ReversePages.tsx              ── migrated (Pattern B)
-   └─ RemoveBlankPages.tsx          ── migrated (Pattern B + skip path)
+   ├─ RemoveBlankPages.tsx          ── migrated (Pattern B + skip path)
+   ├─ RepairPdf.tsx                 ── migrated (Pattern B)
+   ├─ NupPages.tsx                  ── migrated (Pattern B)
+   ├─ AddPageNumbers.tsx            ── migrated (Pattern B)
+   ├─ HeaderFooter.tsx              ── migrated (Pattern B)
+   ├─ BatesNumbering.tsx            ── migrated (Pattern B)
+   ├─ StampPdf.tsx                  ── migrated (Pattern B)
+   ├─ RotatePages.tsx               ── migrated (Pattern B)
+   ├─ DeletePages.tsx               ── migrated (Pattern B)
+   ├─ ReorderPages.tsx              ── migrated (Pattern B)
+   ├─ ExtractPages.tsx              ── migrated (Pattern B; custom file bar gates "Change file" on output.inWorkflow)
+   ├─ AddBlankPage.tsx              ── migrated (Pattern B)
+   ├─ DuplicatePage.tsx             ── migrated (Pattern B)
+   └─ EditMetadata.tsx              ── migrated (Pattern B)
 ```
 
 ---
@@ -501,10 +553,12 @@ src/
 If you're continuing this work, the obvious next moves are:
 
 1. **Migrate more tools.** Pick from §4's "Not yet migrated" list. Each
-   one is the §3 three-step recipe. Start with the simplest:
-   `repair-pdf`, `ocr`, `metadata`, `add-page-numbers`,
-   `header-footer`, `bates-numbering`, `nup-pages`, `stamp-pdf`.
-   When migrating, follow the [§7.11 design checklist](#711-checklist-when-adding-controls-to-a-workflow-page)
+   one is the §3 three-step recipe. Good next candidates:
+   `add-bookmarks`, `file-attachment`, `crop-pages`. The remaining
+   tools (`ocr`, `signature`, `fill-pdf-form`, `redact-pdf`,
+   `split-pdf`) need a small design decision before migration — see
+   the notes in §4.
+   When migrating, follow the [§7.12 design checklist](#712-checklist-when-adding-controls-to-a-workflow-page)
    for any new controls you introduce.
 2. **Per-step config persistence.** See §5 for the approach. Capture the
    tool's settings on `output.deliver` and persist them as defaults on

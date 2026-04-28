@@ -23,6 +23,15 @@ export interface ToolOutput {
   /** True when this tool is the last step of a running workflow. */
   isLastStep: boolean;
   /**
+   * The verb for the action button's tail: "Download" when standalone
+   * or on the final workflow step, "Continue" for intermediate workflow
+   * steps. Lets a tool write a single label expression like
+   * `` `Apply Header & Footer & ${output.deliveryWord}` `` without
+   * branching by hand. Capitalised so it drops straight into a button
+   * label.
+   */
+  deliveryWord: "Download" | "Continue";
+  /**
    * Deliver the produced PDF. Standalone → triggers a browser download
    * named `<source>${suffix}.pdf`. Workflow → forwards bytes to the
    * runner, which uses `suffix` only when this is the final step.
@@ -37,9 +46,12 @@ export interface ToolOutput {
 
 export function useToolOutput(): ToolOutput {
   const slot = useWorkflowSlot();
+  const inWorkflow = slot !== null;
+  const isLastStep = slot?.isLastStep ?? false;
   return {
-    inWorkflow: slot !== null,
-    isLastStep: slot?.isLastStep ?? false,
+    inWorkflow,
+    isLastStep,
+    deliveryWord: inWorkflow && !isLastStep ? "Continue" : "Download",
     deliver(bytes, suffix, sourceFile) {
       if (slot) {
         slot.onComplete(bytes, suffix);

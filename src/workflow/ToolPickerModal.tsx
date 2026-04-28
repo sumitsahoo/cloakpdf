@@ -124,26 +124,24 @@ export function ToolPickerModal({ onPick, onClose, alreadyAdded }: ToolPickerMod
 
   return (
     <div
-      className="fixed inset-0 z-200 flex items-end sm:items-center justify-center sm:px-4 md:px-6 sm:py-6 animate-scale-in bg-slate-900/30 dark:bg-black/50"
-      style={{
-        // Inline style for backdrop-filter so we get the `-webkit-`
-        // prefix automatically (Safari) and we don't depend on the
-        // Tailwind utility being purged or overridden by stacking-
-        // context surprises. 14px reads as a clear, modern blur.
-        backdropFilter: "blur(14px)",
-        WebkitBackdropFilter: "blur(14px)",
-        // The wrapper is also where the entrance animation lives. The
-        // sheet itself stays animation-free so the drag handler's
-        // inline `transform: translateY(...)` isn't overridden by an
-        // animation's `transform: scale(1)` end state — animations
-        // beat inline styles in the CSS cascade.
-        transformOrigin: "center bottom",
-      }}
+      className="fixed inset-0 z-200 flex items-end sm:items-center justify-center sm:px-4 md:px-6 sm:py-6"
       role="presentation"
     >
-      {/* Backdrop click target — fully transparent; the wrapper above
-          owns the blur + dim. Keyboard users can also close via Escape
-          (handled in the effect above) or the explicit close button. */}
+      {/* Backdrop dim + blur — fades in quickly on its own so the
+          background fills *before* the sheet animates in. Inline
+          backdrop-filter for the `-webkit-` prefix (Safari). */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 bg-slate-900/30 dark:bg-black/50 animate-fade-in"
+        style={{
+          backdropFilter: "blur(14px)",
+          WebkitBackdropFilter: "blur(14px)",
+        }}
+      />
+
+      {/* Backdrop click target — transparent; the layer above owns the
+          dim + blur. Keyboard users can also close via Escape or the
+          explicit close button. */}
       <button
         type="button"
         onClick={onClose}
@@ -151,148 +149,161 @@ export function ToolPickerModal({ onPick, onClose, alreadyAdded }: ToolPickerMod
         className="absolute inset-0 cursor-default bg-transparent"
       />
 
+      {/* Animation wrapper — owns the scale-in so the sheet itself
+          stays free for the drag handler's inline `transform:
+          translateY(...)`. An animation's end state would otherwise
+          beat inline styles in the cascade. The small delay lets the
+          backdrop finish filling before the sheet appears. */}
       <div
-        ref={sheetRef}
-        role="dialog"
-        aria-modal="true"
-        aria-label="Pick a tool"
-        className="relative flex flex-col w-full sm:w-[min(720px,100%)] lg:w-[min(820px,100%)] max-h-[92svh] sm:max-h-[min(720px,calc(100svh-64px))] overflow-hidden rounded-t-2xl sm:rounded-2xl border border-slate-200/80 dark:border-dark-border bg-white/85 dark:bg-dark-surface/85 backdrop-blur-xl shadow-2xl"
+        className="relative w-full sm:w-[min(720px,100%)] lg:w-[min(820px,100%)] animate-scale-in"
+        style={{
+          transformOrigin: "center bottom",
+          animationDelay: "0.08s",
+        }}
       >
-        {/* Mobile drag-handle. The hit area is intentionally taller than
+        <div
+          ref={sheetRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Pick a tool"
+          className="flex flex-col w-full max-h-[92svh] sm:max-h-[min(720px,calc(100svh-64px))] overflow-hidden rounded-t-2xl sm:rounded-2xl border border-slate-200/80 dark:border-dark-border bg-white/85 dark:bg-dark-surface/85 backdrop-blur-xl shadow-2xl"
+        >
+          {/* Mobile drag-handle. The hit area is intentionally taller than
             the visible bar (py-3) so a finger doesn't have to land on
             the 4 px pill exactly. `touch-none` tells the browser not to
             interpret the gesture as a scroll. */}
-        <div
-          onPointerDown={onHandlePointerDown}
-          onPointerMove={onHandlePointerMove}
-          onPointerUp={onHandlePointerEnd}
-          onPointerCancel={onHandlePointerEnd}
-          className="grid place-items-center py-3 cursor-grab active:cursor-grabbing touch-none select-none sm:hidden"
-        >
-          <span
-            aria-hidden="true"
-            className="w-11 h-1.5 rounded-full bg-slate-300 dark:bg-dark-border"
-          />
-        </div>
-
-        {/* Header — title, close, search */}
-        <div className="flex flex-col gap-3 px-5 sm:px-6 pt-2 sm:pt-5 pb-4 border-b border-slate-200/70 dark:border-dark-border/70">
-          <div className="flex items-start gap-3">
-            <div className="flex-1 min-w-0">
-              <div className="text-[15px] sm:text-base font-semibold tracking-[-0.01em] text-slate-800 dark:text-dark-text">
-                Pick a tool
-              </div>
-              <div className="text-[13px] text-slate-500 dark:text-dark-text-muted mt-0.5">
-                Workflow-eligible tools — search by name or category.
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={onClose}
-              className="w-9 h-9 rounded-lg grid place-items-center text-slate-400 dark:text-dark-text-muted hover:bg-slate-100 dark:hover:bg-dark-surface-alt hover:text-slate-700 dark:hover:text-dark-text transition-colors"
-              aria-label="Close"
-            >
-              <X className="w-4 h-4" />
-            </button>
+          <div
+            onPointerDown={onHandlePointerDown}
+            onPointerMove={onHandlePointerMove}
+            onPointerUp={onHandlePointerEnd}
+            onPointerCancel={onHandlePointerEnd}
+            className="grid place-items-center py-3 cursor-grab active:cursor-grabbing touch-none select-none sm:hidden"
+          >
+            <span
+              aria-hidden="true"
+              className="w-11 h-1.5 rounded-full bg-slate-300 dark:bg-dark-border"
+            />
           </div>
 
-          <div className="relative">
-            <Search
-              className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-dark-text-muted pointer-events-none"
-              aria-hidden="true"
-            />
-            <input
-              ref={searchInputRef}
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search tools…"
-              aria-label="Search tools"
-              className="w-full h-10 pl-9 pr-9 rounded-lg border border-slate-200 dark:border-dark-border bg-white dark:bg-dark-surface text-[13.5px] text-slate-800 dark:text-dark-text placeholder:text-slate-400 dark:placeholder:text-dark-text-muted outline-none transition-[border-color,box-shadow] duration-150 focus:border-primary-300 dark:focus:border-primary-600 focus:ring-2 focus:ring-primary-400/30"
-            />
-            {query && (
+          {/* Header — title, close, search */}
+          <div className="flex flex-col gap-3 px-5 sm:px-6 pt-2 sm:pt-5 pb-4 border-b border-slate-200/70 dark:border-dark-border/70">
+            <div className="flex items-start gap-3">
+              <div className="flex-1 min-w-0">
+                <div className="text-[15px] sm:text-base font-semibold tracking-[-0.01em] text-slate-800 dark:text-dark-text">
+                  Pick a tool
+                </div>
+                <div className="text-[13px] text-slate-500 dark:text-dark-text-muted mt-0.5">
+                  Workflow-eligible tools — search by name or category.
+                </div>
+              </div>
               <button
                 type="button"
-                onClick={() => {
-                  setQuery("");
-                  searchInputRef.current?.focus();
-                }}
-                aria-label="Clear search"
-                className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded grid place-items-center text-slate-400 dark:text-dark-text-muted hover:bg-slate-100 dark:hover:bg-dark-surface-alt hover:text-slate-700 dark:hover:text-dark-text transition-colors"
+                onClick={onClose}
+                className="w-9 h-9 rounded-lg grid place-items-center text-slate-400 dark:text-dark-text-muted hover:bg-slate-100 dark:hover:bg-dark-surface-alt hover:text-slate-700 dark:hover:text-dark-text transition-colors"
+                aria-label="Close"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="w-4 h-4" />
               </button>
+            </div>
+
+            <div className="relative">
+              <Search
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-dark-text-muted pointer-events-none"
+                aria-hidden="true"
+              />
+              <input
+                ref={searchInputRef}
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search tools…"
+                aria-label="Search tools"
+                className="w-full h-10 pl-9 pr-9 rounded-lg border border-slate-200 dark:border-dark-border bg-white dark:bg-dark-surface text-[13.5px] text-slate-800 dark:text-dark-text placeholder:text-slate-400 dark:placeholder:text-dark-text-muted outline-none transition-[border-color,box-shadow] duration-150 focus:border-primary-300 dark:focus:border-primary-600 focus:ring-2 focus:ring-primary-400/30"
+              />
+              {query && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setQuery("");
+                    searchInputRef.current?.focus();
+                  }}
+                  aria-label="Clear search"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded grid place-items-center text-slate-400 dark:text-dark-text-muted hover:bg-slate-100 dark:hover:bg-dark-surface-alt hover:text-slate-700 dark:hover:text-dark-text transition-colors"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Body */}
+          <div className="overflow-y-auto px-5 sm:px-6 py-4 sm:py-5 thin-scrollbar">
+            {totalShown === 0 ? (
+              <div className="py-10 text-center">
+                <div className="w-12 h-12 mx-auto rounded-2xl bg-slate-100 dark:bg-dark-surface-alt grid place-items-center mb-3">
+                  {query ? (
+                    <Search className="w-5 h-5 text-slate-400 dark:text-dark-text-muted" />
+                  ) : (
+                    <WorkflowIcon className="w-5 h-5 text-slate-400 dark:text-dark-text-muted" />
+                  )}
+                </div>
+                <div className="text-[14px] font-medium text-slate-700 dark:text-dark-text">
+                  {query ? `No tools match “${query}”` : "No workflow-eligible tools yet"}
+                </div>
+                <div className="text-[13px] text-slate-500 dark:text-dark-text-muted mt-1">
+                  {query
+                    ? "Try a different name or category."
+                    : "Migrate a tool to the workflow system to add it here."}
+                </div>
+              </div>
+            ) : (
+              grouped.map(({ category, tools }, idx) => (
+                <section key={category.key} className={idx === 0 ? "" : "mt-5"}>
+                  <div className="flex items-baseline gap-3 mb-3 pb-2 border-b border-slate-200/60 dark:border-dark-border/60">
+                    <h3 className="text-[11px] font-semibold tracking-[0.12em] uppercase text-primary-600 dark:text-primary-400">
+                      {category.label}
+                    </h3>
+                    <span className="ml-auto text-[11px] font-mono text-slate-400 dark:text-dark-text-muted tabular-nums">
+                      {String(tools.length).padStart(2, "0")}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {tools.map((tool) => {
+                      const Icon = tool.icon;
+                      const added = alreadyAdded?.has(tool.id) ?? false;
+                      return (
+                        <button
+                          key={tool.id}
+                          type="button"
+                          onClick={() => onPick(tool.id as ToolId)}
+                          className="group flex items-start gap-3 p-3 rounded-xl border border-slate-200 dark:border-dark-border bg-white dark:bg-dark-surface hover:border-primary-300 dark:hover:border-primary-600 hover:bg-primary-50/40 dark:hover:bg-primary-900/20 hover:-translate-y-0.5 hover:shadow-sm transition-[border-color,background-color,box-shadow,transform] duration-150 text-left"
+                        >
+                          <span className="shrink-0 w-9 h-9 rounded-lg bg-slate-100 dark:bg-dark-surface-alt text-slate-700 dark:text-dark-text grid place-items-center group-hover:bg-primary-100 dark:group-hover:bg-primary-900/40 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
+                            <Icon className="w-4 h-4" />
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2">
+                              <div className="text-[14px] font-semibold tracking-[-0.005em] text-slate-800 dark:text-dark-text truncate">
+                                {tool.title}
+                              </div>
+                              {added && (
+                                <span className="text-[10px] font-semibold tracking-[0.08em] uppercase px-1.5 py-0.5 rounded-md bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300">
+                                  Added
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-[12.5px] text-slate-500 dark:text-dark-text-muted leading-snug mt-0.5">
+                              {tool.description}
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </section>
+              ))
             )}
           </div>
-        </div>
-
-        {/* Body */}
-        <div className="overflow-y-auto px-5 sm:px-6 py-4 sm:py-5">
-          {totalShown === 0 ? (
-            <div className="py-10 text-center">
-              <div className="w-12 h-12 mx-auto rounded-2xl bg-slate-100 dark:bg-dark-surface-alt grid place-items-center mb-3">
-                {query ? (
-                  <Search className="w-5 h-5 text-slate-400 dark:text-dark-text-muted" />
-                ) : (
-                  <WorkflowIcon className="w-5 h-5 text-slate-400 dark:text-dark-text-muted" />
-                )}
-              </div>
-              <div className="text-[14px] font-medium text-slate-700 dark:text-dark-text">
-                {query ? `No tools match “${query}”` : "No workflow-eligible tools yet"}
-              </div>
-              <div className="text-[13px] text-slate-500 dark:text-dark-text-muted mt-1">
-                {query
-                  ? "Try a different name or category."
-                  : "Migrate a tool to the workflow system to add it here."}
-              </div>
-            </div>
-          ) : (
-            grouped.map(({ category, tools }, idx) => (
-              <section key={category.key} className={idx === 0 ? "" : "mt-5"}>
-                <div className="flex items-baseline gap-3 mb-3 pb-2 border-b border-slate-200/60 dark:border-dark-border/60">
-                  <h3 className="text-[11px] font-semibold tracking-[0.12em] uppercase text-primary-600 dark:text-primary-400">
-                    {category.label}
-                  </h3>
-                  <span className="ml-auto text-[11px] font-mono text-slate-400 dark:text-dark-text-muted tabular-nums">
-                    {String(tools.length).padStart(2, "0")}
-                  </span>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {tools.map((tool) => {
-                    const Icon = tool.icon;
-                    const added = alreadyAdded?.has(tool.id) ?? false;
-                    return (
-                      <button
-                        key={tool.id}
-                        type="button"
-                        onClick={() => onPick(tool.id as ToolId)}
-                        className="group flex items-start gap-3 p-3 rounded-xl border border-slate-200 dark:border-dark-border bg-white dark:bg-dark-surface hover:border-primary-300 dark:hover:border-primary-600 hover:bg-primary-50/40 dark:hover:bg-primary-900/20 hover:-translate-y-0.5 hover:shadow-sm transition-[border-color,background-color,box-shadow,transform] duration-150 text-left"
-                      >
-                        <span className="shrink-0 w-9 h-9 rounded-lg bg-slate-100 dark:bg-dark-surface-alt text-slate-700 dark:text-dark-text grid place-items-center group-hover:bg-primary-100 dark:group-hover:bg-primary-900/40 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
-                          <Icon className="w-4 h-4" />
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2">
-                            <div className="text-[14px] font-semibold tracking-[-0.005em] text-slate-800 dark:text-dark-text truncate">
-                              {tool.title}
-                            </div>
-                            {added && (
-                              <span className="text-[10px] font-semibold tracking-[0.08em] uppercase px-1.5 py-0.5 rounded-md bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300">
-                                Added
-                              </span>
-                            )}
-                          </div>
-                          <div className="text-[12.5px] text-slate-500 dark:text-dark-text-muted leading-snug mt-0.5">
-                            {tool.description}
-                          </div>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </section>
-            ))
-          )}
         </div>
       </div>
     </div>

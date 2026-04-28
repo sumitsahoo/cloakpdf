@@ -193,7 +193,7 @@ export default function RemoveBlankPages() {
                 <ActionButton
                   onClick={handleRemove}
                   processing={task.processing}
-                  label={`Remove ${selectedPages.size} Page${selectedPages.size !== 1 ? "s" : ""} & Download`}
+                  label={`Remove ${selectedPages.size} Page${selectedPages.size !== 1 ? "s" : ""} & ${output.deliveryWord}`}
                   processingLabel="Removing…"
                 />
               )}

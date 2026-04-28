@@ -22,8 +22,8 @@ import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { useAsyncProcess } from "../hooks/useAsyncProcess.ts";
 import { usePdfFile } from "../hooks/usePdfFile.ts";
 import { usePreviewScale } from "../hooks/usePreviewScale.ts";
+import { useToolOutput } from "../hooks/useToolOutput.ts";
 import type { WatermarkOptions } from "../types.ts";
-import { downloadPdf, pdfFilename } from "../utils/file-helpers.ts";
 import { addRectangleStamp, addSealStamp, addWatermark } from "../utils/pdf-operations.ts";
 import { PREVIEW_SCALE, renderAllThumbnails, revokeThumbnails } from "../utils/pdf-renderer.ts";
 
@@ -232,6 +232,7 @@ export default function StampPdf() {
     },
   });
   const task = useAsyncProcess();
+  const output = useToolOutput();
 
   const thumbnails = pdf.data?.thumbnails ?? [];
   const pageDims = pdf.data?.pageDims ?? [];
@@ -295,7 +296,7 @@ export default function StampPdf() {
         result = await addWatermark(file, options, pageIndices);
       }
       const suffix = stampStyle === "watermark" ? "_watermarked" : "_stamped";
-      downloadPdf(result, pdfFilename(file, suffix));
+      output.deliver(result, suffix, file);
     }, "Failed to apply stamp. Please try again.");
   }, [
     pdf.file,
@@ -309,6 +310,7 @@ export default function StampPdf() {
     customColor,
     rotation,
     task,
+    output,
   ]);
 
   const canApply =
@@ -658,8 +660,8 @@ export default function StampPdf() {
             disabled={processing || !canApply}
             label={
               stampStyle === "watermark"
-                ? "Apply Watermark & Download"
-                : `Apply "${selectedStamp.label}" Stamp & Download`
+                ? `Apply Watermark & ${output.deliveryWord}`
+                : `Apply "${selectedStamp.label}" Stamp & ${output.deliveryWord}`
             }
             processingLabel="Applying..."
           />

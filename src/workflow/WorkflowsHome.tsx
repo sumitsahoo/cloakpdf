@@ -131,36 +131,16 @@ export function WorkflowsHome({ onCreate, onEdit, onRun }: WorkflowsHomeProps) {
             Chain tools together and run them on a single PDF in sequence.
           </p>
         </div>
-
-        {/* Header-right action cluster — same placement pattern as
-            FileInfoBar's "Change file" and ToolView's controls. Hidden
-            in the empty state because the empty hero owns those CTAs. */}
-        {workflows.length > 0 && (
-          <div className="hidden sm:flex shrink-0 items-center gap-2">
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-dark-surface-alt hover:bg-slate-200 dark:hover:bg-dark-border text-slate-700 dark:text-dark-text text-[13px] font-medium transition-colors"
-            >
-              <Upload className="w-3.5 h-3.5" />
-              Import
-            </button>
-            <button
-              type="button"
-              onClick={handleExportAll}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-dark-surface-alt hover:bg-slate-200 dark:hover:bg-dark-border text-slate-700 dark:text-dark-text text-[13px] font-medium transition-colors"
-            >
-              <Download className="w-3.5 h-3.5" />
-              Export all
-            </button>
-          </div>
-        )}
       </div>
 
-      {/* Mobile-only action row — the same Import / Export controls
-          appear here when the header is too narrow to fit them. */}
+      {/* Options row — sits beneath the title card, the same pattern
+          tools use for their option controls (e.g. compression-level
+          buttons sit beneath the FileInfoBar). Hidden in the empty
+          state because the empty hero owns those CTAs. The transient
+          status message sits inline so it appears next to the action
+          that produced it. */}
       {workflows.length > 0 && (
-        <div className="sm:hidden flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
@@ -177,12 +157,25 @@ export function WorkflowsHome({ onCreate, onEdit, onRun }: WorkflowsHomeProps) {
             <Download className="w-3.5 h-3.5" />
             Export all
           </button>
+          {notice && (
+            <span
+              role="status"
+              className={`ml-1 text-[12.5px] font-medium ${
+                notice.kind === "ok"
+                  ? "text-emerald-600 dark:text-emerald-400"
+                  : "text-red-600 dark:text-red-400"
+              }`}
+            >
+              {notice.text}
+            </span>
+          )}
         </div>
       )}
 
-      {/* Inline status — sits right where the toolbar was so the user's
-          eye lands on it after clicking Import. Auto-dismisses after 4s. */}
-      {notice && (
+      {/* Status for the empty state — there are no buttons in this row,
+          so the notice gets its own line so the user sees the import
+          error / success message after clicking the empty-state CTA. */}
+      {workflows.length === 0 && notice && (
         <p
           role="status"
           className={`text-[12.5px] font-medium ${

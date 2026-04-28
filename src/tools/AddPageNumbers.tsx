@@ -20,8 +20,8 @@ import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { useAsyncProcess } from "../hooks/useAsyncProcess.ts";
 import { usePdfFile } from "../hooks/usePdfFile.ts";
 import { usePreviewScale } from "../hooks/usePreviewScale.ts";
+import { useToolOutput } from "../hooks/useToolOutput.ts";
 import type { PageNumberFormat, PageNumberOptions, PageNumberPosition } from "../types.ts";
-import { downloadPdf, pdfFilename } from "../utils/file-helpers.ts";
 import { addPageNumbers } from "../utils/pdf-operations.ts";
 import { PREVIEW_SCALE, renderAllThumbnails, revokeThumbnails } from "../utils/pdf-renderer.ts";
 
@@ -117,6 +117,7 @@ export default function AddPageNumbers() {
     },
   });
   const task = useAsyncProcess();
+  const output = useToolOutput();
 
   const thumbnails = pdf.data?.thumbnails ?? [];
   const pageDims = pdf.data?.pageDims ?? [];
@@ -141,9 +142,9 @@ export default function AddPageNumbers() {
     const file = pdf.file;
     await task.run(async () => {
       const result = await addPageNumbers(file, options);
-      downloadPdf(result, pdfFilename(file, "_numbered"));
+      output.deliver(result, "_numbered", file);
     }, "Failed to add page numbers. Please try again.");
-  }, [pdf.file, options, task]);
+  }, [pdf.file, options, task, output]);
 
   // Page number that appears on the currently previewed page (undefined if before firstPage)
   const previewPageNum =
@@ -393,7 +394,7 @@ export default function AddPageNumbers() {
             onClick={handleApply}
             processing={task.processing}
             disabled={task.processing || pdf.loading}
-            label="Add Page Numbers & Download"
+            label={`Add Page Numbers & ${output.deliveryWord}`}
             processingLabel="Adding numbers…"
           />
         </>
