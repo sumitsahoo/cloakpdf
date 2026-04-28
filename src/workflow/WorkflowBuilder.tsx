@@ -254,7 +254,7 @@ function StepRow({ index, step, isFirst, isLast, onUp, onDown, onRemove }: StepR
 
   return (
     <li className="flex items-center gap-3 bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border rounded-xl px-3 py-3 sm:px-4">
-      <span className="shrink-0 w-7 h-7 rounded-full bg-primary-50 dark:bg-primary-900/40 grid place-items-center font-serif italic text-[14px] font-semibold text-primary-600 dark:text-primary-400 border border-primary-100 dark:border-primary-800/60 tabular-nums">
+      <span className="shrink-0 w-7 h-7 rounded-full bg-primary-50 dark:bg-primary-900/40 inline-flex items-center justify-center text-[12px] font-semibold leading-none tabular-nums text-primary-600 dark:text-primary-400 border border-primary-100 dark:border-primary-800/60">
         {index + 1}
       </span>
       <span className="shrink-0 w-9 h-9 rounded-lg bg-slate-100 dark:bg-dark-surface-alt grid place-items-center text-slate-700 dark:text-dark-text">
