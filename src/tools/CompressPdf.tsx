@@ -178,7 +178,7 @@ export default function CompressPdf() {
               <ActionButton
                 onClick={handleCompress}
                 processing={processing}
-                label="Compress PDF"
+                label="Compress & download"
                 processingLabel="Compressing... (this may take a moment)"
               />
             </div>
