@@ -23,6 +23,7 @@ import {
   Workflow as WorkflowIcon,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { ConfirmDialog } from "../components/ConfirmDialog.tsx";
 import { findTool } from "../config/tool-registry.ts";
 import { downloadBlob } from "../utils/file-helpers.ts";
 import {
@@ -44,6 +45,7 @@ interface WorkflowsHomeProps {
 export function WorkflowsHome({ onCreate, onEdit, onRun }: WorkflowsHomeProps) {
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
   const [notice, setNotice] = useState<{ kind: "ok" | "err"; text: string } | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<Workflow | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -52,13 +54,12 @@ export function WorkflowsHome({ onCreate, onEdit, onRun }: WorkflowsHomeProps) {
 
   const refresh = useCallback(() => setWorkflows(loadWorkflows()), []);
 
-  const handleDelete = useCallback(
-    (id: string) => {
-      deleteWorkflow(id);
-      refresh();
-    },
-    [refresh],
-  );
+  const handleConfirmDelete = useCallback(() => {
+    if (!pendingDelete) return;
+    deleteWorkflow(pendingDelete.id);
+    setPendingDelete(null);
+    refresh();
+  }, [pendingDelete, refresh]);
 
   const handleExportOne = useCallback((wf: Workflow) => {
     const blob = new Blob([JSON.stringify(serializeForExport([wf]), null, 2)], {
@@ -200,11 +201,26 @@ export function WorkflowsHome({ onCreate, onEdit, onRun }: WorkflowsHomeProps) {
               onEdit={() => onEdit(wf.id)}
               onRun={() => onRun(wf.id)}
               onExport={() => handleExportOne(wf)}
-              onDelete={() => handleDelete(wf.id)}
+              onDelete={() => setPendingDelete(wf)}
             />
           ))}
         </div>
       )}
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title="Delete workflow?"
+        description={
+          pendingDelete
+            ? `“${pendingDelete.name}” will be removed from this browser. This can't be undone — export it first if you want a copy.`
+            : undefined
+        }
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        tone="danger"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setPendingDelete(null)}
+      />
     </div>
   );
 }
