@@ -10,6 +10,7 @@
 import { FileUp } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 import { categoryGlow } from "../config/theme.ts";
+import { useWorkflowSlot } from "../workflow/WorkflowContext.tsx";
 
 interface FileDropZoneProps {
   /** MIME type filter for the hidden file input (e.g. ".pdf,application/pdf"). */
@@ -43,6 +44,13 @@ export function FileDropZone({
   glowColor = categoryGlow.organise,
   iconColor,
 }: FileDropZoneProps) {
+  // In workflow mode the file is injected by the runner, so the
+  // dropzone is unreachable. Skip rendering it entirely so the inflated
+  // tool's UI starts directly with its post-load controls. Hooks must
+  // run before this early-return — useWorkflowSlot is the only hook
+  // here; the rest of the component's hooks come after.
+  const inWorkflow = useWorkflowSlot() !== null;
+
   const [isDragOver, setIsDragOver] = useState(false);
   const zoneRef = useRef<HTMLButtonElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -105,6 +113,11 @@ export function FileDropZone({
     },
     [onFiles],
   );
+
+  // All hooks above run unconditionally; only the render result is
+  // gated. In workflow mode the runner has already injected a file, so
+  // there is nothing for the dropzone to do.
+  if (inWorkflow) return null;
 
   return (
     <button

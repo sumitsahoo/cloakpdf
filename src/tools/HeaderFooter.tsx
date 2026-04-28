@@ -22,8 +22,9 @@ import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { useAsyncProcess } from "../hooks/useAsyncProcess.ts";
 import { usePdfFile } from "../hooks/usePdfFile.ts";
 import { usePreviewScale } from "../hooks/usePreviewScale.ts";
+import { useToolOutput } from "../hooks/useToolOutput.ts";
 import type { HeaderFooterOptions } from "../types.ts";
-import { downloadPdf, formatFileSize, pdfFilename } from "../utils/file-helpers.ts";
+import { formatFileSize } from "../utils/file-helpers.ts";
 import { addHeaderFooter } from "../utils/pdf-operations.ts";
 import { PREVIEW_SCALE, renderAllThumbnails, revokeThumbnails } from "../utils/pdf-renderer.ts";
 
@@ -79,6 +80,7 @@ export default function HeaderFooter() {
     },
   });
   const task = useAsyncProcess();
+  const output = useToolOutput();
 
   const thumbnails = pdf.data?.thumbnails ?? [];
   const pageDims = pdf.data?.pageDims ?? [];
@@ -141,9 +143,9 @@ export default function HeaderFooter() {
     const file = pdf.file;
     await task.run(async () => {
       const result = await addHeaderFooter(file, options);
-      downloadPdf(result, pdfFilename(file, "_header_footer"));
+      output.deliver(result, "_header_footer", file);
     }, "Failed to add header/footer. Please try again.");
-  }, [pdf.file, options, task]);
+  }, [pdf.file, options, task, output]);
 
   const slotClass =
     "w-full border border-slate-300 dark:border-dark-border rounded-lg px-2.5 py-1.5 text-sm bg-white dark:bg-dark-surface text-slate-800 dark:text-dark-text focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-400 placeholder:text-slate-300 dark:placeholder:text-dark-text-muted transition-colors";
@@ -490,7 +492,7 @@ export default function HeaderFooter() {
             onClick={handleApply}
             processing={processing}
             disabled={processing || loading}
-            label="Apply Header & Footer & Download"
+            label={`Apply Header & Footer & ${output.deliveryWord}`}
             processingLabel="Applying…"
           />
         </>

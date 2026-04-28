@@ -34,8 +34,9 @@
  *   );
  */
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { LOAD_ERROR_MESSAGE, errorMessage } from "../utils/file-helpers.ts";
+import { useWorkflowSlot } from "../workflow/WorkflowContext.tsx";
 
 export interface UsePdfFileOptions<T> {
   /**
@@ -134,6 +135,16 @@ export function usePdfFile<T = void>(options: UsePdfFileOptions<T> = {}): UsePdf
   // mutating state.
   const requestIdRef = useRef(0);
 
+  // When this tool is rendered as a workflow step, a slot supplies the
+  // intermediate PDF directly — there is no dropzone for the user to
+  // interact with. We seed `file` once per injected reference so the
+  // tool's "file loaded" UI mounts immediately. Refs hold `onFiles` and
+  // the prior injected file to avoid re-triggering on unrelated renders.
+  const slot = useWorkflowSlot();
+  const injectedFile = slot?.injectedFile ?? null;
+  const onFilesRef = useRef<(files: File[]) => void>(() => undefined);
+  const lastInjectedRef = useRef<File | null>(null);
+
   const reset = useCallback(() => {
     const previous = dataRef.current;
     requestIdRef.current++;
@@ -178,6 +189,18 @@ export function usePdfFile<T = void>(options: UsePdfFileOptions<T> = {}): UsePdf
       }
     })();
   }, []);
+
+  onFilesRef.current = onFiles;
+
+  // In workflow mode, drive the same `onFiles` lifecycle with the file
+  // supplied by the runner. Re-runs only when the runner injects a
+  // different File reference (i.e. a fresh step), not on every render.
+  useEffect(() => {
+    if (!injectedFile) return;
+    if (lastInjectedRef.current === injectedFile) return;
+    lastInjectedRef.current = injectedFile;
+    onFilesRef.current([injectedFile]);
+  }, [injectedFile]);
 
   return { file, data, loading, loadError, setLoadError, onFiles, reset };
 }

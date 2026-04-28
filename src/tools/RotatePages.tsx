@@ -19,7 +19,7 @@ import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { PageThumbnail } from "../components/PageThumbnail.tsx";
 import { useAsyncProcess } from "../hooks/useAsyncProcess.ts";
 import { usePdfFile } from "../hooks/usePdfFile.ts";
-import { downloadPdf, pdfFilename } from "../utils/file-helpers.ts";
+import { useToolOutput } from "../hooks/useToolOutput.ts";
 import { rotatePages } from "../utils/pdf-operations.ts";
 import { renderAllThumbnails, revokeThumbnails } from "../utils/pdf-renderer.ts";
 
@@ -34,6 +34,7 @@ export default function RotatePages() {
     },
   });
   const task = useAsyncProcess();
+  const output = useToolOutput();
 
   const thumbnails = pdf.data ?? [];
 
@@ -67,9 +68,9 @@ export default function RotatePages() {
     const file = pdf.file;
     await task.run(async () => {
       const result = await rotatePages(file, rotations);
-      downloadPdf(result, pdfFilename(file, "_rotated"));
+      output.deliver(result, "_rotated", file);
     }, "Failed to rotate pages. Please try again.");
-  }, [pdf.file, rotations, task]);
+  }, [pdf.file, rotations, task, output]);
 
   return (
     <div className="space-y-6">
@@ -152,7 +153,7 @@ export default function RotatePages() {
             <ActionButton
               onClick={handleApply}
               processing={task.processing}
-              label="Apply Rotations & Download"
+              label={`Apply Rotations & ${output.deliveryWord}`}
               processingLabel="Applying..."
             />
           )}

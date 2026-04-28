@@ -16,7 +16,8 @@ import { InfoCallout } from "../components/InfoCallout.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { useAsyncProcess } from "../hooks/useAsyncProcess.ts";
 import { usePdfFile } from "../hooks/usePdfFile.ts";
-import { downloadPdf, formatFileSize, pdfFilename } from "../utils/file-helpers.ts";
+import { useToolOutput } from "../hooks/useToolOutput.ts";
+import { formatFileSize } from "../utils/file-helpers.ts";
 import { repairPdf } from "../utils/pdf-operations.ts";
 
 export default function RepairPdf() {
@@ -30,6 +31,7 @@ export default function RepairPdf() {
     },
   });
   const task = useAsyncProcess();
+  const output = useToolOutput();
 
   const handleRepair = useCallback(async () => {
     if (!pdf.file) return;
@@ -38,10 +40,10 @@ export default function RepairPdf() {
     const ok = await task.run(async () => {
       const result = await repairPdf(file);
       setSizeAfter(result.byteLength);
-      downloadPdf(result, pdfFilename(file, "_repaired"));
+      output.deliver(result, "_repaired", file);
     }, "Failed to repair PDF. The file may be severely corrupted.");
     if (ok) setDone(true);
-  }, [pdf.file, task]);
+  }, [pdf.file, task, output]);
 
   return (
     <div className="space-y-6">
@@ -65,13 +67,15 @@ export default function RepairPdf() {
                 <span className="text-sm text-slate-800 dark:text-dark-text truncate max-w-48">
                   {pdf.file.name}
                 </span>
-                <button
-                  type="button"
-                  onClick={pdf.reset}
-                  className="text-xs text-primary-600 hover:text-primary-700 shrink-0"
-                >
-                  Change
-                </button>
+                {!output.inWorkflow && (
+                  <button
+                    type="button"
+                    onClick={pdf.reset}
+                    className="text-xs text-primary-600 hover:text-primary-700 shrink-0"
+                  >
+                    Change
+                  </button>
+                )}
               </div>
             </div>
             <div className="flex items-center justify-between px-4 py-3">
@@ -103,7 +107,7 @@ export default function RepairPdf() {
           <ActionButton
             onClick={handleRepair}
             processing={task.processing}
-            label="Repair & Download PDF"
+            label={`Repair & ${output.deliveryWord} PDF`}
             processingLabel="Repairing..."
           />
 
