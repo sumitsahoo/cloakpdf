@@ -234,10 +234,12 @@ brief notice. See
 
 **Organise** — `extract-pages`, `reorder`, `delete`, `rotate`,
 `reverse-pages`, `add-blank-page`, `duplicate-page`,
-`remove-blank-pages` (exercises the `onSkip` path).
+`remove-blank-pages` (exercises the `onSkip` path), `add-bookmarks`,
+`file-attachment`.
 
 **Transform** — `compress`, `flatten`, `grayscale`, `nup-pages`,
-`repair-pdf`.
+`repair-pdf`, `crop-pages` (dual action — both Crop and Remove Crop
+deliver to the runner; the user picks one per run).
 
 **Annotate** — `add-page-numbers`, `header-footer`, `bates-numbering`,
 `stamp-pdf` (covers seal / rectangle / watermark stamp styles).
@@ -257,8 +259,7 @@ brief notice. See
 ### Not yet migrated (eligible candidates)
 
 PDF-in / PDF-out tools that just need the three-step migration above:
-`add-bookmarks`, `file-attachment`, `crop-pages`, `ocr`, `signature`,
-`fill-pdf-form`, `redact-pdf`, `split-pdf`.
+`ocr`, `signature`, `fill-pdf-form`, `redact-pdf`, `split-pdf`.
 
 (Note: `split-pdf` produces multiple PDFs — would need a "first match"
 or "concatenate splits" decision before it can chain. Probably exclude.
@@ -450,6 +451,13 @@ that don't go through `FileInfoBar` need to gate their own "Change"
 control on `output.inWorkflow` manually — keep this in mind when
 migrating new tools.
 
+Tools that bypass `usePdfFile` entirely (e.g.
+[FileAttachment](../src/tools/FileAttachment.tsx), which mutates the
+`File` state across multiple add/remove ops) must also wire the
+runner's injected file by hand: read `useWorkflowSlot()`, watch
+`slot?.injectedFile` in an effect, and seed local file state once per
+new injection (track the previous reference in a ref to avoid loops).
+
 ### 7.9 Status & feedback
 
 - **Inline notice** (transient, top-right of toolbar): green for success
@@ -543,7 +551,10 @@ src/
    ├─ ExtractPages.tsx              ── migrated (Pattern B; custom file bar gates "Change file" on output.inWorkflow)
    ├─ AddBlankPage.tsx              ── migrated (Pattern B)
    ├─ DuplicatePage.tsx             ── migrated (Pattern B)
-   └─ EditMetadata.tsx              ── migrated (Pattern B)
+   ├─ EditMetadata.tsx              ── migrated (Pattern B)
+   ├─ AddBookmarks.tsx              ── migrated (Pattern B)
+   ├─ CropPages.tsx                 ── migrated (Pattern B; dual delivery — Crop / Remove Crop)
+   └─ FileAttachment.tsx            ── migrated (Pattern B; manual injectedFile wiring, useState-based file)
 ```
 
 ---
@@ -552,12 +563,10 @@ src/
 
 If you're continuing this work, the obvious next moves are:
 
-1. **Migrate more tools.** Pick from §4's "Not yet migrated" list. Each
-   one is the §3 three-step recipe. Good next candidates:
-   `add-bookmarks`, `file-attachment`, `crop-pages`. The remaining
-   tools (`ocr`, `signature`, `fill-pdf-form`, `redact-pdf`,
-   `split-pdf`) need a small design decision before migration — see
-   the notes in §4.
+1. **Migrate more tools.** Pick from §4's "Not yet migrated" list. The
+   remaining tools (`ocr`, `signature`, `fill-pdf-form`, `redact-pdf`,
+   `split-pdf`) all need a small design decision before migration — see
+   the notes in §4. Once decided, each is still the §3 three-step recipe.
    When migrating, follow the [§7.12 design checklist](#712-checklist-when-adding-controls-to-a-workflow-page)
    for any new controls you introduce.
 2. **Per-step config persistence.** See §5 for the approach. Capture the
