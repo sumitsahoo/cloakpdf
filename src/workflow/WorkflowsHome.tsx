@@ -25,7 +25,7 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ConfirmDialog } from "../components/ConfirmDialog.tsx";
 import { findTool } from "../config/tool-registry.ts";
-import { downloadBlob } from "../utils/file-helpers.ts";
+import { downloadBlob, errorMessage } from "../utils/file-helpers.ts";
 import {
   deleteWorkflow,
   importWorkflows,
@@ -56,7 +56,13 @@ export function WorkflowsHome({ onCreate, onEdit, onRun }: WorkflowsHomeProps) {
 
   const handleConfirmDelete = useCallback(() => {
     if (!pendingDelete) return;
-    deleteWorkflow(pendingDelete.id);
+    try {
+      deleteWorkflow(pendingDelete.id);
+    } catch (e) {
+      setNotice({ kind: "err", text: errorMessage(e, "Couldn't delete that workflow.") });
+      setPendingDelete(null);
+      return;
+    }
     setPendingDelete(null);
     refresh();
   }, [pendingDelete, refresh]);
@@ -69,28 +75,38 @@ export function WorkflowsHome({ onCreate, onEdit, onRun }: WorkflowsHomeProps) {
   }, []);
 
   const handleExportAll = useCallback(() => {
-    const all = loadWorkflows();
-    if (all.length === 0) return;
-    const blob = new Blob([JSON.stringify(serializeForExport(all), null, 2)], {
+    if (workflows.length === 0) return;
+    const blob = new Blob([JSON.stringify(serializeForExport(workflows), null, 2)], {
       type: "application/json",
     });
     downloadBlob(blob, "cloakpdf-workflows.json");
-  }, []);
+  }, [workflows]);
 
   const handleImportFile = useCallback(
-    (file: File) => {
-      void file.text().then((text) => {
-        const parsed = parseImport(text);
-        if (!parsed) {
-          setNotice({ kind: "err", text: "Couldn't read that file — is it a workflow export?" });
-          return;
-        }
-        const count = importWorkflows(parsed);
-        refresh();
-        setNotice({
-          kind: "ok",
-          text: `Imported ${count} workflow${count === 1 ? "" : "s"}.`,
-        });
+    async (file: File) => {
+      let text: string;
+      try {
+        text = await file.text();
+      } catch {
+        setNotice({ kind: "err", text: "Couldn't read that file." });
+        return;
+      }
+      const parsed = parseImport(text);
+      if (!parsed) {
+        setNotice({ kind: "err", text: "Couldn't read that file — is it a workflow export?" });
+        return;
+      }
+      let count: number;
+      try {
+        count = importWorkflows(parsed);
+      } catch (e) {
+        setNotice({ kind: "err", text: errorMessage(e, "Couldn't save imported workflows.") });
+        return;
+      }
+      refresh();
+      setNotice({
+        kind: "ok",
+        text: `Imported ${count} workflow${count === 1 ? "" : "s"}.`,
       });
     },
     [refresh],
@@ -113,7 +129,7 @@ export function WorkflowsHome({ onCreate, onEdit, onRun }: WorkflowsHomeProps) {
         accept="application/json,.json"
         onChange={(e) => {
           const f = e.target.files?.[0];
-          if (f) handleImportFile(f);
+          if (f) void handleImportFile(f);
           e.target.value = "";
         }}
         className="hidden"

@@ -31,7 +31,7 @@ import { InfoCallout } from "../components/InfoCallout.tsx";
 import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
 import { findTool, findToolComponent } from "../config/tool-registry.ts";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
-import { downloadPdf, formatFileSize, pdfFilename } from "../utils/file-helpers.ts";
+import { downloadPdf, errorMessage, formatFileSize, pdfFilename } from "../utils/file-helpers.ts";
 import { loadWorkflows } from "./storage.ts";
 import { WorkflowContext, type WorkflowSlot } from "./WorkflowContext.tsx";
 
@@ -52,6 +52,7 @@ export function WorkflowRunner({ workflowId, onExit }: WorkflowRunnerProps) {
   const [suffixChain, setSuffixChain] = useState<string[]>([]);
   const [done, setDone] = useState(false);
   const [skipNotice, setSkipNotice] = useState<string | null>(null);
+  const [runError, setRunError] = useState<string | null>(null);
 
   const handleStart = useCallback((files: File[]) => {
     const f = files[0];
@@ -62,6 +63,7 @@ export function WorkflowRunner({ workflowId, onExit }: WorkflowRunnerProps) {
     setSuffixChain([]);
     setDone(false);
     setSkipNotice(null);
+    setRunError(null);
   }, []);
 
   const handleReset = useCallback(() => {
@@ -71,29 +73,63 @@ export function WorkflowRunner({ workflowId, onExit }: WorkflowRunnerProps) {
     setSuffixChain([]);
     setDone(false);
     setSkipNotice(null);
+    setRunError(null);
   }, []);
 
+  // `advance` accepts the produced bytes directly so the final-step
+  // download doesn't re-buffer through `File.arrayBuffer()`. For
+  // intermediate steps we still wrap bytes in a `File` because the
+  // next step's `usePdfFile` consumes a `File` reference. `delivered`
+  // is `null` on skip — the prior file flows through unchanged.
   const advance = useCallback(
-    (nextFile: File | null, suffix: string | null) => {
+    (delivered: { bytes: Uint8Array; sourceTool: string } | null, suffix: string | null) => {
       if (!workflow) return;
       const isLast = stepIndex >= workflow.steps.length - 1;
       if (isLast) {
-        // Final step: trigger download with full suffix chain.
-        if (nextFile && originalFile && suffix !== null) {
-          void nextFile.arrayBuffer().then((buf) => {
-            const chain = [...suffixChain, suffix].join("");
-            downloadPdf(new Uint8Array(buf), pdfFilename(originalFile, chain || "_processed"));
-          });
+        if (suffix === null || !originalFile) {
+          setDone(true);
+          return;
+        }
+        const chain = [...suffixChain, suffix].join("");
+        const filename = pdfFilename(originalFile, chain || "_processed");
+        if (delivered) {
+          try {
+            downloadPdf(delivered.bytes, filename);
+            setDone(true);
+          } catch (e) {
+            setRunError(errorMessage(e, "Couldn't trigger the download."));
+          }
+          return;
+        }
+        // Skip-as-final-step: re-read the prior file's bytes for the
+        // download. Rare path — only when the last step opted out.
+        if (currentFile) {
+          currentFile
+            .arrayBuffer()
+            .then((buf) => {
+              downloadPdf(new Uint8Array(buf), filename);
+              setDone(true);
+            })
+            .catch((e) =>
+              setRunError(errorMessage(e, "Couldn't read the final file for download.")),
+            );
+          return;
         }
         setDone(true);
         return;
       }
-      // Intermediate step: prepare the next step's input.
-      if (nextFile) setCurrentFile(nextFile);
+      if (delivered) {
+        const pseudoFile = new File(
+          [delivered.bytes as Uint8Array<ArrayBuffer>],
+          `${delivered.sourceTool}.pdf`,
+          { type: "application/pdf" },
+        );
+        setCurrentFile(pseudoFile);
+      }
       if (suffix !== null) setSuffixChain((prev) => [...prev, suffix]);
       setStepIndex((i) => i + 1);
     },
-    [workflow, stepIndex, suffixChain, originalFile],
+    [workflow, stepIndex, suffixChain, originalFile, currentFile],
   );
 
   // Slot is recreated every step transition so the tool component sees a
@@ -106,17 +142,13 @@ export function WorkflowRunner({ workflowId, onExit }: WorkflowRunnerProps) {
       injectedFile: currentFile,
       isLastStep: stepIndex >= workflow.steps.length - 1,
       onComplete: (bytes, suffix) => {
-        const stepTool = workflow.steps[stepIndex]?.tool ?? "step";
-        const pseudoFile = new File([bytes as BlobPart], `${stepTool}.pdf`, {
-          type: "application/pdf",
-        });
+        const sourceTool = workflow.steps[stepIndex]?.tool ?? "step";
         setSkipNotice(null);
-        advance(pseudoFile, suffix);
+        advance({ bytes, sourceTool }, suffix);
       },
       onSkip: (reason) => {
         setSkipNotice(reason);
-        // Pass the current file through unchanged.
-        advance(currentFile, "");
+        advance(null, "");
       },
     };
   }, [workflow, currentFile, stepIndex, advance]);
@@ -191,6 +223,8 @@ export function WorkflowRunner({ workflowId, onExit }: WorkflowRunnerProps) {
               {skipNotice} — moved to the next step.
             </InfoCallout>
           )}
+
+          {runError && <AlertBox message={runError} />}
 
           {slot && <StepHost slot={slot} toolId={workflow.steps[stepIndex].tool} />}
         </>
