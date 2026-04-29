@@ -140,56 +140,45 @@ function HomeScreen({ onSelectTool, onOpenWorkflows }: HomeScreenProps) {
 
   return (
     <div>
-      {/* ── Hero ────────────────────────────────────────── */}
-      <section className="pt-6 sm:pt-10 md:pt-14 pb-8 sm:pb-10">
-        <h1
-          className="text-center text-[34px] sm:text-[46px] md:text-[60px] lg:text-[64px] font-semibold text-slate-900 dark:text-dark-text tracking-[-0.03em] leading-[1.05] m-0 max-w-225 mx-auto animate-fade-in-up"
-          style={{ animationDelay: "0ms" }}
-        >
-          PDF tools that{" "}
-          <em className="font-serif italic font-normal text-primary-600 dark:text-primary-400">
-            stay on your device
-          </em>
-          .
-        </h1>
+      {/* ── Hero — asymmetric two-column. Headline + subhead live in the
+          left column (left-aligned); the Workflows promo card anchors the
+          right. On mobile the columns stack. When searchQuery is active
+          the right column is omitted; the left column keeps its width so
+          the page rhythm doesn't jump as the user types. ───────────── */}
+      <section className="pt-6 sm:pt-10 md:pt-14 pb-10 sm:pb-12">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
+          <div className="lg:col-span-7">
+            <h1
+              className="text-[34px] sm:text-[44px] lg:text-[52px] xl:text-[58px] font-semibold text-slate-900 dark:text-dark-text tracking-[-0.03em] leading-[1.05] m-0 animate-fade-in-up"
+              style={{ animationDelay: "0ms" }}
+            >
+              PDF tools that{" "}
+              <em className="font-serif italic font-normal text-primary-600 dark:text-primary-400">
+                stay on your device
+              </em>
+              .
+            </h1>
 
-        <p
-          className="text-center text-slate-500 dark:text-dark-text-muted text-[15px] sm:text-[17px] md:text-[18px] leading-[1.55] max-w-160 mx-auto mt-5 sm:mt-6 animate-fade-in-up"
-          style={{ animationDelay: "80ms" }}
-        >
-          Edit, merge, sign, secure, and convert PDFs entirely in your browser. No uploads, no
-          accounts, no tracking.
-        </p>
-      </section>
-
-      {/* ── Workflow Hero Card ──────────────────────────── */}
-      {!searchQuery && (
-        <div
-          className="max-w-2xl mx-auto mb-8 sm:mb-10 animate-fade-in-up"
-          style={{ animationDelay: "120ms" }}
-        >
-          <WorkflowHeroCard onOpen={onOpenWorkflows} />
-        </div>
-      )}
-
-      {/* ── "Or pick a single tool" section header ──────── */}
-      {!searchQuery && (
-        <div
-          className="max-w-2xl mx-auto text-center mb-5 sm:mb-6 animate-fade-in-up"
-          style={{ animationDelay: "140ms" }}
-        >
-          <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary-600 dark:text-primary-400 mb-2">
-            Or pick a single tool
+            <p
+              className="text-slate-500 dark:text-dark-text-muted text-[15px] sm:text-[16.5px] lg:text-[17px] leading-[1.55] mt-5 sm:mt-6 max-w-lg animate-fade-in-up"
+              style={{ animationDelay: "80ms" }}
+            >
+              Edit, merge, sign, secure, and convert PDFs entirely in your browser. No uploads, no
+              accounts, no tracking.
+            </p>
           </div>
-          <p className="text-[13.5px] sm:text-[14px] leading-[1.55] text-slate-500 dark:text-dark-text-muted">
-            Browse the full toolbox below, or jump straight to the one you need.
-          </p>
+
+          {!searchQuery && (
+            <div className="lg:col-span-5 animate-fade-in-up" style={{ animationDelay: "120ms" }}>
+              <WorkflowHeroCard onOpen={onOpenWorkflows} />
+            </div>
+          )}
         </div>
-      )}
+      </section>
 
       {/* ── Search Bar ──────────────────────────────────── */}
       <div
-        className="max-w-2xl mx-auto mb-12 sm:mb-14 animate-fade-in-up"
+        className="max-w-3xl mb-12 sm:mb-14 animate-fade-in-up"
         style={{ animationDelay: "160ms" }}
       >
         <div className="relative group">
@@ -200,39 +189,48 @@ function HomeScreen({ onSelectTool, onOpenWorkflows }: HomeScreenProps) {
             className="pointer-events-none absolute -inset-px rounded-2xl bg-linear-to-r from-primary-500/0 via-primary-500/0 to-primary-500/0 opacity-0 blur-md transition-opacity duration-300 group-focus-within:opacity-100 group-focus-within:from-primary-500/20 group-focus-within:via-primary-400/15 group-focus-within:to-primary-500/20"
           />
 
-          <Search
-            className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-900 dark:text-dark-text group-focus-within:text-primary-500 dark:group-focus-within:text-primary-400 transition-colors duration-200"
-            strokeWidth={2.5}
-          />
+          {/* Flex shell — leading icon tile gives the search a clear
+              visual anchor; the input fills the remaining space; the
+              trailing slot holds either the clear button (when active)
+              or the ⌘K affordance. */}
+          <div className="relative flex items-center w-full rounded-2xl bg-white/90 dark:bg-dark-surface/90 backdrop-blur-sm border border-slate-200 dark:border-dark-border shadow-sm hover:border-slate-300 dark:hover:border-dark-border focus-within:border-primary-300 dark:focus-within:border-primary-600 focus-within:shadow-md transition-[border-color,box-shadow] duration-200">
+            <span
+              aria-hidden="true"
+              onClick={() => searchInputRef.current?.focus()}
+              className="shrink-0 ml-2 my-2 w-10 h-10 flex items-center justify-center text-slate-700 dark:text-dark-text cursor-text"
+            >
+              <Search className="w-5 h-5" strokeWidth={2.25} />
+            </span>
 
-          <input
-            ref={searchInputRef}
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search tools…"
-            className="relative w-full pl-13 pr-28 py-4 rounded-2xl bg-white/90 dark:bg-dark-surface/90 backdrop-blur-sm border border-slate-200 dark:border-dark-border text-slate-800 dark:text-dark-text placeholder-slate-400 dark:placeholder-dark-text-muted shadow-sm hover:border-slate-300 dark:hover:border-dark-border focus:outline-none focus:border-primary-300 dark:focus:border-primary-600 focus:shadow-md transition-[border-color,box-shadow] duration-200 text-[15.5px]"
-            aria-label="Search PDF tools"
-          />
+            <input
+              ref={searchInputRef}
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search tools…"
+              className="flex-1 min-w-0 bg-transparent pl-3 pr-2 py-4 text-slate-800 dark:text-dark-text placeholder-slate-400 dark:placeholder-dark-text-muted focus:outline-none text-[15.5px]"
+              aria-label="Search PDF tools"
+            />
 
-          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
-            {searchQuery ? (
-              <button
-                type="button"
-                onClick={() => {
-                  setSearchQuery("");
-                  searchInputRef.current?.focus();
-                }}
-                className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-dark-surface-alt text-slate-400 dark:text-dark-text-muted hover:text-slate-600 dark:hover:text-dark-text transition-colors"
-                aria-label="Clear search"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            ) : (
-              <kbd className="hidden sm:inline-flex items-center gap-0.5 px-2 py-1 rounded-md bg-slate-50 dark:bg-dark-surface-alt border border-slate-200 dark:border-dark-border text-[11px] font-medium text-slate-500 dark:text-dark-text-muted font-mono tabular-nums tracking-tight select-none">
-                {isMac ? "⌘" : "Ctrl"}K
-              </kbd>
-            )}
+            <div className="shrink-0 flex items-center gap-1.5 mr-3">
+              {searchQuery ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery("");
+                    searchInputRef.current?.focus();
+                  }}
+                  className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-dark-surface-alt text-slate-400 dark:text-dark-text-muted hover:text-slate-600 dark:hover:text-dark-text transition-colors"
+                  aria-label="Clear search"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              ) : (
+                <kbd className="hidden sm:inline-flex items-center gap-0.5 px-2 py-1 rounded-md bg-slate-50 dark:bg-dark-surface-alt border border-slate-200 dark:border-dark-border text-[11px] font-medium text-slate-500 dark:text-dark-text-muted font-mono tabular-nums tracking-tight select-none">
+                  {isMac ? "⌘" : "Ctrl"}K
+                </kbd>
+              )}
+            </div>
           </div>
         </div>
 
@@ -324,8 +322,8 @@ function HomeScreen({ onSelectTool, onOpenWorkflows }: HomeScreenProps) {
                 />
                 <FeatureItem
                   icon={<ShieldCheck className="w-5 h-5" />}
-                  iconBg="bg-[color-mix(in_oklab,#16a34a_14%,transparent)]"
-                  iconFg="text-[#16a34a] dark:text-[#4ade80]"
+                  iconBg="bg-[color-mix(in_oklab,#0d9488_14%,transparent)]"
+                  iconFg="text-[#0d9488] dark:text-[#5eead4]"
                   title="Local-first"
                   description="Every byte stays in your browser. Nothing is ever uploaded to any server."
                 />
@@ -338,8 +336,8 @@ function HomeScreen({ onSelectTool, onOpenWorkflows }: HomeScreenProps) {
                 />
                 <FeatureItem
                   icon={<Rocket className="w-5 h-5" />}
-                  iconBg="bg-[color-mix(in_oklab,#8b5cf6_14%,transparent)]"
-                  iconFg="text-[#8b5cf6] dark:text-[#c4b5fd]"
+                  iconBg="bg-[color-mix(in_oklab,#ea580c_14%,transparent)]"
+                  iconFg="text-[#ea580c] dark:text-[#fdba74]"
                   title="Installable as a PWA"
                   description="Add CloakPDF to your home screen for a full-screen, app-like experience that launches in one tap."
                 />
@@ -359,8 +357,8 @@ function HomeScreen({ onSelectTool, onOpenWorkflows }: HomeScreenProps) {
                 />
                 <FeatureItem
                   icon={<Laptop className="w-5 h-5" />}
-                  iconBg="bg-[color-mix(in_oklab,#0891b2_14%,transparent)]"
-                  iconFg="text-[#0891b2] dark:text-[#67e8f9]"
+                  iconBg="bg-[color-mix(in_oklab,#4f46e5_14%,transparent)]"
+                  iconFg="text-[#4f46e5] dark:text-[#a5b4fc]"
                   title="Light & dark mode"
                   description="Thoughtful theming that follows your system preference automatically."
                 />
@@ -371,43 +369,6 @@ function HomeScreen({ onSelectTool, onOpenWorkflows }: HomeScreenProps) {
                   title="Free & open source"
                   description="MIT-licensed and on GitHub. Fork it, self-host it, or audit every byte — nothing is hidden."
                 />
-              </div>
-            </section>
-          )}
-
-          {/* ── How it works ──────────────────────────────── */}
-          {!searchQuery && (
-            <section
-              className="pt-2 sm:pt-4 animate-fade-in-up"
-              style={{ animationDelay: `${(categories.length + 1) * 80}ms` }}
-            >
-              <div className="border border-slate-200 dark:border-dark-border bg-white/70 dark:bg-dark-surface/70 backdrop-blur-sm rounded-2xl shadow-sm px-5 py-8 sm:px-10 sm:py-12">
-                <div className="text-center mb-8 sm:mb-10">
-                  <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-primary-600 dark:text-primary-400 mb-2.5">
-                    How it works
-                  </div>
-                  <h2 className="text-[22px] sm:text-[28px] md:text-[32px] font-semibold tracking-[-0.02em] leading-[1.2] text-slate-900 dark:text-dark-text m-0">
-                    From upload to download, in three steps.
-                  </h2>
-                </div>
-
-                <ol className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6 list-none p-0 m-0">
-                  <Step
-                    n={1}
-                    title="Pick a tool"
-                    description="Browse 35+ PDF utilities organised by what you want to do — all in one place."
-                  />
-                  <Step
-                    n={2}
-                    title="Drop your PDF"
-                    description="Files are processed entirely in your browser. Nothing ever leaves your device."
-                  />
-                  <Step
-                    n={3}
-                    title="Download the result"
-                    description="Polished output with no watermarks, no sign-ups, no waiting in a queue."
-                  />
-                </ol>
               </div>
             </section>
           )}
@@ -445,33 +406,6 @@ function FeatureItem({ icon, iconBg, iconFg, title, description }: FeatureItemPr
         </div>
       </div>
     </div>
-  );
-}
-
-interface StepProps {
-  n: number;
-  title: string;
-  description: string;
-}
-
-function Step({ n, title, description }: StepProps) {
-  return (
-    <li className="flex items-start gap-4">
-      <span
-        className="shrink-0 w-9 h-9 rounded-full inline-flex items-center justify-center text-[15px] font-semibold leading-none tabular-nums text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/40 border border-primary-100 dark:border-primary-800/60"
-        aria-hidden="true"
-      >
-        {n}
-      </span>
-      <div>
-        <div className="text-[15px] font-semibold tracking-[-0.005em] text-slate-800 dark:text-dark-text mb-1">
-          {title}
-        </div>
-        <div className="text-[13.5px] leading-[1.55] text-slate-500 dark:text-dark-text-muted">
-          {description}
-        </div>
-      </div>
-    </li>
   );
 }
 

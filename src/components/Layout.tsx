@@ -1,13 +1,16 @@
 /**
  * Root layout shell for the application.
  *
- * Provides a sticky header (logo, privacy badge, optional back button),
- * a centred content area, an animated aurora backdrop, and a rich
- * footer that mirrors the Cloakyard family sites. All pages/tools are
- * rendered inside `children`.
+ * Provides a fixed top header bar (logo, privacy chip, GitHub link,
+ * optional back button), a centred content area, an animated aurora
+ * backdrop, and a footer. The footer shows compact bento cards (How it
+ * works + Cloakyard family promo) on the home screen only; on tool
+ * pages (`showBack=true`) the bento collapses to a slim attribution
+ * row to keep tool chrome minimal. All pages/tools render inside
+ * `children`.
  */
 
-import { ChevronLeft, ShieldCheck } from "lucide-react";
+import { ArrowUpRight, ChevronLeft, Scale, ShieldCheck } from "lucide-react";
 import type { ReactNode } from "react";
 import { AuroraBackground } from "./AuroraBackground";
 
@@ -42,68 +45,61 @@ export function Layout({ children, onHome, showBack, onPrivacy }: LayoutProps) {
       className="relative z-150 flex flex-col min-h-svh"
       style={{ background: "var(--page-bg)" }}
     >
-      {/* Aurora backdrop — self-contained component. mix-blend-mode is
-          themed via the surrounding `--aurora-blend` token (light:
-          multiply, dark: screen) defined in index.css. */}
       <AuroraBackground />
 
-      {/* Inner column. Mirrors CloakResume's onboarding structure: the
-          outer div owns the page background and the safe-area paint
-          that iOS Safari samples; this inner column owns the flex
-          flow that pins the footer with `mt-auto`. */}
       <div className="relative flex flex-col flex-1 min-h-0">
-        <header className="relative z-50 bg-white/85 dark:bg-dark-surface/85 backdrop-blur-md border-b border-slate-200/80 dark:border-dark-border sticky top-0 shadow-sm shadow-slate-100/50 dark:shadow-black/20">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center gap-3">
-            {showBack && (
+        {/* Fixed top header bar — full-width glassy bar pinned to the top
+            of the viewport, sitting above the aurora. The wrapping
+            <header> owns the bar visuals; the inner container constrains
+            content to the page max-width. */}
+        <header className="sticky top-0 z-50 bg-white/80 dark:bg-dark-surface/80 backdrop-blur-xl border-b border-slate-200/70 dark:border-white/10">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6">
+            <div className="py-2.5 flex items-center gap-2 sm:gap-3">
+              {showBack && (
+                <button
+                  type="button"
+                  onClick={onHome}
+                  className="p-2 rounded-xl hover:bg-slate-900/4 dark:hover:bg-white/5 transition-colors text-slate-600 dark:text-dark-text-muted"
+                  aria-label="Back to home"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+              )}
+
               <button
                 type="button"
                 onClick={onHome}
-                className="p-2 -ml-2 rounded-lg hover:bg-slate-100 dark:hover:bg-dark-surface-alt transition-colors text-slate-600 dark:text-dark-text-muted"
-                aria-label="Back to home"
+                className="flex items-center gap-2.5 hover:opacity-90 transition-opacity"
               >
-                <ChevronLeft className="w-5 h-5" />
-              </button>
-            )}
-
-            <button
-              type="button"
-              onClick={onHome}
-              className="flex items-center gap-2.5 hover:opacity-80 transition-opacity"
-            >
-              <div className="w-10 h-10 flex items-center justify-center">
-                <img
-                  src="/icons/logo.svg"
-                  alt="CloakPDF logo"
-                  className="w-10 h-10 drop-shadow-md"
-                />
-              </div>
-              <span className="text-lg font-semibold tracking-[-0.015em] text-slate-800 dark:text-dark-text">
-                Cloak<span className="text-primary-600 dark:text-primary-400">PDF</span>
-              </span>
-            </button>
-
-            <div className="ml-auto flex items-center gap-3 sm:gap-4">
-              <div className="flex items-center gap-1.5 select-none">
-                <ShieldCheck className="w-4 h-4 text-primary-600 dark:text-primary-400" />
-                <span className="text-xs font-medium text-slate-500 dark:text-dark-text-muted whitespace-nowrap">
-                  <span className="sm:hidden">Private</span>
-                  <span className="hidden sm:inline lg:hidden">100% Private</span>
-                  <span className="hidden lg:inline">100% Private · Open Source</span>
+                <img src="/icons/logo.svg" alt="CloakPDF logo" className="w-9 h-9 drop-shadow-md" />
+                <span className="text-[17px] font-semibold tracking-[-0.02em] text-slate-900 dark:text-dark-text">
+                  Cloak<span className="text-primary-600 dark:text-primary-400">PDF</span>
                 </span>
+              </button>
+
+              <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
+                <div className="flex items-center gap-1.5 px-1">
+                  <ShieldCheck className="w-3.5 h-3.5 text-slate-500 dark:text-dark-text-muted" />
+                  <span className="text-[12.5px] font-medium tracking-tight text-slate-600 dark:text-dark-text-muted whitespace-nowrap">
+                    <span className="sm:hidden">Private</span>
+                    <span className="hidden sm:inline lg:hidden">100% Private</span>
+                    <span className="hidden lg:inline">100% Private · Open Source</span>
+                  </span>
+                </div>
+
+                <span aria-hidden="true" className="w-px h-5 bg-slate-200 dark:bg-white/10" />
+
+                <a
+                  href={REPO_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center w-9 h-9 rounded-xl text-slate-500 dark:text-dark-text-muted hover:text-slate-900 dark:hover:text-dark-text hover:bg-slate-900/4 dark:hover:bg-white/5 transition-colors"
+                  aria-label="View source on GitHub"
+                >
+                  <GithubMark className="w-4.5 h-4.5" />
+                  <span className="sr-only">GitHub</span>
+                </a>
               </div>
-
-              <div className="w-px h-4 bg-slate-200 dark:bg-dark-border" />
-
-              <a
-                href={REPO_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-slate-400 dark:text-dark-text-muted hover:text-slate-700 dark:hover:text-dark-text transition-colors duration-200"
-                aria-label="View source on GitHub"
-              >
-                <GithubMark className="w-5 h-5" />
-                <span className="sr-only">GitHub</span>
-              </a>
             </div>
           </div>
         </header>
@@ -112,68 +108,118 @@ export function Layout({ children, onHome, showBack, onPrivacy }: LayoutProps) {
           {children}
         </main>
 
-        {/* Footer bg kept ~92% opaque so it reads as a solid surface over
-          the aurora when scrolled into view. iOS Safari URL-bar tint
-          sampling is handled inside AuroraBackground itself: on mobile,
-          the aurora-root applies a vertical alpha-mask that fades the
-          blobs to transparent across the URL-bar zone, so no blob paints
-          into Safari's sample area and there's no hard edge above the
-          bar. The `safe-area-inset-bottom` padding here still extends
-          the footer's painted area into the home-indicator zone. */}
+        {/* Bento footer — How it works card paired with a Cloakyard
+            family promo card. Each card carries its own glassy surface so
+            the aurora reads through the gutter. A slim attribution row
+            sits below the bento. */}
         <footer
-          className="relative mt-auto border-t border-slate-200/60 dark:border-dark-border bg-[color-mix(in_oklab,white_92%,transparent)] dark:bg-[color-mix(in_oklab,var(--color-dark-surface)_92%,transparent)] backdrop-blur-md"
+          className="relative mt-auto"
           style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
         >
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-10 pb-7 sm:pt-12 sm:pb-8">
-            {/* Top row: brand + privacy link */}
-            <div className="flex flex-col sm:flex-row sm:items-start gap-6 sm:gap-10">
-              <div className="flex items-start gap-3 min-w-0 sm:max-w-sm">
-                <img src="/icons/logo.svg" alt="" aria-hidden="true" className="w-9 h-9 shrink-0" />
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-semibold text-slate-800 dark:text-dark-text tracking-[-0.01em]">
-                      Cloak<span className="text-primary-600 dark:text-primary-400">PDF</span>
-                    </span>
-                    <a
-                      href={`${REPO_URL}/releases`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center px-1.5 py-0.5 rounded-md text-[11px] font-mono tabular-nums tracking-tight text-slate-500 dark:text-dark-text-muted bg-slate-100 dark:bg-dark-surface-alt hover:text-primary-600 dark:hover:text-primary-400 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400/50"
-                      aria-label={`Version ${__APP_VERSION__} — view release notes on GitHub`}
-                    >
-                      v{__APP_VERSION__}
-                    </a>
-                  </div>
-                  <p className="text-[13px] text-slate-500 dark:text-dark-text-muted leading-[1.55] mt-1.5">
-                    All-in-one PDF tools that respect your privacy. Your files never leave your
-                    browser.
-                  </p>
-                </div>
-              </div>
-
-              <nav
-                aria-label="Footer"
-                className="hidden sm:flex flex-wrap items-center gap-x-5 gap-y-2 sm:ml-auto text-[13px]"
-              >
-                <button
-                  type="button"
-                  onClick={onPrivacy}
-                  className="inline-flex items-center gap-1.5 text-slate-500 dark:text-dark-text-muted hover:text-slate-800 dark:hover:text-dark-text bg-transparent cursor-pointer transition-colors duration-150 font-medium"
-                >
-                  <ShieldCheck
-                    className="w-3.5 h-3.5 text-primary-600 dark:text-primary-400"
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-8 pb-6 sm:pt-10 sm:pb-8">
+            {/* Bento cards only render on the home screen. On tool pages
+                (showBack=true) we collapse to a single attribution row. */}
+            {!showBack && (
+              <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 mb-6 sm:mb-7">
+                {/* How it works card */}
+                <div className="sm:col-span-7 relative overflow-hidden rounded-2xl border border-slate-200/70 dark:border-dark-border bg-white/65 dark:bg-dark-surface/60 backdrop-blur-md p-5 flex flex-col">
+                  <div
                     aria-hidden="true"
+                    className="absolute -top-12 -right-12 w-40 h-40 rounded-full bg-primary-500/15 dark:bg-primary-400/10 blur-3xl pointer-events-none"
                   />
-                  Privacy Policy
-                </button>
-              </nav>
-            </div>
+                  <div className="relative">
+                    <div className="text-[10px] uppercase tracking-[0.16em] font-medium text-primary-600 dark:text-primary-400">
+                      How it works
+                    </div>
+                    <h3 className="mt-2 text-lg sm:text-xl font-semibold tracking-tight text-slate-900 dark:text-dark-text leading-[1.2]">
+                      From upload to download, in three steps.
+                    </h3>
+                  </div>
+                  <ol className="relative mt-4 space-y-3 list-none p-0 m-0">
+                    {[
+                      {
+                        n: 1,
+                        title: "Pick a tool",
+                        description:
+                          "Browse 35+ PDF utilities organised by what you want to do — all in one place.",
+                      },
+                      {
+                        n: 2,
+                        title: "Drop your PDF",
+                        description:
+                          "Files are processed entirely in your browser. Nothing ever leaves your device.",
+                      },
+                      {
+                        n: 3,
+                        title: "Download the result",
+                        description:
+                          "Polished output with no watermarks, no sign-ups, no waiting in a queue.",
+                      },
+                    ].map((step) => (
+                      <li key={step.n} className="flex items-start gap-3">
+                        <span
+                          aria-hidden="true"
+                          className="shrink-0 w-7 h-7 rounded-full inline-flex items-center justify-center text-[12px] font-semibold leading-none tabular-nums text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/40 border border-primary-100 dark:border-primary-800/60"
+                        >
+                          {step.n}
+                        </span>
+                        <div className="min-w-0">
+                          <div className="text-[13px] font-semibold tracking-[-0.005em] text-slate-800 dark:text-dark-text">
+                            {step.title}
+                          </div>
+                          <div className="text-[12.5px] leading-[1.55] text-slate-500 dark:text-dark-text-muted">
+                            {step.description}
+                          </div>
+                        </div>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
 
-            {/* Divider */}
-            <div className="h-px bg-slate-200/60 dark:bg-dark-border my-6 sm:my-7" />
+                {/* Cloakyard family promo card */}
+                <a
+                  href={CLOAKYARD_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="sm:col-span-5 group relative overflow-hidden rounded-2xl border border-slate-200/70 dark:border-dark-border bg-white/65 dark:bg-dark-surface/60 backdrop-blur-md p-5 flex flex-col justify-between hover:border-primary-300/60 dark:hover:border-primary-400/30 transition-colors"
+                >
+                  <div
+                    aria-hidden="true"
+                    className="absolute -bottom-12 -left-12 w-40 h-40 rounded-full bg-primary-500/10 dark:bg-primary-400/5 blur-3xl pointer-events-none"
+                  />
+                  <div className="relative">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-2.5">
+                        <img
+                          src="/icons/cloakyard.svg"
+                          alt=""
+                          aria-hidden="true"
+                          className="w-7 h-7 drop-shadow-sm"
+                        />
+                        <span className="text-[10px] uppercase tracking-[0.16em] font-medium text-slate-400 dark:text-dark-text-muted">
+                          Part of
+                        </span>
+                      </div>
+                      <span className="shrink-0 inline-flex items-center rounded-full bg-slate-100/80 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 px-2 py-0.5 font-mono text-[10px] tabular-nums tracking-tight text-slate-500 dark:text-dark-text-muted">
+                        CloakPDF v{__APP_VERSION__}
+                      </span>
+                    </div>
+                    <h4 className="mt-2.5 text-lg font-semibold tracking-tight text-slate-900 dark:text-dark-text">
+                      Cloakyard
+                    </h4>
+                    <p className="mt-1 text-[12.5px] text-slate-500 dark:text-dark-text-muted leading-[1.55]">
+                      A family of privacy-focused tools that keep your data on your device.
+                    </p>
+                  </div>
+                  <span className="relative mt-3 inline-flex items-center gap-1 text-[12px] font-medium text-primary-600 dark:text-primary-400">
+                    Explore
+                    <ArrowUpRight className="w-3 h-3 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                  </span>
+                </a>
+              </div>
+            )}
 
-            {/* Bottom row: attribution + cloakyard pitch */}
-            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 text-[12.5px] text-slate-500 dark:text-dark-text-muted">
+            <div className="border-t border-slate-200/60 dark:border-dark-border pt-5 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-[12.5px] text-slate-500 dark:text-dark-text-muted">
               <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
                 <span>Built with care by</span>
                 <a
@@ -184,46 +230,37 @@ export function Layout({ children, onHome, showBack, onPrivacy }: LayoutProps) {
                 >
                   Sumit Sahoo
                 </a>
+              </div>
+              <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 sm:ml-auto">
+                <button
+                  type="button"
+                  onClick={onPrivacy}
+                  className="group inline-flex items-center gap-1 hover:text-primary-600 dark:hover:text-primary-400 bg-transparent cursor-pointer transition-colors duration-150"
+                >
+                  <ShieldCheck
+                    className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 transition-colors duration-150 group-hover:text-primary-600 dark:group-hover:text-primary-400"
+                    aria-hidden="true"
+                  />
+                  Privacy
+                </button>
                 <span aria-hidden="true">·</span>
                 <a
                   href={`${REPO_URL}/blob/main/LICENSE`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="hover:text-primary-600 dark:hover:text-primary-400 transition-colors duration-150"
+                  className="group inline-flex items-center gap-1 hover:text-primary-600 dark:hover:text-primary-400 transition-colors duration-150"
                 >
-                  <span className="text-slate-400 dark:text-slate-500">MIT</span> licensed
-                </a>
-                <span aria-hidden="true" className="sm:hidden">
-                  ·
-                </span>
-                <button
-                  type="button"
-                  onClick={onPrivacy}
-                  className="sm:hidden text-slate-700 dark:text-dark-text hover:text-primary-600 dark:hover:text-primary-400 bg-transparent cursor-pointer transition-colors duration-150 font-medium"
-                >
-                  Privacy
-                </button>
-              </div>
-
-              <div className="sm:ml-auto flex flex-wrap items-center gap-x-1.5 gap-y-1">
-                <span>Part of</span>
-                <a
-                  href={CLOAKYARD_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-slate-700 dark:text-dark-text hover:text-primary-600 dark:hover:text-primary-400 no-underline font-medium transition-colors duration-150"
-                >
-                  <img
-                    src="/icons/cloakyard.svg"
-                    alt=""
+                  <Scale
+                    className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 transition-colors duration-150 group-hover:text-primary-600 dark:group-hover:text-primary-400"
                     aria-hidden="true"
-                    className="w-3.5 h-3.5 shrink-0"
                   />
-                  Cloakyard
+                  <span>
+                    <span className="text-slate-400 dark:text-slate-500 transition-colors duration-150 group-hover:text-primary-600 dark:group-hover:text-primary-400">
+                      MIT
+                    </span>{" "}
+                    licensed
+                  </span>
                 </a>
-                <span className="hidden sm:inline text-slate-400 dark:text-slate-500">
-                  — a collection of privacy-focused tools.
-                </span>
               </div>
             </div>
           </div>
