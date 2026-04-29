@@ -212,20 +212,11 @@ body {
   }
 }
 
-@keyframes focus-ring-pulse {
-  0% {
-    box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.35);
-  }
-  100% {
-    box-shadow: 0 0 0 10px rgba(37, 99, 235, 0);
-  }
-}
-
 /*
- * Looping attention-pulse for error / warning banners. Same box-shadow ring
- * technique as `focus-ring-pulse`, but runs continuously with a pause between
- * pulses (0→60% pulse, 60→100% hold-at-zero) so it grabs the eye without
- * becoming frantic. Respects prefers-reduced-motion (see block below).
+ * Looping attention-pulse for error / warning banners. Box-shadow ring runs
+ * continuously with a pause between pulses (0→60% pulse, 60→100% hold-at-zero)
+ * so it grabs the eye without becoming frantic. Respects prefers-reduced-motion
+ * (see block below).
  */
 @keyframes error-pulse-ring {
   0% {
