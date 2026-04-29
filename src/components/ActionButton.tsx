@@ -21,14 +21,17 @@ export function ActionButton({
   // In an intermediate workflow step the button delivers to the next
   // step — visually reinforce that with a trailing arrow. On the final
   // step (last in a workflow) the button triggers a download, so swap
-  // the arrow for a download glyph. Standalone tools keep the plain
-  // label since their button isn't always a download (some show a
-  // result panel first, e.g. CompressPdf).
+  // the arrow for a download glyph. Standalone tools whose label
+  // explicitly says "Download" (e.g. "Apply Signature & Download")
+  // also get the download glyph; tools that show a result panel first
+  // (e.g. CompressPdf) use a different label and stay icon-less.
   const slot = useWorkflowSlot();
   const trailingIcon = processing
     ? null
     : slot === null
-      ? null
+      ? /download/i.test(label)
+        ? "download"
+        : null
       : slot.isLastStep
         ? "download"
         : "continue";
