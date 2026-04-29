@@ -103,7 +103,7 @@ export const ToolCard = memo(function ToolCard({ tool, onSelect }: ToolCardProps
           <Icon className="w-5 h-5" />
         </span>
 
-        <h3 className="text-[15px] font-semibold tracking-[-0.005em] text-slate-800 dark:text-dark-text">
+        <h3 className="text-[15px] font-semibold tracking-[-0.005em] text-slate-800 dark:text-dark-text transition-transform duration-200 group-hover:translate-x-0.5 group-active:translate-x-0.5">
           {tool.title}
         </h3>
         <p className="text-[13px] leading-normal text-slate-500 dark:text-dark-text-muted">
