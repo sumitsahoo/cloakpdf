@@ -31,6 +31,11 @@ export default function FileAttachment() {
   const [attachments, setAttachments] = useState<PdfAttachment[]>([]);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
+  // Tracks whether the user has actually mutated the PDF (added or
+  // removed an attachment). Until that happens the download/deliver
+  // button stays disabled — the unchanged input bytes wouldn't add
+  // anything to a standalone download or to the next workflow step.
+  const [dirty, setDirty] = useState(false);
 
   // `pdfFile` is re-assigned after every add/remove because the PDF bytes
   // themselves change — that's why this tool uses plain `useState` instead
@@ -58,6 +63,7 @@ export default function FileAttachment() {
     setPdfFile(injected);
     setAttachments([]);
     setSuccess(null);
+    setDirty(false);
   }, [slot?.injectedFile]);
 
   // Load existing attachments when a PDF is selected
@@ -93,6 +99,7 @@ export default function FileAttachment() {
       setAttachments([]);
       task.setError(null);
       setSuccess(null);
+      setDirty(false);
     },
     [task],
   );
@@ -108,6 +115,7 @@ export default function FileAttachment() {
           type: "application/pdf",
         });
         setPdfFile(newFile);
+        setDirty(true);
         const names = filesToAttach.map((f) => f.name);
         setSuccess(
           names.length === 1
@@ -130,6 +138,7 @@ export default function FileAttachment() {
           type: "application/pdf",
         });
         setPdfFile(newFile);
+        setDirty(true);
         setSuccess(`Removed "${name}".`);
       }, "Failed to remove attachment.");
     },
@@ -167,6 +176,7 @@ export default function FileAttachment() {
               setPdfFile(null);
               setAttachments([]);
               setSuccess(null);
+              setDirty(false);
               task.setError(null);
             }}
           />
@@ -251,6 +261,7 @@ export default function FileAttachment() {
               <ActionButton
                 onClick={handleDownloadPdf}
                 processing={processing}
+                disabled={!dirty || processing}
                 label={`${output.deliveryWord} PDF`}
                 processingLabel="Processing..."
               />

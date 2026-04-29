@@ -48,7 +48,7 @@ interface Props {
    * (defaults to `multiply` if no token is set).
    */
   blendMode?: BlendMode;
-  /** Per-blob base opacity. The breathing animation oscillates ±30% around this. Defaults to 0.12. */
+  /** Per-blob base opacity. The breathing animation oscillates ±30% around this. Defaults to 0.08. */
   opacity?: number;
   className?: string;
 }
@@ -186,8 +186,8 @@ const STYLESHEET = `
    (set via --aurora-opacity) so the prop still controls overall
    intensity. */
 @keyframes aurora-breathe {
-  0%, 100% { opacity: calc(var(--aurora-opacity, 0.12) * 0.7); }
-  50%      { opacity: calc(var(--aurora-opacity, 0.12) * 1.3); }
+  0%, 100% { opacity: calc(var(--aurora-opacity, 0.08) * 0.7); }
+  50%      { opacity: calc(var(--aurora-opacity, 0.08) * 1.3); }
 }
 .aurora-blob {
   position: fixed;
@@ -202,7 +202,7 @@ const STYLESHEET = `
   background: var(--bg);
   filter: blur(60px);
   mix-blend-mode: var(--aurora-blend, multiply);
-  opacity: var(--aurora-opacity, 0.12);
+  opacity: var(--aurora-opacity, 0.08);
   will-change: border-radius, transform, opacity;
   animation:
     var(--morph),
@@ -245,6 +245,28 @@ const STYLESHEET = `
 @media (prefers-reduced-motion: reduce) {
   .aurora-blob { animation: none; }
 }
+
+/* Static fractal-noise grain layered above the blobs. Kills the
+   "CSS gradient" tell on the aurora and adds a faint tactile texture.
+   Tiled SVG (feTurbulence) inlined as a data URI so the layer ships
+   with no extra request. */
+.aurora-grain {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background-image: url("data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 240px 240px;
+  background-repeat: repeat;
+  opacity: 0.045;
+  mix-blend-mode: multiply;
+}
+@media (prefers-color-scheme: dark) {
+  .aurora-grain {
+    opacity: 0.08;
+    mix-blend-mode: overlay;
+  }
+}
 `;
 
 export function AuroraBackground({
@@ -279,6 +301,7 @@ export function AuroraBackground({
           />
         );
       })}
+      <div className="aurora-grain" />
     </div>
   );
 }

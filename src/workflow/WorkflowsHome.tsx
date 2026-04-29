@@ -263,19 +263,19 @@ function EmptyState({ onCreate, onImportClick }: EmptyStateProps) {
         Pick a few tools, save them as a workflow, and run them in order on any PDF — clean,
         compress, and watermark in one go.
       </p>
-      <div className="flex flex-wrap items-center justify-center gap-2 mt-6">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center sm:justify-center gap-2 mt-6">
         <button
           type="button"
           onClick={onCreate}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-medium text-[14px] transition-colors"
+          className="inline-flex items-center justify-center gap-1.5 w-full sm:w-auto sm:min-w-55 py-3 px-8 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-medium transition-colors"
         >
           <Plus className="w-4 h-4" />
-          Create your first workflow
+          New workflow
         </button>
         <button
           type="button"
           onClick={onImportClick}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-100 dark:bg-dark-surface-alt hover:bg-slate-200 dark:hover:bg-dark-border text-slate-700 dark:text-dark-text font-medium text-[14px] transition-colors"
+          className="inline-flex items-center justify-center gap-1.5 w-full sm:w-auto sm:min-w-55 py-3 px-8 rounded-xl bg-white dark:bg-dark-surface-alt border border-slate-200 dark:border-dark-border hover:bg-slate-50 dark:hover:bg-dark-border hover:border-slate-300 dark:hover:border-slate-600 text-slate-700 dark:text-dark-text font-medium transition-colors"
         >
           <Upload className="w-4 h-4" />
           Import from JSON

@@ -9,8 +9,11 @@
  *
  * Concretely, the layout is:
  *  - A single `fixed inset-0` wrapper that paints the dim+blur
- *    backdrop *itself* and owns the `animate-scale-in` for the entire
- *    modal — no nested animation div, no separate backdrop layer.
+ *    backdrop *itself* — no nested backdrop layer. The backdrop
+ *    snaps in (no animation) so its edges don't fade visibly from
+ *    the sides; only the inner sheet animates with
+ *    `animate-slide-up-in`, rising into view from below. Pairs
+ *    naturally with the mobile bottom-sheet layout.
  *  - A transparent close-button covering `inset-0`; the sheet sits
  *    above it by source order alone.
  *  - The sheet is plain `flex flex-col + max-h-[92svh]`. The body is
@@ -84,6 +87,12 @@ export function ToolPickerModal({ onPick, onClose, alreadyAdded }: ToolPickerMod
   const onHandleTouchStart = useCallback((e: React.TouchEvent) => {
     touchStartY.current = e.touches[0].clientY;
     dragDeltaRef.current = 0;
+    // `animate-slide-up-in` uses `animation-fill-mode: both`, which holds
+    // the final keyframe (`translateY(0)`) and overrides inline transforms.
+    // Clear it so the drag's `style.transform` actually moves the sheet.
+    if (sheetRef.current) {
+      sheetRef.current.style.animation = "none";
+    }
   }, []);
 
   const onHandleTouchMove = useCallback((e: React.TouchEvent) => {
@@ -123,7 +132,7 @@ export function ToolPickerModal({ onPick, onClose, alreadyAdded }: ToolPickerMod
 
   return (
     <div
-      className="fixed inset-0 z-200 flex items-end sm:items-start justify-center sm:pt-8 md:pt-12 sm:px-3 md:px-6 animate-scale-in"
+      className="fixed inset-0 z-200 flex items-end sm:items-center justify-center sm:px-3 md:px-6"
       role="presentation"
       style={{
         // Backdrop dim + blur applied directly on the wrapper, the same
@@ -148,7 +157,7 @@ export function ToolPickerModal({ onPick, onClose, alreadyAdded }: ToolPickerMod
         role="dialog"
         aria-modal="true"
         aria-label="Pick a tool"
-        className="relative flex flex-col w-full sm:w-[min(720px,100%)] lg:w-[min(820px,100%)] max-h-[82svh] sm:max-h-[min(720px,calc(100svh-64px))] overflow-hidden rounded-t-2xl sm:rounded-2xl border border-slate-200/80 dark:border-dark-border bg-white/85 dark:bg-dark-surface/85 backdrop-blur-xl shadow-2xl"
+        className="relative flex flex-col w-full sm:w-[min(720px,100%)] lg:w-[min(820px,100%)] max-h-[82svh] sm:max-h-[min(720px,calc(100svh-64px))] overflow-hidden rounded-t-2xl sm:rounded-2xl border border-slate-200/80 dark:border-dark-border bg-white/85 dark:bg-dark-surface/85 backdrop-blur-xl shadow-2xl animate-slide-up-in"
       >
         <div
           onTouchStart={onHandleTouchStart}
