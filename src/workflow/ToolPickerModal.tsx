@@ -87,6 +87,12 @@ export function ToolPickerModal({ onPick, onClose, alreadyAdded }: ToolPickerMod
   const onHandleTouchStart = useCallback((e: React.TouchEvent) => {
     touchStartY.current = e.touches[0].clientY;
     dragDeltaRef.current = 0;
+    // `animate-slide-up-in` uses `animation-fill-mode: both`, which holds
+    // the final keyframe (`translateY(0)`) and overrides inline transforms.
+    // Clear it so the drag's `style.transform` actually moves the sheet.
+    if (sheetRef.current) {
+      sheetRef.current.style.animation = "none";
+    }
   }, []);
 
   const onHandleTouchMove = useCallback((e: React.TouchEvent) => {
