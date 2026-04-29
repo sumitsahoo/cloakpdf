@@ -1,908 +1,781 @@
 ---
-name: CloakPDF
-tagline: PDF tools that stay on your device.
-mood: [calm, trustworthy, modern, glassy, quiet, generous]
-inspiration:
-  - "Apple's marketing pages — generous whitespace, large semibold display type, italic serif accent words"
-  - "Linear / Vercel landing pages — sticky glassy chrome, soft tinted backgrounds, restrained UI ornamentation"
-  - "Nordic productivity apps — slate neutrals, single high-quality accent colour, almost no chrome"
-  - "Aurora / liquid-glass page backdrops — slow-drifting blurred colour blobs that read as ambient light, not pattern"
+name: CloakPDF — Ocean Blue
+description: >-
+  A privacy-first PDF toolkit that feels calm, modern, and trustworthy.
+  Glassy chrome floats over a slow-drifting aurora; every interactive
+  surface uses a single ocean-blue accent so the home screen reads as
+  one quiet system rather than a colour-coded grid. Light and dark
+  themes share identical structure, swapping only surface tones and
+  blend modes.
+mode: light-and-dark
+colors:
+  # ── Primary — "Ocean Blue" scale derived from #2563EB ─────────
+  primary-50:  "#eff4ff"   # page tints, badge backgrounds
+  primary-100: "#dbeafe"   # icon flap, primary tints
+  primary-200: "#bfdbfe"   # spinner track, light borders
+  primary-300: "#93c5fd"   # focus borders (light)
+  primary-400: "#60a5fa"   # focus rings (dark mode), accent text
+  primary-500: "#3b82f6"   # interactive accents, gradient stop
+  primary-600: "#2563eb"   # default CTA, focus border, brand
+  primary-700: "#1d4ed8"   # CTA hover, gradient deep stop, brand wordmark accent
+  primary-800: "#1e40af"
+  primary-900: "#1e3a8a"
+  primary:        "{colors.primary-600}"
+  primary-hover:  "{colors.primary-700}"
+  primary-light:  "{colors.primary-50}"
+  accent:         "#1d4ed8"
 
-# ──────────────────────────────────────────────────────────────────
-# Color tokens — light mode is the canonical palette. Every dark
-# token has a `.dark` counterpart used under prefers-color-scheme:
-# dark. Hex strings are the source of truth; rgba() values appear
-# only where transparency is part of the surface (glow/glass).
-# ──────────────────────────────────────────────────────────────────
-color:
-  # Primary scale ("Ocean Blue") — derived from #2563EB.
-  primary:
-    "50":  "#EFF4FF"
-    "100": "#DBEAFE"
-    "200": "#BFDBFE"
-    "300": "#93C5FD"
-    "400": "#60A5FA"
-    "500": "#3B82F6"
-    "600": "#2563EB"  # canonical primary — CTAs, focus, accent links
-    "700": "#1D4ED8"  # hover / pressed
-    "800": "#1E40AF"
-    "900": "#1E3A8A"
+  # ── Neutrals — Slate ──────────────────────────────────────────
+  slate-50:  "#f8fafc"     # gradient start (page bg)
+  slate-100: "#f1f5f9"     # hover backgrounds, icon tile bg
+  slate-200: "#e2e8f0"     # default border, dividers
+  slate-300: "#cbd5e1"     # separator dots, faint text
+  slate-400: "#94a3b8"     # placeholder, muted icons
+  slate-500: "#64748b"     # body / secondary text
+  slate-600: "#475569"     # medium-emphasis icons
+  slate-700: "#334155"
+  slate-800: "#1e293b"     # headings, high-emphasis text
+  slate-900: "#0f172a"     # dark-mode page bg
 
-  # Neutral scale (slate). Headings sit at 800, body at 500.
-  neutral:
-    "50":  "#F8FAFC"
-    "100": "#F1F5F9"
-    "200": "#E2E8F0"
-    "300": "#CBD5E1"
-    "400": "#94A3B8"
-    "500": "#64748B"  # body / secondary text
-    "600": "#475569"
-    "700": "#334155"
-    "800": "#1E293B"  # headings / high-emphasis text
-    "900": "#0F172A"
+  # ── Light surfaces & text ─────────────────────────────────────
+  surface:        "#ffffff"
+  surface-glass:  "rgba(255,255,255,0.80)"   # header / sticky chrome
+  surface-card:   "rgba(255,255,255,0.65)"   # bento footer cards
+  surface-alt:    "#f0f4fa"
+  page-bg:        "#f0f4fa"
+  border:         "#e2e8f0"
+  border-soft:    "rgba(226,232,240,0.70)"
+  text:           "#1e293b"
+  text-muted:     "#64748b"
 
-  # Semantic surfaces & text (light mode).
-  surface:
-    base:        "#FFFFFF"
-    sunken:      "#F0F4FA"            # alt surface (cards-on-cards)
-    glass:       "rgba(255,255,255,0.80)"  # glassy header / dialog
-    glass-soft:  "rgba(255,255,255,0.65)"  # bento footer cards
-    border:      "#E2E8F0"
-    border-soft: "rgba(226,232,240,0.70)"
+  # ── Dark surfaces & text ──────────────────────────────────────
+  dark-bg:           "#060912"   # body solid (deep navy-black)
+  dark-page-bg:      "#0f172a"   # page gradient endpoint
+  dark-surface:      "#1e293b"   # cards, header, footer
+  dark-surface-alt:  "#334155"   # hover, icon tile bg
+  dark-border:       "#334155"
+  dark-border-soft:  "rgba(255,255,255,0.10)"
+  dark-text:         "#f1f5f9"
+  dark-text-muted:   "#94a3b8"
 
-  text:
-    strong:  "#0F172A"   # display headlines
-    default: "#1E293B"   # headings, prose
-    muted:   "#64748B"   # body / secondary
-    faint:   "#94A3B8"   # placeholders, disabled
-    accent:  "#2563EB"   # links, accent words, kbd hint
-    invert:  "#FFFFFF"
+  # ── Status ────────────────────────────────────────────────────
+  danger:        "#ef4444"
+  danger-bg:     "#fef2f2"      # red-50
+  danger-border: "#fecaca"      # red-200
+  danger-text:   "#b91c1c"      # red-700
+  warning:       "#f59e0b"      # amber-500
+  warning-bg:    "#fffbeb"      # amber-50
+  warning-border:"#fde68a"      # amber-200
+  warning-text:  "#92400e"      # amber-800
+  success:       "#22c55e"
 
-  status:
-    danger:        "#EF4444"
-    danger-tint:   "#FEE2E2"
-    warning:       "#F59E0B"
-    warning-tint:  "#FEF3C7"
-    success:       "#22C55E"
-    success-tint:  "#DCFCE7"
+  # ── Aurora — six-blob ambient palette (drifting backdrop) ─────
+  aurora-blue:    "#2563eb"
+  aurora-violet:  "#7c3aed"
+  aurora-pink:    "#db2777"
+  aurora-orange:  "#ea580c"
+  aurora-cyan:    "#0891b2"
+  aurora-emerald: "#059669"
 
-  # Page backdrop — two faint radial tints over a cool linear base.
-  # Calibrated so iOS Safari's URL-bar sample zone never saturates.
-  page-bg:
-    layer-1: "radial-gradient(ellipse at 20% 0%, rgba(37,99,235,0.08), transparent 55%)"
-    layer-2: "radial-gradient(ellipse at 80% 100%, rgba(37,99,235,0.05), transparent 55%)"
-    base:    "linear-gradient(180deg, #FAFBFC 0%, #F1F5F9 100%)"
+  # ── "Why CloakPDF" feature accents (one chip per feature) ─────
+  feature-emerald: "#059669"    # No sign-up
+  feature-violet:  "#7c3aed"    # No tracking
+  feature-teal:    "#0d9488"    # Local-first
+  feature-cyan:    "#0891b2"    # Works offline
+  feature-orange:  "#ea580c"    # Installable
+  feature-yellow:  "#ca8a04"    # All-screens
+  feature-pink:    "#db2777"    # 35+ tools
+  feature-indigo:  "#4f46e5"    # Light & dark
+  feature-slate:   "#475569"    # Open source
 
-  # Spotlight glow used by interactive cards (FileDropZone, ToolCard,
-  # WorkflowHeroCard). Cursor-tracking radial-gradient.
-  glow:
-    primary-soft:   "rgba(37,99,235,0.16)"
-    primary-strong: "rgba(37,99,235,0.18)"
-    focus-ring:     "rgba(37,99,235,0.18)"
+  # ── Spotlight glow used by ToolCard / WorkflowHero / DropZone ─
+  glow-primary:    "rgba(37,99,235,0.16)"
+  glow-strong:     "rgba(37,99,235,0.18)"
+  focus-ring:      "rgba(37,99,235,0.18)"
 
-  # Aurora — six animated blurred blobs that drift across the page.
-  aurora:
-    palette:
-      - "#2563EB"  # blue (primary)
-      - "#7C3AED"  # violet
-      - "#DB2777"  # pink
-      - "#EA580C"  # orange
-      - "#0891B2"  # cyan
-      - "#059669"  # emerald
-    blend-light: multiply
-    blend-dark:  screen
-    base-opacity: 0.08
-    grain-opacity-light: 0.045
-    grain-opacity-dark:  0.080
+  # ── Canvas / drawing primitives ───────────────────────────────
+  canvas-bg:       "#ffffff"
+  canvas-border:   "#e2e8f0"
+  canvas-label:    "#64748b"
+  canvas-redact:   "rgba(0,0,0,0.85)"
+  canvas-redact-stroke: "#ff4444"
+  canvas-diff:     "rgba(239,68,68,0.71)"
 
-  # Feature-pill accents on the "Why CloakPDF" grid. Each pill mixes a
-  # 14% tint of its hex into transparent for the icon background, with
-  # the same hex (slightly desaturated in dark) as the icon foreground.
-  feature-pills:
-    no-signup:    { bg-mix: "#059669", fg-light: "#059669", fg-dark: "#34D399" }
-    no-tracking:  { bg-mix: "#7C3AED", fg-light: "#7C3AED", fg-dark: "#A78BFA" }
-    local-first:  { bg-mix: "#0D9488", fg-light: "#0D9488", fg-dark: "#5EEAD4" }
-    offline:      { bg-mix: "#0891B2", fg-light: "#0891B2", fg-dark: "#22D3EE" }
-    pwa:          { bg-mix: "#EA580C", fg-light: "#EA580C", fg-dark: "#FDBA74" }
-    multi-device: { bg-mix: "#EAB308", fg-light: "#CA8A04", fg-dark: "#FACC15" }
-    breadth:      { bg-mix: "#DB2777", fg-light: "#DB2777", fg-dark: "#F472B6" }
-    theming:      { bg-mix: "#4F46E5", fg-light: "#4F46E5", fg-dark: "#A5B4FC" }
-    open-source:  { bg-mix: "#475569", fg-light: "#475569", fg-dark: "#CBD5E1" }
+  # ── Brand colour-picker presets (signature / watermark) ───────
+  preset-black: "#1e293b"
+  preset-grey:  "#64748b"
+  preset-blue:  "#1d4ed8"
+  preset-red:   "#dc2626"
 
-  # Dark-mode tokens. Applied via prefers-color-scheme: dark.
-  dark:
-    surface:
-      base:        "#1E293B"
-      sunken:      "#334155"
-      page:        "#0F172A"
-      page-bottom: "#060912"
-      glass:       "rgba(30,41,59,0.80)"
-      glass-soft:  "rgba(30,41,59,0.60)"
-      border:      "#334155"
-      border-soft: "rgba(255,255,255,0.10)"
-    text:
-      strong:  "#FFFFFF"
-      default: "#F1F5F9"
-      muted:   "#94A3B8"
-      faint:   "#64748B"
-      accent:  "#60A5FA"
-    page-bg:
-      layer-1: "radial-gradient(ellipse at 20% 0%, rgba(59,130,246,0.18), transparent 55%)"
-      layer-2: "radial-gradient(ellipse at 80% 100%, rgba(37,99,235,0.10), transparent 55%)"
-      base:    "linear-gradient(180deg, #0F172A 0%, #060912 100%)"
+gradients:
+  page-light: >-
+    radial-gradient(ellipse at 20% 0%, rgba(37,99,235,0.08), transparent 55%),
+    radial-gradient(ellipse at 80% 100%, rgba(37,99,235,0.05), transparent 55%),
+    linear-gradient(180deg, #fafbfc 0%, #f1f5f9 100%)
+  page-dark: >-
+    radial-gradient(ellipse at 20% 0%, rgba(59,130,246,0.18), transparent 55%),
+    radial-gradient(ellipse at 80% 100%, rgba(37,99,235,0.10), transparent 55%),
+    linear-gradient(180deg, #0f172a 0%, #060912 100%)
+  brand-shield: "linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%)"
+  spotlight: >-
+    radial-gradient(320px circle at <x>px <y>px,
+    rgba(37,99,235,0.16), transparent 70%)
 
-# ──────────────────────────────────────────────────────────────────
-# Typography
-# ──────────────────────────────────────────────────────────────────
 typography:
-  font-family:
-    sans: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
-    serif-accent: "ui-serif, Georgia, 'Times New Roman', serif"  # used italic for accent words in display headlines
-    mono: "ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace"
-
-  # Inter is shipped as a single variable file (weights 100–900) plus
-  # an italic variable file. We use four weights; the file supports
-  # any value if the design needs to drift.
-  font-weight:
-    regular:  400
-    medium:   500
-    semibold: 600  # default for headings, buttons, badges
-
-  # Display headlines have intentionally tight tracking and line-height.
-  letter-spacing:
-    display: "-0.03em"  # hero h1
-    h2:      "-0.02em"
-    h3:      "-0.015em"
-    body:    "-0.005em"  # tool card titles, list item titles
-    label:   "0.12em"    # uppercase eyebrows / category eyebrows
-    eyebrow: "0.16em"    # uppercase "How it works" / "Part of"
-
-  line-height:
-    display: 1.05
-    h2:      1.15
-    h3:      1.20
-    snug:    1.30
-    body:    1.55
-    relaxed: 1.625
-
-  # Type scale. Hero scales fluidly across breakpoints — values are
-  # the explicit pixel sizes used in the codebase rather than a theory
-  # ladder, because the design intentionally picks half-step sizes.
-  scale:
-    hero:           { sm: 34px, md: 44px, lg: 52px, xl: 58px, weight: semibold, tracking: display }
-    section-h2:     { sm: 22px, md: 26px, weight: semibold, tracking: h2 }
-    why-h2:         { sm: 24px, md: 30px, lg: 36px, weight: semibold, tracking: h2 }
-    tool-title:     { size: 15px, weight: semibold, tracking: body }
-    tool-page-h1:   { size: 24px, weight: semibold, tracking: h3 }   # "text-2xl"
-    body-lead:      { sm: 15px, md: 16.5px, lg: 17px, line: body }
-    body:           { size: 14px, line: relaxed }
-    body-tight:     { size: 13px, line: snug }
-    caption:        { size: 12.5px, line: snug }
-    eyebrow:        { size: 11px, weight: semibold, transform: uppercase, tracking: label }
-    eyebrow-mini:   { size: 10px, weight: medium,   transform: uppercase, tracking: eyebrow }
-    kbd:            { size: 11px, weight: medium, family: mono, features: tabular-nums }
-
-  # Italic serif accent in display headlines — a single phrase is
-  # swapped to italic Georgia-class serif and tinted primary. Used as
-  # a deliberate punctuation device, not decoration; appears once per
-  # screen at most.
-  display-accent:
-    family: serif-accent
-    style:  italic
-    weight: regular
-    color:  "color.primary.600"
-
-# ──────────────────────────────────────────────────────────────────
-# Spacing — based on a 4 px grid (Tailwind default). Listed sizes
-# are the ones actually used in this codebase; anything in between is
-# allowed but rare.
-# ──────────────────────────────────────────────────────────────────
-spacing:
-  unit: 4px
-  scale:
-    "0.5": 2px
-    "1":   4px
-    "1.5": 6px
-    "2":   8px
-    "2.5": 10px
-    "3":   12px
-    "3.5": 14px
-    "4":   16px
-    "5":   20px
-    "6":   24px
-    "8":   32px
-    "10":  40px
-    "12":  48px
-    "14":  56px
-    "16":  64px
-    "20":  80px
-
-  layout:
-    page-max:    1152px   # max-w-6xl content frame
-    search-max:  768px    # max-w-3xl
-    prose-max:   560px    # max-w-140 (custom) for marketing prose
-    gutter-sm:   16px     # px-4
-    gutter-md:   24px     # px-6
-    section-y:   48px     # py-12 between major sections
-    hero-y-top:  { sm: 24px, md: 40px, lg: 56px }   # pt-6 → pt-14
-    hero-y-bot:  { sm: 40px, md: 48px }             # pb-10 → pb-12
-
-# ──────────────────────────────────────────────────────────────────
-# Radii — heavy use of three values: lg for inputs/badges, xl for
-# buttons/icon tiles, 2xl for cards/dialogs/search-bar. Pills are
-# fully rounded.
-# ──────────────────────────────────────────────────────────────────
-radius:
-  none: 0
-  sm:   2px
-  md:   6px      # small popovers, hex preview, kbd
-  lg:   8px      # inputs, secondary buttons, page thumbnails
-  xl:   12px     # primary buttons, icon tiles, header back-button
-  "2xl": 16px    # tool cards, hero card, search bar, dialogs, footer bento
-  pill: 9999px   # category badges, "New" pill, file-size chip, focus dot
-
-# ──────────────────────────────────────────────────────────────────
-# Borders & strokes
-# ──────────────────────────────────────────────────────────────────
-border:
-  width:
-    hairline: 1px         # default for cards, inputs, dividers
-    medium:   2px         # selected thumbnail, drop-zone dashed border
-    thick:    3px         # spinner stroke
-
-  style:
-    solid:  solid
-    dashed: dashed        # FileDropZone idle state
-
-  color:
-    default: "color.surface.border"            # #E2E8F0
-    soft:    "color.surface.border-soft"       # rgba(226,232,240,0.70)
-    strong:  "color.neutral.300"               # #CBD5E1 — hover
-    accent:  "color.primary.300"               # focus / hover-on-card
-    accent-strong: "color.primary.500"
-
-# ──────────────────────────────────────────────────────────────────
-# Elevation — a small ladder. Most surfaces sit at level-0 (no
-# shadow) or level-1 (hairline shadow + border). Hover lifts cards
-# from level-1 to level-2. Modals and popovers jump to level-3+.
-# ──────────────────────────────────────────────────────────────────
-elevation:
-  level-0:
-    shadow: "none"
-    use:    "Page background, ambient surfaces, glass header"
-
-  level-1:
-    shadow: "0 1px 2px 0 rgba(15,23,42,0.05)"          # shadow-sm
-    use:    "Tool cards at rest, search bar, info chips"
-
-  level-2:
-    shadow: "0 4px 6px -1px rgba(15,23,42,0.10), 0 2px 4px -2px rgba(15,23,42,0.06)"  # shadow-md
-    use:    "Cards on hover, focused search, color-picker popover trigger"
-
-  level-3:
-    shadow: "0 10px 15px -3px rgba(15,23,42,0.10), 0 4px 6px -4px rgba(15,23,42,0.05)"  # shadow-lg
-    use:    "Color-picker popover, dropdown menus"
-
-  level-4:
-    shadow: "0 20px 25px -5px rgba(15,23,42,0.10), 0 8px 10px -6px rgba(15,23,42,0.04)"  # shadow-xl
-    use:    "Drag-overlay thumbnails"
-
-  level-5:
-    shadow: "0 25px 50px -12px rgba(15,23,42,0.25)"   # shadow-2xl
-    use:    "Confirm dialog, modal sheets"
-
-  # Confirmation buttons carry a tiny tinted shadow so the affordance
-  # reads even on a glassy surface.
-  tinted:
-    primary-cta: "0 1px 2px 0 rgba(59,130,246,0.30)"   # shadow-primary-500/30
-    danger-cta:  "0 1px 2px 0 rgba(239,68,68,0.30)"    # shadow-red-500/30
-
-# ──────────────────────────────────────────────────────────────────
-# Effects — glass, blur, and the cursor-tracking spotlight glow.
-# ──────────────────────────────────────────────────────────────────
-effect:
-  blur:
-    xs: 4px
-    sm: 8px
-    md: 12px
-    lg: 16px      # glassy header & dialog (backdrop-blur-xl)
-    xl: 24px
-    aurora-mobile: 36px
-    aurora-desktop: 60px
-    dialog-backdrop: 14px
-
-  glass:
-    light:
-      background: "rgba(255,255,255,0.80)"
-      backdrop:   "blur(16px)"
-      border:     "1px solid rgba(226,232,240,0.70)"
-    dark:
-      background: "rgba(30,41,59,0.80)"
-      backdrop:   "blur(16px)"
-      border:     "1px solid rgba(255,255,255,0.10)"
-
-  spotlight:
-    # Cursor / touch tracking radial gradient painted inside cards.
-    # Radius scales by card size: 300 px for FileDropZone, 320 px for
-    # ToolCard, 420 px for the wider WorkflowHeroCard.
-    geometry: "radial-gradient(<radius> circle at <cursorX>px <cursorY>px, <glow>, transparent 70%)"
-    radius:
-      drop-zone:   300px
-      tool-card:   320px
-      hero-card:   420px
-    color: "color.glow.primary-soft"   # rgba(37,99,235,0.16)
-    fade-duration: 300ms
-
-  grain:
-    # Inline SVG fractalNoise tiled over the aurora at low opacity.
-    # Kills the "CSS gradient" tell, adds a faint tactile texture.
-    tile: 240px
-    opacity-light: 0.045
-    opacity-dark:  0.080
-    blend-light:   multiply
-    blend-dark:    overlay
-
-# ──────────────────────────────────────────────────────────────────
-# Motion
-# ──────────────────────────────────────────────────────────────────
-motion:
-  # All interactive transitions land in this 150–300 ms band.
-  # Anything longer is reserved for ambient (aurora) animation.
-  duration:
-    instant:   0ms
-    fast:      120ms     # fade-in for popovers / overlays
-    snappy:    150ms     # link colour change, hover tints
-    standard:  200ms     # transforms, border-color, shadow
-    smooth:    300ms     # opacity / spotlight glow fades
-    enter:     350ms     # scale-in, slide-up-in
-    fade-up:   450ms     # animate-fade-in-up (hero entry)
-    pulse:     2500ms    # error/warning attention pulse loop
-    aurora-flow:    "44s–62s"   # per-blob horizontal drift
-    aurora-morph:   "17s–22s"   # per-blob border-radius morph
-    aurora-breathe: "10s–15s"   # per-blob opacity oscillation
-
-  easing:
-    standard: "cubic-bezier(0.4, 0, 0.2, 1)"      # default ease
-    out:      "cubic-bezier(0, 0, 0.2, 1)"        # ease-out — entry
-    in-out:   "cubic-bezier(0.4, 0, 0.6, 1)"      # ease-in-out
-    spring:   "cubic-bezier(0.34, 1.56, 0.64, 1)" # scale-in (slight overshoot)
-    soft:     "cubic-bezier(0.22, 1, 0.36, 1)"    # slide-up-in (decelerate)
-    linear:   "linear"                             # aurora flow only
-
-  keyframes:
-    fade-in-up:
-      duration: 450ms
-      easing:   out
-      from:     "opacity:0; translateY(12px)"
-      to:       "opacity:1; translateY(0)"
-      use:      "Hero copy, section headers, tool grid sections, search bar"
-
-    scale-in:
-      duration: 350ms
-      easing:   spring
-      from:     "opacity:0; scale(0.82)"
-      to:       "opacity:1; scale(1)"
-      use:      "Confirm dialog card"
-
-    popover-in:
-      duration: 150ms
-      easing:   out
-      from:     "opacity:0; translateY(-6px) scale(0.97)"
-      to:       "opacity:1; translateY(0) scale(1)"
-      use:      "Dropdowns / popovers anchored below their trigger"
-
-    popover-in-above:
-      duration: 150ms
-      easing:   out
-      from:     "opacity:0; translateY(6px) scale(0.97)"
-      to:       "opacity:1; translateY(0) scale(1)"
-      use:      "Popovers anchored above their trigger"
-
-    fade-in:
-      duration: 120ms
-      easing:   out
-      use:      "Modal backdrop, transient hints"
-
-    slide-up-in:
-      duration: 350ms
-      easing:   soft
-      from:     "opacity:0; translateY(24px)"
-      to:       "opacity:1; translateY(0)"
-      use:      "Tool result panel reveal"
-
-    error-pulse-ring:
-      duration: 2500ms
-      iteration: infinite
-      stops:
-        "0%":   "box-shadow: 0 0 0 0 rgba(239,68,68,0.45)"
-        "60%":  "box-shadow: 0 0 0 8px rgba(239,68,68,0)"
-        "100%": "box-shadow: 0 0 0 8px rgba(239,68,68,0)"
-      use:      "AlertBox — keeps failures from being missed"
-
-    warning-pulse-ring:
-      duration: 2500ms
-      iteration: infinite
-      stops:
-        "0%":   "box-shadow: 0 0 0 0 rgba(245,158,11,0.45)"
-        "60%":  "box-shadow: 0 0 0 8px rgba(245,158,11,0)"
-        "100%": "box-shadow: 0 0 0 8px rgba(245,158,11,0)"
-      use:      "InfoCallout accent='warning'"
-
-    focus-ring-pulse:
-      duration: 1000ms
-      iteration: 1
-      stops:
-        "0%":   "box-shadow: 0 0 0 0 rgba(37,99,235,0.35)"
-        "100%": "box-shadow: 0 0 0 10px rgba(37,99,235,0)"
-
-  reduced-motion:
-    # Honors prefers-reduced-motion. Aurora freezes; popovers/fades
-    # collapse to instant; pulses go static.
-    aurora:           paused
-    popover-in:       none
-    fade-in:          none
-    slide-up-in:      none
-    error-pulse:      none
-    warning-pulse:    none
-
-  # Hover affordances on cards. Lift, brighten the icon tile, slide
-  # title / chevron a half-pixel right.
-  hover:
-    card-translate-y: -2px
-    title-translate-x: 0.5px
-    chevron-translate-x: 0.5px
-    icon-scale: 1.05
-    icon-translate-y: -1px
-
-# ──────────────────────────────────────────────────────────────────
-# Iconography
-# ──────────────────────────────────────────────────────────────────
-icon:
-  family: "lucide-react"
-  default-stroke-width: 2
-  thin-stroke-width: 1.5     # FileDropZone hero icon
-  bold-stroke-width: 2.25    # search lens
-  size:
-    xs: 12px       # ArrowUpRight in pill links
-    sm: 14px       # status row glyphs
-    md: 16px       # button trailing icons, alert glyphs
-    lg: 20px       # tool-card icon, header chips
-    xl: 24px       # tool-page header icon
-    hero: 32px     # FileDropZone large icon
-  tile:
-    size:    44px         # tool-card / hero-card icon tile (w-11 h-11)
-    radius:  "radius.xl"  # 12px
-    bg-rest: "color.neutral.100"
-    bg-hover: "color.primary.50"
-    fg-rest: "color.neutral.700"
-    fg-hover: "color.primary.600"
-
-# ──────────────────────────────────────────────────────────────────
-# Component recipes — succinct token references, not exhaustive CSS.
-# ──────────────────────────────────────────────────────────────────
-component:
-  page-shell:
-    background:  "page-bg gradient (radials over slate linear base)"
-    aurora:      "AuroraBackground component painted at z-index:0"
-    grain:       "fractal-noise SVG tile at z-index:1, opacity 0.045 (light) / 0.08 (dark)"
-    max-width:   "layout.page-max"
-    safe-area:   "padding-bottom: env(safe-area-inset-bottom)"
-
-  header:
-    sticky:      true
-    height:      "≈52 px (py-2.5 + content)"
-    surface:     "effect.glass.light"
-    border:      "1px hairline bottom, color.surface.border-soft"
-    z-index:     50
-    contents:    [optional-back-button, logo+wordmark, privacy-chip, github-link]
-
-  brand-wordmark:
-    text:    "Cloak[PDF]"
-    weight:  semibold
-    tracking: "-0.02em"
-    color:   "color.text.default; the 'PDF' suffix uses color.primary.600"
-    logo:    "32 px shield-glyph SVG with subtle drop-shadow"
-
+  fonts:
+    sans: >-
+      "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+      Roboto, sans-serif
+    serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif
+    mono: >-
+      ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+      "Liberation Mono", monospace
+  smoothing:
+    webkit: antialiased
+    moz: grayscale
   hero:
-    layout:   "lg: 12-col grid, 7/5 split; mobile: stacked"
-    headline:
-      type:    "typography.scale.hero"
-      accent-phrase: "italic serif, primary-600"
-    subhead:
-      type:    "typography.scale.body-lead"
-      color:   "color.text.muted"
-      max-width: 32rem
-    entry:    "animate-fade-in-up, staggered 0/80/120 ms"
+    fontFamily: "Inter"
+    fontSize: "clamp(34px, 5vw, 58px)"
+    fontWeight: "600"
+    lineHeight: "1.05"
+    letterSpacing: "-0.03em"
+    notes: >-
+      Italic phrase ("stay on your device") swaps to system serif,
+      400 weight, primary-600/400, to feel editorial against the
+      geometric sans.
+  display:
+    fontFamily: "Inter"
+    fontSize: "clamp(24px, 3.4vw, 36px)"
+    fontWeight: "600"
+    lineHeight: "1.15"
+    letterSpacing: "-0.02em"
+  headline-lg:
+    fontFamily: "Inter"
+    fontSize: "26px"
+    fontWeight: "600"
+    lineHeight: "1.2"
+    letterSpacing: "-0.02em"
+  headline-md:
+    fontFamily: "Inter"
+    fontSize: "22px"
+    fontWeight: "600"
+    lineHeight: "1.2"
+    letterSpacing: "-0.02em"
+  title:
+    fontFamily: "Inter"
+    fontSize: "17px"
+    fontWeight: "600"
+    lineHeight: "1.3"
+    letterSpacing: "-0.02em"
+  card-title:
+    fontFamily: "Inter"
+    fontSize: "15px"
+    fontWeight: "600"
+    lineHeight: "1.35"
+    letterSpacing: "-0.005em"
+  body-lg:
+    fontFamily: "Inter"
+    fontSize: "17px"
+    fontWeight: "400"
+    lineHeight: "1.55"
+  body:
+    fontFamily: "Inter"
+    fontSize: "15px"
+    fontWeight: "400"
+    lineHeight: "1.55"
+  body-sm:
+    fontFamily: "Inter"
+    fontSize: "13px"
+    fontWeight: "400"
+    lineHeight: "1.55"
+  caption:
+    fontFamily: "Inter"
+    fontSize: "12.5px"
+    fontWeight: "500"
+    lineHeight: "1.5"
+  eyebrow:
+    fontFamily: "Inter"
+    fontSize: "11px"
+    fontWeight: "600"
+    lineHeight: "1.0"
+    letterSpacing: "0.12em"
+    textTransform: "uppercase"
+  micro-label:
+    fontFamily: "Inter"
+    fontSize: "10px"
+    fontWeight: "600"
+    lineHeight: "1.0"
+    letterSpacing: "0.16em"
+    textTransform: "uppercase"
+  kbd:
+    fontFamily: "ui-monospace, SFMono-Regular, Menlo"
+    fontSize: "11px"
+    fontWeight: "500"
+    fontFeatureSettings: '"tnum"'
+  version-tag:
+    fontFamily: "ui-monospace, SFMono-Regular, Menlo"
+    fontSize: "10px"
+    fontFeatureSettings: '"tnum"'
 
-  workflow-hero-card:
-    surface:  "color.surface.base"
-    radius:   "radius.2xl"
-    border:   "1px hairline color.surface.border"
-    padding:  "20–24 px"
-    icon:     "icon.tile"
-    eyebrow:  "WORKFLOWS · NEW pill"
-    body:     "headline 15–16 px semibold + 12.5–13 px muted prose"
-    glow:     "effect.spotlight (radius hero-card, glow.primary-soft)"
-    hover:    "lift -2 px, primary-300 border, level-2 shadow"
+spacing:
+  base: 4px
+  px:   1px
+  0_5:  2px
+  1:    4px
+  1_5:  6px
+  2:    8px
+  2_5:  10px
+  3:    12px
+  3_5:  14px
+  4:    16px
+  5:    20px
+  6:    24px
+  7:    28px
+  8:    32px
+  10:   40px
+  12:   48px
+  14:   56px
+  16:   64px
+  container: 1152px        # max-w-6xl, the main content frame
+  gutter: 16px             # standard grid gap between cards
+  gutter-lg: 24px          # gap between hero columns
+  section-y: 48px          # space-y-12 between tool categories
+  page-x: 16px             # phone padding (px-4)
+  page-x-lg: 24px          # tablet+ padding (sm:px-6)
 
-  search-bar:
-    surface:    "rgba(255,255,255,0.90) + backdrop-blur-sm"
-    radius:     "radius.2xl"
-    border:     "1px hairline color.surface.border"
-    leading:    "Search lens icon in a 40 px clear tile"
-    trailing:   "kbd hint (⌘K / CtrlK) when empty; X-button when active"
-    focus:      "border → primary-300, level-2 shadow, soft primary blur halo"
-    width:      "layout.search-max"
+radii:
+  none: "0"
+  sm:   "0.5rem"   # 8px  — small badges, hover chips
+  md:   "0.75rem"  # 12px — kbd outlines, ghost buttons
+  lg:   "0.75rem"  # 12px — icon-tile interior
+  xl:   "1rem"     # 16px — large icon tiles, action buttons
+  "2xl": "1rem"    # 16px — tool cards, search bar, modals
+  pill: "9999px"   # eyebrow chips, kbd background, step circles
 
-  tool-card:
-    surface:    "color.surface.base"
-    radius:     "radius.2xl"
-    border:     "1px hairline color.surface.border → primary-300 on hover"
-    padding:    "20 px (sm: 24 px)"
-    structure:  "icon tile · 8 px gap · title · 13 px muted description · trailing chevron (hidden until hover)"
-    glow:       "effect.spotlight (radius tool-card, glow.primary-soft)"
-    motion:     "lift -2 px (200 ms), icon scale 1.05 + tint primary, chevron slides in"
+elevation:
+  flat: "none"
+  card-rest:    "0 0 0 1px rgba(15,23,42,0.06)"
+  card-hover:   "0 4px 12px -2px rgba(15,23,42,0.08), 0 2px 4px -2px rgba(15,23,42,0.04)"
+  search-focus: "0 4px 12px -2px rgba(37,99,235,0.10), 0 0 0 1px rgba(37,99,235,0.15)"
+  modal:        "0 25px 50px -12px rgba(15,23,42,0.25)"
+  cta-primary:  "0 1px 2px rgba(37,99,235,0.30)"
+  cta-danger:   "0 1px 2px rgba(239,68,68,0.30)"
 
-  category-section:
-    eyebrow:    "11 px uppercase semibold primary-600 + ‘· N’ count in muted tone"
-    title:      "typography.scale.section-h2"
-    grid:       "1 / 2 / 3 columns at sm/md/lg, 16 px gap"
+backdrop-blur:
+  header: "24px"   # backdrop-blur-xl on sticky header
+  modal:  "14px"   # confirm-dialog scrim
+  card:   "12px"   # bento footer translucent cards
+  search: "4px"    # subtle blur behind the search shell
 
-  why-grid:
-    title:      "typography.scale.why-h2 (centered)"
-    items:      "9 multi-coloured feature pills (3 × 3 grid)"
-    pill:       "40 px square rounded-lg, fg+bg drawn from color.feature-pills"
-    body:       "13.5 px muted prose"
+motion:
+  duration:
+    instant: "120ms"   # fade-in, hover colour shifts
+    fast:    "150ms"   # popover-in, hover transitions
+    base:    "200ms"   # button + card transitions
+    slow:    "350ms"   # scale-in / slide-up-in
+    slower:  "450ms"   # fade-in-up hero entry
+  easing:
+    standard:  "ease-out"
+    smooth:    "cubic-bezier(0.22, 1, 0.36, 1)"   # slide-up-in
+    overshoot: "cubic-bezier(0.34, 1.56, 0.64, 1)" # scale-in modal
+  keyframes:
+    fade-in:        "opacity 0 → 1, 120ms ease-out"
+    fade-in-up:     "opacity 0 → 1 + translateY(12px → 0), 450ms ease-out"
+    scale-in:       "opacity 0 → 1 + scale(0.82 → 1), 350ms overshoot"
+    popover-in:     "opacity 0 → 1 + translateY(-6px → 0) + scale(0.97 → 1), 150ms ease-out"
+    slide-up-in:    "opacity 0 → 1 + translateY(24px → 0), 350ms smooth"
+    focus-ring-pulse: "ring 0 → 10px rgba(37,99,235,0.35 → 0)"
+    error-pulse:    "ring 0 → 8px rgba(239,68,68,0.45 → 0), 2.5s infinite"
+    warning-pulse:  "ring 0 → 8px rgba(245,158,11,0.45 → 0), 2.5s infinite"
+    aurora-morph:   "border-radius blob mutation, 17–22s ease-in-out infinite"
+    aurora-flow:    "translate(±60vw, ±70vh) + rotate(±290°) + scale(0.8–1.3), 44–62s linear infinite"
+    aurora-breathe: "opacity ×0.7 → ×1.3, 10–15s ease-in-out infinite"
+  reduced-motion: >-
+    Aurora animations halt; popover/fade/slide/error/warning pulses
+    drop to instant. Layout transitions still resolve in ≤200ms.
+  hover-lift:    "translateY(-2px) on cards / CTAs"
+  hover-shift-x: "translateX(2px) on card titles + chevrons"
 
-  bento-footer:
-    layout:    "12-col grid; 7/5 split; only on home"
-    surface:   "color.surface.glass-soft + backdrop-blur-md"
-    border:    "1px hairline color.surface.border-soft"
-    radius:    "radius.2xl"
-    decor:     "soft primary blur disc (160 px) tucked into one corner per card"
-    rows:      "How-it-works (3-step ordered list with numbered chips) + Cloakyard family promo with explore link + version chip"
-
-  primary-button:
-    surface:    "color.primary.600 → primary.700 on hover"
-    text:       "color.text.invert"
-    weight:     medium
-    padding:    "12 px y · 32 px x"
-    radius:     "radius.xl"
-    width:      "full on mobile; min 220 px on desktop, sm:w-auto"
-    trailing:   "ArrowRight (workflow continue) | Download (final/standalone) | none"
-    motion:     "transition-colors only (no scale/lift)"
-
-  destructive-button:
-    surface:    "color.status.danger → red-700 on hover"
-    other:      "matches primary-button geometry"
-    shadow:     "elevation.tinted.danger-cta"
-
-  ghost-button:
-    surface:    "color.surface.base"
-    border:     "1px hairline color.surface.border → neutral-300 on hover"
-    text:       "color.text.default"
-    radius:     "radius.lg"
-
-  reset-link:
-    surface:    "transparent"
-    style:      "Undo2 glyph + 'Reset' text, 14 px muted, hover → neutral-700"
-
-  drop-zone:
-    surface:    "rgba(255,255,255,0.70)"
-    border:     "2 px dashed color.neutral.300 → primary.300 on hover"
-    radius:     "radius.xl"
-    padding:    "40 px"
-    icon-tile:  "64 px rounded-2xl, neutral-100 fill, FileUp glyph"
-    drag-over:  "border-primary-400, bg-primary-50/80, 1.005 scale"
-    glow:       "effect.spotlight (radius drop-zone)"
-
-  thumbnail:
-    aspect:     "3:4"
-    radius:     "radius.lg"
-    border:     "2 px hairline color.surface.border"
-    selected:   "border primary-500 + 2 px primary-200 ring"
-    badge:      "‘Page N’ in 12 px white text on bottom-fade gradient"
-
-  page-thumbnail-grid:
-    gap:        "16 px"
-    columns:    "auto-fit, 120–160 px tracks"
-    drag:       "elevation.level-4 floating overlay during drag"
-
-  alert-box:
-    role:       "error only"
-    surface:    "bg-red-50, border-red-200"
-    text:       "red-700"
-    radius:     "radius.xl"
-    motion:     "motion.keyframes.error-pulse-ring"
-
-  info-callout:
-    role:       "info / success / warning"
-    surface:    "primary-50 (info/success) | amber-50 (warning) + matching border-200"
-    radius:     "radius.xl"
-    structure:  "icon (5 px) + optional bold title + body, 14 px relaxed"
-    motion:     "warning-pulse-ring on warning"
-
-  badge-pill:
-    radius:    "radius.pill"
-    type:      "typography.scale.eyebrow-mini"
-    surface:   "primary-50 with primary-200 border (NEW); neutral-100 with neutral-200 border (file-size chip / version chip)"
-
-  kbd-hint:
-    radius:    "radius.md"
-    surface:   "neutral-50 with neutral-200 border"
-    type:      "typography.scale.kbd"
-
-  progress-bar:
-    height:    8 px
-    track:     "color.neutral.200"
-    fill:      "color.primary.600"
-    radius:    "radius.pill"
-    label:     "left text + tabular-nums ‘current / total’ on the right"
-    motion:    "width transition 300 ms"
-
-  spinner:
-    size:      32 px (small: 24 px)
-    track:     "color.primary.200"
-    head:      "color.primary.600"
-    width:     3 px (small: 2 px)
-    motion:    "rotate 750 ms linear infinite"
-
-  slider:
-    track:     full-width range input, primary-600 accent
-    label:     "13 px medium left, primary-tinted pill with tabular-nums on the right"
-
-  checkbox:
-    size:      16 px
-    accent:    "color.primary.600"
-    label:     "13 px medium + optional 12 px faint description"
-
-  color-picker:
-    presets:   "4 swatch buttons (Black/Grey/Blue/Red) sized 24/20 px circles, primary-500 ring on selected"
-    custom:    "Conic-gradient swatch with ‘+’ that opens a popover (256 px wide, level-3 shadow): SV gradient area, hue range, hex input"
-
-  dialog:
-    portal:    "createPortal(document.body)"
-    backdrop:  "bg-slate-900/30 + 14 px blur"
-    surface:   "rgba(255,255,255,0.85) + backdrop-blur-xl"
-    radius:    "radius.2xl"
-    shadow:    "elevation.level-5"
-    width:     "max-w-md"
-    structure: "icon disc · title + description · close-X · footer with Cancel + Confirm buttons on a slate-50/55 strip"
-    motion:    "fade-in for backdrop, scale-in (spring) for card"
-
-  scrollbar:
+effects:
+  aurora:
+    blob-count: 6
+    blob-blur:
+      desktop: "60px"
+      mobile:  "36px"
+    blob-opacity-base: "0.08"
+    blob-opacity-range: "0.056 – 0.104"
+    blend-mode-light: "multiply"
+    blend-mode-dark:  "screen"
+    grain-opacity-light: "0.045"
+    grain-opacity-dark:  "0.08"
+    grain-blend-light: "multiply"
+    grain-blend-dark:  "overlay"
+    mobile-mask: >-
+      vertical alpha mask fades blobs to transparent across the
+      bottom 200px so iOS Safari samples the slate page-bg
+      (not the blob hue) for its URL-bar tint.
+  spotlight:
+    radius: "320px"     # ToolCard
+    radius-hero: "420px" # WorkflowHero
+    radius-drop: "300px" # FileDropZone
+    color: "{colors.glow-primary}"
+    falloff: "transparent at 70%"
+    triggers: ["mousemove", "touchstart", "touchmove"]
+  glass:
+    header-bg: "rgba(255,255,255,0.80)"
+    header-bg-dark: "rgba(30,41,59,0.80)"
+    modal-scrim-light: "rgba(15,23,42,0.30)"
+    modal-scrim-dark:  "rgba(0,0,0,0.50)"
+    bento-card-bg: "rgba(255,255,255,0.65)"
+    bento-card-bg-dark: "rgba(30,41,59,0.60)"
+  scrollbar-thin:
+    width: "8px"
+    radius: "9999px"
     thumb-light: "rgba(100,116,139,0.30)"
     thumb-dark:  "rgba(148,163,184,0.30)"
-    track:       transparent
-    width:       8 px
-    radius:      "radius.pill"
-    scope:       "modal/card overflow only — never the document"
+    track: "transparent"
 
-# ──────────────────────────────────────────────────────────────────
-# Layout & breakpoints
-# ──────────────────────────────────────────────────────────────────
-breakpoint:
-  sm: 640px
-  md: 768px
-  lg: 1024px
-  xl: 1280px
+iconography:
+  library: "lucide-react"
+  default-stroke: "2"
+  search-stroke:  "2.25"
+  size-sm: "16px"   # inline glyphs
+  size-md: "20px"   # card icons, button icons
+  size-lg: "24px"   # tool-page header icons
+  tile-size: "44px" # 11×11 in 4px grid; rounded-xl, slate-100 bg
+  tile-hover: "primary-50 bg / primary-600 fg + scale(1.05) + -1px lift"
+  brand-mark: "shield + folded-corner document with redaction lines"
 
-z-index:
-  aurora:      0
-  grain:       1
-  page-shell:  10
-  header:      50
-  popover:     50
-  dialog:      200
+components:
+  button-primary:
+    backgroundColor: "{colors.primary-600}"
+    backgroundColorHover: "{colors.primary-700}"
+    textColor: "#ffffff"
+    typography: "{typography.body}"
+    fontWeight: "500"
+    rounded: "{radii.xl}"
+    padding: "12px 32px"
+    minWidth: "220px"
+    trailingIcon: "ArrowRight (continue) | Download (terminal) | none"
+    disabled: "opacity 0.5, cursor not-allowed"
+  button-danger:
+    backgroundColor: "{colors.danger}"
+    backgroundColorHover: "#b91c1c"
+    textColor: "#ffffff"
+    rounded: "{radii.lg}"
+    shadow: "{elevation.cta-danger}"
+  button-ghost:
+    backgroundColor: "transparent"
+    textColor: "{colors.slate-600}"
+    hoverBg: "rgba(15,23,42,0.04)"
+    rounded: "{radii.xl}"
+    padding: "8px"
+  reset-button:
+    backgroundColor: "transparent"
+    border: "1px solid {colors.slate-200}"
+    textColor: "{colors.slate-500}"
+    rounded: "{radii.lg}"
+  search-bar:
+    backgroundColor: "{colors.surface-glass}"
+    backdropBlur: "{backdrop-blur.search}"
+    border: "1px solid {colors.slate-200}"
+    borderFocus: "1px solid {colors.primary-300}"
+    rounded: "{radii.2xl}"
+    height: "56px"
+    leadingIcon: "Search · slate-700 · 20px"
+    trailingShortcut: "kbd ⌘K / CtrlK · slate-500 · 11px tabular"
+    glow: "soft primary-500/20 outer halo on focus"
+  tool-card:
+    backgroundColor: "{colors.surface}"
+    border: "1px solid {colors.slate-200}"
+    borderHover: "1px solid {colors.primary-300}"
+    rounded: "{radii.2xl}"
+    padding: "24px 20px"
+    iconTile:
+      size: "44px"
+      bg: "{colors.slate-100}"
+      bgHover: "{colors.primary-50}"
+      fg: "{colors.slate-700}"
+      fgHover: "{colors.primary-600}"
+      rounded: "{radii.lg}"
+    title: "{typography.card-title}"
+    body:  "{typography.body-sm}"
+    hover: "translateY(-2px) + shadow-md + spotlight glow + chevron slide-in"
+  workflow-hero-card:
+    extends: "tool-card"
+    layout: "horizontal"
+    eyebrow: "WORKFLOWS"
+    badge: "NEW (primary-50 pill, primary-600 text)"
+    glow-radius: "420px"
+  feature-item:
+    layout: "icon + title + description, gap-3.5"
+    iconTile: "40px rounded-lg, color-mix(<feature> 14%, transparent)"
+    title: "14.5px / 600 / slate-800"
+    body:  "13.5px / 400 / slate-500"
+  file-drop-zone:
+    backgroundColor: "{colors.surface}"
+    border: "2px dashed {colors.slate-200}"
+    borderActive: "2px dashed {colors.primary-400}"
+    rounded: "{radii.2xl}"
+    icon: "FileUp · primary-tinted"
+    spotlightRadius: "300px"
+  alert-error:
+    backgroundColor: "{colors.danger-bg}"
+    border: "1px solid {colors.danger-border}"
+    textColor: "{colors.danger-text}"
+    rounded: "{radii.xl}"
+    padding: "16px"
+    animation: "error-pulse 2.5s infinite"
+  callout-info:
+    backgroundColor: "{colors.primary-50}"
+    border: "1px solid {colors.primary-200}"
+    titleColor: "#1e3a8a"
+    bodyColor:  "#1d4ed8"
+    iconColor:  "{colors.primary-600}"
+    rounded: "{radii.xl}"
+  callout-warning:
+    backgroundColor: "{colors.warning-bg}"
+    border: "1px solid {colors.warning-border}"
+    iconColor: "#d97706"
+    rounded: "{radii.xl}"
+    animation: "warning-pulse 2.5s infinite"
+  modal:
+    surface: "rgba(255,255,255,0.85)"
+    backdropBlur: "{backdrop-blur.modal}"
+    scrim: "{effects.glass.modal-scrim-light}"
+    border: "1px solid rgba(226,232,240,0.80)"
+    rounded: "{radii.2xl}"
+    shadow: "{elevation.modal}"
+    animation: "scale-in 350ms overshoot"
+  header:
+    height: "auto, py-2.5"
+    surface: "{colors.surface-glass}"
+    backdropBlur: "{backdrop-blur.header}"
+    borderBottom: "1px solid rgba(226,232,240,0.70)"
+    sticky: true
+    z-index: 50
+    contents: "logo + wordmark · privacy chip · GitHub link · optional back arrow"
+  footer-bento:
+    layout: "12-col grid; 7 / 5 split (How-it-works · Cloakyard)"
+    cardSurface: "{effects.glass.bento-card-bg}"
+    backdropBlur: "{backdrop-blur.card}"
+    accentBlob: "primary-500/15 blurred radial in card corner"
+    rounded: "{radii.2xl}"
+    homeOnly: true
+  step-circle:
+    size: "28px"
+    bg: "{colors.primary-50}"
+    border: "1px solid #dbeafe"
+    fg: "{colors.primary-600}"
+    rounded: "{radii.pill}"
+    typography: "12px / 600 / tabular"
+  badge-new:
+    backgroundColor: "{colors.primary-50}"
+    border: "1px solid {colors.primary-200}"
+    textColor: "{colors.primary-600}"
+    rounded: "{radii.pill}"
+    padding: "2px 8px"
+    typography: "{typography.micro-label}"
+  kbd:
+    backgroundColor: "{colors.slate-50}"
+    border: "1px solid {colors.slate-200}"
+    textColor: "{colors.slate-500}"
+    rounded: "{radii.md}"
+    typography: "{typography.kbd}"
+    padding: "4px 8px"
+  loading-spinner:
+    track: "{colors.primary-200}"
+    head:  "{colors.primary-600}"
+    size:  "32px"
+    width: "3px"
 
-# ──────────────────────────────────────────────────────────────────
-# Accessibility & input
-# ──────────────────────────────────────────────────────────────────
-accessibility:
-  focus-ring:
-    color:   "color.primary.400"
-    width:   2 px
-    offset:  2 px
-    rule:    "All interactive elements expose a focus-visible ring; cards and thumbnails use ring + offset; inputs swap to a primary-300 border."
-  contrast:
-    body:     "color.text.muted on color.surface.base ≥ 4.6:1"
-    headings: "color.text.default on color.surface.base ≥ 14:1"
-  reduced-motion: "Aurora pauses; popovers / fades collapse to instant; pulses freeze."
-  hit-targets: "≥ 36 px tap area on mobile (touch-action: manipulation, 6 px chrome on icon buttons)"
+breakpoints:
+  sm: "640px"
+  md: "768px"
+  lg: "1024px"
+  xl: "1280px"
+  "2xl": "1536px"
+  container-max: "1152px"
+
+grid:
+  hero: "12-col, 7 / 5 split (lg+); single column below"
+  tools: "1 / 2 / 3 columns at sm / md / lg breakpoints"
+  features: "1 / 2 / 3 columns at sm / md / lg breakpoints"
+  bento-footer: "12-col, 7 / 5 split (sm+); stacks below"
+
+a11y:
+  focus-ring: "2px primary-600 outline + rgba(37,99,235,0.18) glow"
+  reduced-motion: "honoured for fade/slide/scale/aurora/error+warning pulses"
+  contrast: >-
+    Slate-500 on white passes AA for body sizes; slate-800 on white
+    and primary-600 on primary-50 both pass AA for headings.
+  keyboard: "⌘K / CtrlK focuses search; Esc clears; Enter confirms modal"
+  scheme: "@media (prefers-color-scheme) drives the dark variant"
 ---
 
-# Look & feel
+```
 
-CloakPDF is a privacy-first toolkit. The visual language is built around that
-promise: it should feel calm, technical, and personal — never enterprise,
-never noisy. The whole product reads like a single quiet page that occasionally
-slides aside to reveal a focused workspace.
+# CloakPDF — Ocean Blue
 
-The page wears its character in the backdrop. Two faint blue radials sit over a
-cool slate gradient (`#FAFBFC → #F1F5F9`); on top of that, six large, slowly
-drifting blurred colour blobs — the **aurora** — orbit just below the chrome.
-The aurora uses a `multiply` blend in light mode and `screen` in dark, so the
-same colours register as warm tints on white and as glowing nebulae on near-black.
-A static fractal-noise grain (`<feTurbulence>` SVG, ~4–8% opacity) is dusted on top
-to break the "CSS gradient" tell and add a faint tactile texture. On mobile the
-two smallest blobs drop out and the blur radius shrinks from 60 px to 36 px —
-fullscreen blur is the single most expensive paint on phone GPUs, and the bottom
-edge of the aurora is masked off with a vertical alpha gradient so iOS Safari's
-URL-bar sample zone never picks up a saturated tint.
+CloakPDF is a privacy-first toolbox for editing, merging, signing,
+redacting, and converting PDFs entirely in the browser. The design
+system has to communicate two things at the same time: **calm
+confidence** ("nothing leaves your device") and **technical
+breadth** (35+ tools without feeling like a control panel). Ocean
+Blue is the load-bearing visual idea — a single accent doing the
+work that lesser systems split across category colours.
 
-# Typography
+## Brand & Voice
 
-Inter Variable is the only typeface; we ship `100–900` from a single woff2 plus
-a separate italic file. We use four weights (400 / 500 / 600 / 600 again, since
-that's the heaviest we want) and lean on Inter's tabular-nums for any
-counts — `12 / 35`, `v1.4.2`, percentages — so numbers don't shimmer as they
-update.
+The product personality is **quiet, modern, and deliberate**. The
+hero pairs a tight geometric sans with one editorial italic clause
+("*stay on your device*") to make the privacy promise feel
+hand-set rather than templated. The wordmark renders the "PDF"
+suffix in primary-600 against a slate-900 "Cloak" — same family,
+different ink — so the brand reads as a single word with a coloured
+emphasis rather than a logo+tag.
 
-The display voice is ordinary semibold sans **with one italic serif accent
-phrase** per screen. On the home page the hero reads **"PDF tools that
-_stay on your device_."** — sans for the framing, italic Georgia-class serif in
-`primary-600` for the promise. The accent never repeats inside a screen; it's
-the punctuation that tells the reader what the page is _about_.
+The shield-and-document logo carries a vertical primary-500 →
+primary-700 gradient. Three short redacted bars sit on the page
+inside the shield: that's the whole privacy thesis in one mark.
 
-Headings use tight tracking (`-0.03em` for the hero, `-0.02em` for section
-titles, `-0.015em` for tool-page H1s). Body copy is `slate-500` (`#64748B`) at
-13–17 px with a generous `1.55` leading. Eyebrows are 10–11 px, `uppercase`,
-`tracking-[0.12em]`, painted in `primary-600` for sections and `slate-400` for
-quieter labels ("Part of", "How it works"). Keyboard hints (`⌘K`) sit in a
-slate-50 chip with a hairline border, in monospace tabular nums.
+## Look & Feel
 
-# Color
+The page never sits on a flat colour. A six-blob **aurora** drifts
+beneath all chrome — blue, violet, pink, orange, cyan, emerald —
+each blob blurred to 60px on desktop, 36px on mobile, breathing
+between 5.6 % and 10.4 % opacity. Light mode mixes the aurora into
+the background with `multiply`; dark mode flips to `screen` so the
+blobs glow rather than tint. A static SVG fractal-noise grain sits
+over the blobs at 4–8 % opacity — kills the "CSS gradient" tell and
+gives surfaces a faint paper texture.
 
-The palette is deliberately small. **Primary** is "Ocean Blue" — a `#2563EB`
-scale used for every CTA, link, focus ring, eyebrow, and accent phrase.
-**Slate** is the only neutral; headings sit at slate-800, body at slate-500,
-borders at slate-200. Errors are red, warnings amber, success green; those
-three are the entire status palette. Per-category accent colours (organise /
-transform / annotate / security) existed in an earlier iteration and have been
-**explicitly retired** in favour of a single calmer accent — the `categoryGlow`
-and `categoryAccent` maps still exist for call-site stability but every key
-now resolves to the same primary blue value.
+The aurora is the only place the system uses the full six-colour
+palette. Everything *interactive* — buttons, focus rings, hover
+borders, spotlight glows, the workflow badge — collapses to a single
+ocean-blue accent. The contrast between the multi-coloured ambient
+backdrop and the monochromatic UI is the design's signature move:
+the colour energy lives behind the glass, not on the controls.
 
-The single place colour gets _playful_ is the "Why CloakPDF" feature grid:
-nine pills, each with its own hue (emerald, violet, teal, cyan, orange, yellow,
-pink, indigo, slate). Each pill mixes its hex into transparent at 14% for the
-icon background and uses the same hex (slightly desaturated for dark mode)
-as the icon foreground. Read at 40 px, the row scans like a confetti band
-without ever breaking the otherwise-monochrome page.
+A vertical alpha mask fades the aurora to transparent across the
+bottom 200 px on mobile so iOS Safari samples the slate page-bg
+(not a blob hue) for its URL-bar tint. This is the kind of
+invisible discipline the product runs on.
 
-# Surfaces & glass
+## Colour
 
-Three surface treatments cover almost everything:
+The primary scale is anchored at **#2563EB** (primary-600) and
+spans ten steps from the near-white #EFF4FF (primary-50) to a deep
+#1E3A8A (primary-900). The neutral spine is **slate** — slate-500
+for body copy, slate-800 for headings, slate-200 for borders,
+slate-100 for icon tiles. Body text never uses pure black; the
+deepest readable colour is slate-800.
 
-- **Solid white card** — tool cards, hero card, dialog content. `1 px` slate-200
-  hairline border, no shadow at rest, `shadow-md` on hover. Radius `1rem`.
-- **Glassy bar** — header and dialog backdrop. `rgba(255,255,255,0.80)` with a
-  16 px backdrop-blur and a hairline bottom border. The dialog backdrop adds a
-  `slate-900/30` dim under the blur.
-- **Glassy bento** — footer cards. `rgba(255,255,255,0.65)` with a 12 px blur
-  and a soft 70%-opacity border, so the aurora can read _through_ the gutter
-  between them.
+- **Primary 600** — default CTAs, focus borders, brand emphasis,
+  numbered step circles, "Why CloakPDF" eyebrows.
+- **Primary 50 / 100** — soft tints behind icon tiles on hover, the
+  "NEW" badge, info callouts, kbd backgrounds.
+- **Slate 100 / 200** — resting icon tile bg and card border. These
+  appear on every card and are the structural mortar of the system.
+- **Status colours** — red-50/red-700 for `AlertBox` (the only
+  red surface), amber-50/amber-700 for `InfoCallout` warnings.
+  Info / success collapse to primary tints — there is no green
+  surface anywhere in the UI except the literal Lucide check
+  glyph.
 
-In dark mode the white sources swap to `#1E293B` and the borders pick up a
-white-alpha (`rgba(255,255,255,0.10)`) line that mimics liquid-glass edges.
+The "**Why CloakPDF**" feature grid is the one place per-feature
+colour is allowed: nine 40 px icon chips each at
+`color-mix(<hue> 14%, transparent)` — emerald, violet, teal, cyan,
+orange, yellow, pink, indigo, slate. They appear *once*, low on
+the home page, after the entire monochromatic tool grid has
+already established the calm tone.
 
-# Shape & rhythm
+Dark mode keeps the same structural decisions and swaps surfaces
+for slate-900 family + dark-text. Borders shift from solid slate to
+10 % white. Primary tints become `primary-900/30` washes; primary
+text becomes primary-400 to maintain AA contrast.
 
-Three radii do almost all the work: `12 px` for buttons and icon tiles,
-`16 px` for cards / dialogs / search-bar / footer bento, and `9999 px` for
-pills (badges, the "NEW" tag, the file-size chip, the focus indicator).
-Inputs and small surfaces use `8 px`. We rarely use a `2 px` (`rounded-sm`)
-radius — when we do it's an artefact (a `<kbd>` could trade its `6 px` for
-that, but nothing else).
+## Typography
 
-The page frame is `max-w-6xl` (1152 px) with 16 / 24 px gutters; marketing
-prose narrows to `max-w-lg` (32 rem) and the search bar sits in `max-w-3xl`
-(48 rem). The home grid is 1 / 2 / 3 columns at sm / md / lg with a `16 px`
-gap; categories are separated by `48–56 px` of vertical air. The hero never
-fully spans — the right rail (workflow card) anchors it at desktop sizes, and
-when the search field has a query the hero's right column collapses but the
-left column keeps its width so the page doesn't reflow as the user types.
+The system runs on **Inter Variable** (self-hosted, weights 100-900)
+with the platform sans stack as fallback. One serif accent is
+permitted — a single italic phrase in the hero — and uses the
+default `font-serif` system stack so it inherits the user's
+operating-system serif rather than shipping another font.
 
-# Motion
+Hierarchy:
 
-All interactive transitions live in a `150 / 200 / 300 ms` band: 150 ms for
-colour swaps, 200 ms for transforms / borders / shadows, 300 ms for opacity
-fades and the spotlight glow. Anything longer is reserved for entrance
-choreography (`fade-in-up` 450 ms with `ease-out`) or for the ambient aurora
-(per-blob loops of 17–62 s with negative phase offsets so the composite never
-visibly repeats).
+- **Hero (34–58 px / 600 / -0.03em / 1.05)** — the only place
+  size goes above 30 px. Animated in via `fade-in-up` 80 ms
+  staggered after the page paints.
+- **Section headline (22–26 px / 600 / -0.02em / 1.2)** — used
+  once per category; always paired with an 11 px uppercase eyebrow
+  in primary-600 above it.
+- **Card title (15 px / 600 / -0.005em)** and **body (13–15.5 px
+  / 400 / 1.55)** — the working pair across every tool card,
+  feature row, modal, and footer block.
+- **Eyebrows (11 px / 600 / 0.12em / uppercase)** and **micro-labels
+  (10 px / 600 / 0.16em / uppercase)** — used for "WORKFLOWS",
+  "Part of", "How it works", and the version chip.
+- **Tabular numerals** (`font-feature-settings: "tnum"`) on every
+  kbd, version tag, step circle, and tool count so digits never
+  jiggle as content updates.
 
-Hover affordances on cards are _small_: a `−2 px` lift, a `1.05` icon scale, a
-half-pixel slide right on the title and chevron, and a tint shift from
-slate-100 to primary-50 on the icon tile. The chevron in the bottom-right
-fades + slides in only on hover; on touch devices the same `:active` rules
-fire so the same affordance plays under a finger. We do **not** scale buttons
-on hover — only `transition-colors` — to keep the CTA feeling solid and
-land-able.
+Antialiasing is on (`-webkit-font-smoothing: antialiased`) so the
+geometric sans stays crisp against the blurred aurora.
 
-The signature interaction is the **cursor-tracking spotlight**. ToolCard,
-WorkflowHeroCard, and FileDropZone each paint a radial-gradient halo in
-`rgba(37,99,235,0.16)` at the cursor (or first touch) position, fading in
-over 300 ms and following the pointer 1:1 (the radius scales by card size —
-300 px on the dropzone, 320 px on tool cards, 420 px on the wider hero card).
-On touch devices the same halo lights up at `touchstart` so the surface still
-feels _alive_ under a finger.
+## Spacing & Rhythm
 
-Two ambient loops earn their motion budget:
+The grid is a **4 px base** with a strong cadence on multiples
+of 4: `4 / 8 / 12 / 16 / 24 / 32 / 48 / 64`. The container caps at
+`max-w-6xl` (1152 px) and uses `px-4` on phone, `sm:px-6` on
+tablet+. Vertical section rhythm is `space-y-12` to `space-y-14`
+between tool categories — generous, never crowded.
 
-- The **aurora** drifts continuously — six blobs morphing border-radius and
-  translating across the viewport on independent 17–62 s clocks. It pauses
-  entirely under `prefers-reduced-motion`.
-- A **continuous pulse-ring** sits on `AlertBox` (red) and warning-tone
-  `InfoCallout` (amber). The ring expands from 0 to 8 px in the first 60% of
-  a 2.5 s loop, then holds at zero for 40% — a _breath_ between attention
-  beats so the message reads as urgent rather than frantic. Also pauses
-  under reduced-motion.
+Inside cards, the icon tile is followed by a `mb-2` flush, then
+the title, then the body, with no hairline divider; the system
+relies on whitespace and the soft slate-200 outer border to
+contain the block. Hero columns use a 7 / 5 lg-grid split so the
+headline gets visual primacy and the workflow promo card balances
+the right edge.
 
-# Iconography
+## Shape Language
 
-Every glyph comes from `lucide-react`, drawn at the default `2 px` stroke.
-Two exceptions: the `FileDropZone` hero icon thins out to `1.5 px` to read as
-"empty / waiting", and the search lens bumps to `2.25 px` so it holds its
-weight at 20 px next to a 16 px input.
+Three radii do almost all the work:
 
-Icons live inside a 44 px **icon tile**: `12 px` radius, slate-100 fill,
-slate-700 glyph at rest. On hover (`group-hover:`) the tile crossfades to
-`primary-50` with a `primary-600` glyph and lifts `1 px`. This single
-"icon-in-a-pillow" motif appears on every card, the workflow hero, the
-header back-button, and the empty-state — it's the closest thing CloakPDF
-has to a brand mark beyond the wordmark.
+- **`rounded-2xl` (16 px)** on tool cards, the workflow hero card,
+  the search bar, the file drop zone, modal surfaces, and primary
+  CTAs. This is the "page" radius — it carries the soft, modern
+  silhouette.
+- **`rounded-xl` (12 px)** on icon tiles and ghost buttons.
+- **`rounded-full`** on eyebrow chips, the "NEW" pill, the step
+  circles in the footer, and the kbd background.
 
-# Tone
+Cards never have inner dividers; sections never have hairline
+rules. Borders are always 1 px slate-200 and become primary-300 on
+hover — the colour shift is the affordance.
 
-The product voice is plain-spoken and slightly dry. Eyebrows are
-domain-flat ("Workflows", "How it works", "Part of") rather than punchy
-marketing. Tool descriptions are single-sentence imperatives ("Combine
-multiple PDF files into one document"). Buttons say what they do
-("Apply Signature & Download", "Process PDF") and never invent verbs.
-The italic serif accent is the only place the tone _softens_; everywhere
-else the copy is short and accurate.
+## Elevation & Depth
 
-# Dark mode
+The system layers in three planes:
 
-Dark mode is `prefers-color-scheme: dark` only — there is no toggle. The
-page shifts to `#0F172A → #060912` (with the aurora swapping to `screen`
-blend so the blobs glow rather than tint), surfaces become `#1E293B`,
-borders pick up a white-alpha edge, and primary text is `slate-100`. Every
-component recipe carries its dark counterpart inline; the only dark-only
-custom token is `--aurora-blend: screen`. The grain layer doubles its
-opacity in dark mode (4.5% → 8%) and switches to `overlay` blend to retain
-texture on the deeper backdrop.
+1. **Aurora + grain** — z-index 0/1, fixed, drifts under
+   everything else.
+2. **Page chrome** — sticky header at z-50, footer, and
+   the centred main column. Header uses
+   `bg-white/80 backdrop-blur-xl` so the aurora reads through it
+   as a frosted band.
+3. **Surfaces & overlays** — cards (white, 1 px slate border, no
+   shadow at rest), modals (white/85 + 14 px backdrop-blur, scaled
+   in via the overshoot easing).
 
-# Accessibility
+Resting cards have **no shadow** — only a 1 px border. On hover
+they lift 2 px (`-translate-y-0.5`), gain a `shadow-md`, swap the
+border to primary-300, and reveal a 320 px cursor-tracking
+spotlight glow at `rgba(37,99,235,0.16)`. On touch, the same glow
+is anchored to the touch point. The chevron in the bottom-right
+slides in with `translate-x-1` opacity from 0 → 1. These four
+movements run on a single 200 ms ease so the card "wakes up" as a
+unit.
 
-Focus is always visible: form controls move to a `primary-300` border with a
-soft outer halo; cards and thumbnails get a `2 px` `primary-500` ring with
-`2 px` offset; the search input adds a soft primary blur. Touch targets are
-≥ 36 px on mobile and `touch-action: manipulation` is set on every
-spotlight-tracking surface so the browser doesn't double-tap-zoom on
-deliberate taps. All ambient motion (aurora, attention pulses, popover
-fades) collapses to static under `prefers-reduced-motion: reduce`.
+## Motion
 
-# Anti-patterns
+Motion is **calm, layered, and short** by default. The home page
+has a fade-in-up choreography on first paint: hero h1 at 0 ms,
+subhead at 80 ms, workflow card at 120 ms, search at 160 ms, then
+each tool category at `index × 80 ms`. The cumulative effect is a
+gentle cascade rather than a slam-dunk reveal.
 
-What CloakPDF deliberately avoids:
+Two **looping pulses** carry status:
 
-- **Per-feature accent colours.** Every tool used to have its own hue
-  (organise/blue, transform/violet, annotate/emerald, security/amber).
-  Pulled in favour of a single calmer accent — kept the per-category
-  metadata so call-sites don't need edits, but every key resolves to
-  primary blue.
-- **Heavy shadows or glassmorphism beyond the header / dialog / footer
-  bento.** Most surfaces are flat with a hairline border; lift comes
-  from `transform`, not `box-shadow`.
-- **Scaling buttons on hover.** CTAs only `transition-colors`. We don't
-  want the button to feel like it's escaping the cursor.
-- **Decorative iconography.** Icons either occupy a 44 px tile or sit
-  inline with text at the same height as the cap. There are no purely
-  ornamental glyphs.
-- **More than one display-italic phrase per screen.** The serif accent is a
-  punctuation device; using it twice dilutes it to a font choice.
-- **Document-level scrollbar styling.** Only modal / card overflow areas
-  get the thin slate scrollbar; the page itself uses the browser's
-  default so users can find their orientation in long tools.
+- `error-pulse` — 2.5 s loop, red ring expanding from 0 → 8 px,
+  used on the only true error surface (`AlertBox`).
+- `warning-pulse` — same shape, amber, used on warning callouts.
+
+Both honour `prefers-reduced-motion` and pause completely; aurora,
+fade-in-up, scale-in, and popover-in animations also collapse to
+instant under the same media query.
+
+A scale-in modal entry uses the slight overshoot easing
+`cubic-bezier(0.34, 1.56, 0.64, 1)` so confirmations feel
+responsive without becoming bouncy. Slide-up overlays use the
+smoother `cubic-bezier(0.22, 1, 0.36, 1)`.
+
+## Iconography
+
+All glyphs come from **Lucide** at default 2-weight stroke, except
+the home-page search icon which uses 2.25 to read confidently
+inside the chunky search bar. Standard sizes are 16 / 20 / 24 px,
+each riding inside a slate-100 rounded-xl tile (40–48 px) which
+swaps to a primary-50 / primary-600 wash on hover with a 1 px lift
+and a 1.05× scale.
+
+## Components
+
+**Tool card** — the system's hero component. White surface, 1 px
+slate-200 border, 16 px radius, 24 px / 20 px padding. Holds an
+icon tile, a title, a one-line description, and a hidden chevron
+that surfaces on hover. The cursor-tracking spotlight reads the
+mouse position via `getBoundingClientRect` and paints a 320 px
+radial gradient that follows; the same handler accepts touch
+events so the effect works on phones and tablets.
+
+**Workflow hero card** — same body as the tool card but laid out
+horizontally, prefixed by an uppercase "WORKFLOWS" eyebrow and a
+"NEW" pill in primary tints. The spotlight goes a touch larger
+(420 px) to suit the wider footprint.
+
+**Search bar** — 56 px tall, 16 px radius, white-90 surface with a
+subtle backdrop blur. A leading slate-700 magnifier and a trailing
+`kbd` showing ⌘K (Mac) or CtrlK (everywhere else). On focus, the
+border deepens to primary-300, a soft `shadow-md` settles in, and
+a wider primary-500/20 halo blooms behind the entire field.
+
+**Header** — sticky, full-width, white-80 with `backdrop-blur-xl`
+and a 70 %-opacity slate-200 hairline at the bottom. Holds: logo
+mark + wordmark, a privacy chip ("100% Private · Open Source" on
+desktop, collapses to "Private" on phones), and a 36 px GitHub
+icon button. A back chevron appears at the start when the user is
+inside a tool.
+
+**Bento footer** — only renders on the home screen. A 7/5 grid
+where the larger card teaches the three-step flow with primary-50
+step circles, and the smaller card promotes the parent
+**Cloakyard** family with a soft primary-500/10 corner blob and a
+version chip in monospace. Tool pages collapse the bento to a slim
+attribution row.
+
+**Modal / ConfirmDialog** — portalled to `document.body`, a
+slate-900/30 + 14 px-blur scrim, a white-85 surface with `scale-in`
+overshoot on entry. Footer row sits in a slate-50/55 wash with a
+hairline top border. The danger tone swaps the icon chip and CTA
+to red while keeping the same shape.
+
+**Action button** — primary-600 fill, primary-700 hover, 32 px
+horizontal padding, 12 px vertical, 16 px radius, full-width on
+phones and minimum 220 px on tablet+. Trailing icon adapts to
+context: an arrow when continuing through a workflow step, a
+download glyph on the terminal step or any single-tool button
+labelled with "Download". Disabled drops opacity to 50 % and
+cuts pointer events.
+
+## Closing Notes
+
+The single hardest decision in this system is *not* using
+per-category colour. Every design that splits 35 tools by domain
+ends up looking like a control panel; the unified ocean-blue
+accent reads as one calm app instead. The aurora absorbs the
+chromatic energy; the chrome stays monochromatic; the user's eye
+follows hierarchy and motion, not hue.
+
+Two invariants to preserve in any future revision:
+
+1. **One accent.** Per-tool / per-category colour stays out of
+   interactive surfaces. The only exception is the nine
+   illustrative chips in the "Why CloakPDF" grid, which appear
+   once and below the fold.
+2. **Slate-200 borders, no resting shadow.** Cards earn elevation
+   on hover, never at rest. Adding a default shadow would push
+   the system from *quiet* to *busy* and break the bento footer's
+   layered glass.
+```
