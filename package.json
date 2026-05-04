@@ -11,9 +11,9 @@
     "generate-icons": "pwa-assets-generator --preset minimal-2023 public/icons/logo.svg && mv public/icons/apple-touch-icon-180x180.png public/icons/apple-touch-icon.png"
   },
   "dependencies": {
-    "@pdfme/pdf-lib": "^6.0.6",
+    "@pdfme/pdf-lib": "^6.1.1",
     "jszip": "^3.10.1",
-    "lucide-react": "^1.11.0",
+    "lucide-react": "^1.14.0",
     "node-forge": "^1.4.0",
     "pdfjs-dist": "^5.7.284",
     "react": "^19.2.5",
@@ -28,12 +28,12 @@
     "@types/react-dom": "^19.2.3",
     "@vite-pwa/assets-generator": "^1.0.2",
     "@vitejs/plugin-react": "^6.0.1",
-    "@voidzero-dev/vite-plus-core": "^0.1.19",
+    "@voidzero-dev/vite-plus-core": "^0.1.20",
     "tailwindcss": "^4.2.4",
     "typescript": "^6.0.3",
-    "vite": "npm:@voidzero-dev/vite-plus-core@^0.1.19",
+    "vite": "npm:@voidzero-dev/vite-plus-core@^0.1.20",
     "vite-plugin-pwa": "^1.2.0",
-    "vite-plus": "^0.1.19"
+    "vite-plus": "^0.1.20"
   },
   "packageManager": "pnpm@10.32.1",
   "pnpm": {

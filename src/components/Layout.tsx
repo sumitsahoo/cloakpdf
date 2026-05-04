@@ -71,8 +71,15 @@ export function Layout({ children, onHome, showBack, onPrivacy }: LayoutProps) {
                 onClick={onHome}
                 className="flex items-center gap-2.5 hover:opacity-90 transition-opacity"
               >
-                <img src="/icons/logo.svg" alt="CloakPDF logo" className="w-9 h-9 drop-shadow-md" />
-                <span className="text-[17px] font-semibold tracking-[-0.02em] text-slate-900 dark:text-dark-text">
+                {/* Circular favicon.svg (not the full-bleed logo.svg) so
+                    the chip silhouette matches CloakIMG's top bar — the
+                    Cloakyard family reads consistently across apps. */}
+                <img
+                  src="/icons/favicon.svg"
+                  alt="CloakPDF logo"
+                  className="w-10 h-10 drop-shadow-sm"
+                />
+                <span className="text-[19px] font-semibold tracking-[-0.025em] text-slate-900 dark:text-dark-text">
                   Cloak<span className="text-primary-600 dark:text-primary-400">PDF</span>
                 </span>
               </button>

@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Layout } from "./components/Layout.tsx";
+import { OrientationLock } from "./components/OrientationLock.tsx";
 import { PrivacyPolicy } from "./components/PrivacyPolicy.tsx";
 import { ReloadPrompt } from "./components/ReloadPrompt.tsx";
 import { ToolCard } from "./components/ToolCard.tsx";
@@ -308,64 +309,46 @@ function HomeScreen({ onSelectTool, onOpenWorkflows }: HomeScreenProps) {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-7 sm:gap-y-8">
                 <FeatureItem
                   icon={<UserRoundCheck className="w-5 h-5" />}
-                  iconBg="bg-[color-mix(in_oklab,#059669_14%,transparent)]"
-                  iconFg="text-[#059669] dark:text-[#34d399]"
                   title="No sign-up"
                   description="No accounts, no email, no passwords. Start using the moment the page loads."
                 />
                 <FeatureItem
                   icon={<EyeOff className="w-5 h-5" />}
-                  iconBg="bg-[color-mix(in_oklab,#7c3aed_14%,transparent)]"
-                  iconFg="text-[#7c3aed] dark:text-[#a78bfa]"
                   title="No tracking"
                   description="Zero analytics, zero telemetry, zero third-party scripts. You stay invisible."
                 />
                 <FeatureItem
                   icon={<ShieldCheck className="w-5 h-5" />}
-                  iconBg="bg-[color-mix(in_oklab,#0d9488_14%,transparent)]"
-                  iconFg="text-[#0d9488] dark:text-[#5eead4]"
                   title="Local-first"
                   description="Every byte stays in your browser. Nothing is ever uploaded to any server."
                 />
                 <FeatureItem
                   icon={<WifiOff className="w-5 h-5" />}
-                  iconBg="bg-[color-mix(in_oklab,#0891b2_14%,transparent)]"
-                  iconFg="text-[#0891b2] dark:text-[#22d3ee]"
                   title="Works offline"
                   description="Once cached, keep editing and exporting without a connection — flights, trains, anywhere."
                 />
                 <FeatureItem
                   icon={<Rocket className="w-5 h-5" />}
-                  iconBg="bg-[color-mix(in_oklab,#ea580c_14%,transparent)]"
-                  iconFg="text-[#ea580c] dark:text-[#fdba74]"
                   title="Installable as a PWA"
                   description="Add CloakPDF to your home screen for a full-screen, app-like experience that launches in one tap."
                 />
                 <FeatureItem
                   icon={<MonitorSmartphone className="w-5 h-5" />}
-                  iconBg="bg-[color-mix(in_oklab,#eab308_14%,transparent)]"
-                  iconFg="text-[#ca8a04] dark:text-[#facc15]"
                   title="Mobile, tablet & desktop"
                   description="Every tool adapts fluidly across screen sizes — edit on the go, finalise at your desk."
                 />
                 <FeatureItem
                   icon={<Sparkles className="w-5 h-5" />}
-                  iconBg="bg-[color-mix(in_oklab,#db2777_14%,transparent)]"
-                  iconFg="text-[#db2777] dark:text-[#f472b6]"
                   title="35+ PDF tools"
                   description="Merge, split, sign, redact, OCR, compress, convert — one workspace for every PDF chore."
                 />
                 <FeatureItem
                   icon={<Laptop className="w-5 h-5" />}
-                  iconBg="bg-[color-mix(in_oklab,#4f46e5_14%,transparent)]"
-                  iconFg="text-[#4f46e5] dark:text-[#a5b4fc]"
                   title="Light & dark mode"
                   description="Thoughtful theming that follows your system preference automatically."
                 />
                 <FeatureItem
                   icon={<GitFork className="w-5 h-5" />}
-                  iconBg="bg-[color-mix(in_oklab,#475569_14%,transparent)]"
-                  iconFg="text-[#475569] dark:text-[#cbd5e1]"
                   title="Free & open source"
                   description="MIT-licensed and on GitHub. Fork it, self-host it, or audit every byte — nothing is hidden."
                 />
@@ -382,17 +365,15 @@ function HomeScreen({ onSelectTool, onOpenWorkflows }: HomeScreenProps) {
 
 interface FeatureItemProps {
   icon: React.ReactNode;
-  iconBg: string;
-  iconFg: string;
   title: string;
   description: string;
 }
 
-function FeatureItem({ icon, iconBg, iconFg, title, description }: FeatureItemProps) {
+function FeatureItem({ icon, title, description }: FeatureItemProps) {
   return (
     <div className="flex items-start gap-3.5">
       <span
-        className={`shrink-0 w-10 h-10 rounded-lg grid place-items-center ${iconBg} ${iconFg}`}
+        className="shrink-0 w-10 h-10 rounded-lg grid place-items-center bg-primary-50 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400"
         aria-hidden="true"
       >
         {icon}
@@ -593,6 +574,7 @@ export function App() {
         />
       </Layout>
       <ReloadPrompt />
+      <OrientationLock />
     </>
   );
 }

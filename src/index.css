@@ -94,6 +94,25 @@ body,
   margin: 0;
   background: #f1f5f9;
 }
+
+/* Disable browser-level zoom gestures on phones. The viewport meta in
+   index.html turns off pinch-zoom; `touch-action: manipulation` here
+   suppresses the double-tap-to-zoom that historic Safari versions
+   ignored even with `user-scalable=no`. Tool surfaces that need pinch
+   gestures (PDF previews, signature pads) opt back in via
+   `touch-action: none` on their own container. */
+html,
+body {
+  touch-action: manipulation;
+  /* Belt-and-suspenders: text-size-adjust prevents Safari's automatic
+     font upscaling in landscape, which would otherwise break the
+     pixel-tuned panel chrome. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  /* Stop iOS from showing the rubber-band "page bounce" on the body
+     when a user drags past the viewport edges. */
+  overscroll-behavior: none;
+}
 @media (prefers-color-scheme: dark) {
   html,
   body,
@@ -112,6 +131,22 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Subtle rotation cue used by the OrientationLock overlay — tilts a
+   phone glyph back and forth so the user reads "rotate this device"
+   even before they parse the headline. */
+@keyframes ci-rotate-hint {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  35% {
+    transform: rotate(-90deg);
+  }
+  70% {
+    transform: rotate(-90deg);
+  }
 }
 
 @keyframes fade-in-up {
