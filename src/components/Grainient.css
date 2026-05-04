@@ -1,0 +1,49 @@
+.grainient-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Fullscreen variant: positions Grainient as a fixed page backdrop.
+   Use as <Grainient className="grainient-fixed" /> in a layout where
+   the content sits inside a `relative z-1` container. */
+.grainient-fixed {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* iOS Safari URL-bar mask. iOS Safari's floating URL bar samples the
+   page colour directly behind it via backdrop-blur; if the gradient
+   paints into that sample zone, iOS lightens it and the result reads
+   as a tinted stripe right above the bar. Masking the bottom band of
+   the backdrop to fully transparent stops the field contributing
+   anything there.
+   Stops:
+     • opaque from top → 100% − 200px − safe-area-inset-bottom
+     • soft fade over the next 128px (reads as natural fall-off)
+     • transparent from 100% − 72px − safe-area-inset-bottom → end
+   The 72px lower bound clears the URL-bar pill plus a small gutter;
+   the 200px upper bound gives the fade enough room to feel
+   intentional. safe-area-inset-bottom adjusts for the home indicator
+   on notch/dynamic-island devices. Phone-only — desktop browsers
+   render bars opaquely so the mask would just clip the gradient for
+   no benefit. */
+@media (max-width: 640px) {
+  .grainient-fixed {
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      black 0,
+      black calc(100% - 200px - env(safe-area-inset-bottom, 0px)),
+      transparent calc(100% - 72px - env(safe-area-inset-bottom, 0px))
+    );
+    mask-image: linear-gradient(
+      to bottom,
+      black 0,
+      black calc(100% - 200px - env(safe-area-inset-bottom, 0px)),
+      transparent calc(100% - 72px - env(safe-area-inset-bottom, 0px))
+    );
+  }
+}

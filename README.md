@@ -1,6 +1,6 @@
 <div align="center">
 
-  <img src="public/icons/og-image.svg" alt="CloakPDF — Free Offline PDF Toolkit" width="800" />
+  <img src="public/icons/og-image.png" alt="CloakPDF — Free Offline PDF Toolkit" width="800" />
 
   <p>A fast, modern, and privacy-focused PDF toolkit that runs entirely in your browser.<br>
   No uploads, no servers, no tracking — your files never leave your device.</p>
