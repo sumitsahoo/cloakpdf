@@ -20,8 +20,16 @@
     <!-- Optional: Safari pinned tab (nice touch for macOS) -->
     <link rel="mask-icon" href="/icons/favicon.svg" color="#2563EB" />
 
-    <!-- Viewport -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Viewport — `user-scalable=no, maximum-scale=1` disables the
+         browser's pinch-to-zoom on the page itself. Tool surfaces have
+         their own gesture handlers (pan/zoom on PDF previews); double-
+         tap zoom here would just fight them. The CSS `touch-action:
+         manipulation` rule on body further suppresses double-tap zoom
+         on browsers that historically ignored user-scalable=no. -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
 
     <!-- Theme -->
     <meta name="theme-color" content="#2563EB" />

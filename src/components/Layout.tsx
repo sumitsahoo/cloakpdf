@@ -11,8 +11,9 @@
  */
 
 import { ArrowUpRight, ChevronLeft, Scale, ShieldCheck } from "lucide-react";
-import type { ReactNode } from "react";
-import { AuroraBackground } from "./AuroraBackground";
+import { type ReactNode, useEffect, useState } from "react";
+import { GRAINIENT_DARK, GRAINIENT_LIGHT, GRAINIENT_MOTION } from "../config/grainient";
+import { Grainient } from "./Grainient";
 
 declare const __APP_VERSION__: string;
 
@@ -39,13 +40,41 @@ function GithubMark({ className = "" }: { className?: string }) {
   );
 }
 
+/**
+ * Reads the system colour scheme and updates on change. Inlined here
+ * (rather than a shared hook) because Layout is the only component
+ * that needs it — to swap the Grainient palette between light/dark.
+ */
+function usePrefersDark(): boolean {
+  const [isDark, setIsDark] = useState(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return false;
+    return window.matchMedia("(prefers-color-scheme: dark)").matches;
+  });
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const update = (e: MediaQueryListEvent) => setIsDark(e.matches);
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+  return isDark;
+}
+
 export function Layout({ children, onHome, showBack, onPrivacy }: LayoutProps) {
+  const isDark = usePrefersDark();
+  const palette = isDark ? GRAINIENT_DARK : GRAINIENT_LIGHT;
+
   return (
     <div
       className="relative z-150 flex flex-col min-h-svh"
       style={{ background: "var(--page-bg)" }}
     >
-      <AuroraBackground />
+      {/* Animated WebGL noise/gradient backdrop. Palette + motion live
+          in src/config/grainient.ts so any other surface that mounts
+          Grainient renders the same gradient. The .grainient-fixed
+          class positions it as a page backdrop: fixed inset-0, z-0,
+          with the iOS URL-bar mask. */}
+      <Grainient className="grainient-fixed" {...GRAINIENT_MOTION} {...palette} />
 
       <div className="relative flex flex-col flex-1 min-h-0">
         {/* Fixed top header bar — full-width glassy bar pinned to the top
@@ -54,7 +83,7 @@ export function Layout({ children, onHome, showBack, onPrivacy }: LayoutProps) {
             content to the page max-width. */}
         <header className="sticky top-0 z-50 bg-white/80 dark:bg-dark-surface/80 backdrop-blur-xl border-b border-slate-200/70 dark:border-white/10">
           <div className="max-w-6xl mx-auto px-4 sm:px-6">
-            <div className="py-2.5 flex items-center gap-2 sm:gap-3">
+            <div className="py-3 flex items-center gap-2 sm:gap-3">
               {showBack && (
                 <button
                   type="button"
@@ -71,8 +100,15 @@ export function Layout({ children, onHome, showBack, onPrivacy }: LayoutProps) {
                 onClick={onHome}
                 className="flex items-center gap-2.5 hover:opacity-90 transition-opacity"
               >
-                <img src="/icons/logo.svg" alt="CloakPDF logo" className="w-9 h-9 drop-shadow-md" />
-                <span className="text-[17px] font-semibold tracking-[-0.02em] text-slate-900 dark:text-dark-text">
+                {/* Circular favicon.svg (not the full-bleed logo.svg) so
+                    the chip silhouette matches CloakIMG's top bar — the
+                    Cloakyard family reads consistently across apps. */}
+                <img
+                  src="/icons/favicon.svg"
+                  alt="CloakPDF logo"
+                  className="w-10 h-10 drop-shadow-sm"
+                />
+                <span className="text-[19px] font-semibold tracking-[-0.025em] text-slate-900 dark:text-dark-text">
                   Cloak<span className="text-primary-600 dark:text-primary-400">PDF</span>
                 </span>
               </button>
@@ -121,12 +157,23 @@ export function Layout({ children, onHome, showBack, onPrivacy }: LayoutProps) {
                 (showBack=true) we collapse to a single attribution row. */}
             {!showBack && (
               <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 mb-6 sm:mb-7">
-                {/* How it works card */}
-                <div className="sm:col-span-7 relative overflow-hidden rounded-2xl border border-slate-200/70 dark:border-dark-border bg-white/65 dark:bg-dark-surface/60 backdrop-blur-md p-5 flex flex-col">
-                  <div
-                    aria-hidden="true"
-                    className="absolute -top-12 -right-12 w-40 h-40 rounded-full bg-primary-500/15 dark:bg-primary-400/10 blur-3xl pointer-events-none"
-                  />
+                {/* How it works card. Corner glow is painted as a
+                    radial-gradient background-image, not an absolute-
+                    positioned blurred child div. The blurred-child
+                    approach hits an iOS Safari bug — `overflow-hidden +
+                    rounded-2xl + backdrop-filter` parent fails to clip
+                    a `filter: blur()` child to the rounded corner, so
+                    the corner where the blob sat reads as squared off.
+                    A bg-image radial gradient produces the same soft
+                    corner glow without introducing any filtered child
+                    to clip. */}
+                <div
+                  className="sm:col-span-7 relative rounded-2xl border border-slate-200/70 dark:border-dark-border bg-white/65 dark:bg-dark-surface/60 backdrop-blur-md p-5 flex flex-col"
+                  style={{
+                    backgroundImage:
+                      "radial-gradient(280px 280px at 100% 0%, rgba(37, 99, 235, 0.18) 0%, rgba(37, 99, 235, 0.06) 38%, transparent 68%)",
+                  }}
+                >
                   <div className="relative">
                     <div className="text-[10px] uppercase tracking-[0.16em] font-medium text-primary-600 dark:text-primary-400">
                       How it works
@@ -176,17 +223,21 @@ export function Layout({ children, onHome, showBack, onPrivacy }: LayoutProps) {
                   </ol>
                 </div>
 
-                {/* Cloakyard family promo card */}
+                {/* Cloakyard family promo card — same radial-gradient
+                    pattern as "How it works" above (see comment there
+                    for the iOS Safari rationale), anchored bottom-left
+                    instead of top-right so the two cards mirror each
+                    other across the gutter. */}
                 <a
                   href={CLOAKYARD_URL}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="sm:col-span-5 group relative overflow-hidden rounded-2xl border border-slate-200/70 dark:border-dark-border bg-white/65 dark:bg-dark-surface/60 backdrop-blur-md p-5 flex flex-col justify-between hover:border-primary-300/60 dark:hover:border-primary-400/30 transition-colors"
+                  className="sm:col-span-5 group relative rounded-2xl border border-slate-200/70 dark:border-dark-border bg-white/65 dark:bg-dark-surface/60 backdrop-blur-md p-5 flex flex-col justify-between hover:border-primary-300/60 dark:hover:border-primary-400/30 transition-colors"
+                  style={{
+                    backgroundImage:
+                      "radial-gradient(280px 280px at 0% 100%, rgba(37, 99, 235, 0.14) 0%, rgba(37, 99, 235, 0.05) 38%, transparent 68%)",
+                  }}
                 >
-                  <div
-                    aria-hidden="true"
-                    className="absolute -bottom-12 -left-12 w-40 h-40 rounded-full bg-primary-500/10 dark:bg-primary-400/5 blur-3xl pointer-events-none"
-                  />
                   <div className="relative">
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-center gap-2.5">
