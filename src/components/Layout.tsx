@@ -83,7 +83,7 @@ export function Layout({ children, onHome, showBack, onPrivacy }: LayoutProps) {
             content to the page max-width. */}
         <header className="sticky top-0 z-50 bg-white/80 dark:bg-dark-surface/80 backdrop-blur-xl border-b border-slate-200/70 dark:border-white/10">
           <div className="max-w-6xl mx-auto px-4 sm:px-6">
-            <div className="py-2.5 flex items-center gap-2 sm:gap-3">
+            <div className="py-3 flex items-center gap-2 sm:gap-3">
               {showBack && (
                 <button
                   type="button"
