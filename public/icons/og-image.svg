@@ -5,48 +5,68 @@
      style="fill-rule:evenodd;clip-rule:evenodd;">
 
   <defs>
-    <!-- Sky: cool slate wash. Mirrors the app's page-bg backdrop
-         (radial blue tints over a slate base). Almost-white top so
-         foreground content reads cleanly; chroma comes from the
-         off-center anchor below, not a horizon band. -->
-    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#fafbfc"/>
-      <stop offset="0.55" stop-color="#eff4ff"/>
-      <stop offset="1" stop-color="#e0e9f7"/>
+    <!-- Grainient-mirrored backdrop. The runtime shader (Grainient.tsx)
+         blends three colors on a warped sine field with film grain on
+         top. Static SVG can't run the shader, so the look is faked with:
+           1. A soft cool-slate base wash (color3 of GRAINIENT_LIGHT).
+           2. Two diagonal radial anchors that approximate the warped
+              ribbon — color1 (Tailwind blue-100 pale) flanking from
+              one corner, color2 (the brand blue ribbon) drifting from
+              the opposite corner.
+           3. A coarse + a fine grain layer multiplied over the field
+              so the result reads as the same risograph-noise texture
+              as the live page in browsers. -->
+
+    <!-- Base wash — Tailwind blue-50 (GRAINIENT_LIGHT.color3) at the
+         top, slightly cooler at the bottom. Keeps foreground type
+         readable; chroma comes from the anchors below. -->
+    <linearGradient id="base" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#eff4ff"/>
+      <stop offset="1" stop-color="#dbe6f7"/>
     </linearGradient>
 
-    <!-- Brand-blue anchor (Tailwind blue-600, the logo's deeper stop).
-         Sits off-center to evoke the app's drifting blue tint.
-         Saturation knocked down via low alpha (max 0.18). -->
-    <radialGradient id="anchor" cx="0.72" cy="0.58" r="0.55">
-      <stop offset="0" stop-color="#2563eb" stop-opacity="0.18"/>
-      <stop offset="0.5" stop-color="#2563eb" stop-opacity="0.08"/>
-      <stop offset="1" stop-color="#2563eb" stop-opacity="0"/>
+    <!-- Pale-blue flank (GRAINIENT_LIGHT.color1, blue-100). Anchors the
+         top-left corner so the ribbon's cool side reads from there. -->
+    <radialGradient id="flank" cx="0.18" cy="0.22" r="0.62">
+      <stop offset="0" stop-color="#dbeafe" stop-opacity="0.95"/>
+      <stop offset="0.5" stop-color="#dbeafe" stop-opacity="0.45"/>
+      <stop offset="1" stop-color="#dbeafe" stop-opacity="0"/>
     </radialGradient>
 
-    <!-- Secondary sky-blue accent on the opposite flank — gives the
-         field asymmetric drift without competing with the primary
-         anchor. -->
-    <radialGradient id="counterAnchor" cx="0.18" cy="0.78" r="0.48">
-      <stop offset="0" stop-color="#60a5fa" stop-opacity="0.22"/>
-      <stop offset="1" stop-color="#60a5fa" stop-opacity="0"/>
+    <!-- Brand-blue ribbon (GRAINIENT_LIGHT.color2 = #3B82F6). The live
+         shader paints this as a warped diagonal stripe; here it's a
+         soft off-center radial knocked back to ~22 % alpha so the
+         brand reads as a hint, not a wall — same visual weight as
+         saturation: 0.3 in the runtime config. -->
+    <radialGradient id="ribbon" cx="0.74" cy="0.62" r="0.58">
+      <stop offset="0" stop-color="#3b82f6" stop-opacity="0.22"/>
+      <stop offset="0.45" stop-color="#3b82f6" stop-opacity="0.10"/>
+      <stop offset="1" stop-color="#3b82f6" stop-opacity="0"/>
     </radialGradient>
 
-    <!-- Film grain. Approximates the AuroraBackground texture as a
-         multiply overlay at very low opacity — adds dimension without
-         dimming the field. -->
-    <filter id="grain" x="0" y="0" width="100%" height="100%">
-      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch"/>
-      <feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.5 0"/>
-    </filter>
-
-    <!-- Soft drifting blob — kept for organic warmth, retuned to the
-         brand-blue-adjacent sky tone so the field stays in the
-         logo's hue family. -->
-    <radialGradient id="blob" cx="0.5" cy="0.5" r="0.5">
-      <stop offset="0" stop-color="#93c5fd" stop-opacity="0.55"/>
+    <!-- Secondary cool drift, bottom-left, gives the field asymmetry. -->
+    <radialGradient id="drift" cx="0.05" cy="0.95" r="0.55">
+      <stop offset="0" stop-color="#93c5fd" stop-opacity="0.30"/>
       <stop offset="1" stop-color="#93c5fd" stop-opacity="0"/>
     </radialGradient>
+
+    <!-- Coarse grain — the dominant texture. baseFrequency tuned so
+         the cell size reads as risograph grain at 1200 px width
+         rather than as fine sandpaper. Output alpha ramped via the
+         color matrix so the grain has presence without crushing the
+         field. -->
+    <filter id="grain-coarse" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.55" numOctaves="2" stitchTiles="stitch" seed="3"/>
+      <feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.85 0"/>
+    </filter>
+
+    <!-- Fine grain — finer cells layered on top of the coarse pass to
+         break up any banding from the radial gradients and to push the
+         texture to the same density as the runtime shader. -->
+    <filter id="grain-fine" x="0" y="0" width="100%" height="100%">
+      <feTurbulence type="fractalNoise" baseFrequency="2.4" numOctaves="2" stitchTiles="stitch" seed="7"/>
+      <feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.6 0"/>
+    </filter>
 
     <!-- CloakPDF brand mark gradient (matches favicon.svg) -->
     <linearGradient id="markBg" x1="0" y1="0" x2="0" y2="1">
@@ -69,10 +89,11 @@
       <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
     </radialGradient>
 
-    <!-- Card surface tint -->
+    <!-- Card surface tint — slightly more opaque than before so the
+         beefed-up grain doesn't bleed through the tile labels. -->
     <linearGradient id="card" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#ffffff" stop-opacity="0.97"/>
-      <stop offset="1" stop-color="#ffffff" stop-opacity="0.86"/>
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.985"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0.92"/>
     </linearGradient>
 
     <!-- CloakPDF brand mark (favicon.svg shape) -->
@@ -101,21 +122,20 @@
     </symbol>
   </defs>
 
-  <!-- ─── Aurora-inspired backdrop ────────────────────────────── -->
-  <rect width="1200" height="630" fill="url(#sky)"/>
-  <rect width="1200" height="630" fill="url(#anchor)"/>
-  <rect width="1200" height="630" fill="url(#counterAnchor)"/>
+  <!-- ─── Grainient-mirrored backdrop ─────────────────────────── -->
+  <rect width="1200" height="630" fill="url(#base)"/>
+  <rect width="1200" height="630" fill="url(#flank)"/>
+  <rect width="1200" height="630" fill="url(#ribbon)"/>
+  <rect width="1200" height="630" fill="url(#drift)"/>
 
-  <!-- Drifting sky-blue blobs: low-opacity, asymmetric, suggest motion
-       without crowding the foreground. -->
-  <ellipse cx="-40" cy="120" rx="260" ry="200" fill="url(#blob)" opacity="0.35"/>
-  <ellipse cx="1220" cy="350" rx="280" ry="220" fill="url(#blob)" opacity="0.32"/>
-  <ellipse cx="600" cy="600" rx="520" ry="160" fill="url(#blob)" opacity="0.28"/>
-
-  <!-- Film grain overlay — multiply blend, very low opacity so it
-       adds texture without darkening. -->
-  <rect width="1200" height="630" filter="url(#grain)" opacity="0.05"
+  <!-- Grain stack. Coarse pass first (multiply, ~10 %), fine pass on
+       top (overlay, ~7 %) — together they read as the same dense
+       risograph noise the live shader produces. Both layers are
+       isolated to the backdrop so foreground tiles stay crisp. -->
+  <rect width="1200" height="630" filter="url(#grain-coarse)" opacity="0.10"
         style="mix-blend-mode: multiply"/>
+  <rect width="1200" height="630" filter="url(#grain-fine)" opacity="0.07"
+        style="mix-blend-mode: overlay"/>
 
   <!-- ─── Brand mark (top-center, 96 × 96) ─────────────────────── -->
   <g transform="translate(552 56)">
