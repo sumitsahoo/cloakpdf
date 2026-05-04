@@ -329,24 +329,3 @@ body {
     background-clip: padding-box;
   }
 }
-
-/* ────────────────────────────────────────────────────────────────
- * Aurora — animated drifting blobs for the page backdrop — has been
- * extracted into the self-contained `AuroraBackground` component
- * (src/components/AuroraBackground.tsx). The keyframes and `.aurora-blob`
- * rule ship inside that component as a `<style precedence>` tag, so
- * the effect lifts as a single file into other tools. The
- * `--aurora-blend` token below is still defined here so this app's
- * instance picks up the right blend mode (light: multiply, dark:
- * screen) automatically.
- * ──────────────────────────────────────────────────────────────── */
-
-:root {
-  --aurora-blend: multiply;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --aurora-blend: screen;
-  }
-}
