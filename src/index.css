@@ -109,9 +109,6 @@ body {
      pixel-tuned panel chrome. */
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
-  /* Stop iOS from showing the rubber-band "page bounce" on the body
-     when a user drags past the viewport edges. */
-  overscroll-behavior: none;
 }
 @media (prefers-color-scheme: dark) {
   html,
