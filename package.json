@@ -20,7 +20,7 @@
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "tesseract.js": "^7.0.0",
-    "workbox-window": "^7.4.0"
+    "workbox-window": "^7.4.1"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.2.4",
