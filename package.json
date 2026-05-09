@@ -11,37 +11,37 @@
     "generate-icons": "pwa-assets-generator --preset minimal-2023 public/icons/logo.svg && mv public/icons/apple-touch-icon-180x180.png public/icons/apple-touch-icon.png"
   },
   "dependencies": {
-    "@pdfme/pdf-lib": "^6.1.1",
+    "@pdfme/pdf-lib": "^6.1.2",
     "jszip": "^3.10.1",
     "lucide-react": "^1.14.0",
     "node-forge": "^1.4.0",
     "ogl": "^1.0.11",
     "pdfjs-dist": "^5.7.284",
-    "react": "^19.2.5",
-    "react-dom": "^19.2.5",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
     "tesseract.js": "^7.0.0",
-    "workbox-window": "^7.4.0"
+    "workbox-window": "^7.4.1"
   },
   "devDependencies": {
-    "@tailwindcss/vite": "^4.2.4",
+    "@tailwindcss/vite": "^4.3.0",
     "@types/node-forge": "^1.3.14",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vite-pwa/assets-generator": "^1.0.2",
     "@vitejs/plugin-react": "^6.0.1",
     "@voidzero-dev/vite-plus-core": "^0.1.20",
-    "puppeteer-core": "^24.42.0",
-    "tailwindcss": "^4.2.4",
+    "puppeteer-core": "^24.43.0",
+    "tailwindcss": "^4.3.0",
     "typescript": "^6.0.3",
     "vite": "npm:@voidzero-dev/vite-plus-core@^0.1.20",
-    "vite-plugin-pwa": "^1.2.0",
+    "vite-plugin-pwa": "^1.3.0",
     "vite-plus": "^0.1.20"
   },
   "packageManager": "pnpm@10.32.1",
   "pnpm": {
     "overrides": {
-      "vite": "npm:@voidzero-dev/vite-plus-core@^0.1.19",
-      "vitest": "npm:@voidzero-dev/vite-plus-test@^0.1.19",
+      "vite": "npm:@voidzero-dev/vite-plus-core@^0.1.20",
+      "vitest": "npm:@voidzero-dev/vite-plus-test@^0.1.20",
       "serialize-javascript": ">=7.0.3"
     }
   }

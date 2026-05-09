@@ -75,6 +75,18 @@ export function downloadPdf(data: Uint8Array, filename: string): void {
 }
 
 /**
+ * Locale-aware natural comparator for filenames.
+ *
+ * Uses `Intl.Collator` with `numeric: true` so embedded numbers sort as
+ * numbers — e.g. "page2.pdf" < "page10.pdf" rather than the lexicographic
+ * "page10.pdf" < "page2.pdf". Case-insensitive ("base" sensitivity).
+ */
+const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
+export function naturalCompare(a: string, b: string): number {
+  return collator.compare(a, b);
+}
+
+/**
  * Format a byte count into a human-readable string (e.g. "1.3 MB").
  *
  * Uses base-1024 units: B → KB → MB → GB.
