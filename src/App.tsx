@@ -332,7 +332,7 @@ function WhyCloakPdfSection() {
         <FeatureItem
           icon={<EyeOff className="w-5 h-5" />}
           title="No tracking"
-          description="Zero analytics, zero telemetry, zero third-party scripts. You stay invisible."
+          description="Zero analytics, zero telemetry, zero third-party scripts. You stay anonymous."
         />
         <FeatureItem
           icon={<ShieldCheck className="w-5 h-5" />}
@@ -367,7 +367,7 @@ function WhyCloakPdfSection() {
         <FeatureItem
           icon={<GitFork className="w-5 h-5" />}
           title="Free & open source"
-          description="MIT-licensed and on GitHub. Fork it, self-host it, or audit every byte — nothing is hidden."
+          description="MIT-licensed and on GitHub. Fork it, self-host it, or audit every byte — every line is public."
         />
       </div>
     </section>
