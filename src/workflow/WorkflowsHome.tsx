@@ -163,7 +163,7 @@ export function WorkflowsHome({ onCreate, onEdit, onRun }: WorkflowsHomeProps) {
           {notice && (
             <span
               role="status"
-              className={`text-[12.5px] font-medium ${
+              className={`text-meta font-medium ${
                 notice.kind === "ok"
                   ? "text-emerald-600 dark:text-emerald-400"
                   : "text-red-600 dark:text-red-400"
@@ -176,7 +176,7 @@ export function WorkflowsHome({ onCreate, onEdit, onRun }: WorkflowsHomeProps) {
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-dark-surface-alt hover:bg-slate-200 dark:hover:bg-dark-border text-slate-700 dark:text-dark-text text-[13px] font-medium transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-dark-surface-alt hover:bg-slate-200 dark:hover:bg-dark-border text-slate-700 dark:text-dark-text text-card-desc font-medium transition-colors"
             >
               <Upload className="w-3.5 h-3.5" />
               Import
@@ -184,7 +184,7 @@ export function WorkflowsHome({ onCreate, onEdit, onRun }: WorkflowsHomeProps) {
             <button
               type="button"
               onClick={handleExportAll}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-dark-surface-alt hover:bg-slate-200 dark:hover:bg-dark-border text-slate-700 dark:text-dark-text text-[13px] font-medium transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-dark-surface-alt hover:bg-slate-200 dark:hover:bg-dark-border text-slate-700 dark:text-dark-text text-card-desc font-medium transition-colors"
             >
               <Download className="w-3.5 h-3.5" />
               Export all
@@ -199,7 +199,7 @@ export function WorkflowsHome({ onCreate, onEdit, onRun }: WorkflowsHomeProps) {
       {workflows.length === 0 && notice && (
         <p
           role="status"
-          className={`text-[12.5px] font-medium ${
+          className={`text-meta font-medium ${
             notice.kind === "ok"
               ? "text-emerald-600 dark:text-emerald-400"
               : "text-red-600 dark:text-red-400"
@@ -295,10 +295,10 @@ function CreateCard({ onCreate }: { onCreate: () => void }) {
       <span className="w-11 h-11 rounded-xl grid place-items-center bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 mb-2 transition-[transform,background-color] duration-200 group-hover:-translate-y-px group-hover:scale-105">
         <Plus className="w-5 h-5" />
       </span>
-      <h3 className="text-[15px] font-semibold tracking-[-0.005em] text-slate-800 dark:text-dark-text">
+      <h3 className="text-card-title font-semibold tracking-[-0.005em] text-slate-800 dark:text-dark-text">
         Create workflow
       </h3>
-      <p className="text-[13px] leading-normal text-slate-500 dark:text-dark-text-muted">
+      <p className="text-card-desc leading-normal text-slate-500 dark:text-dark-text-muted">
         Pick tools and save the order to reuse later.
       </p>
     </button>
@@ -345,16 +345,16 @@ function WorkflowCard({ workflow, onEdit, onRun, onExport, onDelete }: WorkflowC
             <WorkflowIcon className="w-4 h-4 text-slate-500 dark:text-dark-text-muted" />
           </span>
         )}
-        <span className="ml-auto text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-dark-text-muted">
+        <span className="ml-auto text-tag font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-dark-text-muted">
           {stepCount} {stepCount === 1 ? "step" : "steps"}
         </span>
       </div>
 
       <div className="min-w-0">
-        <h3 className="text-[15px] font-semibold tracking-[-0.005em] text-slate-800 dark:text-dark-text truncate">
+        <h3 className="text-card-title font-semibold tracking-[-0.005em] text-slate-800 dark:text-dark-text truncate">
           {workflow.name}
         </h3>
-        <p className="text-[12.5px] text-slate-500 dark:text-dark-text-muted truncate mt-0.5">
+        <p className="text-meta text-slate-500 dark:text-dark-text-muted truncate mt-0.5">
           {workflow.steps.map((s) => findTool(s.tool)?.title ?? s.tool).join(" → ")}
         </p>
       </div>
@@ -364,7 +364,7 @@ function WorkflowCard({ workflow, onEdit, onRun, onExport, onDelete }: WorkflowC
           type="button"
           onClick={onRun}
           disabled={stepCount === 0}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary-600 hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-[13px] font-medium transition-colors"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary-600 hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-card-desc font-medium transition-colors"
         >
           <Play className="w-3.5 h-3.5" />
           Run
@@ -372,7 +372,7 @@ function WorkflowCard({ workflow, onEdit, onRun, onExport, onDelete }: WorkflowC
         <button
           type="button"
           onClick={onEdit}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-dark-surface-alt hover:bg-slate-200 dark:hover:bg-dark-border text-slate-700 dark:text-dark-text text-[13px] font-medium transition-colors"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-dark-surface-alt hover:bg-slate-200 dark:hover:bg-dark-border text-slate-700 dark:text-dark-text text-card-desc font-medium transition-colors"
         >
           <Pencil className="w-3.5 h-3.5" />
           Edit

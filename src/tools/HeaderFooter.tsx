@@ -478,7 +478,7 @@ export default function HeaderFooter() {
 
                   {isSkipped && (
                     <div className="absolute inset-x-0 bottom-2 flex justify-center pointer-events-none">
-                      <span className="text-[10px] bg-slate-800/60 text-white rounded px-1.5 py-0.5">
+                      <span className="text-xxs bg-slate-800/60 text-white rounded px-1.5 py-0.5">
                         skipped
                       </span>
                     </div>

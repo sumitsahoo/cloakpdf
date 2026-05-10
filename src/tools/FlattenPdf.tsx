@@ -72,7 +72,7 @@ export default function FlattenPdf() {
               <div className="grid grid-cols-2 gap-3">
                 {/* Before — interactive */}
                 <div className="rounded-xl border border-primary-100 dark:border-primary-900/50 bg-primary-50/40 dark:bg-primary-900/20 p-3 flex flex-col gap-2">
-                  <p className="text-[10px] font-semibold uppercase tracking-widest text-primary-400 dark:text-primary-500">
+                  <p className="text-xxs font-semibold uppercase tracking-widest text-primary-400 dark:text-primary-500">
                     Before
                   </p>
                   {/* title line */}
@@ -143,7 +143,7 @@ export default function FlattenPdf() {
 
                 {/* After — flat */}
                 <div className="rounded-xl border border-primary-200 dark:border-primary-800 bg-primary-50 dark:bg-primary-900/20 p-3 flex flex-col gap-2">
-                  <p className="text-[10px] font-semibold uppercase tracking-widest text-primary-600 dark:text-primary-400">
+                  <p className="text-xxs font-semibold uppercase tracking-widest text-primary-600 dark:text-primary-400">
                     After
                   </p>
                   {/* title line */}

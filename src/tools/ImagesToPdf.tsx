@@ -12,6 +12,7 @@ import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { ActionButton } from "../components/ActionButton.tsx";
 import { AlertBox } from "../components/AlertBox.tsx";
 import { FileDropZone } from "../components/FileDropZone.tsx";
+import { SegmentedControl } from "../components/SegmentedControl.tsx";
 import { type SortMode, SortByNameButton } from "../components/SortByNameButton.tsx";
 import { TouchDragOverlay } from "../components/TouchDragOverlay.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
@@ -239,22 +240,17 @@ export default function ImagesToPdf() {
             <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-dark-text-muted mb-2">
               Page Size
             </p>
-            <div className="inline-flex w-full items-center gap-0.5 rounded-xl bg-slate-100 dark:bg-dark-bg p-1 border border-slate-200 dark:border-dark-border">
-              {(["a4", "letter", "fit"] as const).map((size) => (
-                <button
-                  key={size}
-                  type="button"
-                  onClick={() => setPageSize(size)}
-                  className={`flex-1 rounded-lg py-1.5 px-3 text-sm transition-[transform,opacity,color,background-color,border-color,box-shadow] duration-150 ${
-                    pageSize === size
-                      ? "font-semibold text-white bg-primary-600 shadow-sm"
-                      : "font-medium text-slate-500 dark:text-dark-text-muted hover:text-slate-700 dark:hover:text-dark-text hover:bg-white/60 dark:hover:bg-dark-surface-alt"
-                  }`}
-                >
-                  {size === "a4" ? "A4" : size === "letter" ? "Letter" : "Fit to Image"}
-                </button>
-              ))}
-            </div>
+            <SegmentedControl
+              fullWidth
+              ariaLabel="Page size"
+              value={pageSize}
+              onChange={setPageSize}
+              options={[
+                { value: "a4", label: "A4" },
+                { value: "letter", label: "Letter" },
+                { value: "fit", label: "Fit to Image" },
+              ]}
+            />
           </div>
 
           {images.length > 1 && (

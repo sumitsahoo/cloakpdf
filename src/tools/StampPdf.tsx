@@ -18,6 +18,7 @@ import { FileInfoBar } from "../components/FileInfoBar.tsx";
 import { LabeledSlider } from "../components/LabeledSlider.tsx";
 import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
 import { PageThumbnail } from "../components/PageThumbnail.tsx";
+import { SegmentedControl } from "../components/SegmentedControl.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { useAsyncProcess } from "../hooks/useAsyncProcess.ts";
 import { usePdfFile } from "../hooks/usePdfFile.ts";
@@ -344,40 +345,18 @@ export default function StampPdf() {
                 <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-dark-text-muted mb-2">
                   Mode
                 </p>
-                <div className="inline-flex w-full items-center gap-0.5 rounded-xl bg-slate-100 dark:bg-dark-bg p-1 border border-slate-200 dark:border-dark-border">
-                  {(["text", "seal", "rectangle", "watermark"] as const).map((style) => (
-                    <button
-                      key={style}
-                      type="button"
-                      onClick={() => setStampStyle(style)}
-                      className={`flex-1 rounded-lg py-1.5 px-3 text-sm transition-[transform,opacity,color,background-color,border-color,box-shadow] duration-150 ${
-                        stampStyle === style
-                          ? "font-semibold text-white bg-primary-600 shadow-sm"
-                          : "font-medium text-slate-500 dark:text-dark-text-muted hover:text-slate-700 dark:hover:text-dark-text hover:bg-white/60 dark:hover:bg-dark-surface-alt"
-                      }`}
-                    >
-                      <span className="flex items-center justify-center gap-1.5">
-                        {style === "text" ? (
-                          <>
-                            <Stamp className="w-3.5 h-3.5" /> Stamp
-                          </>
-                        ) : style === "seal" ? (
-                          <>
-                            <CircleDot className="w-3.5 h-3.5" /> Seal
-                          </>
-                        ) : style === "rectangle" ? (
-                          <>
-                            <RectangleHorizontal className="w-3.5 h-3.5" /> Badge
-                          </>
-                        ) : (
-                          <>
-                            <Droplets className="w-3.5 h-3.5" /> Watermark
-                          </>
-                        )}
-                      </span>
-                    </button>
-                  ))}
-                </div>
+                <SegmentedControl
+                  fullWidth
+                  ariaLabel="Stamp mode"
+                  value={stampStyle}
+                  onChange={setStampStyle}
+                  options={[
+                    { value: "text", label: "Stamp", icon: Stamp },
+                    { value: "seal", label: "Seal", icon: CircleDot },
+                    { value: "rectangle", label: "Badge", icon: RectangleHorizontal },
+                    { value: "watermark", label: "Watermark", icon: Droplets },
+                  ]}
+                />
               </div>
 
               {stampStyle === "watermark" ? (

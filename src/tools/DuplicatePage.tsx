@@ -169,7 +169,7 @@ export default function DuplicatePage() {
                               <div className="absolute inset-0 bg-primary-500/20 rounded-lg" />
                             </div>
                             <div
-                              className={`absolute -top-1.5 -right-1.5 text-white text-[10px] font-bold px-1.5 h-5 rounded-full flex items-center justify-center shadow-md z-10 transition-opacity duration-200 ${
+                              className={`absolute -top-1.5 -right-1.5 text-white text-xxs font-bold px-1.5 h-5 rounded-full flex items-center justify-center shadow-md z-10 transition-opacity duration-200 ${
                                 isSource
                                   ? "bg-slate-400 dark:bg-slate-600 opacity-50"
                                   : "bg-primary-600"
@@ -264,7 +264,7 @@ export default function DuplicatePage() {
                         </div>
                         <div
                           className={`absolute top-0 right-0 text-white font-bold rounded-full flex items-center justify-center shadow-md bg-primary-600 ${
-                            isCopy ? "text-[10px] px-1.5 h-5" : "text-xs w-6 h-6"
+                            isCopy ? "text-xxs px-1.5 h-5" : "text-xs w-6 h-6"
                           }`}
                         >
                           {isCopy ? "Copy" : srcIdx + 1}

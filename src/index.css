@@ -55,6 +55,22 @@
   --color-dark-border: #334155;
   --color-dark-text: #f1f5f9;
   --color-dark-text-muted: #94a3b8;
+  /*
+   * Typography scale for design-specific sizes that fall between Tailwind's
+   * default text-xs/sm/base. Use these instead of arbitrary text-[Npx]
+   * utilities so the scale stays cohesive.
+   *
+   *  text-xxs        10px — eyebrow caps, version chip
+   *  text-tag        11px — kbd hints, small badges
+   *  text-meta       12.5px — secondary meta text
+   *  text-card-desc  13px — card descriptions
+   *  text-card-title 15px — card titles, section labels
+   */
+  --text-xxs: 10px;
+  --text-tag: 11px;
+  --text-meta: 12.5px;
+  --text-card-desc: 13px;
+  --text-card-title: 15px;
 }
 
 @custom-variant dark (@media (prefers-color-scheme: dark));

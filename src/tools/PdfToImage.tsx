@@ -16,6 +16,7 @@ import { LabeledSlider } from "../components/LabeledSlider.tsx";
 import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
 import { PageThumbnail } from "../components/PageThumbnail.tsx";
 import { ProgressBar } from "../components/ProgressBar.tsx";
+import { SegmentedControl } from "../components/SegmentedControl.tsx";
 import { ThumbnailGrid } from "../components/ThumbnailGrid.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { useAsyncProcess } from "../hooks/useAsyncProcess.ts";
@@ -160,21 +161,16 @@ export default function PdfToImage() {
                       <Image className="w-3.5 h-3.5" />
                       Format
                     </p>
-                    <div className="inline-flex w-full items-center gap-0.5 rounded-xl bg-slate-100 dark:bg-dark-bg p-1 border border-slate-200 dark:border-dark-border">
-                      {(["image/png", "image/jpeg"] as const).map((f) => (
-                        <button
-                          key={f}
-                          onClick={() => setFormat(f)}
-                          className={`flex-1 rounded-lg py-1.5 px-3 text-sm transition-[transform,opacity,color,background-color,border-color,box-shadow] duration-150 ${
-                            format === f
-                              ? "font-semibold text-white bg-primary-600 shadow-sm"
-                              : "font-medium text-slate-500 dark:text-dark-text-muted hover:text-slate-700 dark:hover:text-dark-text hover:bg-white/60 dark:hover:bg-dark-surface-alt"
-                          }`}
-                        >
-                          {f === "image/png" ? "PNG" : "JPEG"}
-                        </button>
-                      ))}
-                    </div>
+                    <SegmentedControl
+                      fullWidth
+                      ariaLabel="Image format"
+                      value={format}
+                      onChange={setFormat}
+                      options={[
+                        { value: "image/png", label: "PNG" },
+                        { value: "image/jpeg", label: "JPEG" },
+                      ]}
+                    />
                   </div>
 
                   <div>
@@ -182,21 +178,17 @@ export default function PdfToImage() {
                       <ScanLine className="w-3.5 h-3.5" />
                       Resolution
                     </p>
-                    <div className="inline-flex w-full items-center gap-0.5 rounded-xl bg-slate-100 dark:bg-dark-bg p-1 border border-slate-200 dark:border-dark-border">
-                      {([72, 150, 300] as const).map((d) => (
-                        <button
-                          key={d}
-                          onClick={() => setDpi(d)}
-                          className={`flex-1 rounded-lg py-1.5 px-3 text-sm transition-[transform,opacity,color,background-color,border-color,box-shadow] duration-150 ${
-                            dpi === d
-                              ? "font-semibold text-white bg-primary-600 shadow-sm"
-                              : "font-medium text-slate-500 dark:text-dark-text-muted hover:text-slate-700 dark:hover:text-dark-text hover:bg-white/60 dark:hover:bg-dark-surface-alt"
-                          }`}
-                        >
-                          {d}
-                        </button>
-                      ))}
-                    </div>
+                    <SegmentedControl
+                      fullWidth
+                      ariaLabel="Resolution (DPI)"
+                      value={dpi}
+                      onChange={setDpi}
+                      options={[
+                        { value: 72, label: "72" },
+                        { value: 150, label: "150" },
+                        { value: 300, label: "300" },
+                      ]}
+                    />
                     <p className="text-xs text-slate-400 dark:text-dark-text-muted mt-1.5">DPI</p>
                   </div>
                 </div>

@@ -267,7 +267,7 @@ function Stepper({ steps, currentIndex, done }: StepperProps) {
           <span className="text-[12px] font-semibold text-slate-700 dark:text-dark-text">
             {done ? "Completed" : `Step ${currentIndex + 1} of ${total}`}
           </span>
-          <span className="text-[11px] text-slate-500 dark:text-dark-text-muted tabular-nums">
+          <span className="text-tag text-slate-500 dark:text-dark-text-muted tabular-nums">
             {completedCount} / {total}
           </span>
         </div>
@@ -300,7 +300,7 @@ function Stepper({ steps, currentIndex, done }: StepperProps) {
             <li key={`${toolId}-${i}`} className="flex items-start shrink-0 min-w-0">
               <div className="flex flex-col items-center min-w-0 max-w-34 lg:max-w-40">
                 <div
-                  className={`flex items-center justify-center w-7 h-7 rounded-full text-[11px] font-semibold transition-colors ${
+                  className={`flex items-center justify-center w-7 h-7 rounded-full text-tag font-semibold transition-colors ${
                     isCurrent
                       ? "bg-primary-500 text-white ring-4 ring-primary-100 dark:ring-primary-900/40"
                       : isComplete

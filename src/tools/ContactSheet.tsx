@@ -14,6 +14,7 @@ import { FileDropZone } from "../components/FileDropZone.tsx";
 import { FileInfoBar } from "../components/FileInfoBar.tsx";
 import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
 import { ProgressBar } from "../components/ProgressBar.tsx";
+import { SegmentedControl } from "../components/SegmentedControl.tsx";
 import { canvas as canvasColors, categoryAccent, categoryGlow } from "../config/theme.ts";
 import { useAsyncProcess } from "../hooks/useAsyncProcess.ts";
 import { usePdfFile } from "../hooks/usePdfFile.ts";
@@ -260,21 +261,13 @@ export default function ContactSheet() {
                   <Grid3X3 className="w-3.5 h-3.5" />
                   Grid Layout
                 </p>
-                <div className="inline-flex w-full items-center gap-0.5 rounded-xl bg-slate-100 dark:bg-dark-bg p-1 border border-slate-200 dark:border-dark-border">
-                  {GRID_OPTIONS.map((opt) => (
-                    <button
-                      key={opt.value}
-                      onClick={() => setGrid(opt.value)}
-                      className={`flex-1 rounded-lg py-1.5 px-3 text-sm transition-[transform,opacity,color,background-color,border-color,box-shadow] duration-150 ${
-                        grid === opt.value
-                          ? "font-semibold text-white bg-primary-600 shadow-sm"
-                          : "font-medium text-slate-500 dark:text-dark-text-muted hover:text-slate-700 dark:hover:text-dark-text hover:bg-white/60 dark:hover:bg-dark-surface-alt"
-                      }`}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
+                <SegmentedControl
+                  fullWidth
+                  ariaLabel="Grid layout"
+                  value={grid}
+                  onChange={setGrid}
+                  options={GRID_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+                />
                 {pageCount > 0 && (
                   <p className="text-xs text-slate-400 dark:text-dark-text-muted mt-1.5">
                     {perSheet} pages per sheet · {sheetsNeeded}{" "}
@@ -289,21 +282,16 @@ export default function ContactSheet() {
                   <Image className="w-3.5 h-3.5" />
                   Output Format
                 </p>
-                <div className="inline-flex w-full items-center gap-0.5 rounded-xl bg-slate-100 dark:bg-dark-bg p-1 border border-slate-200 dark:border-dark-border">
-                  {(["png", "pdf"] as const).map((f) => (
-                    <button
-                      key={f}
-                      onClick={() => setOutput(f)}
-                      className={`flex-1 rounded-lg py-1.5 px-3 text-sm transition-[transform,opacity,color,background-color,border-color,box-shadow] duration-150 ${
-                        output === f
-                          ? "font-semibold text-white bg-primary-600 shadow-sm"
-                          : "font-medium text-slate-500 dark:text-dark-text-muted hover:text-slate-700 dark:hover:text-dark-text hover:bg-white/60 dark:hover:bg-dark-surface-alt"
-                      }`}
-                    >
-                      {f.toUpperCase()}
-                    </button>
-                  ))}
-                </div>
+                <SegmentedControl
+                  fullWidth
+                  ariaLabel="Output format"
+                  value={output}
+                  onChange={setOutput}
+                  options={[
+                    { value: "png", label: "PNG" },
+                    { value: "pdf", label: "PDF" },
+                  ]}
+                />
               </div>
 
               {/* Page labels toggle */}
@@ -312,21 +300,16 @@ export default function ContactSheet() {
                   <Tag className="w-3.5 h-3.5" />
                   Page Labels
                 </p>
-                <div className="inline-flex w-full items-center gap-0.5 rounded-xl bg-slate-100 dark:bg-dark-bg p-1 border border-slate-200 dark:border-dark-border">
-                  {([true, false] as const).map((val) => (
-                    <button
-                      key={String(val)}
-                      onClick={() => setShowLabels(val)}
-                      className={`flex-1 rounded-lg py-1.5 px-3 text-sm transition-[transform,opacity,color,background-color,border-color,box-shadow] duration-150 ${
-                        showLabels === val
-                          ? "font-semibold text-white bg-primary-600 shadow-sm"
-                          : "font-medium text-slate-500 dark:text-dark-text-muted hover:text-slate-700 dark:hover:text-dark-text hover:bg-white/60 dark:hover:bg-dark-surface-alt"
-                      }`}
-                    >
-                      {val ? "Show labels" : "Hide labels"}
-                    </button>
-                  ))}
-                </div>
+                <SegmentedControl
+                  fullWidth
+                  ariaLabel="Page labels"
+                  value={showLabels}
+                  onChange={setShowLabels}
+                  options={[
+                    { value: true, label: "Show labels" },
+                    { value: false, label: "Hide labels" },
+                  ]}
+                />
               </div>
             </div>
 

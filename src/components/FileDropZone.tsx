@@ -10,6 +10,7 @@
 import { FileUp } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 import { categoryGlow } from "../config/theme.ts";
+import { useSpotlightGlow } from "../hooks/useSpotlightGlow.ts";
 import { useWorkflowSlot } from "../workflow/WorkflowContext.tsx";
 
 interface FileDropZoneProps {
@@ -52,47 +53,15 @@ export function FileDropZone({
   const inWorkflow = useWorkflowSlot() !== null;
 
   const [isDragOver, setIsDragOver] = useState(false);
-  const zoneRef = useRef<HTMLButtonElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const [glowStyle, setGlowStyle] = useState<React.CSSProperties>({ opacity: 0 });
-
-  const setGlowAt = useCallback(
-    (clientX: number, clientY: number) => {
-      const zone = zoneRef.current;
-      if (!zone) return;
-      const rect = zone.getBoundingClientRect();
-      setGlowStyle({
-        opacity: 1,
-        background: `radial-gradient(300px circle at ${clientX - rect.left}px ${clientY - rect.top}px, ${glowColor}, transparent 70%)`,
-      });
-    },
-    [glowColor],
-  );
-
-  const handleMouseMove = useCallback(
-    (e: React.MouseEvent<HTMLButtonElement>) => setGlowAt(e.clientX, e.clientY),
-    [setGlowAt],
-  );
-
-  const handleMouseLeave = useCallback(() => setGlowStyle({ opacity: 0 }), []);
-
-  const handleTouchStart = useCallback(
-    (e: React.TouchEvent<HTMLButtonElement>) => {
-      const t = e.touches[0];
-      setGlowAt(t.clientX, t.clientY);
-    },
-    [setGlowAt],
-  );
-
-  const handleTouchMove = useCallback(
-    (e: React.TouchEvent<HTMLButtonElement>) => {
-      const t = e.touches[0];
-      setGlowAt(t.clientX, t.clientY);
-    },
-    [setGlowAt],
-  );
-
-  const handleTouchEnd = useCallback(() => setGlowStyle({ opacity: 0 }), []);
+  const {
+    ref: zoneRef,
+    glowStyle,
+    handlers: glowHandlers,
+  } = useSpotlightGlow({
+    color: glowColor,
+    radius: 300,
+  });
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
@@ -130,12 +99,7 @@ export function FileDropZone({
       onDragLeave={() => setIsDragOver(false)}
       onDrop={handleDrop}
       onClick={() => inputRef.current?.click()}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-      onTouchCancel={handleTouchEnd}
+      {...glowHandlers}
       style={{ touchAction: "manipulation" }}
       className={`group relative w-full overflow-hidden border-2 border-dashed rounded-xl p-10 text-center cursor-pointer
         transition-[border-color,background-color,transform] duration-200

@@ -132,7 +132,7 @@ export function WorkflowBuilder({ workflowId, onCancel, onSaved }: WorkflowBuild
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Clean & ship"
             maxLength={60}
-            className="mt-2 w-full px-4 py-2.5 rounded-xl bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border text-slate-800 dark:text-dark-text placeholder-slate-400 dark:placeholder-dark-text-muted shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400/40 focus:border-primary-300 dark:focus:border-primary-600 transition-[border-color,box-shadow] duration-200 text-[15px]"
+            className="mt-2 w-full px-4 py-2.5 rounded-xl bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border text-slate-800 dark:text-dark-text placeholder-slate-400 dark:placeholder-dark-text-muted shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400/40 focus:border-primary-300 dark:focus:border-primary-600 transition-[border-color,box-shadow] duration-200 text-card-title"
           />
           <span className="mt-1.5 flex items-center justify-between gap-2 text-[11.5px] text-slate-400 dark:text-dark-text-muted">
             <span>Used in the workflows list and the run header.</span>
@@ -147,7 +147,7 @@ export function WorkflowBuilder({ workflowId, onCancel, onSaved }: WorkflowBuild
                 Steps
               </span>
               {steps.length > 0 && (
-                <span className="px-1.5 py-0.5 rounded-md bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 text-[11px] font-semibold tabular-nums">
+                <span className="px-1.5 py-0.5 rounded-md bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 text-tag font-semibold tabular-nums">
                   {steps.length}
                 </span>
               )}
@@ -156,7 +156,7 @@ export function WorkflowBuilder({ workflowId, onCancel, onSaved }: WorkflowBuild
               <button
                 type="button"
                 onClick={() => setPickerOpen(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary-600 hover:bg-primary-700 text-white text-[13px] font-medium transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary-600 hover:bg-primary-700 text-white text-card-desc font-medium transition-colors"
               >
                 <Plus className="w-3.5 h-3.5" />
                 Add step
@@ -169,10 +169,10 @@ export function WorkflowBuilder({ workflowId, onCancel, onSaved }: WorkflowBuild
               <div className="w-12 h-12 mx-auto rounded-2xl bg-primary-50 dark:bg-primary-900/30 flex items-center justify-center mb-3">
                 <WorkflowIcon className="w-6 h-6 text-primary-600 dark:text-primary-400" />
               </div>
-              <h3 className="text-[15px] font-semibold tracking-[-0.005em] text-slate-800 dark:text-dark-text">
+              <h3 className="text-card-title font-semibold tracking-[-0.005em] text-slate-800 dark:text-dark-text">
                 No steps yet
               </h3>
-              <p className="text-[13px] text-slate-500 dark:text-dark-text-muted mt-1 max-w-sm mx-auto leading-[1.55]">
+              <p className="text-card-desc text-slate-500 dark:text-dark-text-muted mt-1 max-w-sm mx-auto leading-[1.55]">
                 Pick tools in the order you want them to run — each step's output feeds the next.
               </p>
               <button
@@ -224,7 +224,7 @@ export function WorkflowBuilder({ workflowId, onCancel, onSaved }: WorkflowBuild
           </button>
         </div>
         {missingHint && (
-          <p className="text-[12.5px] text-slate-500 dark:text-dark-text-muted text-center">
+          <p className="text-meta text-slate-500 dark:text-dark-text-muted text-center">
             {missingHint}
           </p>
         )}
@@ -267,7 +267,7 @@ function StepRow({ index, step, isFirst, isLast, onUp, onDown, onRemove }: StepR
         <div className="text-[14px] font-semibold tracking-[-0.005em] text-slate-800 dark:text-dark-text truncate">
           {meta?.title ?? step.tool}
         </div>
-        <div className="text-[12.5px] text-slate-500 dark:text-dark-text-muted truncate">
+        <div className="text-meta text-slate-500 dark:text-dark-text-muted truncate">
           {meta?.description ?? "Unknown tool"}
         </div>
       </div>

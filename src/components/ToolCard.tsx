@@ -5,10 +5,6 @@
  * adds a subtle border highlight, lift, and a cursor-tracking spotlight
  * glow effect. A small chevron slides in at the bottom-right on hover.
  *
- * On touch devices the same spotlight glow is triggered via
- * `onTouchStart`/`onTouchMove`, and CSS `active:`/`group-active:`
- * variants replicate the hover animations.
- *
  * Wrapped in `React.memo` — the parent passes a single stable
  * `onSelect` callback (via `useCallback`) and each `tool` reference
  * comes from a module-level constant array, so cards skip re-renders
@@ -16,82 +12,29 @@
  */
 
 import { ArrowRight } from "lucide-react";
-import { memo, useCallback, useRef, useState } from "react";
+import { memo } from "react";
+import { useSpotlightGlow } from "../hooks/useSpotlightGlow.ts";
 import type { Tool, ToolId } from "../types.ts";
 
-/**
- * Single primary-tinted spotlight glow shared across every card.
- * Per-category coloring was retired — a unified accent reads as more
- * modern and keeps the home screen visually calm.
- */
 const SPOTLIGHT_GLOW = "rgba(37,99,235,0.16)";
 
 interface ToolCardProps {
-  /** Tool metadata (id, title, description, icon). */
   tool: Tool;
-  /** Stable callback invoked with the tool's ID when the card is clicked. */
   onSelect: (id: ToolId) => void;
 }
 
 export const ToolCard = memo(function ToolCard({ tool, onSelect }: ToolCardProps) {
-  const cardRef = useRef<HTMLButtonElement>(null);
-  const [glowStyle, setGlowStyle] = useState<React.CSSProperties>({ opacity: 0 });
-
-  const setGlowAt = useCallback((clientX: number, clientY: number) => {
-    const card = cardRef.current;
-    if (!card) return;
-    const rect = card.getBoundingClientRect();
-    setGlowStyle({
-      opacity: 1,
-      background: `radial-gradient(320px circle at ${clientX - rect.left}px ${clientY - rect.top}px, ${SPOTLIGHT_GLOW}, transparent 70%)`,
-    });
-  }, []);
-
-  const handleMouseMove = useCallback(
-    (e: React.MouseEvent<HTMLButtonElement>) => setGlowAt(e.clientX, e.clientY),
-    [setGlowAt],
-  );
-
-  const handleMouseLeave = useCallback(() => {
-    setGlowStyle({ opacity: 0 });
-  }, []);
-
-  const handleTouchStart = useCallback(
-    (e: React.TouchEvent<HTMLButtonElement>) => {
-      const t = e.touches[0];
-      setGlowAt(t.clientX, t.clientY);
-    },
-    [setGlowAt],
-  );
-
-  const handleTouchMove = useCallback(
-    (e: React.TouchEvent<HTMLButtonElement>) => {
-      const t = e.touches[0];
-      setGlowAt(t.clientX, t.clientY);
-    },
-    [setGlowAt],
-  );
-
-  const handleTouchEnd = useCallback(() => {
-    setGlowStyle({ opacity: 0 });
-  }, []);
-
+  const { ref, glowStyle, handlers } = useSpotlightGlow({ color: SPOTLIGHT_GLOW });
   const Icon = tool.icon;
 
   return (
     <button
       type="button"
-      ref={cardRef}
+      ref={ref}
       onClick={() => onSelect(tool.id as ToolId)}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-      onTouchCancel={handleTouchEnd}
+      {...handlers}
       className="group relative overflow-hidden bg-white dark:bg-dark-surface rounded-2xl border border-slate-200 dark:border-dark-border px-5 py-6 sm:p-6 text-left cursor-pointer transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:border-primary-300 dark:hover:border-primary-600 hover:shadow-md active:-translate-y-0.5 active:border-primary-300 dark:active:border-primary-600 active:shadow-md"
     >
-      {/* Cursor / touch spotlight glow */}
       <div
         className="pointer-events-none absolute inset-0 rounded-[inherit] transition-opacity duration-300"
         aria-hidden="true"
@@ -103,15 +46,15 @@ export const ToolCard = memo(function ToolCard({ tool, onSelect }: ToolCardProps
           <Icon className="w-5 h-5" />
         </span>
 
-        <h3 className="text-[15px] font-semibold tracking-[-0.005em] text-slate-800 dark:text-dark-text transition-transform duration-200 group-hover:translate-x-0.5 group-active:translate-x-0.5">
+        <h3 className="text-card-title font-semibold tracking-[-0.005em] text-slate-800 dark:text-dark-text transition-transform duration-200 group-hover:translate-x-0.5 group-active:translate-x-0.5">
           {tool.title}
         </h3>
-        <p className="text-[13px] leading-normal text-slate-500 dark:text-dark-text-muted">
+        <p className="text-card-desc leading-normal text-slate-500 dark:text-dark-text-muted">
           {tool.description}
         </p>
 
         <ArrowRight
-          className="absolute bottom-1 right-1 sm:bottom-0 sm:right-0 w-4 h-4 text-slate-400 dark:text-dark-text-muted opacity-0 -translate-x-1 transition-[transform,opacity,color,background-color,border-color,box-shadow] duration-200 group-hover:opacity-100 group-hover:translate-x-0 group-hover:text-primary-600 dark:group-hover:text-primary-400 group-active:opacity-100 group-active:translate-x-0 group-active:text-primary-600 dark:group-active:text-primary-400"
+          className="absolute bottom-1 right-1 sm:bottom-0 sm:right-0 w-4 h-4 text-slate-400 dark:text-dark-text-muted opacity-0 -translate-x-1 transition-[transform,opacity,color] duration-200 group-hover:opacity-100 group-hover:translate-x-0 group-hover:text-primary-600 dark:group-hover:text-primary-400 group-active:opacity-100 group-active:translate-x-0 group-active:text-primary-600 dark:group-active:text-primary-400"
           aria-hidden="true"
         />
       </div>

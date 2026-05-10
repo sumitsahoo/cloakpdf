@@ -174,10 +174,10 @@ export function ToolPickerModal({ onPick, onClose, alreadyAdded }: ToolPickerMod
         <div className="flex flex-col gap-3 px-4 md:px-7 pt-2 sm:pt-5 md:pt-5 pb-3.5 border-b border-slate-200/70 dark:border-dark-border/70">
           <div className="flex items-start gap-3">
             <div className="flex-1 min-w-0">
-              <div className="text-[15px] sm:text-base font-semibold tracking-[-0.01em] text-slate-800 dark:text-dark-text">
+              <div className="text-card-title sm:text-base font-semibold tracking-[-0.01em] text-slate-800 dark:text-dark-text">
                 Pick a tool
               </div>
-              <div className="text-[13px] text-slate-500 dark:text-dark-text-muted mt-0.5">
+              <div className="text-card-desc text-slate-500 dark:text-dark-text-muted mt-0.5">
                 Workflow-eligible tools — search by name or category.
               </div>
             </div>
@@ -236,7 +236,7 @@ export function ToolPickerModal({ onPick, onClose, alreadyAdded }: ToolPickerMod
               <div className="text-[14px] font-medium text-slate-700 dark:text-dark-text">
                 {query ? `No tools match “${query}”` : "No workflow-eligible tools yet"}
               </div>
-              <div className="text-[13px] text-slate-500 dark:text-dark-text-muted mt-1">
+              <div className="text-card-desc text-slate-500 dark:text-dark-text-muted mt-1">
                 {query
                   ? "Try a different name or category."
                   : "Migrate a tool to the workflow system to add it here."}
@@ -246,10 +246,10 @@ export function ToolPickerModal({ onPick, onClose, alreadyAdded }: ToolPickerMod
             grouped.map(({ category, tools }) => (
               <section key={category.key} className="mb-6 last:mb-0">
                 <div className="flex items-baseline gap-3 mb-3 pb-2 border-b border-slate-200/60 dark:border-dark-border/60">
-                  <h3 className="text-[11px] font-semibold tracking-[0.12em] uppercase text-primary-600 dark:text-primary-400">
+                  <h3 className="text-tag font-semibold tracking-[0.12em] uppercase text-primary-600 dark:text-primary-400">
                     {category.label}
                   </h3>
-                  <span className="ml-auto text-[11px] font-mono text-slate-400 dark:text-dark-text-muted tabular-nums">
+                  <span className="ml-auto text-tag font-mono text-slate-400 dark:text-dark-text-muted tabular-nums">
                     {String(tools.length).padStart(2, "0")}
                   </span>
                 </div>
@@ -273,12 +273,12 @@ export function ToolPickerModal({ onPick, onClose, alreadyAdded }: ToolPickerMod
                               {tool.title}
                             </div>
                             {added && (
-                              <span className="text-[10px] font-semibold tracking-[0.08em] uppercase px-1.5 py-0.5 rounded-md bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300">
+                              <span className="text-xxs font-semibold tracking-[0.08em] uppercase px-1.5 py-0.5 rounded-md bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300">
                                 Added
                               </span>
                             )}
                           </div>
-                          <div className="text-[12.5px] text-slate-500 dark:text-dark-text-muted leading-snug mt-0.5">
+                          <div className="text-meta text-slate-500 dark:text-dark-text-muted leading-snug mt-0.5">
                             {tool.description}
                           </div>
                         </div>

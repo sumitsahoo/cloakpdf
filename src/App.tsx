@@ -27,6 +27,8 @@ import {
 } from "lucide-react";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Layout } from "./components/Layout.tsx";
+import { useRevealOnScroll } from "./hooks/useRevealOnScroll.ts";
+import { useSpotlightGlow } from "./hooks/useSpotlightGlow.ts";
 import { OrientationLock } from "./components/OrientationLock.tsx";
 import { PrivacyPolicy } from "./components/PrivacyPolicy.tsx";
 import { ReloadPrompt } from "./components/ReloadPrompt.tsx";
@@ -161,7 +163,7 @@ function HomeScreen({ onSelectTool, onOpenWorkflows }: HomeScreenProps) {
             </h1>
 
             <p
-              className="text-slate-500 dark:text-dark-text-muted text-[15px] sm:text-[16.5px] lg:text-[17px] leading-[1.55] mt-5 sm:mt-6 max-w-lg animate-fade-in-up"
+              className="text-slate-500 dark:text-dark-text-muted text-card-title sm:text-[16.5px] lg:text-[17px] leading-[1.55] mt-5 sm:mt-6 max-w-lg lg:max-w-xl text-pretty animate-fade-in-up"
               style={{ animationDelay: "80ms" }}
             >
               Edit, merge, sign, secure, and convert PDFs entirely in your browser. No uploads, no
@@ -228,7 +230,7 @@ function HomeScreen({ onSelectTool, onOpenWorkflows }: HomeScreenProps) {
                   <X className="w-4 h-4" />
                 </button>
               ) : (
-                <kbd className="hidden sm:inline-flex items-center gap-0.5 px-2 py-1 rounded-md bg-slate-50 dark:bg-dark-surface-alt border border-slate-200 dark:border-dark-border text-[11px] font-medium text-slate-500 dark:text-dark-text-muted font-mono tabular-nums tracking-tight select-none">
+                <kbd className="hidden sm:inline-flex items-center gap-0.5 px-2 py-1 rounded-md bg-slate-50 dark:bg-dark-surface-alt border border-slate-200 dark:border-dark-border text-tag font-medium text-slate-500 dark:text-dark-text-muted font-mono tabular-nums tracking-tight select-none">
                   {isMac ? "⌘ K" : "Ctrl K"}
                 </kbd>
               )}
@@ -272,7 +274,7 @@ function HomeScreen({ onSelectTool, onOpenWorkflows }: HomeScreenProps) {
                 style={{ animationDelay: `${catIdx * 80}ms` }}
               >
                 <div className="mb-5 sm:mb-6">
-                  <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-primary-600 dark:text-primary-400 mb-2">
+                  <div className="text-tag font-semibold uppercase tracking-[0.12em] text-primary-600 dark:text-primary-400 mb-2">
                     {cat.label}
                     <span className="ml-2 text-slate-400 dark:text-dark-text-muted font-medium tracking-normal normal-case">
                       · {catTools.length}
@@ -292,76 +294,83 @@ function HomeScreen({ onSelectTool, onOpenWorkflows }: HomeScreenProps) {
           })}
 
           {/* ── Why CloakPDF — multi-colored feature grid ── */}
-          {!searchQuery && (
-            <section
-              className="pt-6 sm:pt-10 animate-fade-in-up"
-              style={{ animationDelay: `${categories.length * 80}ms` }}
-            >
-              <div className="text-center mb-8 sm:mb-12">
-                <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-primary-600 dark:text-primary-400 mb-2.5">
-                  Why CloakPDF
-                </div>
-                <h2 className="text-[24px] sm:text-[30px] md:text-[36px] font-semibold tracking-[-0.02em] leading-[1.15] text-slate-900 dark:text-dark-text m-0 text-balance">
-                  Everything you need, nothing you don&rsquo;t.
-                </h2>
-                <p className="text-slate-500 dark:text-dark-text-muted text-[14px] sm:text-[15.5px] leading-[1.55] max-w-140 mx-auto mt-3">
-                  A modern PDF toolkit that respects your privacy — built for people who care about
-                  their data and their craft.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-7 sm:gap-y-8">
-                <FeatureItem
-                  icon={<UserRoundCheck className="w-5 h-5" />}
-                  title="No sign-up"
-                  description="No accounts, no email, no passwords. Start using the moment the page loads."
-                />
-                <FeatureItem
-                  icon={<EyeOff className="w-5 h-5" />}
-                  title="No tracking"
-                  description="Zero analytics, zero telemetry, zero third-party scripts. You stay invisible."
-                />
-                <FeatureItem
-                  icon={<ShieldCheck className="w-5 h-5" />}
-                  title="Local-first"
-                  description="Every byte stays in your browser. Nothing is ever uploaded to any server."
-                />
-                <FeatureItem
-                  icon={<WifiOff className="w-5 h-5" />}
-                  title="Works offline"
-                  description="Once cached, keep editing and exporting without a connection — flights, trains, anywhere."
-                />
-                <FeatureItem
-                  icon={<Rocket className="w-5 h-5" />}
-                  title="Installable as a PWA"
-                  description="Add CloakPDF to your home screen for a full-screen, app-like experience that launches in one tap."
-                />
-                <FeatureItem
-                  icon={<MonitorSmartphone className="w-5 h-5" />}
-                  title="Mobile, tablet & desktop"
-                  description="Every tool adapts fluidly across screen sizes — edit on the go, finalise at your desk."
-                />
-                <FeatureItem
-                  icon={<Sparkles className="w-5 h-5" />}
-                  title={`${tools.length}+ PDF tools`}
-                  description="Merge, split, sign, redact, OCR, compress, convert — one workspace for every PDF chore."
-                />
-                <FeatureItem
-                  icon={<Laptop className="w-5 h-5" />}
-                  title="Light & dark mode"
-                  description="Thoughtful theming that follows your system preference automatically."
-                />
-                <FeatureItem
-                  icon={<GitFork className="w-5 h-5" />}
-                  title="Free & open source"
-                  description="MIT-licensed and on GitHub. Fork it, self-host it, or audit every byte — nothing is hidden."
-                />
-              </div>
-            </section>
-          )}
+          {!searchQuery && <WhyCloakPdfSection />}
         </div>
       )}
     </div>
+  );
+}
+
+function WhyCloakPdfSection() {
+  const { ref, revealed } = useRevealOnScroll<HTMLElement>();
+  return (
+    <section
+      ref={ref}
+      className={`pt-6 sm:pt-10 motion-safe:transition-[opacity,transform] motion-safe:duration-700 ${
+        revealed ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"
+      }`}
+    >
+      <div className="text-center mb-8 sm:mb-12">
+        <div className="text-tag font-semibold uppercase tracking-[0.12em] text-primary-600 dark:text-primary-400 mb-2.5">
+          Why CloakPDF
+        </div>
+        <h2 className="text-[24px] sm:text-[30px] md:text-[36px] font-semibold tracking-[-0.02em] leading-[1.15] text-slate-900 dark:text-dark-text m-0 text-balance">
+          Everything you need, nothing you don&rsquo;t.
+        </h2>
+        <p className="text-slate-500 dark:text-dark-text-muted text-[14px] sm:text-[15.5px] leading-[1.55] max-w-140 mx-auto mt-3">
+          A modern PDF toolkit that respects your privacy — built for people who care about their
+          data and their craft.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-7 sm:gap-y-8">
+        <FeatureItem
+          icon={<UserRoundCheck className="w-5 h-5" />}
+          title="No sign-up"
+          description="No accounts, no email, no passwords. Start using the moment the page loads."
+        />
+        <FeatureItem
+          icon={<EyeOff className="w-5 h-5" />}
+          title="No tracking"
+          description="Zero analytics, zero telemetry, zero third-party scripts. You stay invisible."
+        />
+        <FeatureItem
+          icon={<ShieldCheck className="w-5 h-5" />}
+          title="Local-first"
+          description="Every byte stays in your browser. Nothing is ever uploaded to any server."
+        />
+        <FeatureItem
+          icon={<WifiOff className="w-5 h-5" />}
+          title="Works offline"
+          description="Once cached, keep editing and exporting without a connection — flights, trains, anywhere."
+        />
+        <FeatureItem
+          icon={<Rocket className="w-5 h-5" />}
+          title="Installable as a PWA"
+          description="Add CloakPDF to your home screen for a full-screen, app-like experience that launches in one tap."
+        />
+        <FeatureItem
+          icon={<MonitorSmartphone className="w-5 h-5" />}
+          title="Mobile, tablet & desktop"
+          description="Every tool adapts fluidly across screen sizes — edit on the go, finalise at your desk."
+        />
+        <FeatureItem
+          icon={<Sparkles className="w-5 h-5" />}
+          title={`${tools.length}+ PDF tools`}
+          description="Merge, split, sign, redact, OCR, compress, convert — one workspace for every PDF chore."
+        />
+        <FeatureItem
+          icon={<Laptop className="w-5 h-5" />}
+          title="Light & dark mode"
+          description="Thoughtful theming that follows your system preference automatically."
+        />
+        <FeatureItem
+          icon={<GitFork className="w-5 h-5" />}
+          title="Free & open source"
+          description="MIT-licensed and on GitHub. Fork it, self-host it, or audit every byte — nothing is hidden."
+        />
+      </div>
+    </section>
   );
 }
 
@@ -414,59 +423,17 @@ const WORKFLOW_HERO_GLOW = "rgba(37,99,235,0.16)";
  * and supporting copy can breathe.
  */
 function WorkflowHeroCard({ onOpen }: WorkflowHeroCardProps) {
-  const cardRef = useRef<HTMLButtonElement>(null);
-  const [glowStyle, setGlowStyle] = useState<React.CSSProperties>({ opacity: 0 });
-
-  const setGlowAt = useCallback((clientX: number, clientY: number) => {
-    const card = cardRef.current;
-    if (!card) return;
-    const rect = card.getBoundingClientRect();
-    setGlowStyle({
-      opacity: 1,
-      background: `radial-gradient(420px circle at ${clientX - rect.left}px ${clientY - rect.top}px, ${WORKFLOW_HERO_GLOW}, transparent 70%)`,
-    });
-  }, []);
-
-  const handleMouseMove = useCallback(
-    (e: React.MouseEvent<HTMLButtonElement>) => setGlowAt(e.clientX, e.clientY),
-    [setGlowAt],
-  );
-
-  const handleMouseLeave = useCallback(() => {
-    setGlowStyle({ opacity: 0 });
-  }, []);
-
-  const handleTouchStart = useCallback(
-    (e: React.TouchEvent<HTMLButtonElement>) => {
-      const t = e.touches[0];
-      setGlowAt(t.clientX, t.clientY);
-    },
-    [setGlowAt],
-  );
-
-  const handleTouchMove = useCallback(
-    (e: React.TouchEvent<HTMLButtonElement>) => {
-      const t = e.touches[0];
-      setGlowAt(t.clientX, t.clientY);
-    },
-    [setGlowAt],
-  );
-
-  const handleTouchEnd = useCallback(() => {
-    setGlowStyle({ opacity: 0 });
-  }, []);
+  const { ref, glowStyle, handlers } = useSpotlightGlow({
+    color: WORKFLOW_HERO_GLOW,
+    radius: 420,
+  });
 
   return (
     <button
       type="button"
-      ref={cardRef}
+      ref={ref}
       onClick={onOpen}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-      onTouchCancel={handleTouchEnd}
+      {...handlers}
       className="group relative w-full overflow-hidden bg-white dark:bg-dark-surface rounded-2xl border border-slate-200 dark:border-dark-border px-5 py-5 sm:px-6 sm:py-6 text-left cursor-pointer transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:border-primary-300 dark:hover:border-primary-600 hover:shadow-md active:-translate-y-0.5 active:border-primary-300 dark:active:border-primary-600 active:shadow-md"
     >
       {/* Cursor / touch spotlight glow */}
@@ -482,17 +449,17 @@ function WorkflowHeroCard({ onOpen }: WorkflowHeroCardProps) {
         </span>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-0.5">
-            <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-dark-text-muted">
+            <span className="text-tag font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-dark-text-muted">
               Workflows
             </span>
-            <span className="inline-flex items-center rounded-full border border-primary-200 dark:border-primary-700/60 bg-primary-50 dark:bg-primary-900/30 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-primary-600 dark:text-primary-400">
+            <span className="inline-flex items-center rounded-full border border-primary-200 dark:border-primary-700/60 bg-primary-50 dark:bg-primary-900/30 px-2 py-0.5 text-xxs font-semibold uppercase tracking-[0.14em] text-primary-600 dark:text-primary-400">
               New
             </span>
           </div>
-          <h3 className="text-[15px] sm:text-[16px] font-semibold tracking-[-0.005em] text-slate-800 dark:text-dark-text">
+          <h3 className="text-card-title sm:text-[16px] font-semibold tracking-[-0.005em] text-slate-800 dark:text-dark-text">
             Chain tools together and run them in one go.
           </h3>
-          <p className="text-[12.5px] sm:text-[13px] leading-normal text-slate-500 dark:text-dark-text-muted mt-0.5">
+          <p className="text-meta sm:text-card-desc leading-normal text-slate-500 dark:text-dark-text-muted mt-0.5">
             Build reusable sequences from supported tools and turn a multi-step PDF task into a
             single click. A few tools — multi-file or non-PDF — stay standalone.
           </p>

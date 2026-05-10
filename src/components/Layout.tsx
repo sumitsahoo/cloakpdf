@@ -130,7 +130,7 @@ export function Layout({ children, onHome, showBack, onPrivacy }: LayoutProps) {
               <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
                 <div className="flex items-center gap-1.5 px-1">
                   <ShieldCheck className="w-3.5 h-3.5 text-slate-500 dark:text-dark-text-muted" />
-                  <span className="text-[12.5px] font-medium tracking-tight text-slate-600 dark:text-dark-text-muted whitespace-nowrap">
+                  <span className="text-meta font-medium tracking-tight text-slate-600 dark:text-dark-text-muted whitespace-nowrap">
                     <span className="sm:hidden">Private</span>
                     <span className="hidden sm:inline lg:hidden">100% Private</span>
                     <span className="hidden lg:inline">100% Private · Open Source</span>
@@ -193,7 +193,7 @@ export function Layout({ children, onHome, showBack, onPrivacy }: LayoutProps) {
                   }}
                 >
                   <div className="relative">
-                    <div className="text-[10px] uppercase tracking-[0.16em] font-medium text-primary-600 dark:text-primary-400">
+                    <div className="text-xxs uppercase tracking-[0.16em] font-medium text-primary-600 dark:text-primary-400">
                       How it works
                     </div>
                     <h3 className="mt-2 text-lg sm:text-xl font-semibold tracking-tight text-slate-900 dark:text-dark-text leading-[1.2] text-balance">
@@ -228,10 +228,10 @@ export function Layout({ children, onHome, showBack, onPrivacy }: LayoutProps) {
                           {step.n}
                         </span>
                         <div className="min-w-0">
-                          <div className="text-[13px] font-semibold tracking-[-0.005em] text-slate-800 dark:text-dark-text">
+                          <div className="text-card-desc font-semibold tracking-[-0.005em] text-slate-800 dark:text-dark-text">
                             {step.title}
                           </div>
-                          <div className="text-[12.5px] leading-[1.55] text-slate-500 dark:text-dark-text-muted">
+                          <div className="text-meta leading-[1.55] text-slate-500 dark:text-dark-text-muted">
                             {step.description}
                           </div>
                         </div>
@@ -267,13 +267,13 @@ export function Layout({ children, onHome, showBack, onPrivacy }: LayoutProps) {
                           loading="lazy"
                           className="w-7 h-7 drop-shadow-sm"
                         />
-                        <span className="text-[10px] uppercase tracking-[0.16em] font-medium text-slate-400 dark:text-dark-text-muted">
+                        <span className="text-xxs uppercase tracking-[0.16em] font-medium text-slate-400 dark:text-dark-text-muted">
                           Part of
                         </span>
                       </div>
                       <span
                         translate="no"
-                        className="shrink-0 inline-flex items-center rounded-full bg-slate-100/80 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 px-2 py-0.5 font-mono text-[10px] tabular-nums tracking-tight text-slate-500 dark:text-dark-text-muted"
+                        className="shrink-0 inline-flex items-center rounded-full bg-slate-100/80 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 px-2 py-0.5 font-mono text-xxs tabular-nums tracking-tight text-slate-500 dark:text-dark-text-muted"
                       >
                         CloakPDF v{__APP_VERSION__}
                       </span>
@@ -281,7 +281,7 @@ export function Layout({ children, onHome, showBack, onPrivacy }: LayoutProps) {
                     <h4 className="mt-2.5 text-lg font-semibold tracking-tight text-slate-900 dark:text-dark-text">
                       Cloakyard
                     </h4>
-                    <p className="mt-1 text-[12.5px] text-slate-500 dark:text-dark-text-muted leading-[1.55]">
+                    <p className="mt-1 text-meta text-slate-500 dark:text-dark-text-muted leading-[1.55]">
                       A family of privacy-focused tools that keep your data on your device.
                     </p>
                   </div>
@@ -293,7 +293,7 @@ export function Layout({ children, onHome, showBack, onPrivacy }: LayoutProps) {
               </div>
             )}
 
-            <div className="border-t border-slate-200/60 dark:border-dark-border pt-5 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-[12.5px] text-slate-500 dark:text-dark-text-muted">
+            <div className="border-t border-slate-200/60 dark:border-dark-border pt-5 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 text-meta text-slate-500 dark:text-dark-text-muted">
               <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
                 <span>Built with care by</span>
                 <a

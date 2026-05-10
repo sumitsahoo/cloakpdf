@@ -90,7 +90,7 @@ export function ReloadPrompt() {
           <Icon className="w-4 h-4" />
         </div>
         <div className="min-w-0 flex-1 pt-0.5">
-          <p className="text-[13px] font-semibold tracking-[-0.01em] text-slate-800 dark:text-dark-text">
+          <p className="text-card-desc font-semibold tracking-[-0.01em] text-slate-800 dark:text-dark-text">
             {title}
           </p>
           <p className="mt-0.5 text-[12px] leading-[1.45] text-slate-500 dark:text-dark-text-muted">

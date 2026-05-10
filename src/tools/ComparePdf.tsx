@@ -13,6 +13,7 @@ import { useCallback, useMemo, useState } from "react";
 import { ActionButton } from "../components/ActionButton.tsx";
 import { AlertBox } from "../components/AlertBox.tsx";
 import { FileDropZone } from "../components/FileDropZone.tsx";
+import { SegmentedControl } from "../components/SegmentedControl.tsx";
 import { canvas as canvasColors, categoryAccent, categoryGlow } from "../config/theme.ts";
 import { useAsyncProcess } from "../hooks/useAsyncProcess.ts";
 import { formatFileSize } from "../utils/file-helpers.ts";
@@ -449,32 +450,15 @@ export default function ComparePdf() {
 
       {/* View mode toggle & page nav */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-        <div className="inline-flex items-center gap-0.5 rounded-xl bg-slate-100 dark:bg-dark-bg p-1 border border-slate-200 dark:border-dark-border">
-          <button
-            type="button"
-            onClick={() => setViewMode("side-by-side")}
-            className={`flex items-center gap-1.5 rounded-lg py-1.5 px-3 text-sm transition-[transform,opacity,color,background-color,border-color,box-shadow] duration-150 ${
-              viewMode === "side-by-side"
-                ? "font-semibold text-white bg-primary-600 shadow-sm"
-                : "font-medium text-slate-500 dark:text-dark-text-muted hover:text-slate-700 dark:hover:text-dark-text hover:bg-white/60 dark:hover:bg-dark-surface-alt"
-            }`}
-          >
-            <ArrowLeftRight className="w-3.5 h-3.5" />
-            Side by Side
-          </button>
-          <button
-            type="button"
-            onClick={() => setViewMode("diff-overlay")}
-            className={`flex items-center gap-1.5 rounded-lg py-1.5 px-3 text-sm transition-[transform,opacity,color,background-color,border-color,box-shadow] duration-150 ${
-              viewMode === "diff-overlay"
-                ? "font-semibold text-white bg-primary-600 shadow-sm"
-                : "font-medium text-slate-500 dark:text-dark-text-muted hover:text-slate-700 dark:hover:text-dark-text hover:bg-white/60 dark:hover:bg-dark-surface-alt"
-            }`}
-          >
-            <Layers className="w-3.5 h-3.5" />
-            Diff Overlay
-          </button>
-        </div>
+        <SegmentedControl
+          ariaLabel="View mode"
+          value={viewMode}
+          onChange={setViewMode}
+          options={[
+            { value: "side-by-side", label: "Side by Side", icon: ArrowLeftRight },
+            { value: "diff-overlay", label: "Diff Overlay", icon: Layers },
+          ]}
+        />
 
         {/* Page navigation */}
         <div className="flex items-center gap-2">
@@ -531,7 +515,7 @@ export default function ComparePdf() {
               {/* File A */}
               <div className="space-y-1.5">
                 <p className="text-xs font-medium text-slate-500 dark:text-dark-text-muted flex items-center gap-1.5">
-                  <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300 text-[10px] font-bold">
+                  <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300 text-xxs font-bold">
                     A
                   </span>
                   Original
@@ -554,7 +538,7 @@ export default function ComparePdf() {
               {/* File B */}
               <div className="space-y-1.5">
                 <p className="text-xs font-medium text-slate-500 dark:text-dark-text-muted flex items-center gap-1.5">
-                  <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300 text-[10px] font-bold">
+                  <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300 text-xxs font-bold">
                     B
                   </span>
                   Modified

@@ -424,7 +424,7 @@ export default function DigitalSignature() {
                               ` (${sig.certDetails.issuerOrganisation})`}
                           </span>
                           {sig.certDetails.isSelfSigned && (
-                            <span className="ml-1 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300">
+                            <span className="ml-1 inline-flex items-center px-1.5 py-0.5 rounded text-xxs font-medium bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300">
                               Self-Signed
                             </span>
                           )}

@@ -243,7 +243,7 @@ export default function FillPdfForm() {
                               </span>
                             )}
                           </div>
-                          <span className="text-[11px] text-slate-400 dark:text-dark-text-muted">
+                          <span className="text-tag text-slate-400 dark:text-dark-text-muted">
                             {i + 1}
                           </span>
                         </button>

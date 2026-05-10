@@ -521,7 +521,7 @@ export function DateTimeInput({ id, value, onChange }: DateTimeInputProps) {
                     <th
                       key={d}
                       scope="col"
-                      className="text-center text-[10px] font-medium text-slate-400 dark:text-slate-500 pb-0.5 select-none"
+                      className="text-center text-xxs font-medium text-slate-400 dark:text-slate-500 pb-0.5 select-none"
                     >
                       {d}
                     </th>
@@ -584,7 +584,7 @@ export function DateTimeInput({ id, value, onChange }: DateTimeInputProps) {
 
           {/* Time row */}
           <div className="flex items-center gap-1.5 pt-2 border-t border-slate-100 dark:border-dark-border flex-wrap">
-            <span className="text-[10px] font-medium text-slate-500 dark:text-dark-text-muted">
+            <span className="text-xxs font-medium text-slate-500 dark:text-dark-text-muted">
               Time
             </span>
 
