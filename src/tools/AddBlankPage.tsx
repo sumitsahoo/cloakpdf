@@ -155,7 +155,7 @@ export default function AddBlankPage() {
                         <div
                           key={item.id}
                           {...drag.getItemProps(slot)}
-                          className={`shrink-0 pt-2 pr-2 flex flex-col items-center gap-1.5 cursor-grab active:cursor-grabbing select-none transition-all duration-200 ${
+                          className={`shrink-0 pt-2 pr-2 flex flex-col items-center gap-1.5 cursor-grab active:cursor-grabbing select-none transition-[transform,opacity,color,background-color,border-color,box-shadow] duration-200 ${
                             isSource ? "scale-95 opacity-30" : "scale-100 opacity-100"
                           }`}
                         >
@@ -170,7 +170,7 @@ export default function AddBlankPage() {
                               <span className="text-primary-500 text-2xl font-light">+</span>
                             </div>
                             <div
-                              className={`absolute -top-1.5 -right-1.5 text-white text-[10px] font-bold px-1.5 h-5 rounded-full flex items-center justify-center shadow-md z-10 transition-opacity duration-200 ${
+                              className={`absolute -top-1.5 -right-1.5 text-white text-xxs font-bold px-1.5 h-5 rounded-full flex items-center justify-center shadow-md z-10 transition-opacity duration-200 ${
                                 isSource
                                   ? "bg-slate-400 dark:bg-slate-600 opacity-50"
                                   : "bg-primary-600"
@@ -188,7 +188,7 @@ export default function AddBlankPage() {
                       <div
                         key={`page-${item.index}`}
                         {...drag.getItemProps(slot)}
-                        className={`shrink-0 pt-2 pr-2 flex flex-col items-center gap-1.5 cursor-grab active:cursor-grabbing select-none transition-all duration-200 ${
+                        className={`shrink-0 pt-2 pr-2 flex flex-col items-center gap-1.5 cursor-grab active:cursor-grabbing select-none transition-[transform,opacity,color,background-color,border-color,box-shadow] duration-200 ${
                           isSource ? "scale-95 opacity-30" : "scale-100 opacity-100"
                         }`}
                       >
@@ -231,7 +231,7 @@ export default function AddBlankPage() {
                           <div className="w-20 sm:w-24 md:w-28 aspect-[3/4] rounded-lg border-2 border-dashed border-primary-400 bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center shadow-sm">
                             <span className="text-primary-500 text-2xl font-light">+</span>
                           </div>
-                          <div className="absolute top-0 right-0 text-white text-[10px] font-bold px-1.5 h-5 rounded-full flex items-center justify-center shadow-md bg-primary-600">
+                          <div className="absolute top-0 right-0 text-white text-xxs font-bold px-1.5 h-5 rounded-full flex items-center justify-center shadow-md bg-primary-600">
                             New
                           </div>
                         </div>

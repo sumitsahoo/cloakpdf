@@ -165,7 +165,7 @@ export default function ExtractPages() {
               value={rangeInput}
               onChange={(e) => setRangeInput(e.target.value)}
               placeholder="e.g., 1-3, 5, 7-9"
-              className="w-full px-3 py-2 border border-slate-300 dark:border-dark-border dark:bg-dark-surface dark:text-dark-text rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-slate-300 dark:border-dark-border dark:bg-dark-surface dark:text-dark-text rounded-lg text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:border-transparent"
             />
             <p className="text-xs text-slate-400 dark:text-dark-text-muted mt-1">
               Or click pages below to select them
@@ -202,7 +202,7 @@ export default function ExtractPages() {
               onClick={handleExtract}
               processing={task.processing}
               label={`Extract ${effectiveCount} Page${effectiveCount !== 1 ? "s" : ""} & ${output.deliveryWord}`}
-              processingLabel="Extracting..."
+              processingLabel="Extracting…"
             />
           )}
         </>

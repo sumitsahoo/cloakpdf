@@ -100,7 +100,7 @@ export default function NupPages() {
                       key={l.value}
                       type="button"
                       onClick={() => setLayout(l.value)}
-                      className={`border-2 rounded-xl p-3 text-center transition-all duration-150 ${
+                      className={`border-2 rounded-xl p-3 text-center transition-[transform,opacity,color,background-color,border-color,box-shadow] duration-150 ${
                         layout === l.value
                           ? "border-primary-500 bg-primary-50 dark:bg-primary-900/30 ring-1 ring-primary-300 dark:ring-primary-700"
                           : "border-slate-200 dark:border-dark-border bg-white dark:bg-dark-surface hover:border-slate-300 dark:hover:border-slate-500 hover:bg-slate-50 dark:hover:bg-dark-surface-alt"
@@ -144,7 +144,7 @@ export default function NupPages() {
                 processing={task.processing}
                 disabled={task.processing || pageCount === 0}
                 label={`Create ${selected.label} PDF & ${output.deliveryWord}`}
-                processingLabel="Processing..."
+                processingLabel="Processing…"
               />
 
               {done && (

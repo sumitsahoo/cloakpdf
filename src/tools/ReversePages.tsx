@@ -165,7 +165,7 @@ export default function ReversePages() {
             processing={task.processing}
             disabled={task.processing || pageCount < 2}
             label={`Reverse Pages & ${output.deliveryWord}`}
-            processingLabel="Reversing..."
+            processingLabel="Reversing…"
           />
 
           {pageCount === 1 && (

@@ -365,9 +365,17 @@ export default function RedactPdf() {
                   type="button"
                   key={`${pdf.file?.name ?? "page"}-${i}`}
                   onClick={() => setEditingPage(i)}
-                  className="relative rounded-lg overflow-hidden border-2 border-slate-200 dark:border-dark-border hover:border-primary-400 transition-colors focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  className="relative rounded-lg overflow-hidden border-2 border-slate-200 dark:border-dark-border hover:border-primary-400 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
                 >
-                  <img src={thumb} alt={`Page ${i + 1}`} className="w-full h-auto block" />
+                  <img
+                    src={thumb}
+                    alt={`Page ${i + 1}`}
+                    width="160"
+                    height="226"
+                    loading="lazy"
+                    decoding="async"
+                    className="w-full h-auto block"
+                  />
                   <div className="absolute bottom-0 inset-x-0 bg-slate-800/70 text-white text-xs py-0.5 text-center">
                     {count > 0 ? (
                       <span className="text-red-300">
@@ -389,7 +397,7 @@ export default function RedactPdf() {
           onClick={handleApply}
           processing={task.processing}
           label={`Apply ${totalRedactions} Redaction${totalRedactions > 1 ? "s" : ""} & Download`}
-          processingLabel="Applying Redactions..."
+          processingLabel="Applying Redactions…"
           color="bg-red-600 hover:bg-red-700"
         />
       )}

@@ -197,7 +197,7 @@ export default function OcrPdf() {
                       key={lang.code}
                       onClick={() => setLanguage(lang.code)}
                       disabled={processing}
-                      className={`px-3.5 py-1.5 rounded-full text-sm font-medium transition-all ${
+                      className={`px-3.5 py-1.5 rounded-full text-sm font-medium transition-[transform,opacity,color,background-color,border-color,box-shadow] ${
                         language === lang.code
                           ? "bg-primary-600 text-white shadow-sm"
                           : "bg-slate-100 dark:bg-dark-bg text-slate-600 dark:text-dark-text-muted border border-slate-200 dark:border-dark-border hover:bg-slate-200 dark:hover:bg-dark-border"
@@ -220,7 +220,7 @@ export default function OcrPdf() {
                   </div>
                   <div className="w-full bg-slate-200 dark:bg-dark-border rounded-full h-2.5 overflow-hidden">
                     <div
-                      className="bg-primary-600 h-full rounded-full transition-all duration-300"
+                      className="bg-primary-600 h-full rounded-full transition-[width] duration-300"
                       style={{ width: `${progressPercent}%` }}
                     />
                   </div>
@@ -241,7 +241,7 @@ export default function OcrPdf() {
                 onClick={handleExtract}
                 processing={processing}
                 label="Extract Text"
-                processingLabel="Extracting Text..."
+                processingLabel="Extracting Text…"
               />
             </div>
           ) : (

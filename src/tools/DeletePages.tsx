@@ -123,7 +123,7 @@ export default function DeletePages() {
               onClick={handleDelete}
               processing={task.processing}
               label={`Remove ${selectedPages.size} Page${selectedPages.size > 1 ? "s" : ""} & ${output.deliveryWord}`}
-              processingLabel="Removing..."
+              processingLabel="Removing…"
               color="bg-red-600 hover:bg-red-700"
             />
           )}

@@ -146,7 +146,7 @@ function PasswordField({
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
           autoComplete={autoComplete}
-          className="w-full px-3 py-2 pr-10 rounded-lg border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-bg text-sm text-slate-800 dark:text-dark-text placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+          className="w-full px-3 py-2 pr-10 rounded-lg border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-bg text-sm text-slate-800 dark:text-dark-text placeholder:text-slate-400 dark:placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:border-transparent transition-[transform,opacity,color,background-color,border-color,box-shadow]"
         />
         <button
           type="button"
@@ -337,7 +337,7 @@ export default function PdfPassword() {
             label="New password"
             value={newPassword}
             onChange={setNewPassword}
-            placeholder="Enter new password"
+            placeholder="Enter new password…"
             autoComplete="new-password"
             show={showNewPw}
             onToggleShow={() => setShowNewPw((v) => !v)}
@@ -348,7 +348,7 @@ export default function PdfPassword() {
             hint={confirmPassword && !passwordsMatch ? "Passwords do not match" : undefined}
             value={confirmPassword}
             onChange={setConfirmPassword}
-            placeholder="Re-enter new password"
+            placeholder="Re-enter new password…"
             autoComplete="new-password"
             show={showConfirmPw}
             onToggleShow={() => setShowConfirmPw((v) => !v)}
@@ -437,7 +437,7 @@ export default function PdfPassword() {
             hint="Leave blank if the PDF uses an empty password."
             value={currentPassword}
             onChange={setCurrentPassword}
-            placeholder="Enter current password"
+            placeholder="Enter current password…"
             autoComplete="current-password"
             show={showCurrentPw}
             onToggleShow={() => setShowCurrentPw((v) => !v)}
