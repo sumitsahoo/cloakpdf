@@ -28,10 +28,6 @@ export default function MergePdf() {
   const [sortMode, setSortMode] = useState<SortMode>("off");
   const task = useAsyncProcess();
 
-  const cycleSortMode = useCallback(() => {
-    setSortMode((m) => (m === "off" ? "asc" : m === "asc" ? "desc" : "off"));
-  }, []);
-
   /**
    * Files in the order shown to the user. Sorting derives a view without
    * mutating `files`, so toggling the sort back to "off" restores the
@@ -96,11 +92,9 @@ export default function MergePdf() {
           {files.length > 1 && (
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <p className="text-sm text-slate-500 dark:text-dark-text-muted">
-                {isSortActive
-                  ? `Sorted by name (${sortMode === "asc" ? "A → Z" : "Z → A"})`
-                  : `${files.length} files in import order`}
+                {isSortActive ? "Sorted by file name" : `${files.length} files in import order`}
               </p>
-              <SortByNameButton mode={sortMode} onClick={cycleSortMode} />
+              <SortByNameButton mode={sortMode} onChange={setSortMode} />
             </div>
           )}
 
