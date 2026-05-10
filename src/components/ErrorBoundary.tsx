@@ -189,7 +189,7 @@ export class ErrorBoundary extends Component<Props, State> {
               <pre className="whitespace-pre-wrap text-xs bg-slate-50 dark:bg-dark-bg border border-slate-200 dark:border-dark-border rounded-lg p-3 text-slate-700 dark:text-dark-text font-mono overflow-x-auto max-h-40">
                 {error.message}
               </pre>
-              <p className="mt-2 text-[11px] text-slate-400 dark:text-dark-text-muted">
+              <p className="mt-2 text-tag text-slate-400 dark:text-dark-text-muted">
                 CloakPDF {__APP_VERSION__} · {new Date().toLocaleString()}
               </p>
             </section>
@@ -233,7 +233,7 @@ export class ErrorBoundary extends Component<Props, State> {
         </main>
 
         <footer className="border-t border-slate-200/60 dark:border-dark-border bg-linear-to-b from-white/60 to-slate-50/80 dark:from-dark-surface/60 dark:to-dark-bg/80">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-center gap-2 flex-wrap text-[11px] text-slate-400 dark:text-dark-text-muted">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-center gap-2 flex-wrap text-tag text-slate-400 dark:text-dark-text-muted">
             <span>© {new Date().getFullYear()} CloakPDF by Sumit Sahoo</span>
             <span aria-hidden="true" className="text-slate-300 dark:text-slate-600">
               ·

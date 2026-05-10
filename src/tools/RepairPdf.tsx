@@ -108,7 +108,7 @@ export default function RepairPdf() {
             onClick={handleRepair}
             processing={task.processing}
             label={`Repair & ${output.deliveryWord} PDF`}
-            processingLabel="Repairing..."
+            processingLabel="Repairing…"
           />
 
           {done && (

@@ -79,7 +79,7 @@ export function SortableGrid({
           setDragIndex(null);
           setDragOverSlot(null);
         }}
-        className={`self-stretch flex items-center justify-center rounded-lg transition-all duration-200 ${
+        className={`self-stretch flex items-center justify-center rounded-lg transition-[transform,opacity,color,background-color,border-color,box-shadow] duration-200 ${
           isDragging && !isAdjacentToDrag
             ? dragOverSlot === slot
               ? "w-20 sm:w-24 bg-primary-50 dark:bg-primary-900/20"
@@ -89,7 +89,7 @@ export function SortableGrid({
       >
         {isDragging && !isAdjacentToDrag && (
           <div
-            className={`rounded-full transition-all duration-200 ${
+            className={`rounded-full transition-[transform,opacity,color,background-color,border-color,box-shadow] duration-200 ${
               dragOverSlot === slot
                 ? "w-1 bg-primary-500"
                 : "w-0.5 bg-primary-200 dark:bg-primary-800"

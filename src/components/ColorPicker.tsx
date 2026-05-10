@@ -287,7 +287,7 @@ export function ColorPicker({ value, onChange }: ColorPickerProps) {
               maxLength={7}
               spellCheck={false}
               inputMode="text"
-              className="flex-1 min-w-0 px-2 py-1.5 text-sm sm:text-xs font-mono border border-slate-300 dark:border-dark-border dark:bg-dark-surface-alt dark:text-dark-text rounded-md focus:outline-none focus-visible:ring-1 focus-visible:ring-primary-500"
+              className="flex-1 min-w-0 px-2 py-1.5 text-sm sm:text-xs font-mono border border-slate-300 dark:border-dark-border dark:bg-dark-surface-alt dark:text-dark-text rounded-md focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary-500"
             />
           </div>
         </div>

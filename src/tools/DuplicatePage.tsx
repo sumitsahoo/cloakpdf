@@ -148,7 +148,7 @@ export default function DuplicatePage() {
                         <div
                           key={item.id}
                           {...drag.getItemProps(slot)}
-                          className={`shrink-0 p-2 flex flex-col items-center gap-1.5 cursor-grab active:cursor-grabbing select-none transition-all duration-200 ${
+                          className={`shrink-0 p-2 flex flex-col items-center gap-1.5 cursor-grab active:cursor-grabbing select-none transition-[transform,opacity,color,background-color,border-color,box-shadow] duration-200 ${
                             isSource ? "scale-95 opacity-30" : "scale-100 opacity-100"
                           }`}
                         >
@@ -169,7 +169,7 @@ export default function DuplicatePage() {
                               <div className="absolute inset-0 bg-primary-500/20 rounded-lg" />
                             </div>
                             <div
-                              className={`absolute -top-1.5 -right-1.5 text-white text-[10px] font-bold px-1.5 h-5 rounded-full flex items-center justify-center shadow-md z-10 transition-opacity duration-200 ${
+                              className={`absolute -top-1.5 -right-1.5 text-white text-xxs font-bold px-1.5 h-5 rounded-full flex items-center justify-center shadow-md z-10 transition-opacity duration-200 ${
                                 isSource
                                   ? "bg-slate-400 dark:bg-slate-600 opacity-50"
                                   : "bg-primary-600"
@@ -204,7 +204,7 @@ export default function DuplicatePage() {
                           drag.setDragOverSlot(null);
                         }}
                         {...(hasCopies ? drag.getTouchHandlers(slot) : {})}
-                        className={`shrink-0 p-2 flex flex-col items-center gap-1.5 select-none transition-all duration-200 cursor-pointer ${
+                        className={`shrink-0 p-2 flex flex-col items-center gap-1.5 select-none transition-[transform,opacity,color,background-color,border-color,box-shadow] duration-200 cursor-pointer ${
                           hasCopies ? "active:cursor-grabbing" : "hover:scale-105"
                         } ${isSource ? "scale-95 opacity-30" : "scale-100 opacity-100"}`}
                       >
@@ -264,7 +264,7 @@ export default function DuplicatePage() {
                         </div>
                         <div
                           className={`absolute top-0 right-0 text-white font-bold rounded-full flex items-center justify-center shadow-md bg-primary-600 ${
-                            isCopy ? "text-[10px] px-1.5 h-5" : "text-xs w-6 h-6"
+                            isCopy ? "text-xxs px-1.5 h-5" : "text-xs w-6 h-6"
                           }`}
                         >
                           {isCopy ? "Copy" : srcIdx + 1}

@@ -83,7 +83,7 @@ export function OrientationLock() {
       aria-label="Rotate your device"
       // Top-level overlay — must outrank every modal and toast in the
       // app so the user never sees a half-rotated UI.
-      className="fixed inset-0 z-[1000] flex flex-col items-center justify-center gap-5 bg-page-bg px-8 text-center text-slate-900 dark:bg-dark-bg dark:text-dark-text"
+      className="fixed inset-0 z-[1000] flex flex-col items-center justify-center gap-5 bg-page-bg px-8 text-center text-slate-900 dark:bg-dark-bg dark:text-dark-text overscroll-contain"
       style={{ background: "var(--page-bg)" }}
     >
       <div

@@ -185,7 +185,7 @@ export default function BatesNumbering() {
                     value={options.prefix}
                     onChange={(e) => setOpt("prefix", e.target.value)}
                     placeholder="e.g. CASE-"
-                    className="w-full border border-slate-300 dark:border-dark-border rounded-lg px-3 py-2 text-sm font-mono bg-white dark:bg-dark-surface text-slate-800 dark:text-dark-text focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="w-full border border-slate-300 dark:border-dark-border rounded-lg px-3 py-2 text-sm font-mono bg-white dark:bg-dark-surface text-slate-800 dark:text-dark-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
                   />
                 </div>
                 <div>
@@ -196,8 +196,8 @@ export default function BatesNumbering() {
                     type="text"
                     value={options.suffix}
                     onChange={(e) => setOpt("suffix", e.target.value)}
-                    placeholder="Optional"
-                    className="w-full border border-slate-300 dark:border-dark-border rounded-lg px-3 py-2 text-sm font-mono bg-white dark:bg-dark-surface text-slate-800 dark:text-dark-text focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    placeholder="e.g. -A"
+                    className="w-full border border-slate-300 dark:border-dark-border rounded-lg px-3 py-2 text-sm font-mono bg-white dark:bg-dark-surface text-slate-800 dark:text-dark-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
                   />
                 </div>
               </div>
@@ -210,10 +210,11 @@ export default function BatesNumbering() {
                   </label>
                   <input
                     type="number"
+                    inputMode="numeric"
                     min={0}
                     value={options.startNumber}
                     onChange={(e) => setOpt("startNumber", Math.max(0, Number(e.target.value)))}
-                    className="w-full border border-slate-300 dark:border-dark-border rounded-lg px-3 py-2 text-sm bg-white dark:bg-dark-surface text-slate-800 dark:text-dark-text focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="w-full border border-slate-300 dark:border-dark-border rounded-lg px-3 py-2 text-sm bg-white dark:bg-dark-surface text-slate-800 dark:text-dark-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
                   />
                 </div>
                 <div>
@@ -222,13 +223,14 @@ export default function BatesNumbering() {
                   </label>
                   <input
                     type="number"
+                    inputMode="numeric"
                     min={1}
                     max={12}
                     value={options.digits}
                     onChange={(e) =>
                       setOpt("digits", Math.min(12, Math.max(1, Number(e.target.value))))
                     }
-                    className="w-full border border-slate-300 dark:border-dark-border rounded-lg px-3 py-2 text-sm bg-white dark:bg-dark-surface text-slate-800 dark:text-dark-text focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="w-full border border-slate-300 dark:border-dark-border rounded-lg px-3 py-2 text-sm bg-white dark:bg-dark-surface text-slate-800 dark:text-dark-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
                   />
                   <p className="text-xs text-slate-400 dark:text-dark-text-muted mt-1">
                     e.g. 6 → 000001
@@ -249,7 +251,7 @@ export default function BatesNumbering() {
                       type="button"
                       onClick={() => setOpt("position", value)}
                       title={title}
-                      className={`h-10 rounded-lg text-base font-bold border-2 transition-all duration-150 ${
+                      className={`h-10 rounded-lg text-base font-bold border-2 transition-[transform,opacity,color,background-color,border-color,box-shadow] duration-150 ${
                         options.position === value
                           ? "border-primary-500 bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-300"
                           : "border-slate-200 dark:border-dark-border text-slate-400 dark:text-dark-text-muted hover:border-slate-300 dark:hover:border-slate-500 bg-white dark:bg-dark-surface"

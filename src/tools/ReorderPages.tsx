@@ -117,7 +117,7 @@ export default function ReorderPages() {
                       <div
                         key={`page-${originalIndex}`}
                         {...drag.getItemProps(slot)}
-                        className={`shrink-0 pt-2 pr-2 flex flex-col items-center gap-1.5 cursor-grab active:cursor-grabbing select-none transition-all duration-200 ${
+                        className={`shrink-0 pt-2 pr-2 flex flex-col items-center gap-1.5 cursor-grab active:cursor-grabbing select-none transition-[transform,opacity,color,background-color,border-color,box-shadow] duration-200 ${
                           isSource ? "scale-95 opacity-30" : "scale-100 opacity-100"
                         }`}
                       >

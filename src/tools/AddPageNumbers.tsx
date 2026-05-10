@@ -204,7 +204,7 @@ export default function AddPageNumbers() {
                       type="button"
                       onClick={() => setOpt("position", value)}
                       title={title}
-                      className={`h-10 rounded-lg text-base font-bold border-2 transition-all duration-150 ${
+                      className={`h-10 rounded-lg text-base font-bold border-2 transition-[transform,opacity,color,background-color,border-color,box-shadow] duration-150 ${
                         options.position === value
                           ? "border-primary-500 bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-300"
                           : "border-slate-200 dark:border-dark-border text-slate-400 dark:text-dark-text-muted hover:border-slate-300 dark:hover:border-slate-500 bg-white dark:bg-dark-surface"
@@ -230,7 +230,7 @@ export default function AddPageNumbers() {
                         key={f}
                         type="button"
                         onClick={() => setOpt("format", f)}
-                        className={`py-2 px-3 rounded-xl text-sm text-center border-2 transition-all duration-150 ${
+                        className={`py-2 px-3 rounded-xl text-sm text-center border-2 transition-[transform,opacity,color,background-color,border-color,box-shadow] duration-150 ${
                           options.format === f
                             ? "font-semibold border-primary-500 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 ring-1 ring-primary-300 dark:ring-primary-700"
                             : "font-medium border-slate-200 dark:border-dark-border bg-white dark:bg-dark-surface text-slate-600 dark:text-dark-text-muted hover:border-slate-300 dark:hover:border-slate-500"
@@ -290,10 +290,11 @@ export default function AddPageNumbers() {
                   <input
                     id="pn-start-number"
                     type="number"
+                    inputMode="numeric"
                     min={1}
                     value={options.startNumber}
                     onChange={(e) => setOpt("startNumber", Math.max(1, Number(e.target.value)))}
-                    className="w-full border border-slate-300 dark:border-dark-border rounded-lg px-3 py-2 text-sm bg-white dark:bg-dark-surface text-slate-800 dark:text-dark-text focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="w-full border border-slate-300 dark:border-dark-border rounded-lg px-3 py-2 text-sm bg-white dark:bg-dark-surface text-slate-800 dark:text-dark-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
                   />
                 </div>
 
@@ -308,6 +309,7 @@ export default function AddPageNumbers() {
                   <input
                     id="pn-first-page"
                     type="number"
+                    inputMode="numeric"
                     min={1}
                     max={pageCount || 1}
                     value={options.firstPage}
@@ -317,7 +319,7 @@ export default function AddPageNumbers() {
                         Math.min(Math.max(1, Number(e.target.value)), pageCount || 1),
                       )
                     }
-                    className="w-full border border-slate-300 dark:border-dark-border rounded-lg px-3 py-2 text-sm bg-white dark:bg-dark-surface text-slate-800 dark:text-dark-text focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="w-full border border-slate-300 dark:border-dark-border rounded-lg px-3 py-2 text-sm bg-white dark:bg-dark-surface text-slate-800 dark:text-dark-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
                   />
                   <p className="text-xs text-slate-400 dark:text-dark-text-muted mt-1">
                     Set to 2 to skip a cover page

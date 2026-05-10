@@ -236,7 +236,7 @@ export default function EditMetadata() {
                           value={metadata[field.key]}
                           placeholder={field.placeholder}
                           onChange={(e) => handleFieldChange(field.key, e.target.value)}
-                          className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-bg text-sm text-slate-800 dark:text-dark-text placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+                          className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-bg text-sm text-slate-800 dark:text-dark-text placeholder:text-slate-400 dark:placeholder:text-slate-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:border-transparent transition-[transform,opacity,color,background-color,border-color,box-shadow]"
                         />
                       )}
                     </div>
@@ -249,7 +249,7 @@ export default function EditMetadata() {
                 processing={task.processing}
                 disabled={!isDirty}
                 label={`Save & ${output.deliveryWord} PDF`}
-                processingLabel="Saving..."
+                processingLabel="Saving…"
               />
 
               {saved && (

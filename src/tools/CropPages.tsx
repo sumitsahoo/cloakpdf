@@ -171,7 +171,7 @@ export default function CropPages() {
   }, [pdf.file, applyToAll, selectedPages, task, output]);
 
   const inputClass =
-    "w-full border border-slate-300 dark:border-dark-border rounded-lg px-3 py-2 text-sm bg-white dark:bg-dark-surface text-slate-800 dark:text-dark-text focus:outline-none focus:ring-2 focus:ring-primary-500";
+    "w-full border border-slate-300 dark:border-dark-border rounded-lg px-3 py-2 text-sm bg-white dark:bg-dark-surface text-slate-800 dark:text-dark-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500";
 
   // Suppress unused ref warning — it's used for layout
   useEffect(() => void previewRef.current, []);
@@ -268,6 +268,7 @@ export default function CropPages() {
                         <input
                           id="crop-all"
                           type="number"
+                          inputMode="numeric"
                           min={0}
                           step={1}
                           value={allSides}
@@ -292,6 +293,7 @@ export default function CropPages() {
                           <input
                             id="crop-top"
                             type="number"
+                            inputMode="numeric"
                             min={0}
                             step={1}
                             value={margins.top}
@@ -313,6 +315,7 @@ export default function CropPages() {
                             <input
                               id="crop-left"
                               type="number"
+                              inputMode="numeric"
                               min={0}
                               step={1}
                               value={margins.left}
@@ -332,6 +335,7 @@ export default function CropPages() {
                             <input
                               id="crop-right"
                               type="number"
+                              inputMode="numeric"
                               min={0}
                               step={1}
                               value={margins.right}
@@ -353,6 +357,7 @@ export default function CropPages() {
                           <input
                             id="crop-bottom"
                             type="number"
+                            inputMode="numeric"
                             min={0}
                             step={1}
                             value={margins.bottom}
@@ -482,7 +487,14 @@ export default function CropPages() {
                       ref={previewRef}
                       className="relative rounded-xl overflow-hidden border border-slate-200 dark:border-dark-border"
                     >
-                      <img src={firstThumb} alt="Page preview" className="w-full block" />
+                      <img
+                        src={firstThumb}
+                        alt="Page preview"
+                        width="800"
+                        height="1131"
+                        decoding="async"
+                        className="w-full block"
+                      />
                       {overlay && (
                         <>
                           {/* Top mask */}

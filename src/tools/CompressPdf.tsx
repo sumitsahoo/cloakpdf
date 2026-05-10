@@ -117,7 +117,7 @@ export default function CompressPdf() {
                     <button
                       key={opt.value}
                       onClick={() => setQuality(opt.value)}
-                      className={`p-3 rounded-xl border-2 text-left transition-all duration-150 ${
+                      className={`p-3 rounded-xl border-2 text-left transition-[transform,opacity,color,background-color,border-color,box-shadow] duration-150 ${
                         quality === opt.value
                           ? "border-primary-500 bg-primary-50 dark:bg-primary-900/30 ring-1 ring-primary-300 dark:ring-primary-700"
                           : "border-slate-200 dark:border-dark-border bg-white dark:bg-dark-surface hover:border-slate-300 dark:hover:border-slate-500 hover:bg-slate-50 dark:hover:bg-dark-surface-alt"
@@ -179,7 +179,7 @@ export default function CompressPdf() {
                 onClick={handleCompress}
                 processing={processing}
                 label={`Compress & ${output.deliveryWord}`}
-                processingLabel="Compressing... (this may take a moment)"
+                processingLabel="Compressing… (this may take a moment)"
               />
             </div>
           ) : (

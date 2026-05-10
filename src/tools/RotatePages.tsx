@@ -154,7 +154,7 @@ export default function RotatePages() {
               onClick={handleApply}
               processing={task.processing}
               label={`Apply Rotations & ${output.deliveryWord}`}
-              processingLabel="Applying..."
+              processingLabel="Applying…"
             />
           )}
         </>
