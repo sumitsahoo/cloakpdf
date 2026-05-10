@@ -397,7 +397,7 @@ export default function ComparePdf() {
                 </div>
                 <div className="w-full bg-slate-200 dark:bg-dark-border rounded-full h-2">
                   <div
-                    className="bg-primary-600 h-2 rounded-full transition-all"
+                    className="bg-primary-600 h-2 rounded-full transition-[width]"
                     style={{ width: `${(progress.done / progress.total) * 100}%` }}
                   />
                 </div>
@@ -453,7 +453,7 @@ export default function ComparePdf() {
           <button
             type="button"
             onClick={() => setViewMode("side-by-side")}
-            className={`flex items-center gap-1.5 rounded-lg py-1.5 px-3 text-sm transition-all duration-150 ${
+            className={`flex items-center gap-1.5 rounded-lg py-1.5 px-3 text-sm transition-[transform,opacity,color,background-color,border-color,box-shadow] duration-150 ${
               viewMode === "side-by-side"
                 ? "font-semibold text-white bg-primary-600 shadow-sm"
                 : "font-medium text-slate-500 dark:text-dark-text-muted hover:text-slate-700 dark:hover:text-dark-text hover:bg-white/60 dark:hover:bg-dark-surface-alt"
@@ -465,7 +465,7 @@ export default function ComparePdf() {
           <button
             type="button"
             onClick={() => setViewMode("diff-overlay")}
-            className={`flex items-center gap-1.5 rounded-lg py-1.5 px-3 text-sm transition-all duration-150 ${
+            className={`flex items-center gap-1.5 rounded-lg py-1.5 px-3 text-sm transition-[transform,opacity,color,background-color,border-color,box-shadow] duration-150 ${
               viewMode === "diff-overlay"
                 ? "font-semibold text-white bg-primary-600 shadow-sm"
                 : "font-medium text-slate-500 dark:text-dark-text-muted hover:text-slate-700 dark:hover:text-dark-text hover:bg-white/60 dark:hover:bg-dark-surface-alt"

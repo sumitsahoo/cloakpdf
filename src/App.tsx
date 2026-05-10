@@ -150,7 +150,7 @@ function HomeScreen({ onSelectTool, onOpenWorkflows }: HomeScreenProps) {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
           <div className="lg:col-span-7">
             <h1
-              className="text-[34px] sm:text-[44px] lg:text-[52px] xl:text-[58px] font-semibold text-slate-900 dark:text-dark-text tracking-[-0.03em] leading-[1.05] m-0 animate-fade-in-up"
+              className="text-[34px] sm:text-[44px] lg:text-[52px] xl:text-[58px] font-semibold text-slate-900 dark:text-dark-text tracking-[-0.03em] leading-[1.05] m-0 text-balance animate-fade-in-up"
               style={{ animationDelay: "0ms" }}
             >
               PDF tools that{" "}
@@ -197,19 +197,20 @@ function HomeScreen({ onSelectTool, onOpenWorkflows }: HomeScreenProps) {
           <div className="relative flex items-center w-full rounded-2xl bg-white/90 dark:bg-dark-surface/90 backdrop-blur-sm border border-slate-200 dark:border-dark-border shadow-sm hover:border-slate-300 dark:hover:border-dark-border focus-within:border-primary-300 dark:focus-within:border-primary-600 focus-within:shadow-md transition-[border-color,box-shadow] duration-200">
             <span
               aria-hidden="true"
-              onClick={() => searchInputRef.current?.focus()}
-              className="shrink-0 ml-2 my-2 w-10 h-10 flex items-center justify-center text-slate-700 dark:text-dark-text cursor-text"
+              className="shrink-0 ml-2 my-2 w-10 h-10 flex items-center justify-center text-slate-700 dark:text-dark-text"
             >
               <Search className="w-5 h-5" strokeWidth={2.25} />
             </span>
 
             <input
               ref={searchInputRef}
-              type="text"
+              type="search"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search tools…"
-              className="flex-1 min-w-0 bg-transparent pl-3 pr-2 py-4 text-slate-800 dark:text-dark-text placeholder-slate-400 dark:placeholder-dark-text-muted focus:outline-none text-[15.5px]"
+              autoComplete="off"
+              spellCheck={false}
+              className="flex-1 min-w-0 bg-transparent pl-3 pr-2 py-4 text-slate-800 dark:text-dark-text placeholder-slate-400 dark:placeholder-dark-text-muted focus-visible:outline-none text-[15.5px]"
               aria-label="Search PDF tools"
             />
 
@@ -228,7 +229,7 @@ function HomeScreen({ onSelectTool, onOpenWorkflows }: HomeScreenProps) {
                 </button>
               ) : (
                 <kbd className="hidden sm:inline-flex items-center gap-0.5 px-2 py-1 rounded-md bg-slate-50 dark:bg-dark-surface-alt border border-slate-200 dark:border-dark-border text-[11px] font-medium text-slate-500 dark:text-dark-text-muted font-mono tabular-nums tracking-tight select-none">
-                  {isMac ? "⌘" : "Ctrl"}K
+                  {isMac ? "⌘ K" : "Ctrl K"}
                 </kbd>
               )}
             </div>
@@ -236,7 +237,10 @@ function HomeScreen({ onSelectTool, onOpenWorkflows }: HomeScreenProps) {
         </div>
 
         {searchQuery && (
-          <p className="text-center text-sm text-slate-400 dark:text-dark-text-muted mt-3 animate-fade-in-up">
+          <p
+            className="text-center text-sm text-slate-400 dark:text-dark-text-muted mt-3 animate-fade-in-up"
+            aria-live="polite"
+          >
             {filteredTools.length} {filteredTools.length === 1 ? "tool" : "tools"} found
           </p>
         )}
@@ -274,7 +278,7 @@ function HomeScreen({ onSelectTool, onOpenWorkflows }: HomeScreenProps) {
                       · {catTools.length}
                     </span>
                   </div>
-                  <h2 className="text-[22px] sm:text-[26px] font-semibold tracking-[-0.02em] leading-[1.2] text-slate-900 dark:text-dark-text m-0">
+                  <h2 className="text-[22px] sm:text-[26px] font-semibold tracking-[-0.02em] leading-[1.2] text-slate-900 dark:text-dark-text m-0 text-balance">
                     {cat.description}.
                   </h2>
                 </div>
@@ -297,7 +301,7 @@ function HomeScreen({ onSelectTool, onOpenWorkflows }: HomeScreenProps) {
                 <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-primary-600 dark:text-primary-400 mb-2.5">
                   Why CloakPDF
                 </div>
-                <h2 className="text-[24px] sm:text-[30px] md:text-[36px] font-semibold tracking-[-0.02em] leading-[1.15] text-slate-900 dark:text-dark-text m-0">
+                <h2 className="text-[24px] sm:text-[30px] md:text-[36px] font-semibold tracking-[-0.02em] leading-[1.15] text-slate-900 dark:text-dark-text m-0 text-balance">
                   Everything you need, nothing you don&rsquo;t.
                 </h2>
                 <p className="text-slate-500 dark:text-dark-text-muted text-[14px] sm:text-[15.5px] leading-[1.55] max-w-140 mx-auto mt-3">
@@ -339,7 +343,7 @@ function HomeScreen({ onSelectTool, onOpenWorkflows }: HomeScreenProps) {
                 />
                 <FeatureItem
                   icon={<Sparkles className="w-5 h-5" />}
-                  title="35+ PDF tools"
+                  title={`${tools.length}+ PDF tools`}
                   description="Merge, split, sign, redact, OCR, compress, convert — one workspace for every PDF chore."
                 />
                 <FeatureItem

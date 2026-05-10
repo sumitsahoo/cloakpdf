@@ -183,10 +183,11 @@ export default function AddBookmarks() {
                               placeholder={`Bookmark ${idx + 1}`}
                               onChange={(e) => updateRow(bm.id, "title", e.target.value)}
                               onFocus={() => jumpToBookmark(bm.pageNumber)}
-                              className="w-full px-3 py-1.5 border border-slate-200 dark:border-dark-border dark:bg-dark-bg dark:text-dark-text rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                              className="w-full px-3 py-1.5 border border-slate-200 dark:border-dark-border dark:bg-dark-bg dark:text-dark-text rounded-lg text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:border-transparent"
                             />
                             <input
                               type="number"
+                              inputMode="numeric"
                               min={1}
                               max={pageCount || 9999}
                               value={bm.pageNumber}
@@ -196,7 +197,7 @@ export default function AddBookmarks() {
                               }}
                               onFocus={() => jumpToBookmark(bm.pageNumber)}
                               aria-label={`Target page for bookmark ${idx + 1}`}
-                              className={`w-20 px-2 py-1.5 border rounded-lg text-sm text-center focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-colors ${
+                              className={`w-20 px-2 py-1.5 border rounded-lg text-sm text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:border-transparent transition-colors ${
                                 isPreviewing
                                   ? "border-primary-400 dark:border-primary-500 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-200"
                                   : "border-slate-200 dark:border-dark-border dark:bg-dark-bg dark:text-dark-text"
@@ -287,7 +288,7 @@ export default function AddBookmarks() {
                 processing={task.processing}
                 disabled={task.processing || validCount === 0}
                 label={`Add ${validCount} Bookmark${validCount !== 1 ? "s" : ""} & ${output.deliveryWord}`}
-                processingLabel="Adding Bookmarks..."
+                processingLabel="Adding Bookmarks…"
               />
 
               {done && (

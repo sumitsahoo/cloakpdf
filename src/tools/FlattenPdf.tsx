@@ -196,7 +196,7 @@ export default function FlattenPdf() {
                 onClick={handleFlatten}
                 processing={task.processing}
                 label={`Flatten & ${output.deliveryWord}`}
-                processingLabel="Flattening..."
+                processingLabel="Flattening…"
               />
             </div>
           ) : (

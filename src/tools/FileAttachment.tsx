@@ -263,7 +263,7 @@ export default function FileAttachment() {
                 processing={processing}
                 disabled={!dirty || processing}
                 label={`${output.deliveryWord} PDF`}
-                processingLabel="Processing..."
+                processingLabel="Processing…"
               />
             </div>
           )}

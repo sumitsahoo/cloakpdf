@@ -648,7 +648,7 @@ export default function AddSignature() {
               (!applyToAllPages && thumbnails.length > 1 && selectedPages.size === 0)
             }
             label={`Apply Signature & ${output.deliveryWord}`}
-            processingLabel="Applying..."
+            processingLabel="Applying…"
           />
         </>
       )}

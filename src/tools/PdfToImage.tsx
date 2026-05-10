@@ -165,7 +165,7 @@ export default function PdfToImage() {
                         <button
                           key={f}
                           onClick={() => setFormat(f)}
-                          className={`flex-1 rounded-lg py-1.5 px-3 text-sm transition-all duration-150 ${
+                          className={`flex-1 rounded-lg py-1.5 px-3 text-sm transition-[transform,opacity,color,background-color,border-color,box-shadow] duration-150 ${
                             format === f
                               ? "font-semibold text-white bg-primary-600 shadow-sm"
                               : "font-medium text-slate-500 dark:text-dark-text-muted hover:text-slate-700 dark:hover:text-dark-text hover:bg-white/60 dark:hover:bg-dark-surface-alt"
@@ -187,7 +187,7 @@ export default function PdfToImage() {
                         <button
                           key={d}
                           onClick={() => setDpi(d)}
-                          className={`flex-1 rounded-lg py-1.5 px-3 text-sm transition-all duration-150 ${
+                          className={`flex-1 rounded-lg py-1.5 px-3 text-sm transition-[transform,opacity,color,background-color,border-color,box-shadow] duration-150 ${
                             dpi === d
                               ? "font-semibold text-white bg-primary-600 shadow-sm"
                               : "font-medium text-slate-500 dark:text-dark-text-muted hover:text-slate-700 dark:hover:text-dark-text hover:bg-white/60 dark:hover:bg-dark-surface-alt"

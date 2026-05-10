@@ -80,7 +80,7 @@ interface DateTimeInputProps {
 }
 
 const timeSelectClass =
-  "px-2 py-1 rounded-md border border-slate-200 dark:border-dark-border bg-white dark:bg-dark-bg text-xs text-slate-800 dark:text-dark-text focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all appearance-none cursor-pointer";
+  "px-2 py-1 rounded-md border border-slate-200 dark:border-dark-border bg-white dark:bg-dark-bg text-xs text-slate-800 dark:text-dark-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:border-transparent transition-[transform,opacity,color,background-color,border-color,box-shadow] appearance-none cursor-pointer";
 
 export function DateTimeInput({ id, value, onChange }: DateTimeInputProps) {
   const [open, setOpen] = useState(false);
@@ -367,7 +367,7 @@ export function DateTimeInput({ id, value, onChange }: DateTimeInputProps) {
           setOpen((v) => !v);
           setShowYearPicker(false);
         }}
-        className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-bg text-sm text-left focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all flex items-center justify-between gap-2"
+        className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-dark-border bg-slate-50 dark:bg-dark-bg text-sm text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:border-transparent transition-[transform,opacity,color,background-color,border-color,box-shadow] flex items-center justify-between gap-2"
       >
         <span
           className={
@@ -399,7 +399,7 @@ export function DateTimeInput({ id, value, onChange }: DateTimeInputProps) {
           role="dialog"
           aria-modal="true"
           aria-label="Date and time picker"
-          className={`${popoverAnimClass} absolute z-50 w-72 p-3 bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border shadow-xl space-y-2 ${popoverPositionClass}`}
+          className={`${popoverAnimClass} absolute z-50 w-72 p-3 bg-white dark:bg-dark-surface rounded-xl border border-slate-200 dark:border-dark-border shadow-xl space-y-2 overscroll-contain ${popoverPositionClass}`}
         >
           {/* Month/year navigation header */}
           <div className="flex items-center justify-between gap-1">

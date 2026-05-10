@@ -350,7 +350,7 @@ export default function StampPdf() {
                       key={style}
                       type="button"
                       onClick={() => setStampStyle(style)}
-                      className={`flex-1 rounded-lg py-1.5 px-3 text-sm transition-all duration-150 ${
+                      className={`flex-1 rounded-lg py-1.5 px-3 text-sm transition-[transform,opacity,color,background-color,border-color,box-shadow] duration-150 ${
                         stampStyle === style
                           ? "font-semibold text-white bg-primary-600 shadow-sm"
                           : "font-medium text-slate-500 dark:text-dark-text-muted hover:text-slate-700 dark:hover:text-dark-text hover:bg-white/60 dark:hover:bg-dark-surface-alt"
@@ -394,8 +394,8 @@ export default function StampPdf() {
                       type="text"
                       value={customText}
                       onChange={(e) => setCustomText(e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-300 dark:border-dark-border dark:bg-dark-surface dark:text-dark-text rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                      placeholder="Enter watermark text"
+                      className="w-full px-3 py-2 border border-slate-300 dark:border-dark-border dark:bg-dark-surface dark:text-dark-text rounded-lg text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:border-transparent"
+                      placeholder="Enter watermark text…"
                     />
                   </div>
 
@@ -447,7 +447,7 @@ export default function StampPdf() {
                           key={stamp.id}
                           type="button"
                           onClick={() => setSelectedStamp(stamp)}
-                          className={`px-3 py-2 rounded-lg text-xs font-bold border-2 transition-all ${stamp.bg} ${
+                          className={`px-3 py-2 rounded-lg text-xs font-bold border-2 transition-[transform,opacity,color,background-color,border-color,box-shadow] ${stamp.bg} ${
                             selectedStamp.id === stamp.id
                               ? "border-primary-500 ring-2 ring-primary-200 dark:ring-primary-800"
                               : "border-transparent"
@@ -663,7 +663,7 @@ export default function StampPdf() {
                 ? `Apply Watermark & ${output.deliveryWord}`
                 : `Apply "${selectedStamp.label}" Stamp & ${output.deliveryWord}`
             }
-            processingLabel="Applying..."
+            processingLabel="Applying…"
           />
         </>
       )}

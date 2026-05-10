@@ -157,7 +157,7 @@ export function ToolPickerModal({ onPick, onClose, alreadyAdded }: ToolPickerMod
         role="dialog"
         aria-modal="true"
         aria-label="Pick a tool"
-        className="relative flex flex-col w-full sm:w-[min(720px,100%)] lg:w-[min(820px,100%)] max-h-[82svh] sm:max-h-[min(720px,calc(100svh-64px))] overflow-hidden rounded-t-2xl sm:rounded-2xl border border-slate-200/80 dark:border-dark-border bg-white/85 dark:bg-dark-surface/85 backdrop-blur-xl shadow-2xl animate-slide-up-in"
+        className="relative flex flex-col w-full sm:w-[min(720px,100%)] lg:w-[min(820px,100%)] max-h-[82svh] sm:max-h-[min(720px,calc(100svh-64px))] overflow-hidden rounded-t-2xl sm:rounded-2xl border border-slate-200/80 dark:border-dark-border bg-white/85 dark:bg-dark-surface/85 backdrop-blur-xl shadow-2xl animate-slide-up-in overscroll-contain"
       >
         <div
           onTouchStart={onHandleTouchStart}
@@ -203,7 +203,9 @@ export function ToolPickerModal({ onPick, onClose, alreadyAdded }: ToolPickerMod
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search tools…"
               aria-label="Search tools"
-              className="w-full h-10 pl-9 pr-9 rounded-lg border border-slate-200 dark:border-dark-border bg-white dark:bg-dark-surface text-[13.5px] text-slate-800 dark:text-dark-text placeholder:text-slate-400 dark:placeholder:text-dark-text-muted outline-none transition-[border-color,box-shadow] duration-150 focus:border-primary-300 dark:focus:border-primary-600 focus:ring-2 focus:ring-primary-400/30"
+              className="w-full h-10 pl-9 pr-9 rounded-lg border border-slate-200 dark:border-dark-border bg-white dark:bg-dark-surface text-[13.5px] text-slate-800 dark:text-dark-text placeholder:text-slate-400 dark:placeholder:text-dark-text-muted outline-none transition-[border-color,box-shadow] duration-150 focus-visible:border-primary-300 dark:focus-visible:border-primary-600 focus-visible:ring-2 focus-visible:ring-primary-400/30"
+              autoComplete="off"
+              spellCheck={false}
             />
             {query && (
               <button

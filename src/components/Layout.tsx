@@ -13,6 +13,7 @@
 import { ArrowUpRight, ChevronLeft, Scale, ShieldCheck } from "lucide-react";
 import { type ReactNode, useEffect, useState } from "react";
 import { GRAINIENT_DARK, GRAINIENT_LIGHT, GRAINIENT_MOTION } from "../config/grainient";
+import { tools } from "../config/tool-registry.ts";
 import { Grainient } from "./Grainient";
 
 declare const __APP_VERSION__: string;
@@ -76,6 +77,13 @@ export function Layout({ children, onHome, showBack, onPrivacy }: LayoutProps) {
           with the iOS URL-bar mask. */}
       <Grainient className="grainient-fixed" {...GRAINIENT_MOTION} {...palette} />
 
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-200 focus:rounded-lg focus:bg-primary-600 focus:px-3 focus:py-2 focus:text-sm focus:font-semibold focus:text-white focus:shadow-lg"
+      >
+        Skip to main content
+      </a>
+
       <div className="relative flex flex-col flex-1 min-h-0">
         {/* Fixed top header bar — full-width glassy bar pinned to the top
             of the viewport, sitting above the aurora. The wrapping
@@ -98,6 +106,7 @@ export function Layout({ children, onHome, showBack, onPrivacy }: LayoutProps) {
               <button
                 type="button"
                 onClick={onHome}
+                aria-label="CloakPDF home"
                 className="flex items-center gap-2.5 hover:opacity-90 transition-opacity"
               >
                 {/* Circular favicon.svg (not the full-bleed logo.svg) so
@@ -106,9 +115,14 @@ export function Layout({ children, onHome, showBack, onPrivacy }: LayoutProps) {
                 <img
                   src="/icons/favicon.svg"
                   alt="CloakPDF logo"
+                  width="40"
+                  height="40"
                   className="w-10 h-10 drop-shadow-sm"
                 />
-                <span className="text-[19px] font-semibold tracking-[-0.025em] text-slate-900 dark:text-dark-text">
+                <span
+                  translate="no"
+                  className="text-[19px] font-semibold tracking-[-0.025em] text-slate-900 dark:text-dark-text"
+                >
                   Cloak<span className="text-primary-600 dark:text-primary-400">PDF</span>
                 </span>
               </button>
@@ -140,7 +154,11 @@ export function Layout({ children, onHome, showBack, onPrivacy }: LayoutProps) {
           </div>
         </header>
 
-        <main className="relative z-10 flex-1 max-w-6xl mx-auto px-4 sm:px-6 py-8 w-full">
+        <main
+          id="main"
+          tabIndex={-1}
+          className="relative z-10 flex-1 max-w-6xl mx-auto px-4 sm:px-6 py-8 w-full scroll-mt-20"
+        >
           {children}
         </main>
 
@@ -178,8 +196,8 @@ export function Layout({ children, onHome, showBack, onPrivacy }: LayoutProps) {
                     <div className="text-[10px] uppercase tracking-[0.16em] font-medium text-primary-600 dark:text-primary-400">
                       How it works
                     </div>
-                    <h3 className="mt-2 text-lg sm:text-xl font-semibold tracking-tight text-slate-900 dark:text-dark-text leading-[1.2]">
-                      From upload to download, in three steps.
+                    <h3 className="mt-2 text-lg sm:text-xl font-semibold tracking-tight text-slate-900 dark:text-dark-text leading-[1.2] text-balance">
+                      From drop to download, in three steps.
                     </h3>
                   </div>
                   <ol className="relative mt-4 space-y-3 list-none p-0 m-0">
@@ -187,8 +205,7 @@ export function Layout({ children, onHome, showBack, onPrivacy }: LayoutProps) {
                       {
                         n: 1,
                         title: "Pick a tool",
-                        description:
-                          "Browse 35+ PDF utilities organised by what you want to do — all in one place.",
+                        description: `Browse ${tools.length}+ PDF utilities organised by what you want to do — all in one place.`,
                       },
                       {
                         n: 2,
@@ -245,13 +262,19 @@ export function Layout({ children, onHome, showBack, onPrivacy }: LayoutProps) {
                           src="/icons/cloakyard.svg"
                           alt=""
                           aria-hidden="true"
+                          width="28"
+                          height="28"
+                          loading="lazy"
                           className="w-7 h-7 drop-shadow-sm"
                         />
                         <span className="text-[10px] uppercase tracking-[0.16em] font-medium text-slate-400 dark:text-dark-text-muted">
                           Part of
                         </span>
                       </div>
-                      <span className="shrink-0 inline-flex items-center rounded-full bg-slate-100/80 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 px-2 py-0.5 font-mono text-[10px] tabular-nums tracking-tight text-slate-500 dark:text-dark-text-muted">
+                      <span
+                        translate="no"
+                        className="shrink-0 inline-flex items-center rounded-full bg-slate-100/80 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 px-2 py-0.5 font-mono text-[10px] tabular-nums tracking-tight text-slate-500 dark:text-dark-text-muted"
+                      >
                         CloakPDF v{__APP_VERSION__}
                       </span>
                     </div>

@@ -273,7 +273,7 @@ function Stepper({ steps, currentIndex, done }: StepperProps) {
         </div>
         <div className="h-1.5 bg-slate-100 dark:bg-dark-surface-alt rounded-full overflow-hidden">
           <div
-            className={`h-full rounded-full transition-all duration-300 ${
+            className={`h-full rounded-full transition-[transform,opacity,color,background-color,border-color,box-shadow] duration-300 ${
               done
                 ? "bg-emerald-500"
                 : "bg-linear-to-r from-primary-400 to-primary-600 dark:from-primary-500 dark:to-primary-400"

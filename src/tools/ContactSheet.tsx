@@ -265,7 +265,7 @@ export default function ContactSheet() {
                     <button
                       key={opt.value}
                       onClick={() => setGrid(opt.value)}
-                      className={`flex-1 rounded-lg py-1.5 px-3 text-sm transition-all duration-150 ${
+                      className={`flex-1 rounded-lg py-1.5 px-3 text-sm transition-[transform,opacity,color,background-color,border-color,box-shadow] duration-150 ${
                         grid === opt.value
                           ? "font-semibold text-white bg-primary-600 shadow-sm"
                           : "font-medium text-slate-500 dark:text-dark-text-muted hover:text-slate-700 dark:hover:text-dark-text hover:bg-white/60 dark:hover:bg-dark-surface-alt"
@@ -294,7 +294,7 @@ export default function ContactSheet() {
                     <button
                       key={f}
                       onClick={() => setOutput(f)}
-                      className={`flex-1 rounded-lg py-1.5 px-3 text-sm transition-all duration-150 ${
+                      className={`flex-1 rounded-lg py-1.5 px-3 text-sm transition-[transform,opacity,color,background-color,border-color,box-shadow] duration-150 ${
                         output === f
                           ? "font-semibold text-white bg-primary-600 shadow-sm"
                           : "font-medium text-slate-500 dark:text-dark-text-muted hover:text-slate-700 dark:hover:text-dark-text hover:bg-white/60 dark:hover:bg-dark-surface-alt"
@@ -317,7 +317,7 @@ export default function ContactSheet() {
                     <button
                       key={String(val)}
                       onClick={() => setShowLabels(val)}
-                      className={`flex-1 rounded-lg py-1.5 px-3 text-sm transition-all duration-150 ${
+                      className={`flex-1 rounded-lg py-1.5 px-3 text-sm transition-[transform,opacity,color,background-color,border-color,box-shadow] duration-150 ${
                         showLabels === val
                           ? "font-semibold text-white bg-primary-600 shadow-sm"
                           : "font-medium text-slate-500 dark:text-dark-text-muted hover:text-slate-700 dark:hover:text-dark-text hover:bg-white/60 dark:hover:bg-dark-surface-alt"

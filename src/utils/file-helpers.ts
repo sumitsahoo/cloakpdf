@@ -86,18 +86,25 @@ export function naturalCompare(a: string, b: string): number {
   return collator.compare(a, b);
 }
 
+const FILE_SIZE_UNITS = ["byte", "kilobyte", "megabyte", "gigabyte"] as const;
+
+const fileSizeFormatters = FILE_SIZE_UNITS.map(
+  (unit) =>
+    new Intl.NumberFormat(undefined, {
+      style: "unit",
+      unit,
+      unitDisplay: "short",
+      maximumFractionDigits: 1,
+    }),
+);
+
 /**
- * Format a byte count into a human-readable string (e.g. "1.3 MB").
- *
- * Uses base-1024 units: B → KB → MB → GB.
- *
- * @param bytes - The number of bytes to format.
- * @returns A formatted string with one decimal place.
+ * Format a byte count into a locale-aware human-readable string (e.g. "1.3 MB").
+ * Uses base-1024 scaling: B → KB → MB → GB.
  */
 export function formatFileSize(bytes: number): string {
-  if (bytes === 0) return "0 B";
+  if (bytes === 0) return fileSizeFormatters[0].format(0);
   const k = 1024;
-  const sizes = ["B", "KB", "MB", "GB"];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return `${parseFloat((bytes / k ** i).toFixed(1))} ${sizes[i]}`;
+  const i = Math.min(FILE_SIZE_UNITS.length - 1, Math.floor(Math.log(bytes) / Math.log(k)));
+  return fileSizeFormatters[i].format(bytes / k ** i);
 }

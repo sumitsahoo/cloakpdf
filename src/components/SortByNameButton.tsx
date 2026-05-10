@@ -28,7 +28,7 @@ export function SortByNameButton({ mode, onChange }: SortByNameButtonProps) {
               type="button"
               aria-pressed={active}
               onClick={() => onChange(value)}
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md transition-all duration-150 ${
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md transition-[transform,opacity,color,background-color,border-color,box-shadow] duration-150 ${
                 active
                   ? "bg-primary-600 text-white font-semibold shadow-sm"
                   : "text-slate-500 dark:text-dark-text-muted hover:text-slate-700 dark:hover:text-dark-text"

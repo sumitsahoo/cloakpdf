@@ -132,7 +132,7 @@ export function WorkflowBuilder({ workflowId, onCancel, onSaved }: WorkflowBuild
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Clean & ship"
             maxLength={60}
-            className="mt-2 w-full px-4 py-2.5 rounded-xl bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border text-slate-800 dark:text-dark-text placeholder-slate-400 dark:placeholder-dark-text-muted shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-400/40 focus:border-primary-300 dark:focus:border-primary-600 transition-[border-color,box-shadow] duration-200 text-[15px]"
+            className="mt-2 w-full px-4 py-2.5 rounded-xl bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border text-slate-800 dark:text-dark-text placeholder-slate-400 dark:placeholder-dark-text-muted shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400/40 focus:border-primary-300 dark:focus:border-primary-600 transition-[border-color,box-shadow] duration-200 text-[15px]"
           />
           <span className="mt-1.5 flex items-center justify-between gap-2 text-[11.5px] text-slate-400 dark:text-dark-text-muted">
             <span>Used in the workflows list and the run header.</span>

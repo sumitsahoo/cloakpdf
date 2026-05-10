@@ -48,7 +48,7 @@ const ImageRow = memo(function ImageRow({
   return (
     <div
       {...(isSortActive ? {} : getItemProps(slot))}
-      className={`flex items-center gap-3 px-4 py-3 select-none transition-all duration-200 ${
+      className={`flex items-center gap-3 px-4 py-3 select-none transition-[transform,opacity,color,background-color,border-color,box-shadow] duration-200 ${
         isSortActive ? "cursor-default" : "cursor-grab active:cursor-grabbing"
       } ${isSource ? "scale-95 opacity-30" : "scale-100 opacity-100"}`}
     >
@@ -191,13 +191,13 @@ export default function ImagesToPdf() {
           drag.setDragIndex(null);
           drag.setDragOverSlot(null);
         }}
-        className={`flex items-center px-4 transition-all duration-200 ${
+        className={`flex items-center px-4 transition-[transform,opacity,color,background-color,border-color,box-shadow] duration-200 ${
           isDragging && !isAdjacentToDrag ? (isActiveDrop ? "h-10" : "h-2") : "h-0"
         }`}
       >
         {isDragging && !isAdjacentToDrag && (
           <div
-            className={`w-full rounded-full transition-all duration-200 ${
+            className={`w-full rounded-full transition-[transform,opacity,color,background-color,border-color,box-shadow] duration-200 ${
               isActiveDrop ? "h-1 bg-primary-500" : "h-0.5 bg-primary-200 dark:bg-primary-800"
             }`}
           />
@@ -245,7 +245,7 @@ export default function ImagesToPdf() {
                   key={size}
                   type="button"
                   onClick={() => setPageSize(size)}
-                  className={`flex-1 rounded-lg py-1.5 px-3 text-sm transition-all duration-150 ${
+                  className={`flex-1 rounded-lg py-1.5 px-3 text-sm transition-[transform,opacity,color,background-color,border-color,box-shadow] duration-150 ${
                     pageSize === size
                       ? "font-semibold text-white bg-primary-600 shadow-sm"
                       : "font-medium text-slate-500 dark:text-dark-text-muted hover:text-slate-700 dark:hover:text-dark-text hover:bg-white/60 dark:hover:bg-dark-surface-alt"
@@ -297,7 +297,7 @@ export default function ImagesToPdf() {
             onClick={handleConvert}
             processing={task.processing}
             label={`Create PDF from ${images.length} Image${images.length > 1 ? "s" : ""}`}
-            processingLabel="Creating PDF..."
+            processingLabel="Creating PDF…"
           />
         </>
       )}

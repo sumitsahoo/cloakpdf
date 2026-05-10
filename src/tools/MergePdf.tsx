@@ -150,7 +150,7 @@ export default function MergePdf() {
           onClick={handleMerge}
           processing={task.processing}
           label={`Merge ${displayedFiles.length} Files`}
-          processingLabel="Merging..."
+          processingLabel="Merging…"
         />
       )}
 

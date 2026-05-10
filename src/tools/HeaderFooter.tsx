@@ -148,7 +148,7 @@ export default function HeaderFooter() {
   }, [pdf.file, options, task, output]);
 
   const slotClass =
-    "w-full border border-slate-300 dark:border-dark-border rounded-lg px-2.5 py-1.5 text-sm bg-white dark:bg-dark-surface text-slate-800 dark:text-dark-text focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-400 placeholder:text-slate-300 dark:placeholder:text-dark-text-muted transition-colors";
+    "w-full border border-slate-300 dark:border-dark-border rounded-lg px-2.5 py-1.5 text-sm bg-white dark:bg-dark-surface text-slate-800 dark:text-dark-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus:border-primary-400 placeholder:text-slate-300 dark:placeholder:text-dark-text-muted transition-colors";
 
   const makeInputProps = (field: keyof HeaderFooterOptions) => ({
     onFocus: (e: React.FocusEvent<HTMLInputElement>) => {

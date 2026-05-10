@@ -288,7 +288,7 @@ export default function FillPdfForm() {
                                     }))
                                   }
                                   rows={3}
-                                  className="w-full border border-slate-300 dark:border-dark-border rounded-lg px-3 py-2 text-sm bg-white dark:bg-dark-surface text-slate-800 dark:text-dark-text focus:outline-none focus:ring-2 focus:ring-primary-500 resize-none"
+                                  className="w-full border border-slate-300 dark:border-dark-border rounded-lg px-3 py-2 text-sm bg-white dark:bg-dark-surface text-slate-800 dark:text-dark-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 resize-none"
                                 />
                               ) : (
                                 <input
@@ -300,7 +300,7 @@ export default function FillPdfForm() {
                                       [field.name]: e.target.value,
                                     }))
                                   }
-                                  className="w-full border border-slate-300 dark:border-dark-border rounded-lg px-3 py-2 text-sm bg-white dark:bg-dark-surface text-slate-800 dark:text-dark-text focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                  className="w-full border border-slate-300 dark:border-dark-border rounded-lg px-3 py-2 text-sm bg-white dark:bg-dark-surface text-slate-800 dark:text-dark-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
                                 />
                               )}
                             </>
@@ -335,7 +335,7 @@ export default function FillPdfForm() {
                                     [field.name]: e.target.value,
                                   }))
                                 }
-                                className="w-full appearance-none border border-slate-300 dark:border-dark-border rounded-lg pl-3 pr-9 py-2 text-sm bg-white dark:bg-dark-surface text-slate-800 dark:text-dark-text focus:outline-none focus:ring-2 focus:ring-primary-500 cursor-pointer"
+                                className="w-full appearance-none border border-slate-300 dark:border-dark-border rounded-lg pl-3 pr-9 py-2 text-sm bg-white dark:bg-dark-surface text-slate-800 dark:text-dark-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 cursor-pointer"
                               >
                                 <option value="">— Select —</option>
                                 {field.options.map((opt) => (

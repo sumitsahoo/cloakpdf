@@ -162,11 +162,12 @@ export default function SplitPdf() {
                 <span className="text-sm text-slate-500 dark:text-dark-text-muted">Every</span>
                 <input
                   type="number"
+                  inputMode="numeric"
                   min={1}
                   max={thumbnails.length}
                   value={everyN}
                   onChange={(e) => setEveryN(Math.max(1, Number.parseInt(e.target.value, 10) || 1))}
-                  className="w-16 px-2 py-1.5 border border-slate-300 dark:border-dark-border dark:bg-dark-surface dark:text-dark-text rounded-lg text-sm text-center focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  className="w-16 px-2 py-1.5 border border-slate-300 dark:border-dark-border dark:bg-dark-surface dark:text-dark-text rounded-lg text-sm text-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:border-transparent"
                 />
                 <button
                   type="button"
@@ -235,7 +236,7 @@ export default function SplitPdf() {
               onClick={handleSplit}
               processing={task.processing}
               label={`Split into ${parts.length} Part${parts.length !== 1 ? "s" : ""} & Download`}
-              processingLabel="Splitting..."
+              processingLabel="Splitting…"
             />
           )}
         </>
