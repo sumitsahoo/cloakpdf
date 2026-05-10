@@ -193,8 +193,16 @@ export function Layout({ children, onHome, showBack, onPrivacy }: LayoutProps) {
                   }}
                 >
                   <div className="relative">
-                    <div className="text-xxs uppercase tracking-[0.16em] font-medium text-primary-600 dark:text-primary-400">
-                      How it works
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="text-xxs uppercase tracking-[0.16em] font-medium text-primary-600 dark:text-primary-400">
+                        How it works
+                      </div>
+                      <span
+                        translate="no"
+                        className="shrink-0 inline-flex items-center rounded-full bg-slate-100/80 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 px-2 py-0.5 font-mono text-xxs tabular-nums tracking-tight text-slate-500 dark:text-dark-text-muted"
+                      >
+                        v{__APP_VERSION__}
+                      </span>
                     </div>
                     <h3 className="mt-2 text-lg sm:text-xl font-semibold tracking-tight text-slate-900 dark:text-dark-text leading-[1.2] text-balance">
                       From drop to download, in three steps.
@@ -256,26 +264,18 @@ export function Layout({ children, onHome, showBack, onPrivacy }: LayoutProps) {
                   }}
                 >
                   <div className="relative">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-2.5">
-                        <img
-                          src="/icons/cloakyard.svg"
-                          alt=""
-                          aria-hidden="true"
-                          width="28"
-                          height="28"
-                          loading="lazy"
-                          className="w-7 h-7 drop-shadow-sm"
-                        />
-                        <span className="text-xxs uppercase tracking-[0.16em] font-medium text-slate-400 dark:text-dark-text-muted">
-                          Part of
-                        </span>
-                      </div>
-                      <span
-                        translate="no"
-                        className="shrink-0 inline-flex items-center rounded-full bg-slate-100/80 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 px-2 py-0.5 font-mono text-xxs tabular-nums tracking-tight text-slate-500 dark:text-dark-text-muted"
-                      >
-                        CloakPDF v{__APP_VERSION__}
+                    <div className="flex items-center gap-2.5">
+                      <img
+                        src="/icons/cloakyard.svg"
+                        alt=""
+                        aria-hidden="true"
+                        width="28"
+                        height="28"
+                        loading="lazy"
+                        className="w-7 h-7 drop-shadow-sm"
+                      />
+                      <span className="text-xxs uppercase tracking-[0.16em] font-medium text-slate-400 dark:text-dark-text-muted">
+                        Part of
                       </span>
                     </div>
                     <h4 className="mt-2.5 text-lg font-semibold tracking-tight text-slate-900 dark:text-dark-text">
