@@ -8,7 +8,7 @@
  */
 
 import { GripVertical, X } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { ActionButton } from "../components/ActionButton.tsx";
 import { AlertBox } from "../components/AlertBox.tsx";
 import { FileDropZone } from "../components/FileDropZone.tsx";
@@ -16,7 +16,7 @@ import { type SortMode, SortByNameButton } from "../components/SortByNameButton.
 import { TouchDragOverlay } from "../components/TouchDragOverlay.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { useAsyncProcess } from "../hooks/useAsyncProcess.ts";
-import { useSortableDrag } from "../hooks/useSortableDrag.ts";
+import { type SortableDrag, useSortableDrag } from "../hooks/useSortableDrag.ts";
 import { downloadPdf, formatFileSize, naturalCompare } from "../utils/file-helpers.ts";
 import { imagesToPdf } from "../utils/pdf-operations.ts";
 
@@ -28,15 +28,77 @@ interface ImageItem {
   preview: string;
 }
 
+interface ImageRowProps {
+  item: ImageItem;
+  slot: number;
+  isSortActive: boolean;
+  isSource: boolean;
+  getItemProps: SortableDrag["getItemProps"];
+  onRemove: (id: string) => void;
+}
+
+const ImageRow = memo(function ImageRow({
+  item,
+  slot,
+  isSortActive,
+  isSource,
+  getItemProps,
+  onRemove,
+}: ImageRowProps) {
+  return (
+    <div
+      {...(isSortActive ? {} : getItemProps(slot))}
+      className={`flex items-center gap-3 px-4 py-3 select-none transition-all duration-200 ${
+        isSortActive ? "cursor-default" : "cursor-grab active:cursor-grabbing"
+      } ${isSource ? "scale-95 opacity-30" : "scale-100 opacity-100"}`}
+    >
+      <GripVertical
+        className={`w-4 h-4 shrink-0 ${
+          isSortActive
+            ? "text-slate-200 dark:text-dark-border opacity-50"
+            : "text-slate-300 dark:text-dark-text-muted"
+        }`}
+      />
+      <span className="w-7 h-7 bg-primary-50 text-primary-600 rounded-full flex items-center justify-center text-sm font-medium shrink-0">
+        {slot + 1}
+      </span>
+      <img
+        src={item.preview}
+        alt={item.file.name}
+        loading="lazy"
+        decoding="async"
+        className="w-12 h-12 object-cover rounded border border-slate-200 dark:border-dark-border"
+        draggable={false}
+      />
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-slate-700 dark:text-dark-text truncate">
+          {item.file.name}
+        </p>
+        <p className="text-xs text-slate-400 dark:text-dark-text-muted">
+          {formatFileSize(item.file.size)}
+        </p>
+      </div>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onRemove(item.id);
+        }}
+        onPointerDown={(e) => e.stopPropagation()}
+        className="p-1.5 rounded hover:bg-red-50 transition-colors"
+        aria-label="Remove"
+      >
+        <X className="w-4 h-4 text-slate-400 dark:text-dark-text-muted hover:text-red-500" />
+      </button>
+    </div>
+  );
+});
+
 export default function ImagesToPdf() {
   const [images, setImages] = useState<ImageItem[]>([]);
   const [pageSize, setPageSize] = useState<"a4" | "letter" | "fit">("a4");
   const [sortMode, setSortMode] = useState<SortMode>("off");
   const task = useAsyncProcess();
-
-  const cycleSortMode = useCallback(() => {
-    setSortMode((m) => (m === "off" ? "asc" : m === "asc" ? "desc" : "off"));
-  }, []);
 
   const displayedImages = useMemo(() => {
     if (sortMode === "off") return images;
@@ -145,52 +207,16 @@ export default function ImagesToPdf() {
 
     if (slot < displayedImages.length) {
       const item = displayedImages[slot];
-      const isSource = drag.dragIndex === slot;
       rows.push(
-        <div
+        <ImageRow
           key={item.id}
-          {...(isSortActive ? {} : drag.getItemProps(slot))}
-          className={`flex items-center gap-3 px-4 py-3 select-none transition-all duration-200 ${
-            isSortActive ? "cursor-default" : "cursor-grab active:cursor-grabbing"
-          } ${isSource ? "scale-95 opacity-30" : "scale-100 opacity-100"}`}
-        >
-          <GripVertical
-            className={`w-4 h-4 shrink-0 ${
-              isSortActive
-                ? "text-slate-200 dark:text-dark-border opacity-50"
-                : "text-slate-300 dark:text-dark-text-muted"
-            }`}
-          />
-          <span className="w-7 h-7 bg-primary-50 text-primary-600 rounded-full flex items-center justify-center text-sm font-medium shrink-0">
-            {slot + 1}
-          </span>
-          <img
-            src={item.preview}
-            alt={item.file.name}
-            className="w-12 h-12 object-cover rounded border border-slate-200 dark:border-dark-border"
-            draggable={false}
-          />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-slate-700 dark:text-dark-text truncate">
-              {item.file.name}
-            </p>
-            <p className="text-xs text-slate-400 dark:text-dark-text-muted">
-              {formatFileSize(item.file.size)}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              removeImage(item.id);
-            }}
-            onPointerDown={(e) => e.stopPropagation()}
-            className="p-1.5 rounded hover:bg-red-50 transition-colors"
-            aria-label="Remove"
-          >
-            <X className="w-4 h-4 text-slate-400 dark:text-dark-text-muted hover:text-red-500" />
-          </button>
-        </div>,
+          item={item}
+          slot={slot}
+          isSortActive={isSortActive}
+          isSource={drag.dragIndex === slot}
+          getItemProps={drag.getItemProps}
+          onRemove={removeImage}
+        />,
       );
     }
   }
@@ -235,12 +261,12 @@ export default function ImagesToPdf() {
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <p className="text-sm font-medium text-slate-700 dark:text-dark-text">
                 {isSortActive
-                  ? `Sorted by name (${sortMode === "asc" ? "A → Z" : "Z → A"})`
+                  ? "Sorted by file name"
                   : isDragging
                     ? "Drop the image at its new position"
                     : "Drag images to rearrange them"}
               </p>
-              <SortByNameButton mode={sortMode} onClick={cycleSortMode} />
+              <SortByNameButton mode={sortMode} onChange={setSortMode} />
             </div>
           )}
 

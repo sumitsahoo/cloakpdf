@@ -1,38 +1,45 @@
-import { ArrowDownAZ, ArrowDownUp, ArrowDownZA } from "lucide-react";
+import { ArrowDownAZ, ArrowDownZA } from "lucide-react";
 
 export type SortMode = "off" | "asc" | "desc";
 
 interface SortByNameButtonProps {
   mode: SortMode;
-  onClick: () => void;
+  onChange: (mode: SortMode) => void;
 }
 
-export function SortByNameButton({ mode, onClick }: SortByNameButtonProps) {
-  const isActive = mode !== "off";
-  const Icon = mode === "asc" ? ArrowDownAZ : mode === "desc" ? ArrowDownZA : ArrowDownUp;
-  const label = mode === "asc" ? "Name: A → Z" : mode === "desc" ? "Name: Z → A" : "Sort by name";
-  const title =
-    mode === "off"
-      ? "Sort by file name"
-      : mode === "asc"
-        ? "Sorted A → Z — click for Z → A"
-        : "Sorted Z → A — click to clear";
+const OPTIONS: { value: SortMode; label: string; Icon?: typeof ArrowDownAZ }[] = [
+  { value: "off", label: "None" },
+  { value: "asc", label: "A → Z", Icon: ArrowDownAZ },
+  { value: "desc", label: "Z → A", Icon: ArrowDownZA },
+];
 
+export function SortByNameButton({ mode, onChange }: SortByNameButtonProps) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      title={title}
-      aria-label={title}
-      aria-pressed={isActive}
-      className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-sm rounded-lg border transition-all duration-150 select-none ${
-        isActive
-          ? "border-primary-200 dark:border-primary-700/60 bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 font-medium shadow-sm"
-          : "border-slate-200 dark:border-dark-border bg-white dark:bg-dark-surface text-slate-500 dark:text-dark-text-muted hover:text-slate-700 dark:hover:text-dark-text hover:bg-slate-50 dark:hover:bg-dark-surface-alt"
-      }`}
-    >
-      <Icon className="w-4 h-4" />
-      {label}
-    </button>
+    <div className="inline-flex items-center gap-2">
+      <span className="text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-dark-text-muted">
+        Sort
+      </span>
+      <div className="inline-flex items-center gap-0.5 rounded-lg bg-slate-100 dark:bg-dark-bg p-0.5 border border-slate-200 dark:border-dark-border">
+        {OPTIONS.map(({ value, label, Icon }) => {
+          const active = mode === value;
+          return (
+            <button
+              key={value}
+              type="button"
+              aria-pressed={active}
+              onClick={() => onChange(value)}
+              className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md transition-all duration-150 ${
+                active
+                  ? "bg-primary-600 text-white font-semibold shadow-sm"
+                  : "text-slate-500 dark:text-dark-text-muted hover:text-slate-700 dark:hover:text-dark-text"
+              }`}
+            >
+              {Icon && <Icon className="w-3.5 h-3.5" />}
+              {label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
   );
 }
