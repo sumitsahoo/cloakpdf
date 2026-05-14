@@ -57,15 +57,38 @@ interface ChatTurn {
   streaming?: boolean;
 }
 
-const SYSTEM_PROMPT = [
-  "You are a careful assistant answering questions about a PDF document.",
-  "Use ONLY the information in the provided Context to answer.",
-  'If the answer is not in the Context, reply exactly: "I could not find that in this document."',
-  "Cite page numbers in parentheses when relevant. Keep answers concise (1–4 sentences).",
-].join(" ");
+/**
+ * System prompt tuned for SmolLM2-360M. The earlier version included a
+ * literal "reply exactly: ..." refusal phrase; the small model latched
+ * onto it and refused almost every question. Keeping the prompt short
+ * and positive ("answer based on the excerpts") gives noticeably better
+ * grounded answers without sending the model into refusal mode.
+ */
+const SYSTEM_PROMPT =
+  "You are a helpful assistant. Answer the user's question using the provided document excerpts. Be concise (1–3 sentences). When you can, cite the page number like (page 4). If the excerpts don't contain the answer, say so briefly.";
 
-/** How many chunks to retrieve per question. */
-const TOP_K = 6;
+/**
+ * Number of chunks pulled per question. 6 was too many for SmolLM2's
+ * effective context — the model would drown in text and either refuse
+ * or summarise the entire excerpt block. 3 is the sweet spot: enough
+ * signal for retrieval to matter, small enough to fit the model.
+ */
+const TOP_K = 3;
+
+/**
+ * Pattern matching short greetings / chit-chat that shouldn't trigger a
+ * RAG query. Forcing retrieved chunks into the prompt for "hi" makes the
+ * model answer the *chunks* (echoing back resume content, etc.) instead
+ * of the user. We match on the trimmed, lowercased input.
+ */
+const SMALL_TALK_RE =
+  /^(hi+|hello|hey+|yo|sup|hola|howdy|good (morning|afternoon|evening)|thanks?|thank you|ok|okay|cool|nice|got it)[!.?]*$/i;
+
+function isSmallTalk(q: string): boolean {
+  const trimmed = q.trim().toLowerCase();
+  if (trimmed.length <= 2) return true;
+  return SMALL_TALK_RE.test(trimmed);
+}
 
 /** Indexing-phase progress reported to the UI. */
 type IndexProgress =
@@ -110,6 +133,11 @@ export default function AskPdf() {
 
   const dialogOpen =
     rag.status === "awaiting-consent" || rag.status === "downloading" || rag.status === "error";
+
+  /** `true` while we're building the vector store for the loaded PDF. */
+  const isIndexing = indexing !== null;
+  /** `true` once the embed pipeline has produced a store we can query. */
+  const isIndexed = storeRef.current !== null;
 
   /**
    * Build (or load from cache) the vector store for `file`. Idempotent
@@ -183,6 +211,23 @@ export default function AskPdf() {
     [],
   );
 
+  /**
+   * Auto-index the PDF as soon as the models are loaded — don't wait
+   * for the user's first question. Re-runs only when the file changes
+   * or the runtime transitions to "ready"; idempotent because
+   * `ensureStore` short-circuits once `storeRef.current` is set.
+   */
+  useEffect(() => {
+    if (!pdf.file) return;
+    if (rag.status !== "ready") return;
+    if (storeRef.current || indexing || scannedHint) return;
+    const file = pdf.file;
+    void task.run(async () => {
+      const embedPipe = await rag.embed.ensureReady();
+      await ensureStore(file, embedPipe);
+    }, "Failed to index the PDF. Please try again.");
+  }, [pdf.file, rag.status, rag.embed, indexing, scannedHint, ensureStore, task]);
+
   const handleAsk = useCallback(async () => {
     if (!pdf.file) return;
     const file = pdf.file;
@@ -208,6 +253,35 @@ export default function AskPdf() {
           return;
         }
         throw e;
+      }
+
+      // Bypass RAG for greetings — there's nothing the document can
+      // contribute to "hi", and forcing retrieved chunks into the
+      // prompt makes the model answer the chunks instead of the user.
+      if (isSmallTalk(q)) {
+        const reply = await runChat(
+          pipes.chat,
+          [
+            {
+              role: "system",
+              content:
+                "You are a friendly assistant who answers questions about a PDF. Respond briefly to the user's greeting and invite them to ask something specific about the document.",
+            },
+            { role: "user", content: q },
+          ],
+          {
+            maxNewTokens: 120,
+            onToken: (delta) => {
+              setTurns((prev) =>
+                prev.map((t) => (t.id === assistantId ? { ...t, content: t.content + delta } : t)),
+              );
+            },
+          },
+        );
+        setTurns((prev) =>
+          prev.map((t) => (t.id === assistantId ? { ...t, content: reply, streaming: false } : t)),
+        );
+        return;
       }
 
       const store = await ensureStore(file, pipes.embed);
@@ -298,6 +372,8 @@ export default function AskPdf() {
             </InfoCallout>
           ) : (
             <>
+              {turns.length === 0 && isIndexed && <ChatEmptyState />}
+
               <ConversationView turns={turns} scrollAnchorRef={scrollAnchorRef} />
 
               {indexing && <IndexProgressBar progress={indexing} />}
@@ -312,7 +388,14 @@ export default function AskPdf() {
                   onChange={setQuestion}
                   onKeyDown={onKeyDown}
                   onSubmit={handleAsk}
-                  disabled={task.processing}
+                  disabled={task.processing || isIndexing || !isIndexed}
+                  placeholder={
+                    isIndexing
+                      ? "Indexing your PDF…"
+                      : isIndexed
+                        ? "Ask something about this PDF…"
+                        : "Preparing…"
+                  }
                 />
               </AiModelGate>
 
@@ -371,22 +454,20 @@ function ConversationView({
 function Bubble({ turn }: { turn: ChatTurn }) {
   const isUser = turn.role === "user";
   return (
-    <div className={`flex gap-3 ${isUser ? "flex-row-reverse" : ""}`}>
-      <span
-        className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center mt-0.5 ${
-          isUser
-            ? "bg-primary-600 text-white"
-            : "bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400"
-        }`}
-        aria-hidden="true"
-      >
-        {isUser ? <User className="w-3.5 h-3.5" /> : <Sparkles className="w-3.5 h-3.5" />}
-      </span>
+    <div className={`flex items-end gap-2 ${isUser ? "justify-end" : "justify-start"}`}>
+      {!isUser && (
+        <span
+          className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400"
+          aria-hidden="true"
+        >
+          <Sparkles className="w-3.5 h-3.5" />
+        </span>
+      )}
       <div
-        className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
+        className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
           isUser
-            ? "bg-primary-600 text-white rounded-tr-md"
-            : "bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border text-slate-800 dark:text-dark-text rounded-tl-md"
+            ? "bg-primary-600 text-white rounded-br-md"
+            : "bg-white dark:bg-dark-surface border border-slate-200 dark:border-dark-border text-slate-800 dark:text-dark-text rounded-bl-md"
         }`}
       >
         {turn.streaming && !turn.content ? (
@@ -406,12 +487,42 @@ function Bubble({ turn }: { turn: ChatTurn }) {
           </p>
         )}
         {!isUser && turn.citedPages && turn.citedPages.length > 0 && !turn.streaming && (
-          <p className="mt-2 pt-2 border-t border-slate-100 dark:border-dark-border/60 text-xs text-slate-400 dark:text-dark-text-muted">
+          <p
+            className={`mt-2 pt-2 border-t text-xs ${"border-slate-100 dark:border-dark-border/60 text-slate-400 dark:text-dark-text-muted"}`}
+          >
             Context from {turn.citedPages.length === 1 ? "page" : "pages"}{" "}
             {turn.citedPages.join(", ")}
           </p>
         )}
       </div>
+      {isUser && (
+        <span
+          className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center bg-primary-600 text-white"
+          aria-hidden="true"
+        >
+          <User className="w-3.5 h-3.5" />
+        </span>
+      )}
+    </div>
+  );
+}
+
+function ChatEmptyState() {
+  return (
+    <div className="rounded-2xl border border-dashed border-slate-200 dark:border-dark-border bg-slate-50/50 dark:bg-dark-surface-alt/30 p-5 text-center">
+      <span
+        className="inline-flex w-9 h-9 rounded-full bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 items-center justify-center mb-2"
+        aria-hidden="true"
+      >
+        <Sparkles className="w-4 h-4" />
+      </span>
+      <p className="text-sm font-medium text-slate-800 dark:text-dark-text">
+        Your PDF is indexed — ask away
+      </p>
+      <p className="text-xs text-slate-500 dark:text-dark-text-muted mt-1 leading-relaxed">
+        Try things like “summarise page 3”, “what does the report conclude?”, or “list all the dates
+        mentioned”. Answers cite the pages they came from.
+      </p>
     </div>
   );
 }
@@ -422,12 +533,14 @@ function Composer({
   onKeyDown,
   onSubmit,
   disabled,
+  placeholder,
 }: {
   value: string;
   onChange: (next: string) => void;
   onKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
   onSubmit: () => void;
   disabled: boolean;
+  placeholder?: string;
 }) {
   return (
     <div className="sticky bottom-2 bg-white dark:bg-dark-surface rounded-2xl border border-slate-200 dark:border-dark-border shadow-sm p-3">
@@ -436,7 +549,7 @@ function Composer({
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={onKeyDown}
         disabled={disabled}
-        placeholder="Ask something about this PDF…"
+        placeholder={placeholder ?? "Ask something about this PDF…"}
         rows={2}
         className="w-full resize-none bg-transparent text-sm text-slate-800 dark:text-dark-text placeholder-slate-400 dark:placeholder-dark-text-muted focus-visible:outline-none disabled:opacity-50"
       />
