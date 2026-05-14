@@ -14,7 +14,7 @@
  * loaded — not lazily on the first question — so the user isn't left
  * staring at a "Thinking…" spinner that's really doing extraction.
  */
-import { Loader2, ScanSearch, Send, Sparkles, User } from "lucide-react";
+import { Database, Loader2, ScanSearch, Send, Sparkles, User } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ActiveModelBar } from "../components/ActiveModelBar.tsx";
 import { AiConsentDialog } from "../components/AiConsentDialog.tsx";
@@ -196,38 +196,33 @@ export default function AskPdf() {
             </InfoCallout>
           ) : (
             <>
-              <ConversationView turns={turns} scrollAnchorRef={scrollAnchorRef} />
-
-              {indexing && <IndexProgressBar progress={indexing} />}
-
               <AiModelGate
                 ai={rag.chat}
                 title="Download AI models to start chatting"
-                blurb="Two small models load together: a chat model (~250 MB) and an embedder (~25 MB). Both run entirely in your browser; your PDFs are never uploaded."
+                blurb="Two small models load together: a chat model and an embedder. Both run entirely in your browser; your PDFs are never uploaded."
               >
-                <Composer
-                  value={question}
-                  onChange={setQuestion}
-                  onKeyDown={onKeyDown}
-                  onSubmit={handleAsk}
-                  disabled={task.processing || isIndexing || !sessionReady}
-                  placeholder={
-                    isIndexing
-                      ? "Indexing your PDF…"
-                      : sessionReady
-                        ? "Ask something about this PDF…"
-                        : "Preparing…"
-                  }
-                  busyLabel={
-                    isIndexing
-                      ? indexing?.kind === "embed"
-                        ? "Indexing…"
-                        : "Reading PDF…"
-                      : task.processing
-                        ? "Thinking…"
-                        : "Preparing…"
-                  }
-                />
+                {/*
+                  Three mutually-exclusive states once the models are
+                  ready: indexing the PDF, then chatting. We render only
+                  one at a time so the user isn't looking at a frozen
+                  composer next to a tiny progress bar.
+                */}
+                {isIndexing ? (
+                  <IndexingCard progress={indexing} />
+                ) : (
+                  <>
+                    <ConversationView turns={turns} scrollAnchorRef={scrollAnchorRef} />
+                    <Composer
+                      value={question}
+                      onChange={setQuestion}
+                      onKeyDown={onKeyDown}
+                      onSubmit={handleAsk}
+                      disabled={task.processing || !sessionReady}
+                      placeholder="Ask something about this PDF…"
+                      busyLabel={task.processing ? "Thinking…" : "Preparing…"}
+                    />
+                  </>
+                )}
               </AiModelGate>
 
               <ActiveModelBar info={rag.chat.info} ready={rag.status === "ready"} />
@@ -254,14 +249,70 @@ export default function AskPdf() {
 
 // ── Sub-components ────────────────────────────────────────────────
 
-function IndexProgressBar({ progress }: { progress: IndexingProgress }) {
-  const label =
-    progress.kind === "extract"
-      ? progress.phase === "ocr"
-        ? `Running OCR on scanned pages (${progress.current}/${progress.total})…`
-        : `Reading PDF text (${progress.current}/${progress.total})…`
-      : `Indexing chunks (${progress.current}/${progress.total})…`;
-  return <ProgressBar current={progress.current} total={progress.total} label={label} />;
+/**
+ * Centred card shown while the RAG index is being built for the
+ * uploaded PDF. Replaces the previous inline `<ProgressBar>` + disabled
+ * composer combo, which looked like a frozen chat with a tiny progress
+ * detail tacked above it. Now it's a single dominant card: the user
+ * sees one focused state instead of a half-rendered chat UI.
+ *
+ * The stage label maps the underlying {@link IndexingProgress} kind
+ * to a sentence that explains what's happening *to the user*, not in
+ * pipeline terms ("extract" / "embed" become "Reading text" /
+ * "Building search index").
+ */
+function IndexingCard({ progress }: { progress: IndexingProgress | null }) {
+  const { label, hint } = describeIndexProgress(progress);
+  return (
+    <div className="bg-white dark:bg-dark-surface rounded-2xl border border-slate-200 dark:border-dark-border shadow-sm p-6">
+      <div className="flex items-start gap-3">
+        <span
+          aria-hidden="true"
+          className="shrink-0 w-9 h-9 rounded-full flex items-center justify-center bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400"
+        >
+          <Database className="w-4 h-4" />
+        </span>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-slate-800 dark:text-dark-text">
+            Preparing your document
+          </p>
+          <p className="text-xs text-slate-500 dark:text-dark-text-muted mt-1 leading-relaxed">
+            {hint} This happens once per PDF — re-opening the same file later is instant.
+          </p>
+        </div>
+      </div>
+      <div className="mt-5">
+        <ProgressBar current={progress?.current ?? 0} total={progress?.total ?? 1} label={label} />
+      </div>
+    </div>
+  );
+}
+
+function describeIndexProgress(progress: IndexingProgress | null): {
+  label: string;
+  hint: string;
+} {
+  if (!progress) {
+    return {
+      label: "Starting…",
+      hint: "Reading text from the PDF and building a search index so the assistant can answer questions about it.",
+    };
+  }
+  if (progress.kind === "extract") {
+    return progress.phase === "ocr"
+      ? {
+          label: `Running OCR on scanned pages (${progress.current}/${progress.total})…`,
+          hint: "Pages without a text layer are being read with OCR — slower than plain text, but the answers will be just as grounded.",
+        }
+      : {
+          label: `Reading PDF text (${progress.current}/${progress.total})…`,
+          hint: "Extracting the text layer from your PDF so the assistant has something to search.",
+        };
+  }
+  return {
+    label: `Building search index (${progress.current}/${progress.total} chunks)…`,
+    hint: "Turning the text into vectors the assistant can search through when you ask a question.",
+  };
 }
 
 function ConversationView({

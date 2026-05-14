@@ -29,21 +29,36 @@ import type { ChunkMetadata } from "./chunking.ts";
 import type { TransformersJsChatModel } from "./chat-model.ts";
 
 /**
- * System prompt tuned for SmolLM2-360M.
+ * System prompt for Qwen2.5-1.5B-Instruct.
  *
- * Two pathologies this phrasing pushes against:
+ * Three things this phrasing is specifically engineered for:
  *
- *   1. Numbered lists. The first version asked for "1–3 sentences" but
- *      the model still produced 39-line numbered lists on retrieval-
- *      heavy chunks. Explicitly forbidding lists works better than
- *      asking for sentences.
- *   2. Loops. We add "Do not repeat yourself" because the small model
- *      paraphrases the same fact across consecutive items when faced
- *      with a long excerpt. Combined with the `no_repeat_ngram_size`
- *      decoding constraint in `runChat`, repetition is well-suppressed.
+ *   1. **Structural inference.** The first version refused to say
+ *      "this is a résumé" because no excerpt literally claimed so —
+ *      even though the chunks contained a name, a contact block, a
+ *      work experience section, a skills list, and a "Languages"
+ *      block (textbook résumé layout). We explicitly grant the model
+ *      permission to identify document type from those cues instead
+ *      of demanding verbatim grounding for every claim.
+ *
+ *   2. **Format adapts to the question.** "What is this about?" wants
+ *      prose; "What tools are mentioned?" wants a list. The earlier
+ *      "1–3 sentences, never a list" rule (a SmolLM2-360M loop crutch)
+ *      forced a single shape regardless of intent.
+ *
+ *   3. **Honest about gaps.** When the excerpts don't cover the
+ *      question we want a one-line "the excerpts don't say", not a
+ *      confident hallucination. Stays at the end so the model has
+ *      already considered the rest of the rules.
  */
-const SYSTEM_PROMPT =
-  "Answer the user's question using only the provided document excerpts. Reply in 1–3 plain prose sentences. Do not produce a numbered or bulleted list. Do not repeat yourself. Cite the page number like (page 4) when relevant. If the excerpts don't contain the answer, say so in one sentence.";
+const SYSTEM_PROMPT = `You are answering questions about a PDF the user has uploaded. The user message will include relevant excerpts pulled from the document.
+
+Guidelines:
+- Base your answer on the supplied excerpts. You may use obvious structural cues (section headers, contact blocks, dates, repeated layouts) to infer what kind of document this is when asked.
+- Match the format to the question: a short prose answer for overview questions, a brief list when the user asks for items, tools, dates, or names.
+- Keep it concise — usually under 80 words.
+- Cite page numbers like (page 4) when a specific fact comes from a specific page.
+- If the excerpts genuinely don't cover the question, say so in one sentence rather than guessing.`;
 
 const CHITCHAT_PROMPT =
   "You are a friendly assistant who helps a user explore a PDF document. Respond briefly to the user's greeting and invite them to ask something specific about the document.";

@@ -59,19 +59,22 @@ export interface AiModelInfo {
 export const AI_MODELS: Record<AiModelId, AiModelInfo> = {
   chat: {
     id: "chat",
-    displayName: "SmolLM2 (360M, instruct)",
-    repo: "HuggingFaceTB/SmolLM2-360M-Instruct",
+    displayName: "Qwen2.5 (1.5B, instruct)",
+    repo: "onnx-community/Qwen2.5-1.5B-Instruct",
     task: "text-generation",
-    approxSizeBytes: 250 * 1024 * 1024,
-    // Working figure for inference peak: ~200 MB weights expanded in
-    // memory plus the KV cache and ONNX runtime overhead for a few
-    // thousand tokens of context. Comfortable on phones.
-    approxPeakRamBytes: 800 * 1024 * 1024,
+    // q4f16 weights are ~0.9 GB on disk. Peak RAM during inference
+    // sits around 2.5–3 GB once the KV cache, embedding table, and
+    // ONNX runtime overhead are accounted for — comfortably under
+    // 4 GB so the tool still runs on tablets and mid-range laptops,
+    // marginal on phones with 6 GB total RAM.
+    approxSizeBytes: 900 * 1024 * 1024,
+    approxPeakRamBytes: 3 * 1024 * 1024 * 1024,
     description:
-      "Hugging Face's small chat model purpose-built for on-device inference. Fast, mobile-friendly, and reliable in Transformers.js.",
-    bestFor: "Answering questions about a PDF on phones, tablets, and laptops with ≤ 8 GB RAM.",
+      "Alibaba's Qwen 2.5 1.5B instruct model — strong at answering questions grounded in supplied document excerpts, with markedly better reasoning than the 300–500 M tier we used before.",
+    bestFor:
+      "Answering questions about a PDF on desktops, laptops, and tablets with ≥ 4 GB free RAM.",
     license: "Apache 2.0",
-    modelUrl: "https://huggingface.co/HuggingFaceTB/SmolLM2-360M-Instruct",
+    modelUrl: "https://huggingface.co/onnx-community/Qwen2.5-1.5B-Instruct",
     pipelineOptions: { dtype: "q4f16" },
   },
   embed: {
