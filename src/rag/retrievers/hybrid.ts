@@ -57,8 +57,44 @@ export class HybridRetriever extends BaseRetrieverClass {
       this.dense.invoke(query),
       this.sparse.invoke(query),
     ]);
+    recordHybridDebug(query, denseHits, sparseHits);
     return reciprocalRankFusion([denseHits, sparseHits], this.k, this.rrfK);
   }
+}
+
+/**
+ * Push per-retriever results onto `window.__cloakpdfHybridDebug` when
+ * `localStorage["cloakpdf:debug"]` is set. Off by default; only the
+ * retrieval probe reads this back.
+ */
+interface HybridDebugRecord {
+  query: string;
+  dense: Array<{ chunkId: string; pageNumber: number; preview: string }>;
+  sparse: Array<{ chunkId: string; pageNumber: number; preview: string }>;
+}
+function recordHybridDebug(query: string, dense: Document[], sparse: Document[]): void {
+  if (typeof window === "undefined") return;
+  try {
+    if (!window.localStorage?.getItem("cloakpdf:debug")) return;
+  } catch {
+    return;
+  }
+  const w = window as unknown as { __cloakpdfHybridDebug?: HybridDebugRecord[] };
+  if (!Array.isArray(w.__cloakpdfHybridDebug)) w.__cloakpdfHybridDebug = [];
+  const summarise = (docs: Document[]) =>
+    docs.map((d) => {
+      const meta = d.metadata as { chunkId?: string; pageNumber?: number };
+      return {
+        chunkId: meta.chunkId ?? "(unknown)",
+        pageNumber: meta.pageNumber ?? -1,
+        preview: d.pageContent.slice(0, 200),
+      };
+    });
+  w.__cloakpdfHybridDebug.push({
+    query,
+    dense: summarise(dense),
+    sparse: summarise(sparse),
+  });
 }
 
 /**

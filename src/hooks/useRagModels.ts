@@ -16,8 +16,15 @@
  *     two pipelines once both are loaded. Rejects on cancel/error.
  *   - `cancel()` — dismisses both consent dialogs in lockstep.
  */
-import { useCallback, useEffect, useMemo } from "react";
-import { type AiProgress, disposeAllModels, registerPagehideCleanup } from "../utils/ai-runtime.ts";
+import { useCallback, useEffect, useMemo, useRef } from "react";
+import {
+  type AiProgress,
+  cancelScheduledDispose,
+  disposeAllModels,
+  isModelMarkedReady,
+  registerPagehideCleanup,
+  scheduleDispose,
+} from "../utils/ai-runtime.ts";
 import { type AiModelStatus, useAiModel, type UseAiModelReturn } from "./useAiModel.ts";
 
 export interface UseRagModelsReturn {
@@ -72,18 +79,24 @@ export function useRagModels(): UseRagModelsReturn {
   }, []);
 
   // Navigation-away cleanup: when the consumer (Ask PDF today) unmounts,
-  // free both pipelines from memory. The browser keeps the downloaded
-  // weights in CacheStorage so re-opening Ask PDF later re-initialises
-  // from disk in a few seconds rather than re-downloading.
+  // schedule a *deferred* dispose. A short grace window survives two
+  // important races:
   //
-  // Trade-off: every navigation back to Ask PDF pays a ~few-second
-  // warm-up. The alternative (keep pipelines resident until tab close)
-  // pinned ~300 MB of RAM whether or not the user planned to use AI
-  // again in this session. Explicit per-product decision: prefer freed
-  // memory on navigation; the warm-up is acceptable.
+  //   1. React 18 StrictMode (dev) — mount → cleanup → mount fires
+  //      synchronously. A non-deferred dispose would tear down freshly
+  //      loaded pipelines that the re-mount then has to rebuild.
+  //   2. Quick "back" clicks — user navigates away then immediately
+  //      back; we don't want them to pay the disk-load warmup again
+  //      for what was effectively a misclick.
+  //
+  // Genuine navigations (user lingers on another view past the grace
+  // window) hit `disposeAllModels` and free the ~300 MB of pipeline
+  // RAM. CacheStorage on disk is untouched, so re-opening Ask PDF
+  // later re-initialises in a few seconds rather than re-downloading.
   useEffect(() => {
+    cancelScheduledDispose();
     return () => {
-      void disposeAllModels();
+      scheduleDispose();
     };
   }, []);
 
@@ -92,6 +105,36 @@ export function useRagModels(): UseRagModelsReturn {
 
   const status = rollupStatus(chat.status, embed.status);
   const error = chat.error ?? embed.error;
+
+  /**
+   * Return-visitor auto-load.
+   *
+   * When BOTH models are flagged as previously downloaded in
+   * localStorage, kick off `ensureReady()` for both without waiting on
+   * a UI click. Without this, only `chat` auto-loads (the gate is
+   * bound to `rag.chat` and its own auto-load effect doesn't know
+   * about the embedder). The rollup status stays at "idle" because
+   * embed never starts loading, the auto-index effect in Ask PDF
+   * never fires, and the composer's placeholder gets stuck at
+   * "Preparing…" indefinitely.
+   *
+   * Idempotent — `ensureReady` short-circuits once each pipeline is
+   * resolved, and the `attemptedRef` guard stops React from firing the
+   * effect repeatedly under StrictMode dev double-invokes.
+   */
+  const attemptedRef = useRef(false);
+  useEffect(() => {
+    if (attemptedRef.current) return;
+    if (chat.status !== "idle" || embed.status !== "idle") return;
+    if (!isModelMarkedReady("chat") || !isModelMarkedReady("embed")) return;
+    attemptedRef.current = true;
+    void Promise.all([chat.ensureReady(), embed.ensureReady()]).catch(() => {
+      // Each `useAiModel` already routes failures into its own `error`
+      // state — the rollup surfaces them. Nothing to do here beyond
+      // swallowing the unhandled rejection so it doesn't reach the
+      // window error handler.
+    });
+  }, [chat, embed]);
 
   // Combined progress: sum the loaded/total bytes when at least one
   // model is downloading. Keeps the consent dialog showing a single

@@ -28,9 +28,22 @@ import { Annotation, END, START, StateGraph } from "@langchain/langgraph";
 import type { ChunkMetadata } from "./chunking.ts";
 import type { TransformersJsChatModel } from "./chat-model.ts";
 
-/** System prompt tuned for SmolLM2-360M — see notes in chat-model.ts. */
+/**
+ * System prompt tuned for SmolLM2-360M.
+ *
+ * Two pathologies this phrasing pushes against:
+ *
+ *   1. Numbered lists. The first version asked for "1–3 sentences" but
+ *      the model still produced 39-line numbered lists on retrieval-
+ *      heavy chunks. Explicitly forbidding lists works better than
+ *      asking for sentences.
+ *   2. Loops. We add "Do not repeat yourself" because the small model
+ *      paraphrases the same fact across consecutive items when faced
+ *      with a long excerpt. Combined with the `no_repeat_ngram_size`
+ *      decoding constraint in `runChat`, repetition is well-suppressed.
+ */
 const SYSTEM_PROMPT =
-  "You are a helpful assistant. Answer the user's question using the provided document excerpts. Be concise (1–3 sentences). When you can, cite the page number like (page 4). If the excerpts don't contain the answer, say so briefly.";
+  "Answer the user's question using only the provided document excerpts. Reply in 1–3 plain prose sentences. Do not produce a numbered or bulleted list. Do not repeat yourself. Cite the page number like (page 4) when relevant. If the excerpts don't contain the answer, say so in one sentence.";
 
 const CHITCHAT_PROMPT =
   "You are a friendly assistant who helps a user explore a PDF document. Respond briefly to the user's greeting and invite them to ask something specific about the document.";
@@ -98,6 +111,7 @@ export function buildRagGraph(options: BuildGraphOptions) {
   async function retrieve(state: RagState): Promise<Partial<RagState>> {
     const hits = (await retriever.invoke(state.question)) as Document<ChunkMetadata>[];
     const citedPages = uniqueSortedPages(hits);
+    recordRetrievalDebug(state.question, hits);
     return { docs: hits, citedPages };
   }
 
@@ -178,4 +192,34 @@ function uniqueSortedPages(docs: Document<ChunkMetadata>[]): number[] {
   const set = new Set<number>();
   for (const d of docs) set.add(d.metadata.pageNumber);
   return [...set].sort((a, b) => a - b);
+}
+
+/**
+ * Push the retrieved chunks onto a `window.__cloakpdfRetrievals` array
+ * when `localStorage["cloakpdf:debug"]` is set. Gated so the probe
+ * can read structured retrieval results back from Puppeteer; off by
+ * default and not referenced anywhere else in the app.
+ */
+interface RetrievalDebugRecord {
+  question: string;
+  hits: Array<{ chunkId: string; pageNumber: number; preview: string; length: number }>;
+}
+function recordRetrievalDebug(question: string, hits: Document<ChunkMetadata>[]): void {
+  if (typeof window === "undefined") return;
+  try {
+    if (!window.localStorage?.getItem("cloakpdf:debug")) return;
+  } catch {
+    return;
+  }
+  const w = window as unknown as { __cloakpdfRetrievals?: RetrievalDebugRecord[] };
+  if (!Array.isArray(w.__cloakpdfRetrievals)) w.__cloakpdfRetrievals = [];
+  w.__cloakpdfRetrievals.push({
+    question,
+    hits: hits.map((d) => ({
+      chunkId: d.metadata.chunkId,
+      pageNumber: d.metadata.pageNumber,
+      preview: d.pageContent.slice(0, 240),
+      length: d.pageContent.length,
+    })),
+  });
 }

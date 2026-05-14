@@ -106,17 +106,30 @@ export async function runChat(
     );
   }
 
-  // Defaults follow the small-model author's published inference recipe
-  // — sampling with mild temperature, nucleus cutoff, and a >1
-  // repetition penalty. These also happen to be the settings that stop
-  // small-model loop pathologies ("!!!!!!" / single-token runs) we saw
-  // with greedy decoding.
+  // Defaults tuned for SmolLM2-360M to stop the loop pathologies we
+  // saw on real PDFs (e.g. "1. An API related to X" repeating for 39
+  // numbered lines). The relevant knobs:
+  //
+  //   - `no_repeat_ngram_size: 4` — bans the model from emitting any
+  //     4-gram that's already appeared in the output. Catches paraphrased
+  //     loops the plain repetition penalty misses (the loop above
+  //     re-used the phrase "An API related to" but with a different
+  //     leading number, so per-token penalty alone wasn't enough).
+  //   - `repetition_penalty: 1.3` — stronger than the 1.1 default. The
+  //     small-model literature suggests 1.1–1.3; we sit at the upper end
+  //     since the lower end didn't hold on our content.
+  //   - `max_new_tokens: 256` — half the previous cap. Even if a loop
+  //     starts the user only sees a short blast of repetition before it
+  //     stops, instead of 512 tokens of garbage.
+  //   - `temperature: 0.7` — slightly hotter than 0.6; gives the model
+  //     more room to break out of a loop once one starts.
   const result = await generator(messages, {
-    max_new_tokens: options.maxNewTokens ?? 512,
+    max_new_tokens: options.maxNewTokens ?? 256,
     do_sample: options.doSample ?? true,
-    temperature: options.temperature ?? 0.6,
+    temperature: options.temperature ?? 0.7,
     top_p: options.topP ?? 0.9,
-    repetition_penalty: options.repetitionPenalty ?? 1.1,
+    repetition_penalty: options.repetitionPenalty ?? 1.3,
+    no_repeat_ngram_size: 4,
     ...(streamer ? { streamer } : {}),
   });
 

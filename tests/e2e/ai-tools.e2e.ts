@@ -62,10 +62,27 @@ if (!existsSync(CHROME_PATH)) {
   );
 }
 
+/**
+ * Persistent profile dir so a second `pnpm test:e2e` run lands on a
+ * warm cache (CacheStorage + localStorage flags + IndexedDB). That's
+ * the exact scenario where "stuck at Preparing" used to manifest.
+ *
+ *   - `E2E_FRESH=1 pnpm test:e2e`   → wipe profile, exercise cold path.
+ *   - `pnpm test:e2e` (default)     → reuse profile, exercise warm path.
+ */
+const USER_DATA_DIR =
+  process.env.E2E_USER_DATA_DIR ?? resolve(import.meta.dirname, "../.puppeteer-profile");
+
 async function main() {
-  console.log("→ Launching Chrome…");
+  if (process.env.E2E_FRESH === "1") {
+    const { rm } = await import("node:fs/promises");
+    await rm(USER_DATA_DIR, { recursive: true, force: true });
+    console.log("→ Cleared persistent profile (E2E_FRESH=1).");
+  }
+  console.log(`→ Launching Chrome (profile: ${USER_DATA_DIR})…`);
   const browser = await launch({
     executablePath: CHROME_PATH,
+    userDataDir: USER_DATA_DIR,
     // Headed so the user can watch the download progress dialog —
     // unattended CI usage would flip this to true.
     headless: false,
@@ -75,6 +92,23 @@ async function main() {
   try {
     const page = await browser.newPage();
     page.setDefaultTimeout(60_000);
+
+    // Surface browser-side errors to the Node test runner. Without
+    // this, a runtime exception in the React tree (e.g. a bad
+    // dynamic import) is invisible — the test just times out waiting
+    // for a composer that never appears.
+    page.on("console", (msg) => {
+      const t = msg.type();
+      if (t === "error" || t === "warn") {
+        console.log(`[browser ${t}]`, msg.text());
+      }
+    });
+    page.on("pageerror", (err) => {
+      console.log("[browser pageerror]", err instanceof Error ? err.message : String(err));
+    });
+    page.on("requestfailed", (req) => {
+      console.log("[browser requestfailed]", req.url(), req.failure()?.errorText);
+    });
 
     await page.goto(DEV_URL, { waitUntil: "networkidle2" });
 
@@ -104,10 +138,60 @@ async function main() {
     if (!fileInput) bail("File input not found on the page.");
     await (fileInput as { uploadFile: (...p: string[]) => Promise<void> }).uploadFile(FIXTURE_PATH);
 
-    // The gate may auto-load if the model is already cached. If not,
-    // click the "Download model" button. Either path lands us on a
-    // ready composer.
-    console.log("→ Waiting for model to load (first run downloads ~530 MB)…");
+    // Click the gate's "Download model" button. On a first-run profile
+    // (no localStorage cache flag) the gate sits at "Selected … Download
+    // model" until the user clicks. On a returning profile the gate
+    // auto-loads and the button is gone — we treat its absence as
+    // "already started" and move on.
+    console.log("→ Clicking the gate's Download button if present…");
+    await page
+      .waitForFunction(
+        () => {
+          const buttons = Array.from(document.querySelectorAll("button"));
+          return buttons.some((b) => (b.textContent ?? "").trim().startsWith("Download model"));
+        },
+        { timeout: 10_000 },
+      )
+      .catch(() => undefined);
+    const gateClicked = await page.evaluate(() => {
+      const buttons = Array.from(document.querySelectorAll("button"));
+      const dl = buttons.find((b) => (b.textContent ?? "").trim().startsWith("Download model"));
+      if (dl instanceof HTMLButtonElement) {
+        dl.click();
+        return true;
+      }
+      return false;
+    });
+    console.log(gateClicked ? "  ✓ clicked gate Download" : "  · gate already past Download");
+
+    // The consent dialog has its own "Download model" button. On first
+    // use it pops up after the gate click; on returning profiles it's
+    // skipped automatically. Wait briefly and click if present.
+    await page
+      .waitForFunction(
+        () => {
+          const dialog = document.querySelector('[role="dialog"]');
+          if (!dialog) return false;
+          const buttons = Array.from(dialog.querySelectorAll("button"));
+          return buttons.some((b) => (b.textContent ?? "").trim() === "Download model");
+        },
+        { timeout: 8_000 },
+      )
+      .catch(() => undefined);
+    const consentClicked = await page.evaluate(() => {
+      const dialog = document.querySelector('[role="dialog"]');
+      if (!dialog) return false;
+      const buttons = Array.from(dialog.querySelectorAll("button"));
+      const dl = buttons.find((b) => (b.textContent ?? "").trim() === "Download model");
+      if (dl instanceof HTMLButtonElement) {
+        dl.click();
+        return true;
+      }
+      return false;
+    });
+    console.log(consentClicked ? "  ✓ clicked consent Download" : "  · no consent dialog");
+
+    console.log("→ Waiting for model to load + index (first run downloads ~275 MB)…");
     await page
       .waitForFunction(
         () => {
@@ -119,6 +203,14 @@ async function main() {
       .catch(() => bail("Composer never enabled — model load timed out or failed."));
 
     console.log("→ Asking a question…");
+    // Snapshot the bubble count BEFORE we send. User and assistant
+    // turns both render with `p.whitespace-pre-wrap`; the count
+    // increments once on user-send and again on the assistant's first
+    // token. We wait for `prev + 2` so we don't accidentally capture
+    // the user's own message as the assistant reply.
+    const priorBubbleCount = await page.evaluate(
+      () => document.querySelectorAll("p.whitespace-pre-wrap").length,
+    );
     await page.focus("textarea");
     await page.keyboard.type("What is this document about?");
     await page.keyboard.press("Enter");
@@ -127,14 +219,15 @@ async function main() {
     // We detect "done" by the absence of the .animate-pulse caret that
     // sits inside the in-flight assistant bubble.
     await page.waitForFunction(
-      () => {
+      (prev) => {
         const bubbles = document.querySelectorAll("p.whitespace-pre-wrap");
-        if (bubbles.length < 2) return false;
+        if (bubbles.length < prev + 2) return false;
         const lastBubble = bubbles[bubbles.length - 1];
         const stillStreaming = lastBubble.querySelector(".animate-pulse");
         return stillStreaming === null && (lastBubble.textContent ?? "").trim().length > 0;
       },
       { timeout: 5 * 60 * 1000 },
+      priorBubbleCount,
     );
 
     const reply = await page.evaluate(() => {
@@ -146,10 +239,114 @@ async function main() {
     console.log(reply);
     console.log("─────────────────────────────────\n");
 
-    // Smoke assertions: the reply has content and isn't the degenerate
-    // "!!!!!" token-loop failure mode we saw in the bad-quantization bug.
+    // ── Warm-cache pass ──────────────────────────────────────────
+    // Reload the same page. localStorage now has the "model marked
+    // ready" flags from the first pass; CacheStorage has the weights.
+    // This is the exact scenario the user reported getting stuck on
+    // ("Preparing…" forever). The fix is the symmetric auto-load in
+    // useRagModels — both models start loading from disk without any
+    // button click. We assert the composer comes back online.
+    console.log("\n→ Reloading to simulate warm-cache return visit…");
+    await page.reload({ waitUntil: "networkidle2" });
+    const cardClickedAgain = await page.evaluate(() => {
+      const cards = Array.from(document.querySelectorAll("a, button"));
+      const target = cards.find((el) => el.textContent?.includes("Ask your PDF"));
+      if (target instanceof HTMLElement) {
+        target.click();
+        return true;
+      }
+      return false;
+    });
+    if (!cardClickedAgain) {
+      console.warn("⚠ Couldn't re-navigate to Ask PDF after reload.");
+    }
+    console.log("→ Re-uploading fixture…");
+    const fileInput2 = await page.waitForSelector('input[type="file"]', { timeout: 10_000 });
+    if (!fileInput2) bail("File input not found after reload.");
+    await (fileInput2 as { uploadFile: (...p: string[]) => Promise<void> }).uploadFile(
+      FIXTURE_PATH,
+    );
+    console.log("→ Waiting for warm-cache auto-load to enable composer (no clicks)…");
+    await page
+      .waitForFunction(
+        () => {
+          const composer = document.querySelector("textarea");
+          return composer instanceof HTMLTextAreaElement && !composer.disabled;
+        },
+        { timeout: 90_000 }, // warm cache: at most ~minute to rehydrate + index
+      )
+      .catch(() =>
+        bail(
+          "Warm-cache composer never enabled — the 'Preparing…' stuck-state regression has returned.",
+        ),
+      );
+    console.log("  ✓ composer enabled on warm-cache path");
+
+    // Drive an actual question through the warm-cache path. The
+    // earlier symptom-only check just verifies the composer enables;
+    // here we prove the full retrieve → generate pipeline still works
+    // after the page reload that wiped in-memory pipelines.
+    console.log("→ Asking a question on the warm-cache path…");
+    const priorWarmBubbleCount = await page.evaluate(
+      () => document.querySelectorAll("p.whitespace-pre-wrap").length,
+    );
+    await page.focus("textarea");
+    await page.keyboard.type("What does the document discuss?");
+    await page.keyboard.press("Enter");
+    await page.waitForFunction(
+      (prev) => {
+        const bubbles = document.querySelectorAll("p.whitespace-pre-wrap");
+        if (bubbles.length < prev + 2) return false;
+        const lastBubble = bubbles[bubbles.length - 1];
+        const stillStreaming = lastBubble.querySelector(".animate-pulse");
+        return stillStreaming === null && (lastBubble.textContent ?? "").trim().length > 0;
+      },
+      { timeout: 5 * 60 * 1000 },
+      priorWarmBubbleCount,
+    );
+    const warmReply = await page.evaluate(() => {
+      const bubbles = document.querySelectorAll("p.whitespace-pre-wrap");
+      return bubbles[bubbles.length - 1]?.textContent?.trim() ?? "";
+    });
+    console.log("\n──────── warm-cache assistant reply ────────");
+    console.log(warmReply);
+    console.log("────────────────────────────────────────────\n");
+    if (!warmReply) bail("Warm-cache: assistant returned an empty reply.");
+    if (/^[! ]{20,}$/.test(warmReply)) bail("Warm-cache: degenerate token loop.");
+    const warmLines = warmReply.split("\n").map((l) => l.replace(/^\s*\d+[.)]\s*/, "").trim());
+    const warmCounts = new Map<string, number>();
+    for (const line of warmLines) {
+      if (line.length < 8) continue;
+      warmCounts.set(line, (warmCounts.get(line) ?? 0) + 1);
+    }
+    const warmValues = [...warmCounts.values()];
+    const warmWorst = warmValues.length === 0 ? 0 : Math.max(...warmValues);
+    if (warmWorst >= 5) {
+      bail(`Warm-cache: assistant looped — same line ${warmWorst}× in the reply.`);
+    }
+    console.log("  ✓ warm-cache reply non-empty, no loop");
+
+    // Smoke assertions tuned to the failure modes we've actually hit:
+    //
+    //   - Empty reply (model didn't speak).
+    //   - Single-token blast like "!!!!!!" — broken quantization.
+    //   - **Paraphrased loop** — same line repeated 5+ times with only
+    //     a numbered prefix changing. Caught the SmolLM2 "1. An API
+    //     related to X / 2. An API related to X / …" failure that
+    //     slipped past the simpler heuristics.
     if (!reply) bail("Assistant returned an empty reply.");
     if (/^[! ]{20,}$/.test(reply)) bail("Assistant returned a degenerate token loop.");
+    const lines = reply.split("\n").map((l) => l.replace(/^\s*\d+[.)]\s*/, "").trim());
+    const lineCounts = new Map<string, number>();
+    for (const line of lines) {
+      if (line.length < 8) continue;
+      lineCounts.set(line, (lineCounts.get(line) ?? 0) + 1);
+    }
+    const counts = [...lineCounts.values()];
+    const worstRepeat = counts.length === 0 ? 0 : Math.max(...counts);
+    if (worstRepeat >= 5) {
+      bail(`Assistant looped — same line repeated ${worstRepeat}× in the reply.`);
+    }
 
     console.log("✓ AI chat smoke test passed.");
   } finally {

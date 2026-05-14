@@ -165,6 +165,38 @@ export async function disposeAllModels(): Promise<void> {
 }
 
 /**
+ * Deferred-dispose helpers.
+ *
+ * React 18 StrictMode (dev only) double-invokes effects: mount →
+ * cleanup → mount. A synchronous `disposeAllModels()` in the cleanup
+ * would tear down the pipelines we just loaded — and the re-mount path
+ * then has to start over. {@link scheduleDispose} arms a short timer
+ * instead; {@link cancelScheduledDispose} disarms it when a remount
+ * fires soon after. The same machinery doubles as a small grace period
+ * for production navigations where the user immediately clicks back.
+ *
+ * 250 ms is enough to cover StrictMode's synchronous remount and
+ * "oops, I meant to click that other tool" clicks, but short enough
+ * that a genuine navigation away frees memory promptly.
+ */
+let _disposeTimer: ReturnType<typeof setTimeout> | null = null;
+const DISPOSE_DELAY_MS = 250;
+
+export function scheduleDispose(): void {
+  if (_disposeTimer !== null) return;
+  _disposeTimer = setTimeout(() => {
+    _disposeTimer = null;
+    void disposeAllModels();
+  }, DISPOSE_DELAY_MS);
+}
+
+export function cancelScheduledDispose(): void {
+  if (_disposeTimer === null) return;
+  clearTimeout(_disposeTimer);
+  _disposeTimer = null;
+}
+
+/**
  * Best-effort `pagehide` handler that releases pipelines when the tab
  * is going away for real (`event.persisted === false`). For bfcache
  * navigations (`persisted === true`) the JS is frozen and we leave the

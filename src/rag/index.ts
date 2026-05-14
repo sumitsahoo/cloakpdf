@@ -66,10 +66,27 @@ export interface RagSession {
   ask: (options: AskOptions) => Promise<AskResult>;
 }
 
-/** How many chunks the hybrid retriever surfaces per query. */
-const HYBRID_TOP_K = 3;
-/** How many candidates each underlying retriever fetches pre-fusion. */
-const CANDIDATE_K = 12;
+/**
+ * How many chunks the hybrid retriever surfaces per query.
+ *
+ * Bumped from 3 → 6 after the retrieval probe showed the right chunk
+ * sat at rank ~5 in MiniLM-L6 and got cut off entirely at k=3 (see
+ * `tests/retrieval-debug/*.json`). 6 keeps the LLM context modest
+ * (~4 KB at chunkSize=700) while giving the right chunk a real chance
+ * of landing in scope. When we add a cross-encoder reranker we can
+ * drop this back down — the reranker is a strict upgrade over RRF's
+ * top-k slice and 3 reranked chunks beats 6 fused ones.
+ */
+const HYBRID_TOP_K = 6;
+/**
+ * How many candidates each underlying retriever fetches pre-fusion.
+ *
+ * Bumped from 12 → 20 so RRF has more rope when MiniLM ranks the
+ * right chunk weakly. Cost is negligible: BM25 returns a slice of a
+ * sorted in-memory list; the dense store does a top-K reduction over
+ * cosine scores — both are O(n) in chunk count regardless of k.
+ */
+const CANDIDATE_K = 20;
 
 /**
  * Build a RAG session for the given PDF + models. Loads from the
