@@ -99,7 +99,7 @@ export const AI_MODELS: Record<AiModelId, AiModelInfo> = {
     approxSizeBytes: 1024 * 1024 * 1024,
     approxPeakRamBytes: Math.round(2.5 * 1024 * 1024 * 1024),
     description:
-      "Hugging Face's flagship small chat model — same family as the 360 M we shipped first, with markedly better reasoning over supplied document excerpts.",
+      "Hugging Face's most capable sub-2 B chat model. Tuned to read the supplied document excerpts and answer from them, instead of guessing from general knowledge.",
     bestFor:
       "Answering questions about a PDF on desktops, laptops, and tablets with ≥ 4 GB free RAM.",
     license: "Apache 2.0",

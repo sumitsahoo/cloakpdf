@@ -38,23 +38,33 @@ interface ActiveModelBarProps {
 }
 
 export function ActiveModelBar({ info, ready, onChange, disabled }: ActiveModelBarProps) {
+  // Layout: on phones the model name and metadata stack into two
+  // tight lines so "Apache 2.0" doesn't get orphaned onto its own
+  // wrap; on `sm:` and above we flatten back to a single line.
+  // The Change-model button collapses to an icon-only control on
+  // mobile so it doesn't steal a third line of vertical space.
   return (
-    <div className="flex items-center gap-2 flex-wrap text-xs text-slate-500 dark:text-dark-text-muted px-1">
-      <ShieldCheck className="w-3.5 h-3.5 shrink-0 text-primary-600 dark:text-primary-400" />
-      <span>
-        {ready ? "Running" : "Selected"}{" "}
-        <span className="font-medium text-slate-700 dark:text-dark-text">{info.displayName}</span>{" "}
-        on-device · {formatApproxSize(info.approxSizeBytes)} · {info.license}
-      </span>
+    <div className="flex items-start sm:items-center gap-2 text-xs text-slate-500 dark:text-dark-text-muted px-1">
+      <ShieldCheck className="w-3.5 h-3.5 shrink-0 mt-0.5 sm:mt-0 text-primary-600 dark:text-primary-400" />
+      <div className="flex flex-col sm:flex-row sm:items-center gap-x-2 gap-y-0.5 min-w-0 flex-1">
+        <span className="min-w-0">
+          {ready ? "Running" : "Selected"}{" "}
+          <span className="font-medium text-slate-700 dark:text-dark-text">{info.displayName}</span>
+        </span>
+        <span className="text-slate-400 dark:text-dark-text-muted">
+          on-device · {formatApproxSize(info.approxSizeBytes)} · {info.license}
+        </span>
+      </div>
       {onChange && (
         <button
           type="button"
           onClick={onChange}
           disabled={disabled}
-          className="ml-auto inline-flex items-center gap-1 px-2 py-1 rounded-md border border-slate-200 dark:border-dark-border text-slate-600 dark:text-dark-text-muted hover:text-slate-800 dark:hover:text-dark-text hover:bg-slate-100 dark:hover:bg-dark-surface-alt transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          aria-label="Change model"
+          className="shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-md border border-slate-200 dark:border-dark-border text-slate-600 dark:text-dark-text-muted hover:text-slate-800 dark:hover:text-dark-text hover:bg-slate-100 dark:hover:bg-dark-surface-alt transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <RefreshCcw className="w-3 h-3" />
-          Change model
+          <span className="hidden sm:inline">Change model</span>
         </button>
       )}
     </div>
