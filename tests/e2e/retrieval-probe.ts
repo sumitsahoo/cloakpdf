@@ -35,6 +35,13 @@ const OUTPUT_DIR = resolve(import.meta.dirname, "../retrieval-debug");
 // score + behaviour, on-topic score + reply) is captured before
 // cumulative inference RAM pressure on SmolLM2-1.7B blows up the
 // tab. Expand once the gate is dialled in.
+/**
+ * Probe question set. Each question is chosen to exercise a distinct
+ * code path or failure mode in the RAG pipeline. Order matters — the
+ * critical signals (off-topic refusal + doc-anchor identity) run
+ * first so we capture them even if cumulative inference RAM pressure
+ * detaches the renderer halfway through the run.
+ */
 const QUESTIONS = [
   // Off-topic — checks the relevance gate fires and the assistant
   // politely refuses instead of answering "Paris" from general
@@ -46,9 +53,23 @@ const QUESTIONS = [
   // ("This is Sumit Sahoo's résumé") rather than generalising
   // ("the author of this document").
   "Whose resume is this?",
-  // On-topic — sanity check that the gate doesn't false-trigger and
-  // the model still produces a grounded reply.
+  // Document-type inference — the prompt explicitly grants the model
+  // permission to identify "résumé / report / invoice" from
+  // structural cues. We assert the reply contains "résumé" or
+  // "resume" (any spelling) so future model swaps don't regress the
+  // structural-inference rule silently.
+  "What kind of document is this?",
+  // Extraction / list query — tests that bge-base + RRF surface the
+  // skills/tools chunks at sufficient ranks. Reply should include
+  // verbatim tool names from `p1-1` and `p3-16` (LangGraph, VS Code,
+  // etc.), not paraphrased categories.
   "What technologies or tools are mentioned in the document?",
+  // Mildly off-topic (related domain) — "Docker" is a real tech
+  // concept but not in the document. With strict grounding the
+  // assistant should either refuse (if relevance gate trips) or say
+  // "the document doesn't mention Docker". A pass means it does NOT
+  // hallucinate Docker into the answer.
+  "What does the document say about Docker containers?",
 ];
 
 interface HybridDebugRecord {

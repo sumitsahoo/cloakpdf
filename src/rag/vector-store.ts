@@ -116,8 +116,12 @@ export class PackedVectorStore extends VectorStore {
       scores[i] = dot;
     }
 
-    // Partial selection: avoid sorting all N scores when k is small
-    // (typical case: thousands of chunks, k = 20).
+    // Full sort by descending score, then slice to top-k. For our
+    // scale (a few hundred to low thousands of chunks per PDF), an
+    // O(N log N) sort is dominated by the cosine matmul above, so
+    // there's no win from quickselect / partial-sort heap. If chunk
+    // counts ever reach ~50 k we'd revisit — for now, simplicity
+    // beats premature optimisation.
     const indices = scores.map((_, i) => i);
     if (filter) {
       const filtered = indices.filter((i) =>

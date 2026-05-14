@@ -117,6 +117,23 @@ async function main() {
       // App may not use hash routing — fall back to the tool grid.
     });
 
+    // Assert the Beta badge renders on the AI tool card before we
+    // click into the tool. The badge tells users the feature is
+    // functional but still maturing; a silent regression (badge gone)
+    // would mis-set expectations. We require both "Ask your PDF" and
+    // a sibling "Beta" pill inside the same button.
+    const cardBetaOk = await page.evaluate(() => {
+      const buttons = Array.from(document.querySelectorAll("button"));
+      const card = buttons.find((b) => b.textContent?.includes("Ask your PDF"));
+      if (!card) return false;
+      // Walk the card subtree for a "Beta" pill (case-sensitive, the
+      // CSS does the visual uppercase).
+      const spans = Array.from(card.querySelectorAll("span"));
+      return spans.some((s) => (s.textContent ?? "").trim() === "Beta");
+    });
+    if (!cardBetaOk) bail("Beta badge missing on the Ask PDF card.");
+    console.log("  ✓ Beta badge present on AI tool card");
+
     // Find the "Ask your PDF" card and click it if the hash-route
     // didn't take us straight in. We match the visible card title.
     const cardClicked = await page.evaluate(() => {
@@ -209,15 +226,45 @@ async function main() {
     console.log(consentClicked ? "  ✓ clicked consent Download" : "  · no consent dialog");
 
     console.log("→ Waiting for model to load + index (first run downloads ~275 MB)…");
-    await page
-      .waitForFunction(
-        () => {
-          const composer = document.querySelector("textarea");
-          return composer instanceof HTMLTextAreaElement && !composer.disabled;
-        },
-        { timeout: 10 * 60 * 1000 }, // 10 minutes for cold-cache first run
-      )
-      .catch(() => bail("Composer never enabled — model load timed out or failed."));
+    // Drive a polling loop in the page context that:
+    //   1. Waits for the composer textarea to enable (= models loaded
+    //      + indexing finished, the original gate condition).
+    //   2. Records every distinct value of the ProgressBar's
+    //      "<current> / <total>" counter it sees along the way.
+    //
+    // The second part is the regression check for the React 18
+    // batching bug: before `dd70365` the indexing card would jump
+    // straight from 0/1 to gone with no intermediate states. We now
+    // require ≥3 distinct states observed on the cold path (model
+    // download + text-layer + embed each contribute multiple).
+    const progressOutcome = await page.evaluate(async () => {
+      const states = new Set<string>();
+      const startedAt = Date.now();
+      while (Date.now() - startedAt < 10 * 60_000) {
+        const counter = document.querySelector(".tabular-nums");
+        if (counter) {
+          const s = (counter.textContent ?? "").trim();
+          if (s) states.add(s);
+        }
+        const textarea = document.querySelector("textarea");
+        if (textarea instanceof HTMLTextAreaElement && !textarea.disabled) {
+          return { states: [...states], composerEnabled: true };
+        }
+        await new Promise((r) => setTimeout(r, 150));
+      }
+      return { states: [...states], composerEnabled: false };
+    });
+    if (!progressOutcome.composerEnabled) {
+      bail("Composer never enabled — model load timed out or failed.");
+    }
+    console.log(
+      `  ✓ composer enabled; progress recorded ${progressOutcome.states.length} distinct states (${progressOutcome.states.slice(0, 6).join(", ")}${progressOutcome.states.length > 6 ? "…" : ""})`,
+    );
+    if (progressOutcome.states.length < 3) {
+      bail(
+        `Progress did not visibly advance — only ${progressOutcome.states.length} distinct state(s) observed: ${progressOutcome.states.join(", ")}. Indicates the React-batching regression has returned.`,
+      );
+    }
 
     console.log("→ Asking a question…");
     // Snapshot the bubble count BEFORE we send. Each turn renders a
