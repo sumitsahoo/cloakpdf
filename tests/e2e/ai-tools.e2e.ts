@@ -30,8 +30,8 @@
  *     produced *some* output, not that the output is correct. Output
  *     quality is a human-judgement call and lives outside automated
  *     testing.
- *   - The script targets the chat tier preference key in localStorage
- *     directly so the picker doesn't block the test.
+ *   - The tool now loads a single chat model and an embedder together;
+ *     there is no tier picker to bypass.
  */
 import { existsSync } from "node:fs";
 import { resolve } from "node:path";
@@ -76,12 +76,7 @@ async function main() {
     const page = await browser.newPage();
     page.setDefaultTimeout(60_000);
 
-    // Pre-pick the small tier so the picker doesn't block. Real users
-    // pick this themselves; we bypass it for an automated run.
     await page.goto(DEV_URL, { waitUntil: "networkidle2" });
-    await page.evaluate(() => {
-      localStorage.setItem("cloakpdf:chat-model-preference", "chat-small");
-    });
 
     console.log("→ Opening Ask PDF…");
     await page.goto(`${DEV_URL}/#/tools/ask-pdf`, { waitUntil: "networkidle2" }).catch(() => {

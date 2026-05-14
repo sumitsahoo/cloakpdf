@@ -1,19 +1,25 @@
 /**
  * Ask PDF — chat-style Q&A over the document text using a small,
- * on-device instruction-tuned LLM.
+ * on-device LLM with embedding-based RAG retrieval.
  *
- * The flow per question is:
+ * Per file (once):
  *
- *   1. Extract the PDF text once and chunk it.
- *   2. Rank chunks by keyword overlap with the user's question and
- *      pick the top-K (cheap, no embedding model required).
- *   3. Build a chat-template prompt: system instructions, the picked
- *      chunks as "Context", and the user's question.
- *   4. Stream the model's reply into the conversation as it generates.
+ *   1. Hash the bytes (SHA-256) → use as cache key.
+ *   2. If a cached vector store exists in IndexedDB, load it. Done.
+ *   3. Otherwise, extract text per page (text layer; OCR fallback for
+ *      scanned pages), chunk by sentence, embed every chunk with the
+ *      MiniLM model, and persist the resulting vector store.
  *
- * The model and pipeline shape are abstracted away by
- * {@link runChat} — to swap models, edit the registry entry in
- * {@link AI_MODELS}; this file stays put.
+ * Per question:
+ *
+ *   1. Embed the question.
+ *   2. Cosine top-K against the chunk vectors.
+ *   3. Build a context block in page-number order.
+ *   4. Stream the chat model's reply with the context + question.
+ *
+ * The model and pipeline shape are abstracted away — to swap either
+ * the chat LLM or the embedder, edit its entry in {@link AI_MODELS};
+ * this file stays put.
  */
 import { Loader2, ScanSearch, Send, Sparkles, User } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -24,19 +30,22 @@ import { AlertBox } from "../components/AlertBox.tsx";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { FileInfoBar } from "../components/FileInfoBar.tsx";
 import { InfoCallout } from "../components/InfoCallout.tsx";
+import { ProgressBar } from "../components/ProgressBar.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { useAsyncProcess } from "../hooks/useAsyncProcess.ts";
-import { useChatTier } from "../hooks/useChatTier.ts";
 import { usePdfFile } from "../hooks/usePdfFile.ts";
-import { type ChatMessage, runChat } from "../utils/ai-tasks.ts";
+import { useRagModels } from "../hooks/useRagModels.ts";
+import { type ChatMessage, runChat, runEmbed } from "../utils/ai-tasks.ts";
+import { chunkPages, extractPdfText } from "../utils/ocr-text.ts";
 import { formatFileSize } from "../utils/file-helpers.ts";
 import {
-  chunkPages,
-  extractTextFromPdf,
-  looksLikeScannedPdf,
-  rankChunksByQuery,
-  type TextChunk,
-} from "../utils/pdf-text.ts";
+  buildVectorStore,
+  cacheStore,
+  getCachedStore,
+  sha256Hex,
+  topK,
+  type VectorStore,
+} from "../utils/vector-store.ts";
 
 interface ChatTurn {
   id: string;
@@ -52,31 +61,41 @@ const SYSTEM_PROMPT = [
   "You are a careful assistant answering questions about a PDF document.",
   "Use ONLY the information in the provided Context to answer.",
   'If the answer is not in the Context, reply exactly: "I could not find that in this document."',
-  "Keep answers concise (1–3 sentences) and cite page numbers in parentheses when relevant.",
+  "Cite page numbers in parentheses when relevant. Keep answers concise (1–4 sentences).",
 ].join(" ");
+
+/** How many chunks to retrieve per question. */
+const TOP_K = 6;
+
+/** Indexing-phase progress reported to the UI. */
+type IndexProgress =
+  | { kind: "extract"; phase: "text-layer" | "ocr"; current: number; total: number }
+  | { kind: "embed"; current: number; total: number };
 
 export default function AskPdf() {
   const [question, setQuestion] = useState("");
   const [turns, setTurns] = useState<ChatTurn[]>([]);
+  const [indexing, setIndexing] = useState<IndexProgress | null>(null);
   const [scannedHint, setScannedHint] = useState(false);
 
-  // Shared chat-tier lifecycle. Single tier in the registry today
-  // means the hook auto-selects it — no picker is rendered. Destructure
-  // `change` here when a second tier is reintroduced.
-  const { ai } = useChatTier();
+  const rag = useRagModels();
 
   const pdf = usePdfFile({
     onReset: () => {
       setTurns([]);
       setScannedHint(false);
-      chunksRef.current = null;
+      setIndexing(null);
+      storeRef.current = null;
     },
   });
   const task = useAsyncProcess();
 
-  // Cache the chunked PDF text across questions — extraction is fast,
-  // but skipping it on follow-ups keeps multi-question sessions snappy.
-  const chunksRef = useRef<TextChunk[] | null>(null);
+  /**
+   * Cached vector store for the currently-loaded PDF. Cleared when
+   * the user swaps files. We rebuild from IndexedDB on the first
+   * question after a file load.
+   */
+  const storeRef = useRef<VectorStore | null>(null);
 
   // Auto-scroll the conversation to the latest message. The trigger
   // collapses "number of turns" and "current-turn length" into one
@@ -90,7 +109,79 @@ export default function AskPdf() {
   }, [scrollTrigger]);
 
   const dialogOpen =
-    ai.status === "awaiting-consent" || ai.status === "downloading" || ai.status === "error";
+    rag.status === "awaiting-consent" || rag.status === "downloading" || rag.status === "error";
+
+  /**
+   * Build (or load from cache) the vector store for `file`. Idempotent
+   * — subsequent questions on the same file hit `storeRef` and skip.
+   */
+  const ensureStore = useCallback(
+    async (file: File, embedPipe: object): Promise<VectorStore | null> => {
+      if (storeRef.current) return storeRef.current;
+
+      const bytes = await file.arrayBuffer();
+      const documentId = await sha256Hex(bytes);
+
+      const cached = await getCachedStore(documentId);
+      if (cached) {
+        storeRef.current = cached;
+        return cached;
+      }
+
+      setIndexing({ kind: "extract", phase: "text-layer", current: 0, total: 1 });
+      const pages = await extractPdfText(file, {
+        onProgress: (info) => {
+          setIndexing({
+            kind: "extract",
+            phase: info.phase,
+            current: info.current,
+            total: info.total,
+          });
+        },
+      });
+
+      const hasAnyText = pages.some((p) => p.text.trim().length > 0);
+      if (!hasAnyText) {
+        setScannedHint(true);
+        setIndexing(null);
+        return null;
+      }
+
+      const chunks = chunkPages(pages, 700, 100);
+      if (chunks.length === 0) {
+        setScannedHint(true);
+        setIndexing(null);
+        return null;
+      }
+
+      // Batch the embedder to keep the UI responsive on large PDFs.
+      // 32-chunk batches are a reasonable middle ground between
+      // throughput and per-step latency for MiniLM in WASM.
+      const BATCH = 32;
+      setIndexing({ kind: "embed", current: 0, total: chunks.length });
+      const vectors: Float32Array[] = [];
+      for (let i = 0; i < chunks.length; i += BATCH) {
+        const slice = chunks.slice(i, i + BATCH);
+        const batchVecs = await runEmbed(
+          embedPipe,
+          slice.map((c) => c.text),
+        );
+        vectors.push(...batchVecs);
+        setIndexing({
+          kind: "embed",
+          current: Math.min(i + BATCH, chunks.length),
+          total: chunks.length,
+        });
+      }
+
+      const store = buildVectorStore(documentId, chunks, vectors);
+      storeRef.current = store;
+      void cacheStore(store);
+      setIndexing(null);
+      return store;
+    },
+    [],
+  );
 
   const handleAsk = useCallback(async () => {
     if (!pdf.file) return;
@@ -98,8 +189,6 @@ export default function AskPdf() {
     const q = question.trim();
     if (!q) return;
 
-    // Append the user's turn immediately so the UI feels responsive,
-    // and a placeholder assistant turn we'll stream into.
     const userId = `u-${Date.now()}`;
     const assistantId = `a-${Date.now()}`;
     setTurns((prev) => [
@@ -110,44 +199,34 @@ export default function AskPdf() {
     setQuestion("");
 
     await task.run(async () => {
-      let pipe: Awaited<ReturnType<typeof ai.ensureReady>>;
+      let pipes: Awaited<ReturnType<typeof rag.ensureReady>>;
       try {
-        pipe = await ai.ensureReady();
+        pipes = await rag.ensureReady();
       } catch (e) {
         if (e instanceof Error && e.message === "cancelled") {
-          // Drop the placeholders — the user backed out.
           setTurns((prev) => prev.filter((t) => t.id !== userId && t.id !== assistantId));
           return;
         }
         throw e;
       }
 
-      // Lazy-extract once per file.
-      let chunks = chunksRef.current;
-      if (!chunks) {
-        const pages = await extractTextFromPdf(file);
-        if (looksLikeScannedPdf(pages)) {
-          setScannedHint(true);
-          // Drop the placeholders so the warning replaces the input area.
-          setTurns((prev) => prev.filter((t) => t.id !== userId && t.id !== assistantId));
-          return;
-        }
-        // 5 × 1200 chars ≈ 1500 tokens of context — well inside Qwen
-        // 2.5's 32K window for both the 0.5B and 1.5B tiers, and leaves
-        // plenty of room for the reply.
-        chunks = chunkPages(pages, 1200, 150);
-        chunksRef.current = chunks;
-      }
-      if (chunks.length === 0) {
-        throw new Error("The PDF text layer is empty — nothing to query.");
+      const store = await ensureStore(file, pipes.embed);
+      if (!store) {
+        setTurns((prev) => prev.filter((t) => t.id !== userId && t.id !== assistantId));
+        return;
       }
 
-      // Pick the chunks most likely to contain the answer.
-      const picked = rankChunksByQuery(chunks, q, 5);
-      const citedPages = [...new Set(picked.map((c) => c.pageNumber))].sort((a, b) => a - b);
+      const [queryVec] = await runEmbed(pipes.embed, [q]);
+      const hits = topK(store, queryVec, TOP_K);
+      if (hits.length === 0) {
+        throw new Error("Couldn't find any relevant chunks for that question.");
+      }
 
-      const contextBlock = picked
-        .map((c) => `[Page ${c.pageNumber}]\n${c.text.trim()}`)
+      // Order context by page number so the prompt reads top-to-bottom.
+      const ordered = [...hits].sort((a, b) => a.chunk.pageNumber - b.chunk.pageNumber);
+      const citedPages = [...new Set(ordered.map((h) => h.chunk.pageNumber))];
+      const contextBlock = ordered
+        .map((h) => `[Page ${h.chunk.pageNumber}]\n${h.chunk.text.trim()}`)
         .join("\n\n");
 
       const messages: ChatMessage[] = [
@@ -158,8 +237,7 @@ export default function AskPdf() {
         },
       ];
 
-      // Stream tokens into the assistant turn as they arrive.
-      const reply = await runChat(pipe, messages, {
+      const reply = await runChat(pipes.chat, messages, {
         maxNewTokens: 512,
         onToken: (delta) => {
           setTurns((prev) =>
@@ -168,17 +246,15 @@ export default function AskPdf() {
         },
       });
 
-      // Finalise — use the cleaned reply from the resolved promise (it
-      // trims and strips the chat template's trailing newline).
       setTurns((prev) =>
         prev.map((t) =>
           t.id === assistantId ? { ...t, content: reply, citedPages, streaming: false } : t,
         ),
       );
     }, "Failed to answer question. Please try again.");
-  }, [pdf.file, question, ai, task]);
+  }, [pdf.file, question, rag, task, ensureStore]);
 
-  // If task.run sets an error, mark the streaming assistant turn as failed.
+  // On task error, mark any streaming assistant turn as failed.
   useEffect(() => {
     if (!task.error) return;
     setTurns((prev) =>
@@ -216,18 +292,20 @@ export default function AskPdf() {
           />
 
           {scannedHint ? (
-            <InfoCallout icon={ScanSearch} title="No text layer detected" accent="warning">
-              This PDF looks like a scanned image. Run <span className="font-medium">OCR PDF</span>{" "}
-              first to add a text layer, then come back here.
+            <InfoCallout icon={ScanSearch} title="Couldn't extract any text" accent="warning">
+              This PDF has no usable text — even after OCR. It may be encrypted, password-protected,
+              or low-resolution. Try a different file.
             </InfoCallout>
           ) : (
             <>
               <ConversationView turns={turns} scrollAnchorRef={scrollAnchorRef} />
 
+              {indexing && <IndexProgressBar progress={indexing} />}
+
               <AiModelGate
-                ai={ai}
-                title="Download AI model to start chatting"
-                blurb="The model runs entirely in your browser; your PDFs are never uploaded."
+                ai={rag.chat}
+                title="Download AI models to start chatting"
+                blurb="Two small models load together: a chat model (~250 MB) and an embedder (~25 MB). Both run entirely in your browser; your PDFs are never uploaded."
               >
                 <Composer
                   value={question}
@@ -238,7 +316,7 @@ export default function AskPdf() {
                 />
               </AiModelGate>
 
-              <ActiveModelBar info={ai.info} ready={ai.status === "ready"} />
+              <ActiveModelBar info={rag.chat.info} ready={rag.status === "ready"} />
             </>
           )}
         </>
@@ -248,19 +326,29 @@ export default function AskPdf() {
 
       <AiConsentDialog
         open={dialogOpen}
-        info={ai.info}
-        status={ai.status}
-        progress={ai.progress}
-        error={ai.error}
-        onConfirm={ai.confirm}
-        onRetry={ai.retry}
-        onCancel={ai.cancel}
+        info={rag.chat.info}
+        status={rag.status}
+        progress={rag.progress}
+        error={rag.error}
+        onConfirm={rag.confirm}
+        onRetry={rag.retry}
+        onCancel={rag.cancel}
       />
     </div>
   );
 }
 
 // ── Sub-components ────────────────────────────────────────────────
+
+function IndexProgressBar({ progress }: { progress: IndexProgress }) {
+  const label =
+    progress.kind === "extract"
+      ? progress.phase === "ocr"
+        ? `Running OCR on scanned pages (${progress.current}/${progress.total})…`
+        : `Reading PDF text (${progress.current}/${progress.total})…`
+      : `Indexing chunks (${progress.current}/${progress.total})…`;
+  return <ProgressBar current={progress.current} total={progress.total} label={label} />;
+}
 
 function ConversationView({
   turns,

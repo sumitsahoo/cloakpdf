@@ -43,8 +43,6 @@ import {
   Scale,
   ScanText,
   Scissors,
-  ShieldAlert,
-  Sparkles,
   Stamp,
   Trash2,
   Wrench,
@@ -89,8 +87,6 @@ const SplitPdf = lazy(() => import("../tools/SplitPdf.tsx"));
 const ExtractImages = lazy(() => import("../tools/ExtractImages.tsx"));
 const ComparePdf = lazy(() => import("../tools/ComparePdf.tsx"));
 const DigitalSignature = lazy(() => import("../tools/DigitalSignature.tsx"));
-const DetectPii = lazy(() => import("../tools/DetectPii.tsx"));
-const SummarizePdf = lazy(() => import("../tools/SummarizePdf.tsx"));
 const AskPdf = lazy(() => import("../tools/AskPdf.tsx"));
 
 // ── Tool metadata ────────────────────────────────────────────────
@@ -351,20 +347,6 @@ export const tools: Tool[] = [
 
   // ── AI (on-device) ───────────────────────────────────────
   {
-    id: "detect-pii",
-    title: "Detect PII (AI)",
-    description: "Suggest names, organisations, and locations to redact using a local NER model",
-    icon: ShieldAlert,
-    category: "ai",
-  },
-  {
-    id: "summarize-pdf",
-    title: "Summarise PDF (AI)",
-    description: "Generate an abstractive summary of the document with a local model",
-    icon: Sparkles,
-    category: "ai",
-  },
-  {
     id: "ask-pdf",
     title: "Ask your PDF (AI)",
     description: "Ask questions and get answers extracted from the PDF — runs entirely on-device",
@@ -411,8 +393,6 @@ export const toolComponents: Record<string, React.LazyExoticComponent<React.Comp
   "extract-images": ExtractImages,
   "compare-pdf": ComparePdf,
   "digital-signature": DigitalSignature,
-  "detect-pii": DetectPii,
-  "summarize-pdf": SummarizePdf,
   "ask-pdf": AskPdf,
 };
 

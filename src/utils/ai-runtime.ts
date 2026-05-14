@@ -12,7 +12,7 @@
  *   - re-uses a single pipeline instance per model — once a pipeline is
  *     loaded it stays in memory until the page unloads.
  */
-import { AI_MODELS, type AiModelId, type ChatModelId } from "./ai-models.ts";
+import { AI_MODELS, type AiModelId } from "./ai-models.ts";
 
 /**
  * Public type for a loaded pipeline instance. Transformers.js exposes
@@ -69,46 +69,6 @@ function safeLocalStorage(): Storage | null {
 }
 
 /**
- * `localStorage` key for the user's preferred chat-model tier. Stored
- * once the user picks between the small and large Qwen variants in the
- * Ask PDF tool. Treat unknown / missing values as "no preference yet —
- * show the picker."
- */
-const CHAT_MODEL_PREF_KEY = "cloakpdf:chat-model-preference";
-
-/**
- * Read the user's saved chat-model preference, or `null` if the
- * stored value isn't a known tier. Legacy values (e.g. the now-removed
- * `"chat-small"`) deliberately fall through to `null` so we don't try
- * to load a model that no longer exists in the registry.
- */
-export function getChatModelPreference(): ChatModelId | null {
-  const raw = safeLocalStorage()?.getItem(CHAT_MODEL_PREF_KEY);
-  return raw === "chat-large" ? raw : null;
-}
-
-/** Persist the chat-model preference. Best-effort — failures are silent. */
-export function setChatModelPreference(modelId: ChatModelId): void {
-  try {
-    safeLocalStorage()?.setItem(CHAT_MODEL_PREF_KEY, modelId);
-  } catch {
-    // ignore (storage full / blocked)
-  }
-}
-
-/**
- * Forget the chat-model preference so the picker reappears next time.
- * Used by the "Change model" affordance in Ask PDF.
- */
-export function clearChatModelPreference(): void {
-  try {
-    safeLocalStorage()?.removeItem(CHAT_MODEL_PREF_KEY);
-  } catch {
-    // ignore
-  }
-}
-
-/**
  * `true` when a previous session already finished downloading this model.
  * Tools use this to skip the consent dialog and load the pipeline
  * directly when the cache is (almost certainly) warm.
@@ -144,6 +104,31 @@ export function forgetModel(modelId: AiModelId): void {
   }
   _pipelineCache.delete(modelId);
   _resolvedPipelines.delete(modelId);
+}
+
+/**
+ * Release the in-memory pipeline for a model without touching the
+ * "downloaded once" flag. The browser's CacheStorage keeps the bytes
+ * so re-loading is cheap. Used when the user switches chat tiers so
+ * the old model's weights and KV cache stop sitting in RAM. Best-
+ * effort: if the pipeline's `dispose()` method throws (or doesn't
+ * exist in older Transformers.js versions) we still drop our refs so
+ * GC can reclaim the memory eventually.
+ */
+export async function unloadModel(modelId: AiModelId): Promise<void> {
+  const pipe = _resolvedPipelines.get(modelId);
+  _resolvedPipelines.delete(modelId);
+  _pipelineCache.delete(modelId);
+  if (!pipe) return;
+  const disposable = pipe as { dispose?: () => Promise<void> | void };
+  if (typeof disposable.dispose === "function") {
+    try {
+      await disposable.dispose();
+    } catch {
+      // Best-effort — the references are dropped above so GC will
+      // catch up even if the runtime didn't tear cleanly down.
+    }
+  }
 }
 
 /**

@@ -3,9 +3,9 @@
  * the model currently in use, its on-device footprint, and a button
  * to switch to a different tier.
  *
- * Driving these props from {@link useChatTier} keeps the strip in sync
- * with the picker; from the consumer's side this is purely
- * presentational.
+ * Driving these props from {@link useRagModels} keeps the strip in
+ * sync with the active chat model; from the consumer's side this is
+ * purely presentational.
  */
 import { RefreshCcw, ShieldCheck } from "lucide-react";
 import type { AI_MODELS } from "../utils/ai-models.ts";

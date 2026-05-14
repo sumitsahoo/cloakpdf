@@ -157,6 +157,4 @@ export type ToolId =
   | "extract-images"
   | "compare-pdf"
   | "digital-signature"
-  | "detect-pii"
-  | "summarize-pdf"
   | "ask-pdf";

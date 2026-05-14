@@ -1,38 +1,21 @@
 /**
- * Registry of AI models used by CloakPDF's optional AI features.
+ * Registry of AI models used by Ask PDF.
  *
- * Every entry describes a model in user-facing terms — its name, a short
- * blurb, an approximate download size, a license, and the canonical
- * Hugging Face page so the consent dialog can link out to it. The
- * `task` and `repo` fields are what `ai-runtime.ts` actually feeds to
- * Transformers.js when loading the pipeline.
+ * Two models load together: a small instruction-tuned chat LLM and a
+ * tiny sentence-embedding model. The chat model answers questions; the
+ * embedder powers the RAG retriever that picks which chunks of the PDF
+ * to feed the chat model. Both run locally in the browser via
+ * Transformers.js; weights are fetched from huggingface.co on first
+ * use and cached in the browser's CacheStorage so repeat visits work
+ * offline.
  *
- * All models run **locally** in the browser via Transformers.js. Files
- * are fetched from huggingface.co on first use and cached in the
- * browser's CacheStorage so subsequent runs work offline.
+ * To swap either model, edit its entry below — every call site reads
+ * its config from `AI_MODELS[id]` and won't otherwise care.
  */
 import type { PipelineType } from "@huggingface/transformers";
 
-/**
- * Stable id used in code to reference a model.
- *
- * Only one chat tier remains — `chat-small` (Qwen 2.5 0.5B) was
- * removed after the ONNX export's LM head proved unusable in
- * Transformers.js: it collapses into single-token loops ("!!!!!!")
- * regardless of decoding strategy. The type alias is kept as a union
- * so a future second tier — once we find a small model whose ONNX
- * build is actually reliable — can be slotted back in without
- * rewiring callers.
- */
-export type AiModelId = "chat-large";
-
-/**
- * Subset of model ids that the chat tier represents. Currently
- * single-valued; `useChatTier` auto-selects it so no picker UI is
- * shown. Re-introduce a `"chat-small"` (or `"chat-fast"`) member here
- * to bring the picker back.
- */
-export type ChatModelId = Extract<AiModelId, "chat-large">;
+/** Stable id used in code to reference a model. */
+export type AiModelId = "chat" | "embed";
 
 export interface AiModelInfo {
   /** Stable id referenced by tools. */
@@ -48,44 +31,62 @@ export interface AiModelInfo {
   task: PipelineType;
   /**
    * Approximate total download size in bytes — used to render a friendly
-   * "~28 MB" hint before the download starts. The runtime reports the
-   * actual size during the download via the progress callback.
+   * "~28 MB" hint before the download starts.
    */
   approxSizeBytes: number;
+  /**
+   * Approximate **peak RAM** the model occupies during inference, in
+   * bytes. Used by `assessMemoryFit()` to gauge whether the user's
+   * device can run the model without crashing the tab.
+   */
+  approxPeakRamBytes: number;
   /** One-liner shown under the model name in the consent dialog. */
   description: string;
-  /**
-   * Short, concrete description of what this model handles well vs.
-   * poorly. Rendered as a "Best suited for" row in the consent dialog
-   * so users can set realistic expectations before paying the download
-   * cost. Keep to one sentence.
-   */
+  /** Short, concrete description of what this model handles well. */
   bestFor?: string;
-  /** License string shown verbatim in the consent dialog (e.g. "MIT", "Apache 2.0"). */
+  /** License string shown verbatim in the consent dialog. */
   license: string;
-  /** Hugging Face model page URL (linked from the consent dialog). */
+  /** Hugging Face model page URL. */
   modelUrl: string;
   /**
    * Pipeline options merged into the `pipeline(task, repo, {...})` call.
-   * Use this to pin `dtype` (e.g. "q8") so we deterministically pull the
-   * quantized weights instead of the full-precision ones.
+   * Use this to pin `dtype` (e.g. "q4f16") so we deterministically pull
+   * the quantized weights instead of the full-precision ones.
    */
   pipelineOptions?: Record<string, unknown>;
 }
 
 export const AI_MODELS: Record<AiModelId, AiModelInfo> = {
-  "chat-large": {
-    id: "chat-large",
-    displayName: "Qwen 2.5 (1.5B, instruct)",
-    repo: "onnx-community/Qwen2.5-1.5B-Instruct",
+  chat: {
+    id: "chat",
+    displayName: "SmolLM2 (360M, instruct)",
+    repo: "HuggingFaceTB/SmolLM2-360M-Instruct",
     task: "text-generation",
-    approxSizeBytes: 1100 * 1024 * 1024,
+    approxSizeBytes: 250 * 1024 * 1024,
+    // Working figure for inference peak: ~200 MB weights expanded in
+    // memory plus the KV cache and ONNX runtime overhead for a few
+    // thousand tokens of context. Comfortable on phones.
+    approxPeakRamBytes: 800 * 1024 * 1024,
     description:
-      "Alibaba's instruction-tuned 1.5B chat model. Significantly better at citing pages, following instructions, and reasoning over longer context — at the cost of a larger download.",
-    bestFor: "Citing pages, multi-step reasoning, and longer-form answers over the whole document.",
+      "Hugging Face's small chat model purpose-built for on-device inference. Fast, mobile-friendly, and reliable in Transformers.js.",
+    bestFor: "Answering questions about a PDF on phones, tablets, and laptops with ≤ 8 GB RAM.",
     license: "Apache 2.0",
-    modelUrl: "https://huggingface.co/onnx-community/Qwen2.5-1.5B-Instruct",
+    modelUrl: "https://huggingface.co/HuggingFaceTB/SmolLM2-360M-Instruct",
     pipelineOptions: { dtype: "q4f16" },
+  },
+  embed: {
+    id: "embed",
+    displayName: "all-MiniLM-L6-v2",
+    repo: "Xenova/all-MiniLM-L6-v2",
+    task: "feature-extraction",
+    approxSizeBytes: 25 * 1024 * 1024,
+    approxPeakRamBytes: 80 * 1024 * 1024,
+    description:
+      "Compact sentence-embedding model. Turns PDF chunks and your question into 384-dim vectors so we can retrieve the right pages before asking the chat model.",
+    bestFor: "Semantic retrieval over English PDFs.",
+    license: "Apache 2.0",
+    modelUrl: "https://huggingface.co/Xenova/all-MiniLM-L6-v2",
+    pipelineOptions: { dtype: "q8" },
   },
 };
 
