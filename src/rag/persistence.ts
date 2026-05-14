@@ -14,7 +14,15 @@
 import { Document } from "@langchain/core/documents";
 
 const DB_NAME = "cloakpdf-rag";
-const DB_VERSION = 1;
+// Bump when the cached schema becomes incompatible with the current
+// pipeline — e.g. swapping the embedder model (vectors are stale even
+// though the dimension may match) or changing the chunking strategy.
+//
+//   v1: initial release with MiniLM-L6-v2 (Xenova/all-MiniLM-L6-v2).
+//   v2: switched to bge-small-en-v1.5 (Xenova/bge-small-en-v1.5).
+//       Both are 384-dim, so a naive cache hit would silently retrieve
+//       against the wrong embedding space and return garbage chunks.
+const DB_VERSION = 2;
 const STORE_NAME = "index-cache";
 const MAX_CACHED = 10;
 
@@ -46,10 +54,14 @@ function openDb(): Promise<IDBDatabase | null> {
     const req = indexedDB.open(DB_NAME, DB_VERSION);
     req.onupgradeneeded = () => {
       const db = req.result;
-      if (!db.objectStoreNames.contains(STORE_NAME)) {
-        const store = db.createObjectStore(STORE_NAME, { keyPath: "documentId" });
-        store.createIndex("touchedAt", "touchedAt");
+      // Schema bumps imply old data is incompatible (embedder or
+      // chunking change). Drop and recreate the store so we never
+      // hand stale vectors to a new embedding model.
+      if (db.objectStoreNames.contains(STORE_NAME)) {
+        db.deleteObjectStore(STORE_NAME);
       }
+      const store = db.createObjectStore(STORE_NAME, { keyPath: "documentId" });
+      store.createIndex("touchedAt", "touchedAt");
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => resolve(null);

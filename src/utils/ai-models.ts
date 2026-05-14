@@ -76,16 +76,22 @@ export const AI_MODELS: Record<AiModelId, AiModelInfo> = {
   },
   embed: {
     id: "embed",
-    displayName: "all-MiniLM-L6-v2",
-    repo: "Xenova/all-MiniLM-L6-v2",
+    displayName: "bge-small-en-v1.5",
+    repo: "Xenova/bge-small-en-v1.5",
     task: "feature-extraction",
-    approxSizeBytes: 25 * 1024 * 1024,
-    approxPeakRamBytes: 80 * 1024 * 1024,
+    // ~33 MB on disk (q8). Slightly bigger than MiniLM-L6 (~25 MB)
+    // but worth it: BAAI's BGE family scores ~6 points higher on
+    // MTEB at the same 384 dimensions, and on real PDFs (see
+    // tests/retrieval-debug/) MiniLM was demonstrably ranking the
+    // obviously-correct chunks at #5 instead of #1, dragging the
+    // fusion top-K with it.
+    approxSizeBytes: 33 * 1024 * 1024,
+    approxPeakRamBytes: 110 * 1024 * 1024,
     description:
-      "Compact sentence-embedding model. Turns PDF chunks and your question into 384-dim vectors so we can retrieve the right pages before asking the chat model.",
+      "BAAI's compact sentence-embedding model. Turns PDF chunks and your question into 384-dim vectors so we can retrieve the right pages before asking the chat model — measurably better grounding than the older MiniLM family.",
     bestFor: "Semantic retrieval over English PDFs.",
-    license: "Apache 2.0",
-    modelUrl: "https://huggingface.co/Xenova/all-MiniLM-L6-v2",
+    license: "MIT",
+    modelUrl: "https://huggingface.co/Xenova/bge-small-en-v1.5",
     pipelineOptions: { dtype: "q8" },
   },
 };
