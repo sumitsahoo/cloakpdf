@@ -486,7 +486,21 @@ function AssistantMarkdown({ content }: { content: string }) {
 function Bubble({ turn }: { turn: ChatTurn }) {
   const isUser = turn.role === "user";
   return (
-    <div className={`flex gap-3 ${isUser ? "flex-row-reverse" : ""}`}>
+    // `data-bubble` is the stable hook the e2e probe uses to count
+    // turns and find the last assistant reply. Without it the tests
+    // would have to grep Tailwind class names — exactly the coupling
+    // that broke when we swapped the assistant rendering from plain
+    // `<p whitespace-pre-wrap>` to markdown components.
+    //
+    // `data-streaming` toggles to "true" while a token stream is in
+    // flight so tests can wait for it to clear (and a screen reader
+    // can interpret aria-busy from the same primitive).
+    <div
+      className={`flex gap-3 ${isUser ? "flex-row-reverse" : ""}`}
+      data-bubble={turn.role}
+      data-streaming={turn.streaming ? "true" : "false"}
+      aria-busy={turn.streaming ? true : undefined}
+    >
       <span
         className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center mt-0.5 ${
           isUser

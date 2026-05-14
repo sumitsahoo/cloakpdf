@@ -203,35 +203,39 @@ async function main() {
       .catch(() => bail("Composer never enabled — model load timed out or failed."));
 
     console.log("→ Asking a question…");
-    // Snapshot the bubble count BEFORE we send. User and assistant
-    // turns both render with `p.whitespace-pre-wrap`; the count
-    // increments once on user-send and again on the assistant's first
-    // token. We wait for `prev + 2` so we don't accidentally capture
-    // the user's own message as the assistant reply.
+    // Snapshot the bubble count BEFORE we send. Each turn renders a
+    // wrapper element with `data-bubble="user|assistant"`; the count
+    // increments once on user-send and again when the assistant
+    // appears. We wait for `prev + 2` so we don't accidentally capture
+    // the user's own message as the assistant reply. The data
+    // attribute is a stable test hook — switching the inner rendering
+    // (e.g. plain `<p>` → react-markdown) doesn't change it.
     const priorBubbleCount = await page.evaluate(
-      () => document.querySelectorAll("p.whitespace-pre-wrap").length,
+      () => document.querySelectorAll("[data-bubble]").length,
     );
     await page.focus("textarea");
     await page.keyboard.type("What is this document about?");
     await page.keyboard.press("Enter");
 
-    // Wait for the assistant turn's streaming indicator to clear.
-    // We detect "done" by the absence of the .animate-pulse caret that
-    // sits inside the in-flight assistant bubble.
+    // Wait for the assistant turn's streaming to finish. We detect
+    // "done" by the bubble's `data-streaming` attribute flipping to
+    // "false" — the markdown rewrite means `.animate-pulse` is no
+    // longer reliably inside the last `<p>` and a class-name probe
+    // would silently fall through.
     await page.waitForFunction(
       (prev) => {
-        const bubbles = document.querySelectorAll("p.whitespace-pre-wrap");
+        const bubbles = document.querySelectorAll("[data-bubble]");
         if (bubbles.length < prev + 2) return false;
         const lastBubble = bubbles[bubbles.length - 1];
-        const stillStreaming = lastBubble.querySelector(".animate-pulse");
-        return stillStreaming === null && (lastBubble.textContent ?? "").trim().length > 0;
+        if (lastBubble.getAttribute("data-streaming") === "true") return false;
+        return (lastBubble.textContent ?? "").trim().length > 0;
       },
       { timeout: 5 * 60 * 1000 },
       priorBubbleCount,
     );
 
     const reply = await page.evaluate(() => {
-      const bubbles = document.querySelectorAll("p.whitespace-pre-wrap");
+      const bubbles = document.querySelectorAll('[data-bubble="assistant"]');
       return bubbles[bubbles.length - 1]?.textContent?.trim() ?? "";
     });
 
@@ -288,24 +292,24 @@ async function main() {
     // after the page reload that wiped in-memory pipelines.
     console.log("→ Asking a question on the warm-cache path…");
     const priorWarmBubbleCount = await page.evaluate(
-      () => document.querySelectorAll("p.whitespace-pre-wrap").length,
+      () => document.querySelectorAll("[data-bubble]").length,
     );
     await page.focus("textarea");
     await page.keyboard.type("What does the document discuss?");
     await page.keyboard.press("Enter");
     await page.waitForFunction(
       (prev) => {
-        const bubbles = document.querySelectorAll("p.whitespace-pre-wrap");
+        const bubbles = document.querySelectorAll("[data-bubble]");
         if (bubbles.length < prev + 2) return false;
         const lastBubble = bubbles[bubbles.length - 1];
-        const stillStreaming = lastBubble.querySelector(".animate-pulse");
-        return stillStreaming === null && (lastBubble.textContent ?? "").trim().length > 0;
+        if (lastBubble.getAttribute("data-streaming") === "true") return false;
+        return (lastBubble.textContent ?? "").trim().length > 0;
       },
       { timeout: 5 * 60 * 1000 },
       priorWarmBubbleCount,
     );
     const warmReply = await page.evaluate(() => {
-      const bubbles = document.querySelectorAll("p.whitespace-pre-wrap");
+      const bubbles = document.querySelectorAll('[data-bubble="assistant"]');
       return bubbles[bubbles.length - 1]?.textContent?.trim() ?? "";
     });
     console.log("\n──────── warm-cache assistant reply ────────");

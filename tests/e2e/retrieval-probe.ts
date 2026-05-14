@@ -121,14 +121,15 @@ async function askAndCapture(
   page: import("puppeteer-core").Page,
   question: string,
 ): Promise<{ reply: string }> {
-  // Snapshot the bubble count BEFORE we send. Both user and assistant
-  // turns render with `p.whitespace-pre-wrap`, so the count jumps by
-  // ~2 per question: once when the user message renders, again when
-  // the assistant's first token arrives. Without this snapshot the
-  // wait below would fire on the user bubble and we'd capture the
-  // user's own question text as the "reply".
+  // Snapshot the bubble count BEFORE we send. Each turn renders a
+  // wrapper element with `data-bubble="user|assistant"`, so the count
+  // jumps by 2 per question — once for the user message, once for
+  // the assistant. We wait for `prev + 2` so we don't accidentally
+  // capture the user's own question text as the assistant reply.
+  // The data attribute is a stable test hook regardless of how the
+  // inner rendering changes (plain text vs. markdown).
   const priorBubbleCount = await page.evaluate(
-    () => document.querySelectorAll("p.whitespace-pre-wrap").length,
+    () => document.querySelectorAll("[data-bubble]").length,
   );
 
   await page.focus("textarea");
@@ -140,24 +141,24 @@ async function askAndCapture(
   await page.keyboard.type(question);
   await page.keyboard.press("Enter");
 
-  // Wait for two new bubbles (user msg + assistant msg) AND the
-  // assistant's streaming caret to clear AND non-empty content. The
-  // `prev + 2` guard is what stops us from capturing the user bubble
-  // as the assistant reply.
+  // Wait for two new bubbles AND the assistant's `data-streaming` flag
+  // to clear AND non-empty content. `data-streaming` is the reliable
+  // signal — the `.animate-pulse` caret is now outside the markdown
+  // body so a class-name probe inside the last `<p>` would miss it.
   await page.waitForFunction(
     (prev) => {
-      const bubbles = document.querySelectorAll("p.whitespace-pre-wrap");
+      const bubbles = document.querySelectorAll("[data-bubble]");
       if (bubbles.length < prev + 2) return false;
       const lastBubble = bubbles[bubbles.length - 1];
-      const stillStreaming = lastBubble.querySelector(".animate-pulse");
-      return stillStreaming === null && (lastBubble.textContent ?? "").trim().length > 0;
+      if (lastBubble.getAttribute("data-streaming") === "true") return false;
+      return (lastBubble.textContent ?? "").trim().length > 0;
     },
     { timeout: 5 * 60 * 1000 },
     priorBubbleCount,
   );
 
   const reply = await page.evaluate(() => {
-    const bubbles = document.querySelectorAll("p.whitespace-pre-wrap");
+    const bubbles = document.querySelectorAll('[data-bubble="assistant"]');
     return bubbles[bubbles.length - 1]?.textContent?.trim() ?? "";
   });
   return { reply };
