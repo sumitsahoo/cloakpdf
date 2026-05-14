@@ -22,7 +22,10 @@ const DB_NAME = "cloakpdf-rag";
 //   v2: switched to bge-small-en-v1.5 (Xenova/bge-small-en-v1.5).
 //       Both are 384-dim, so a naive cache hit would silently retrieve
 //       against the wrong embedding space and return garbage chunks.
-const DB_VERSION = 2;
+//   v3: switched to bge-base-en-v1.5 (Xenova/bge-base-en-v1.5).
+//       768-dim — incompatible with v2's 384-dim packed vectors at the
+//       struct level, but we drop the store on every upgrade anyway.
+const DB_VERSION = 3;
 const STORE_NAME = "index-cache";
 const MAX_CACHED = 10;
 

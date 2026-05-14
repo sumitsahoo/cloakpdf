@@ -36,6 +36,11 @@ const QUESTIONS = [
   "What does the document discuss?",
   "Summarize the main responsibilities described in the document.",
   "What technologies or tools are mentioned in the document?",
+  // Off-topic — checks the strict-grounding refusal added to the
+  // system prompt. The assistant must NOT answer "Paris" from general
+  // knowledge; it should politely refuse and steer the user back to
+  // the uploaded PDF.
+  "What is the capital of France?",
 ];
 
 interface HybridDebugRecord {

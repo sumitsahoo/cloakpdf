@@ -12,7 +12,7 @@
  *   - re-uses a single pipeline instance per model — once a pipeline is
  *     loaded it stays in memory until the page unloads.
  */
-import { AI_MODELS, type AiModelId } from "./ai-models.ts";
+import { type AiModelId, getModelInfo } from "./ai-models.ts";
 
 /**
  * Public type for a loaded pipeline instance. Transformers.js exposes
@@ -265,7 +265,7 @@ export async function loadPipeline(
   const existing = _pipelineCache.get(modelId);
   if (existing) return existing;
 
-  const info = AI_MODELS[modelId];
+  const info = getModelInfo(modelId);
 
   const promise = (async () => {
     const t = await getTransformers();

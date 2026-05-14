@@ -9,10 +9,14 @@
  * use and cached in the browser's CacheStorage so repeat visits work
  * offline.
  *
- * To swap either model, edit its entry below — every call site reads
- * its config from `AI_MODELS[id]` and won't otherwise care.
+ * Two flavours per id are possible — a default ("desktop-tier") in
+ * `AI_MODELS` and an optional smaller variant in `MOBILE_OVERRIDES`.
+ * Call sites should always go through {@link getModelInfo} rather than
+ * read `AI_MODELS` directly so the right variant is picked for the
+ * user's device.
  */
 import type { PipelineType } from "@huggingface/transformers";
+import { getDeviceMemoryGb, isMobileDevice } from "./device-memory.ts";
 
 /** Stable id used in code to reference a model. */
 export type AiModelId = "chat" | "embed";
@@ -56,6 +60,11 @@ export interface AiModelInfo {
   pipelineOptions?: Record<string, unknown>;
 }
 
+/**
+ * Desktop-tier defaults. Read these via {@link getModelInfo}; on a
+ * memory-constrained device the matching entry in
+ * {@link MOBILE_OVERRIDES} takes precedence.
+ */
 export const AI_MODELS: Record<AiModelId, AiModelInfo> = {
   chat: {
     id: "chat",
@@ -85,25 +94,80 @@ export const AI_MODELS: Record<AiModelId, AiModelInfo> = {
   },
   embed: {
     id: "embed",
-    displayName: "bge-small-en-v1.5",
-    repo: "Xenova/bge-small-en-v1.5",
+    displayName: "bge-base-en-v1.5",
+    repo: "Xenova/bge-base-en-v1.5",
     task: "feature-extraction",
-    // ~33 MB on disk (q8). Slightly bigger than MiniLM-L6 (~25 MB)
-    // but worth it: BAAI's BGE family scores ~6 points higher on
-    // MTEB at the same 384 dimensions, and on real PDFs (see
-    // tests/retrieval-debug/) MiniLM was demonstrably ranking the
-    // obviously-correct chunks at #5 instead of #1, dragging the
-    // fusion top-K with it.
-    approxSizeBytes: 33 * 1024 * 1024,
-    approxPeakRamBytes: 110 * 1024 * 1024,
+    // ~140 MB on disk (q8), ~450 MB peak RAM. 4× the size of
+    // bge-small but the 768-dim vectors give noticeably stronger
+    // semantic match — bge-small was ranking the right chunk at #4
+    // for the "what is this about?" query (the doc header chunk),
+    // landing past the fused top-K. bge-base is one of the strongest
+    // sub-200 MB embedders on MTEB and is what we'll feed every
+    // device until we add a mobile-specific override.
+    approxSizeBytes: 140 * 1024 * 1024,
+    approxPeakRamBytes: 450 * 1024 * 1024,
     description:
-      "BAAI's compact sentence-embedding model. Turns PDF chunks and your question into 384-dim vectors so we can retrieve the right pages before asking the chat model — measurably better grounding than the older MiniLM family.",
+      "BAAI's mid-size sentence-embedding model. Turns PDF chunks and your question into 768-dim vectors so we can retrieve the right pages before asking the chat model — a clear step up over bge-small on PDFs with overlapping section topics.",
     bestFor: "Semantic retrieval over English PDFs.",
     license: "MIT",
-    modelUrl: "https://huggingface.co/Xenova/bge-small-en-v1.5",
+    modelUrl: "https://huggingface.co/Xenova/bge-base-en-v1.5",
     pipelineOptions: { dtype: "q8" },
   },
 };
+
+/**
+ * Smaller variants used on memory-constrained devices (phones / tablets
+ * with ≤ 4 GB total RAM). Only the chat model gets a swap today — the
+ * embedder is already ~33 MB so there's nothing meaningful to swap to.
+ *
+ * Why these specific overrides:
+ *   - SmolLM2-360M shares the prompt template, tokenizer, and decoding
+ *     conventions of the 1.7 B, so the SYSTEM_PROMPT and ai-tasks.ts
+ *     defaults written for the desktop model port cleanly. The 360 M's
+ *     loop pathology on long answers is largely tamed now that the
+ *     retriever pre-trims context with bge-small + RRF.
+ */
+const MOBILE_OVERRIDES: Partial<Record<AiModelId, AiModelInfo>> = {
+  chat: {
+    id: "chat",
+    displayName: "SmolLM2 (360M, instruct)",
+    repo: "HuggingFaceTB/SmolLM2-360M-Instruct",
+    task: "text-generation",
+    approxSizeBytes: 250 * 1024 * 1024,
+    approxPeakRamBytes: 800 * 1024 * 1024,
+    description:
+      "Hugging Face's pocket-sized chat model. Loaded automatically on phones and other low-RAM devices where the 1.7 B variant won't fit.",
+    bestFor: "Phones, tablets, and laptops with < 4 GB free RAM.",
+    license: "Apache 2.0",
+    modelUrl: "https://huggingface.co/HuggingFaceTB/SmolLM2-360M-Instruct",
+    pipelineOptions: { dtype: "q4f16" },
+  },
+};
+
+/**
+ * Pick the right model variant for the current device. Falls through
+ * to `AI_MODELS[id]` whenever there's no smaller override or the
+ * heuristics decide the device has the headroom for the default.
+ *
+ * Heuristics (cheapest first):
+ *   1. `navigator.deviceMemory` is the cleanest signal. Chrome / Edge /
+ *      Opera return a quantised GB number; 4 GB and below routes to the
+ *      mobile-tier model. Desktops with 8+ GB stay on the default.
+ *   2. When the browser doesn't expose `deviceMemory` (Firefox, Safari),
+ *      the UA-string `isMobileDevice()` check kicks in — phones get the
+ *      smaller model; laptops/desktops keep the default.
+ */
+export function getModelInfo(id: AiModelId): AiModelInfo {
+  const fallback = MOBILE_OVERRIDES[id];
+  if (fallback && shouldUseMobileFallback()) return fallback;
+  return AI_MODELS[id];
+}
+
+function shouldUseMobileFallback(): boolean {
+  const gb = getDeviceMemoryGb();
+  if (gb !== null) return gb <= 4;
+  return isMobileDevice();
+}
 
 /** Format a byte count as e.g. "≈ 28 MB" for the consent dialog. */
 export function formatApproxSize(bytes: number): string {

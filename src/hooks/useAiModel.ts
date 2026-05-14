@@ -30,7 +30,7 @@
  * mid-flight needs to be redownloaded.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AI_MODELS, type AiModelId } from "../utils/ai-models.ts";
+import { type AiModelId, type AiModelInfo, getModelInfo } from "../utils/ai-models.ts";
 import {
   type AiPipeline,
   type AiProgress,
@@ -64,7 +64,7 @@ export type AiModelStatus =
 
 export interface UseAiModelReturn {
   /** Spec for the model (display name, size, URL, …). */
-  info: (typeof AI_MODELS)[AiModelId];
+  info: AiModelInfo;
   /** Current state machine position. */
   status: AiModelStatus;
   /** Latest aggregated download progress (or null when no download is active). */
@@ -86,7 +86,7 @@ export interface UseAiModelReturn {
 }
 
 export function useAiModel(modelId: AiModelId): UseAiModelReturn {
-  const info = AI_MODELS[modelId];
+  const info = getModelInfo(modelId);
 
   // Treat "already loaded in this tab" as ready so repeat tool visits
   // skip the dialog. We pull the resolved pipeline up-front so the hook

@@ -8,8 +8,7 @@
  * purely presentational.
  */
 import { RefreshCcw, ShieldCheck } from "lucide-react";
-import type { AI_MODELS } from "../utils/ai-models.ts";
-import { formatApproxSize } from "../utils/ai-models.ts";
+import { type AiModelInfo, formatApproxSize } from "../utils/ai-models.ts";
 
 interface ActiveModelBarProps {
   /**
@@ -17,7 +16,7 @@ interface ActiveModelBarProps {
    * {@link useAiModel.info}. Widened so non-chat models can also
    * render the strip if a future tool ever needs to.
    */
-  info: (typeof AI_MODELS)[keyof typeof AI_MODELS];
+  info: AiModelInfo;
   /**
    * `true` when the pipeline is loaded and the tool is operational.
    * Drives the "Running" / "Selected" verb so users can distinguish
