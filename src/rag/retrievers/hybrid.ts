@@ -13,7 +13,7 @@
  * it controls how steeply later ranks decay. 60 is robust across IR
  * benchmarks and we follow that prior.
  */
-import { Document } from "@langchain/core/documents";
+import type { Document } from "@langchain/core/documents";
 import {
   type BaseRetriever,
   BaseRetriever as BaseRetrieverClass,
@@ -53,10 +53,23 @@ export class HybridRetriever extends BaseRetrieverClass {
   }
 
   async _getRelevantDocuments(query: string): Promise<Document[]> {
-    const [denseHits, sparseHits] = await Promise.all([
+    // `allSettled` so a fault in one retriever (e.g. a WASM crash in
+    // the dense embedder, an unexpected throw from the BM25 library on
+    // some pathological query) doesn't kill the whole retrieve step.
+    // We fuse whatever survived and only rethrow if BOTH sides failed
+    // — that's the only case where there's nothing to feed the LLM.
+    const [denseResult, sparseResult] = await Promise.allSettled([
       this.dense.invoke(query),
       this.sparse.invoke(query),
     ]);
+    const denseHits = denseResult.status === "fulfilled" ? denseResult.value : [];
+    const sparseHits = sparseResult.status === "fulfilled" ? sparseResult.value : [];
+    if (denseResult.status === "rejected" && sparseResult.status === "rejected") {
+      // Both sides failed — surface the dense error (typically the
+      // more diagnostic one since BM25 is a pure-JS sort) so the
+      // session caller can show it to the user.
+      throw denseResult.reason;
+    }
     recordHybridDebug(query, denseHits, sparseHits);
     return reciprocalRankFusion([denseHits, sparseHits], this.k, this.rrfK);
   }

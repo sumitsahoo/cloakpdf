@@ -5,8 +5,9 @@
  * deduplication invariants the production pipeline depends on.
  */
 import { Document } from "@langchain/core/documents";
+import { BaseRetriever } from "@langchain/core/retrievers";
 import { describe, expect, it } from "vitest";
-import { reciprocalRankFusion } from "../../src/rag/retrievers/hybrid.ts";
+import { HybridRetriever, reciprocalRankFusion } from "../../src/rag/retrievers/hybrid.ts";
 
 function doc(id: string, content = id, page = 1): Document {
   return new Document({
@@ -79,5 +80,77 @@ describe("reciprocalRankFusion", () => {
     // loose (huge rrfK): contributions are nearly equal, but `b`
     // still wins because it appears in *both* lists.
     expect(loose.map((d) => d.metadata.chunkId)[0]).toBe("b");
+  });
+});
+
+// ── HybridRetriever resilience ────────────────────────────────────
+//
+// Tiny test-only retriever shells that either return a fixed result or
+// throw. Cheaper than mocking the real BM25 / dense retrievers and
+// keeps the assertions focused on the fault-tolerance contract.
+
+class FixedRetriever extends BaseRetriever {
+  static lc_name() {
+    return "FixedRetriever";
+  }
+  lc_namespace = ["test", "fixed"];
+  private hits: Document[];
+  constructor(hits: Document[]) {
+    super();
+    this.hits = hits;
+  }
+  async _getRelevantDocuments(_query: string): Promise<Document[]> {
+    return this.hits;
+  }
+}
+
+class ThrowingRetriever extends BaseRetriever {
+  static lc_name() {
+    return "ThrowingRetriever";
+  }
+  lc_namespace = ["test", "throwing"];
+  private message: string;
+  constructor(message: string) {
+    super();
+    this.message = message;
+  }
+  async _getRelevantDocuments(_query: string): Promise<Document[]> {
+    throw new Error(this.message);
+  }
+}
+
+describe("HybridRetriever resilience", () => {
+  it("returns the dense hits when BM25 (sparse) throws", async () => {
+    const dense = new FixedRetriever([doc("d1"), doc("d2")]);
+    const sparse = new ThrowingRetriever("bm25 boom");
+    const retriever = new HybridRetriever({ dense, sparse, k: 5 });
+    const hits = await retriever.invoke("any");
+    expect(hits.map((d) => d.metadata.chunkId)).toEqual(["d1", "d2"]);
+  });
+
+  it("returns the BM25 hits when the dense retriever throws", async () => {
+    const dense = new ThrowingRetriever("embedder crashed");
+    const sparse = new FixedRetriever([doc("s1"), doc("s2")]);
+    const retriever = new HybridRetriever({ dense, sparse, k: 5 });
+    const hits = await retriever.invoke("any");
+    expect(hits.map((d) => d.metadata.chunkId)).toEqual(["s1", "s2"]);
+  });
+
+  it("rethrows when BOTH retrievers fail — there's nothing left to feed the LLM", async () => {
+    const dense = new ThrowingRetriever("dense failure");
+    const sparse = new ThrowingRetriever("sparse failure");
+    const retriever = new HybridRetriever({ dense, sparse, k: 5 });
+    // Dense error is surfaced first — typically the more diagnostic one.
+    await expect(retriever.invoke("any")).rejects.toThrow("dense failure");
+  });
+
+  it("still fuses both when both succeed (regression: don't break the happy path)", async () => {
+    const dense = new FixedRetriever([doc("a"), doc("b")]);
+    const sparse = new FixedRetriever([doc("a"), doc("c")]);
+    const retriever = new HybridRetriever({ dense, sparse, k: 3 });
+    const hits = await retriever.invoke("any");
+    // `a` ranks 1 in both → fuses to top.
+    expect(hits[0]?.metadata.chunkId).toBe("a");
+    expect(hits).toHaveLength(3);
   });
 });
