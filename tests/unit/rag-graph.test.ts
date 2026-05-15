@@ -5,7 +5,7 @@
  * pieces we test the helpers in isolation.
  */
 import { describe, expect, it } from "vitest";
-import { extractCoreQuery } from "../../src/rag/graph.ts";
+import { extractCoreQuery, looksLikePastedProse } from "../../src/rag/graph.ts";
 
 describe("extractCoreQuery (dilution-attack defence)", () => {
   it("returns the question alone when prose follows a `?` (canonical attack)", () => {
@@ -104,5 +104,57 @@ describe("extractCoreQuery (dilution-attack defence)", () => {
   it("does not cap short unpunctuated inputs", () => {
     const short = "tell me about sumit and his cloud work";
     expect(extractCoreQuery(short)).toBe(short);
+  });
+});
+
+describe("looksLikePastedProse (pasted-prose attack defence)", () => {
+  it("flags the canonical Lorem Ipsum paragraph (4 sentences = 3 boundaries, no `?`)", () => {
+    const lorem =
+      "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it. It has survived not only five centuries, but also the leap into electronic typesetting. It was popularised in the 1960s with the release of Letraset sheets.";
+    expect(looksLikePastedProse(lorem)).toBe(true);
+  });
+
+  it("flags the same paragraph even when copied without the leading `L`", () => {
+    // The exact shape the user pasted in the bug report — four
+    // sentences = three sentence boundaries, no `?` anywhere.
+    const lorem =
+      "orem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets.";
+    expect(looksLikePastedProse(lorem)).toBe(true);
+  });
+
+  it("does NOT flag a single-sentence question", () => {
+    expect(looksLikePastedProse("What is the title of this document?")).toBe(false);
+  });
+
+  it("does NOT flag a single-sentence declarative input (no `?`)", () => {
+    // No sentence boundaries past the first sentence — not the
+    // pasted-prose shape.
+    expect(looksLikePastedProse("Tell me about the work experience")).toBe(false);
+  });
+
+  it("does NOT flag a two-sentence input with no `?` (under the boundary threshold)", () => {
+    // Two sentences = one boundary. We need >= 3 boundaries to flag.
+    expect(looksLikePastedProse("Tell me about Sumit. He works at Vodafone.")).toBe(false);
+  });
+
+  it("does NOT flag a three-sentence input with no `?` (at boundary count 2, still under threshold)", () => {
+    // Three sentences = two boundaries. Boundary threshold is >= 3.
+    expect(
+      looksLikePastedProse("Explain Sumit's work. List his projects. Describe his achievements."),
+    ).toBe(false);
+  });
+
+  it("does NOT flag a long multi-sentence question that has a `?`", () => {
+    // The presence of a `?` is the user signalling intent — even a
+    // padded question goes through extractCoreQuery instead of
+    // being refused outright.
+    const padded =
+      "What is Lorem Ipsum? Lorem Ipsum is simply dummy text. It has been around since the 1500s. It was popularised in the 1960s.";
+    expect(looksLikePastedProse(padded)).toBe(false);
+  });
+
+  it("does NOT flag empty / whitespace input", () => {
+    expect(looksLikePastedProse("")).toBe(false);
+    expect(looksLikePastedProse("   ")).toBe(false);
   });
 });

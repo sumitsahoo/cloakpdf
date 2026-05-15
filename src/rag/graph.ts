@@ -290,6 +290,46 @@ const EMBED_HARD_CAP = 200;
  * of the truncated form, and a focused query is what they're
  * designed to operate on.
  */
+/**
+ * Detect the "pasted prose" attack shape — multiple declarative
+ * sentences with no question mark anywhere in the input. This is
+ * the signature of someone copy-pasting a paragraph (Lorem Ipsum,
+ * a chunk of an unrelated article, etc.) instead of asking a
+ * question.
+ *
+ * **Why this exists in addition to the off-topic gate.** With a
+ * strong general-purpose embedder like EmbeddingGemma, any English
+ * prose embeds into a "generic explanation" cluster that has
+ * positive cosine with the prose chunks of *any* well-written PDF.
+ * The 0.5 absolute threshold can be defeated by enough English-y
+ * tokens. Meanwhile BM25's score (with the upstream library's
+ * substring-TF behaviour) collapses to "which chunk has the most
+ * stopwords" because the discriminating tokens — `lorem`, `ipsum`,
+ * `dummy`, `typesetting` — don't appear in any real PDF. The result:
+ * retrieval surfaces chunks ranked by stopword density, the gate
+ * thinks the question is on-topic, and the LLM confabulates an
+ * answer with fabricated citations.
+ *
+ * **The shape signal.** Real users type questions or commands:
+ * either one sentence ending in `?`, or a short imperative. A
+ * paragraph of 4+ sentences with no `?` anywhere is virtually never
+ * a real chat input. The check is deliberately strict on both axes
+ * (>= 3 sentence boundaries AND no `?`) so we never refuse a
+ * legitimate query that happens to span a couple of sentences for
+ * context.
+ */
+export function looksLikePastedProse(question: string): boolean {
+  const trimmed = question.trim();
+  if (trimmed.includes("?")) return false;
+  // Match `[.!] whitespace + capital letter` — the canonical English
+  // sentence-break shape. We don't require 100% accuracy; the
+  // threshold of 3 sentence boundaries (= 4 sentences in the input)
+  // is high enough that occasional miscounts on abbreviations don't
+  // false-positive on real questions.
+  const boundaries = trimmed.match(/[.!]\s+[A-Z]/g);
+  return (boundaries?.length ?? 0) >= 3;
+}
+
 export function extractCoreQuery(question: string): string {
   const trimmed = question.trim();
   // Walk every `[punct][space][capital]` candidate; pick the first
@@ -446,6 +486,16 @@ export function buildRagGraph(options: BuildGraphOptions) {
    * silently refusing every question.
    */
   async function retrieve(state: RagState): Promise<Partial<RagState>> {
+    // Shape check first — pasted prose (multi-sentence paragraph
+    // with no question mark) is virtually never a real chat input,
+    // and both BM25 and dense retrieval will surface noise chunks
+    // for it. Short-circuit to off-topic so the user gets an
+    // immediate refusal with empty citations, no embedder pass, no
+    // RRF fusion. See `looksLikePastedProse`.
+    if (looksLikePastedProse(state.question)) {
+      recordRetrievalDebug(state.question, [], 0, true);
+      return { docs: [], citedPages: [], offTopic: true };
+    }
     // Defang the dilution attack (see `extractCoreQuery`) by routing
     // retrieval + the relevance gate through the user's actual
     // question, not the full padded input. `state.question` still
