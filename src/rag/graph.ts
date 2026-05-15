@@ -221,6 +221,56 @@ function isSmallTalk(q: string): boolean {
 }
 
 /**
+ * Minimum length of trailing prose past the first `?` for
+ * {@link extractCoreQuery} to treat the question as "padded" and
+ * truncate. Picked so a trailing space + a stray word doesn't trip
+ * the truncation, but a sentence or more does.
+ */
+const PADDING_MIN_TAIL = 20;
+
+/**
+ * Pluck the user's actual question out of a padded input.
+ *
+ * **The dilution attack this defends against.** EmbeddingGemma
+ * mean-pools tokens to produce a single 768-dim vector per input.
+ * A short focused query like `"What is Lorem Ipsum?"` produces a
+ * vector that's well off-axis from any chunk of an arbitrary PDF —
+ * top dense cosine ≈ 0.30–0.40, comfortably under the 0.5 off-topic
+ * gate. Appending a paragraph of generic English ("Lorem Ipsum is
+ * simply dummy text of the printing and typesetting industry…")
+ * dilutes that vector toward the centroid of common English prose,
+ * which sits closer to *any* arbitrary text chunk than the focused
+ * query did. The top cosine drifts up past 0.5, the gate accepts
+ * the question, and SmolLM2 confabulates an answer with fabricated
+ * page citations from the RRF top-K.
+ *
+ * BM25 has the symmetric problem: padding adds high-frequency
+ * English tokens that match against arbitrary chunks lexically,
+ * boosting their BM25 score for the wrong reasons.
+ *
+ * **The fix.** When the input contains a `?` with substantial prose
+ * after it, retrieval and the relevance gate use only the substring
+ * up to and including that `?` — the user's actual question. The
+ * full input is still shown to the LLM via `state.question` so the
+ * caller's wording is preserved on the rare legitimate case (e.g.
+ * a follow-up clarifier after the question mark).
+ *
+ * This is a deliberately narrow heuristic: it only triggers when
+ * the user *both* wrote a question (`?`) *and* tacked >= 20 chars
+ * of prose on after it. Single-sentence questions, declarative
+ * inputs ("Tell me about the work experience"), and multi-clause
+ * questions without an early `?` are all passed through untouched.
+ */
+export function extractCoreQuery(question: string): string {
+  const trimmed = question.trim();
+  const firstQuestionMark = trimmed.indexOf("?");
+  if (firstQuestionMark <= 0) return trimmed;
+  const tailLength = trimmed.length - firstQuestionMark - 1;
+  if (tailLength < PADDING_MIN_TAIL) return trimmed;
+  return trimmed.slice(0, firstQuestionMark + 1).trim();
+}
+
+/**
  * Shared state schema for the RAG graph. `Annotation.Root` gives us a
  * typed channel-based state with default reducers (last-write-wins on
  * primitives, override on objects) — fine for a linear flow.
@@ -357,9 +407,15 @@ export function buildRagGraph(options: BuildGraphOptions) {
    * silently refusing every question.
    */
   async function retrieve(state: RagState): Promise<Partial<RagState>> {
+    // Defang the dilution attack (see `extractCoreQuery`) by routing
+    // retrieval + the relevance gate through the user's actual
+    // question, not the full padded input. `state.question` still
+    // carries the original text downstream (fast-paths, LLM prompt),
+    // so the user sees their own wording answered or refused.
+    const coreQuery = extractCoreQuery(state.question);
     const [hitsRaw, relevance] = await Promise.all([
-      retriever.invoke(state.question) as Promise<Document<ChunkMetadata>[]>,
-      scoreRelevance ? scoreRelevance(state.question).catch(() => null) : Promise.resolve(null),
+      retriever.invoke(coreQuery) as Promise<Document<ChunkMetadata>[]>,
+      scoreRelevance ? scoreRelevance(coreQuery).catch(() => null) : Promise.resolve(null),
     ]);
     const topScore = relevance?.topScore ?? 1;
     const offTopic = topScore < RELEVANCE_THRESHOLD;
