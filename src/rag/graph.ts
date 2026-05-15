@@ -180,6 +180,36 @@ const OFF_TOPIC_REFUSAL =
  */
 const RELEVANCE_THRESHOLD = 0.5;
 
+/**
+ * Per-chunk dense-cosine floor for the post-retrieval relevance
+ * filter.
+ *
+ * **Why a separate, lower threshold than {@link RELEVANCE_THRESHOLD}.**
+ * The off-topic gate at the top of retrieve fires on the
+ * **best-in-corpus** chunk's score — if even the strongest match
+ * falls below 0.5 the question is almost certainly off-topic and the
+ * graph routes to `refuse`. Past that gate we have a top-K from the
+ * hybrid retriever, but RRF can surface chunks that scored high on
+ * BM25's lexical signal while scoring weakly on the embedder. Those
+ * are the noise inputs SmolLM2-1.7B reliably hallucinates around —
+ * the LLM tries to weave the marginal chunk's contents into an
+ * answer even when the chunk is only tangentially on topic.
+ *
+ * 0.30 is set below the off-topic gate so it almost always preserves
+ * the top-ranked chunk that justified passing the gate, but above
+ * the "pure noise" floor where chunks contribute meaningful
+ * grounding. Empirically (probe dumps in `tests/retrieval-debug/`):
+ *
+ *   - top-of-corpus on-topic chunks score 0.5-0.8
+ *   - mid-relevant chunks score 0.35-0.5
+ *   - BM25-only lexical surfaces score 0.20-0.30
+ *
+ * Filtering at 0.30 catches the third tier while keeping the first
+ * two. If filtering would drop everything (worst-case adversarial
+ * input), we degrade gracefully and keep the raw RRF top-K.
+ */
+const PER_CHUNK_FLOOR = 0.3;
+
 /** Recognises greetings / acknowledgements that don't need retrieval. */
 const SMALL_TALK_RE =
   /^(hi+|hello|hey+|yo|sup|hola|howdy|good (morning|afternoon|evening)|thanks?|thank you|ok|okay|cool|nice|got it)[!.?]*$/i;
@@ -230,6 +260,23 @@ export const RagStateAnnotation = Annotation.Root({
 
 export type RagState = typeof RagStateAnnotation.State;
 
+/**
+ * What {@link BuildGraphOptions.scoreRelevance} returns: the best
+ * dense-cosine score in the corpus (drives the off-topic gate) plus
+ * a map from `chunkId` to that chunk's individual score (drives the
+ * post-retrieval per-chunk filter in {@link PER_CHUNK_FLOOR}).
+ *
+ * Bundling both into one call avoids embedding the query twice per
+ * question — the dense pass over the corpus is what produces both
+ * numbers anyway.
+ */
+export interface RelevanceContext {
+  /** Maximum dense-cosine score across the whole corpus. */
+  topScore: number;
+  /** `chunkId` → that chunk's dense-cosine score. */
+  chunkScores: Map<string, number>;
+}
+
 export interface BuildGraphOptions {
   /** Hybrid retriever (BM25 ⨂ dense, fused via RRF). */
   retriever: BaseRetriever;
@@ -237,12 +284,14 @@ export interface BuildGraphOptions {
   chatModel: TransformersJsChatModel;
   /**
    * Returns the maximum cosine similarity between the query and the
-   * indexed document. When provided, the graph short-circuits to a
-   * canned refusal when the score falls below
-   * {@link RELEVANCE_THRESHOLD} — see the file header comment for why
-   * a prompt-only guard isn't sufficient with SmolLM2-1.7B.
+   * indexed document, plus the per-chunk scores. When provided, the
+   * graph short-circuits to a canned refusal when the top score
+   * falls below {@link RELEVANCE_THRESHOLD}, and filters individual
+   * retrieved chunks below {@link PER_CHUNK_FLOOR} before handing
+   * them to the LLM — see the file header comment for why a
+   * prompt-only guard isn't sufficient with SmolLM2-1.7B.
    */
-  scoreRelevance?: (query: string) => Promise<number>;
+  scoreRelevance?: (query: string) => Promise<RelevanceContext>;
   /**
    * "Anchor" chunks merged into every retrieve result, deduplicated
    * against the hybrid hits by `chunkId`. Typically the document's
@@ -274,39 +323,49 @@ export function buildRagGraph(options: BuildGraphOptions) {
 
   /**
    * retrieve → hybrid BM25 + dense, top-K via RRF, plus a cosine-
-   * similarity guard that flags off-topic queries.
+   * similarity guard that flags off-topic queries AND a per-chunk
+   * relevance filter that drops marginal noise before the LLM ever
+   * sees it.
    *
-   * Three things happen here, in parallel where possible:
+   * Four things happen here, in parallel where possible:
    *
    *   1. **Hybrid retrieval.** BM25 and dense each return up to
    *      CANDIDATE_K candidates; RRF fuses them to the top
    *      HYBRID_TOP_K. See `retrievers/hybrid.ts`.
    *
-   *   2. **Relevance gate.** We embed the query and compute its top
-   *      cosine against the corpus. When the best match falls below
-   *      RELEVANCE_THRESHOLD the query is almost certainly off-topic
-   *      (general-knowledge question, malformed input, etc.). We
-   *      tag the state as `offTopic` so the conditional edge below
-   *      routes to `refuse`. The dense pass already happened inside
-   *      the hybrid retriever, so this is essentially free CPU.
+   *   2. **Relevance gate.** The best dense cosine across the whole
+   *      corpus tells us if any chunk is plausibly an answer. When
+   *      it falls below RELEVANCE_THRESHOLD we tag the state as
+   *      `offTopic` so the conditional edge routes to `refuse`. The
+   *      dense pass also produces per-chunk scores used in step 3.
    *
-   *   3. **Anchor merge.** The document's title chunk gets merged
-   *      into the result set if it isn't already there. See the
+   *   3. **Per-chunk filter.** Among the RRF-fused top-K, drop any
+   *      chunk whose dense cosine is below PER_CHUNK_FLOOR. RRF can
+   *      surface chunks that scored on BM25's lexical signal while
+   *      barely matching semantically; those are the noise inputs
+   *      SmolLM2-1.7B reliably hallucinates around. If filtering
+   *      would drop everything (worst-case), degrade gracefully and
+   *      keep the raw RRF top-K so the LLM still has something.
+   *
+   *   4. **Anchor merge.** The document's title chunk gets merged
+   *      into the result set if it isn't already there. Done after
+   *      filtering so the anchor is never filtered out — see the
    *      file-header rationale.
    *
    * Errors in `scoreRelevance` (e.g. embedder crash) degrade
-   * gracefully — we treat the score as 1 (very on-topic) so the
-   * user still gets an attempted answer rather than a silent
-   * refusal.
+   * gracefully — we skip both the gate and the filter rather than
+   * silently refusing every question.
    */
   async function retrieve(state: RagState): Promise<Partial<RagState>> {
-    const [hitsRaw, topScore] = await Promise.all([
+    const [hitsRaw, relevance] = await Promise.all([
       retriever.invoke(state.question) as Promise<Document<ChunkMetadata>[]>,
-      scoreRelevance ? scoreRelevance(state.question).catch(() => 1) : Promise.resolve(1),
+      scoreRelevance ? scoreRelevance(state.question).catch(() => null) : Promise.resolve(null),
     ]);
-    const hits = mergeAnchorChunks(hitsRaw, anchorChunks ?? []);
-    const citedPages = uniqueSortedPages(hits);
+    const topScore = relevance?.topScore ?? 1;
     const offTopic = topScore < RELEVANCE_THRESHOLD;
+    const filteredRaw = filterByChunkRelevance(hitsRaw, relevance);
+    const hits = mergeAnchorChunks(filteredRaw, anchorChunks ?? []);
+    const citedPages = uniqueSortedPages(hits);
     recordRetrievalDebug(state.question, hits, topScore, offTopic);
     return { docs: hits, citedPages, offTopic };
   }
@@ -457,6 +516,34 @@ function uniqueSortedPages(docs: Document<ChunkMetadata>[]): number[] {
   const set = new Set<number>();
   for (const d of docs) set.add(d.metadata.pageNumber);
   return [...set].sort((a, b) => a - b);
+}
+
+/**
+ * Drop retrieved chunks whose individual dense-cosine score is below
+ * {@link PER_CHUNK_FLOOR}. Operates on the order RRF produced so
+ * surviving chunks keep their hybrid rank.
+ *
+ * Three degrade-gracefully cases:
+ *   1. `relevance` is `null` (scoring failed) — skip filtering;
+ *      return `hits` unchanged.
+ *   2. A chunk's score is missing from the map — treat as 1 (keep)
+ *      rather than 0 (drop). This shouldn't happen with a healthy
+ *      embedder, but guards against partial-data races.
+ *   3. The filter would empty the result — return the raw `hits`.
+ *      An empty `docs` array short-circuits the `generate` node to
+ *      a non-helpful "I could not find any relevant passages"
+ *      reply, so we'd rather hand the LLM the weakest hits than
+ *      claim emptiness when retrieval did surface something.
+ */
+function filterByChunkRelevance(
+  hits: Document<ChunkMetadata>[],
+  relevance: RelevanceContext | null,
+): Document<ChunkMetadata>[] {
+  if (!relevance) return hits;
+  const filtered = hits.filter(
+    (d) => (relevance.chunkScores.get(d.metadata.chunkId) ?? 1) >= PER_CHUNK_FLOOR,
+  );
+  return filtered.length > 0 ? filtered : hits;
 }
 
 /**

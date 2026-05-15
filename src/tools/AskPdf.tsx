@@ -42,6 +42,21 @@ import { useRagModels } from "../hooks/useRagModels.ts";
 import { createRagSession, type IndexingProgress, type RagSession } from "../rag/index.ts";
 import { formatFileSize } from "../utils/file-helpers.ts";
 
+/**
+ * Hard cap on user-question length. SmolLM2-1.7B has a 2 K token
+ * context window; we reserve most of it for the document anchor +
+ * relevant excerpts + system prompt, leaving the question slot at
+ * ~100-150 tokens. 500 characters is a comfortable English-prose cap
+ * for that slot — long enough for a detailed multi-clause question,
+ * short enough that the model never has to truncate retrieved
+ * context to fit. The textarea's `maxLength` enforces the cap at the
+ * keystroke level so users can't paste a 10 KB blob and trigger
+ * silent context-window overflow downstream.
+ */
+const MAX_QUESTION_CHARS = 500;
+/** Threshold at which the character counter switches to the amber "near limit" colour. */
+const COUNTER_WARN_AT = 400;
+
 interface ChatTurn {
   id: string;
   role: "user" | "assistant";
@@ -481,7 +496,11 @@ function ChatPanel({
 }) {
   return (
     <div className="flex flex-col h-[min(58svh,520px)] min-h-80 sm:h-[min(72svh,720px)] sm:min-h-115 rounded-2xl border border-slate-200 dark:border-dark-border bg-slate-50/70 dark:bg-dark-bg/60 overflow-hidden">
-      <div className="flex-1 overflow-y-auto px-4 py-4">
+      {/* `thin-scrollbar` matches the scrollbar idiom used in modals
+          (AiConsentDialog, AiModelDetailsDialog, ToolPickerModal) so
+          the chat panel doesn't read as a different surface from the
+          rest of the app's overflow containers. */}
+      <div className="flex-1 overflow-y-auto thin-scrollbar px-4 py-4">
         {turns.length === 0 ? (
           <EmptyChatHint />
         ) : (
@@ -713,7 +732,11 @@ function Composer({
         disabled={disabled}
         placeholder={placeholder ?? "Ask something about this PDF…"}
         rows={2}
-        className="w-full resize-none bg-transparent text-sm text-slate-800 dark:text-dark-text placeholder-slate-400 dark:placeholder-dark-text-muted focus-visible:outline-none disabled:opacity-50"
+        maxLength={MAX_QUESTION_CHARS}
+        // `thin-scrollbar` matches the styled scrollbar used elsewhere
+        // (modals, chat panel) so a long pasted question scrolls
+        // inside the textarea consistently with the rest of the app.
+        className="thin-scrollbar w-full resize-none bg-transparent text-sm text-slate-800 dark:text-dark-text placeholder-slate-400 dark:placeholder-dark-text-muted focus-visible:outline-none disabled:opacity-50"
       />
       <div className="flex items-center justify-between gap-3 mt-2 pt-2 border-t border-slate-100 dark:border-dark-border/60">
         <p className="text-xs text-slate-400 dark:text-dark-text-muted hidden sm:block">
@@ -727,6 +750,23 @@ function Composer({
           </kbd>{" "}
           for a new line.
         </p>
+        {/* Character counter — hidden until the user is close to the
+            limit so it doesn't clutter the composer during normal use.
+            Switches to amber once `COUNTER_WARN_AT` is reached so the
+            constraint feels advisory rather than punitive. Tabular
+            numerals keep the count from jiggling as digits change. */}
+        {value.length >= COUNTER_WARN_AT && (
+          <span
+            aria-live="polite"
+            className={`text-xs tabular-nums ${
+              value.length >= MAX_QUESTION_CHARS
+                ? "text-amber-600 dark:text-amber-400 font-medium"
+                : "text-amber-500 dark:text-amber-400"
+            }`}
+          >
+            {value.length}/{MAX_QUESTION_CHARS}
+          </span>
+        )}
         <button
           type="button"
           onClick={onSubmit}

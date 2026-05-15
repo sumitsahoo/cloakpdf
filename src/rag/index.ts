@@ -19,7 +19,7 @@ import type { AiPipeline } from "../utils/ai-runtime.ts";
 import { TransformersJsChatModel } from "./chat-model.ts";
 import { type ChunkMetadata, chunkDocuments } from "./chunking.ts";
 import { TransformersJsEmbeddings } from "./embeddings.ts";
-import { buildRagGraph, type RagState } from "./graph.ts";
+import { buildRagGraph, type RagState, type RelevanceContext } from "./graph.ts";
 import { loadPdf } from "./pdf-loader.ts";
 import { cacheIndex, getCachedIndex, sha256Hex } from "./persistence.ts";
 import { buildBm25Retriever } from "./retrievers/bm25.ts";
@@ -219,23 +219,39 @@ export async function createRagSession(options: CreateSessionOptions): Promise<R
   const anchorChunks: Document<ChunkMetadata>[] = chunks.length > 0 ? [chunks[0]] : [];
 
   /**
-   * Returns the maximum dense-cosine similarity between the query and
-   * the document's chunks. Used by the graph's retrieve node as a
-   * cheap off-topic gate: small LLMs (SmolLM2-1.7B in our case) can't
-   * reliably refuse to answer general-knowledge questions just from a
-   * "stay grounded" system prompt — they happily emit the right
-   * answer from training data and even fabricate a citation. A
-   * deterministic threshold on the embedder's own score is the safety
-   * net that catches this before the LLM gets to invent.
+   * Score the query against every chunk in the document in one pass.
+   * Returns both the best-in-corpus score (off-topic gate input) and
+   * a `chunkId → score` map (per-chunk filter input) so the graph
+   * can apply both checks without re-embedding the query.
    *
-   * Embeddings are L2-normalised, so the dot product returned here is
-   * cosine similarity in `[-1, 1]`. BGE typically lands in `[0.2, 0.8]`
-   * for in-domain queries and well below `0.3` for truly off-topic ones.
+   * Used by the graph's retrieve node as a cheap deterministic
+   * safety net: small LLMs (SmolLM2-1.7B in our case) can't reliably
+   * refuse to answer general-knowledge questions just from a "stay
+   * grounded" system prompt — they happily emit the right answer
+   * from training data and even fabricate a citation. A threshold
+   * on the embedder's own scores catches this before the LLM gets
+   * to invent.
+   *
+   * Embeddings are L2-normalised, so the dot product returned here
+   * is cosine similarity in `[-1, 1]`. EmbeddingGemma typically lands
+   * in `[0.3, 0.8]` for in-domain queries and well below `0.3` for
+   * truly off-topic ones.
    */
-  const scoreQueryRelevance = async (query: string): Promise<number> => {
+  const scoreQueryRelevance = async (query: string): Promise<RelevanceContext> => {
     const queryVec = await embeddings.embedQuery(query);
-    const hits = await vectorStore.similaritySearchVectorWithScore(queryVec, 1);
-    return hits[0]?.[1] ?? 0;
+    // Sweep the whole corpus in one shot — for our scale (a few
+    // hundred chunks) this is microseconds and avoids embedding the
+    // query twice. The store sorts by score descending, so the first
+    // entry's score is the top.
+    const all = await vectorStore.similaritySearchVectorWithScore(queryVec, vectorStore.size);
+    const chunkScores = new Map<string, number>();
+    let topScore = 0;
+    for (const [doc, score] of all) {
+      const meta = doc.metadata as ChunkMetadata;
+      if (meta.chunkId) chunkScores.set(meta.chunkId, score);
+      if (score > topScore) topScore = score;
+    }
+    return { topScore, chunkScores };
   };
 
   // The graph is built fresh per `ask` so the streaming `onToken`
