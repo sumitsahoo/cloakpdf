@@ -14,7 +14,16 @@
  * loaded — not lazily on the first question — so the user isn't left
  * staring at a "Thinking…" spinner that's really doing extraction.
  */
-import { Database, Loader2, MemoryStick, ScanSearch, Send, Sparkles, User } from "lucide-react";
+import {
+  AlertTriangle,
+  Database,
+  Loader2,
+  MemoryStick,
+  ScanSearch,
+  Send,
+  Sparkles,
+  User,
+} from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -260,21 +269,43 @@ export default function AskPdf() {
                 {isIndexing ? (
                   <IndexingCard progress={indexing} />
                 ) : (
-                  <ChatPanel
-                    turns={turns}
-                    scrollAnchorRef={scrollAnchorRef}
-                    composer={
-                      <Composer
-                        value={question}
-                        onChange={setQuestion}
-                        onKeyDown={onKeyDown}
-                        onSubmit={handleAsk}
-                        disabled={task.processing || !sessionReady}
-                        placeholder="Ask something about this PDF…"
-                        busyLabel={task.processing ? "Thinking…" : "Preparing…"}
+                  <>
+                    <ChatPanel
+                      turns={turns}
+                      scrollAnchorRef={scrollAnchorRef}
+                      composer={
+                        <Composer
+                          value={question}
+                          onChange={setQuestion}
+                          onKeyDown={onKeyDown}
+                          onSubmit={handleAsk}
+                          disabled={task.processing || !sessionReady}
+                          placeholder="Ask something about this PDF…"
+                          busyLabel={task.processing ? "Thinking…" : "Preparing…"}
+                        />
+                      }
+                    />
+                    {/*
+                      Persistent caveat shown beneath the chat panel while
+                      chatting. On-device models are useful but small —
+                      SmolLM2-1.7B will occasionally misread digits,
+                      mis-attribute facts, or paraphrase loosely. Users
+                      should treat answers as a search assist, not as
+                      authoritative extracts. Matches the visual idiom of
+                      the RAM heads-up above so the warning vocabulary
+                      stays consistent across the tool.
+                    */}
+                    <p className="flex items-start gap-1.5 text-xs text-slate-500 dark:text-dark-text-muted px-1">
+                      <AlertTriangle
+                        className="w-3.5 h-3.5 mt-0.5 shrink-0 text-amber-500 dark:text-amber-400"
+                        aria-hidden="true"
                       />
-                    }
-                  />
+                      <span>
+                        AI answers may be inaccurate — always verify against the source document
+                        before relying on them.
+                      </span>
+                    </p>
+                  </>
                 )}
               </AiModelGate>
 

@@ -74,8 +74,14 @@ export function Layout({ children, onHome, showBack, onPrivacy }: LayoutProps) {
           in src/config/grainient.ts so any other surface that mounts
           Grainient renders the same gradient. The .grainient-fixed
           class positions it as a page backdrop: fixed inset-0, z-0,
-          with the iOS URL-bar mask. */}
-      <Grainient className="grainient-fixed" {...GRAINIENT_MOTION} {...palette} />
+          with the iOS URL-bar mask.
+
+          Paused inside any tool (`showBack=true`) so the drifting
+          warp doesn't compete with the user's focus on the tool's
+          own UI / animations / file thumbnails. The last frame stays
+          on screen so the visual identity is preserved — only the
+          motion stops. */}
+      <Grainient className="grainient-fixed" {...GRAINIENT_MOTION} {...palette} paused={showBack} />
 
       <a
         href="#main"
