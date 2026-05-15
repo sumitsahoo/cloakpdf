@@ -221,12 +221,29 @@ function isSmallTalk(q: string): boolean {
 }
 
 /**
- * Minimum length of trailing prose past the first `?` for
- * {@link extractCoreQuery} to treat the question as "padded" and
+ * Minimum length of trailing prose past a sentence boundary for
+ * {@link extractCoreQuery} to treat the input as "padded" and
  * truncate. Picked so a trailing space + a stray word doesn't trip
  * the truncation, but a sentence or more does.
  */
 const PADDING_MIN_TAIL = 20;
+
+/**
+ * Minimum length of content *before* a sentence boundary for
+ * {@link extractCoreQuery} to consider it a real boundary rather
+ * than a fragment ending in an abbreviation. Catches "Mr.", "Dr.",
+ * "U.S.", "etc." — anything shorter than this floor is presumed an
+ * abbreviation and the matcher walks to the next candidate.
+ */
+const PADDING_MIN_HEAD = 10;
+
+/**
+ * Hard cap on what's fed to the embedder + BM25 when the input has
+ * no sentence terminator at all. EmbeddingGemma's vector is mean-
+ * pooled across all tokens; capping the input keeps the centroid
+ * focused even if the user pastes a long unpunctuated wall of text.
+ */
+const EMBED_HARD_CAP = 200;
 
 /**
  * Pluck the user's actual question out of a padded input.
@@ -248,26 +265,48 @@ const PADDING_MIN_TAIL = 20;
  * English tokens that match against arbitrary chunks lexically,
  * boosting their BM25 score for the wrong reasons.
  *
- * **The fix.** When the input contains a `?` with substantial prose
- * after it, retrieval and the relevance gate use only the substring
- * up to and including that `?` — the user's actual question. The
- * full input is still shown to the LLM via `state.question` so the
- * caller's wording is preserved on the rare legitimate case (e.g.
- * a follow-up clarifier after the question mark).
+ * **The strategy.** Three layers, applied in order:
  *
- * This is a deliberately narrow heuristic: it only triggers when
- * the user *both* wrote a question (`?`) *and* tacked >= 20 chars
- * of prose on after it. Single-sentence questions, declarative
- * inputs ("Tell me about the work experience"), and multi-clause
- * questions without an early `?` are all passed through untouched.
+ *   1. **Sentence-boundary truncation.** If the input contains any
+ *      sentence-ending punctuation (`.`, `?`, `!`) followed by
+ *      whitespace + a capital letter — the canonical sentence-break
+ *      shape in English — and the punctuation is preceded by at
+ *      least {@link PADDING_MIN_HEAD} chars (to dodge abbreviations
+ *      like `Mr.`) and followed by at least {@link PADDING_MIN_TAIL}
+ *      chars of further prose, truncate to that boundary.
+ *
+ *   2. **Length cap.** If no sentence boundary triggers but the
+ *      input is longer than {@link EMBED_HARD_CAP} chars, cap it.
+ *      Catches the no-punctuation flavour of the attack ("lorem
+ *      ipsum is simply dummy text of the printing and typesetting
+ *      industry lorem ipsum has been …").
+ *
+ *   3. **Pass-through.** Short, single-sentence inputs go through
+ *      untouched.
+ *
+ * The full text is still shown to the LLM via `state.question` so
+ * the caller's wording is preserved on legitimate long-question
+ * cases. Retrieval and the off-topic gate are the only consumers
+ * of the truncated form, and a focused query is what they're
+ * designed to operate on.
  */
 export function extractCoreQuery(question: string): string {
   const trimmed = question.trim();
-  const firstQuestionMark = trimmed.indexOf("?");
-  if (firstQuestionMark <= 0) return trimmed;
-  const tailLength = trimmed.length - firstQuestionMark - 1;
-  if (tailLength < PADDING_MIN_TAIL) return trimmed;
-  return trimmed.slice(0, firstQuestionMark + 1).trim();
+  // Walk every `[punct][space][capital]` candidate; pick the first
+  // one with enough content before AND enough prose after to
+  // qualify as a real sentence boundary worth truncating at.
+  const boundaryRe = /[.?!]\s+[A-Z]/g;
+  for (const match of trimmed.matchAll(boundaryRe)) {
+    if (match.index === undefined || match.index < PADDING_MIN_HEAD) continue;
+    const cutPoint = match.index + 1;
+    const tailLength = trimmed.length - cutPoint;
+    if (tailLength < PADDING_MIN_TAIL) continue;
+    return trimmed.slice(0, cutPoint).trim();
+  }
+  if (trimmed.length > EMBED_HARD_CAP) {
+    return trimmed.slice(0, EMBED_HARD_CAP).trim();
+  }
+  return trimmed;
 }
 
 /**
