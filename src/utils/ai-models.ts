@@ -108,8 +108,11 @@ export interface AiModelInfo {
   approxSizeBytes: number;
   /**
    * Approximate **peak RAM** the model occupies during inference, in
-   * bytes. Used by `assessMemoryFit()` to gauge whether the user's
-   * device can run the model without crashing the tab.
+   * bytes. Surfaced verbatim in the AI Model Details dialog so users
+   * can compare against their own machine — we intentionally don't
+   * read `navigator.deviceMemory` to auto-diagnose fit (Chrome caps
+   * the signal at 8 GB for privacy, so it's useless above that),
+   * preferring to inform plainly and let the user decide.
    */
   approxPeakRamBytes: number;
   /** One-liner shown under the model name in the consent dialog. */

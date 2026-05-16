@@ -25,7 +25,6 @@ import { MemoryStick, ShieldCheck, X } from "lucide-react";
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { type AiModelInfo, formatApproxSize } from "../utils/ai-models.ts";
-import { getDeviceMemoryGb } from "../utils/device-memory.ts";
 import { ModelCard } from "./ModelCard.tsx";
 
 interface AiModelDetailsDialogProps {
@@ -118,7 +117,7 @@ export function AiModelDetailsDialog({ open, onClose, models, roles }: AiModelDe
         </div>
 
         <div className="overflow-y-auto px-4 md:px-7 py-4 md:py-5 space-y-3 thin-scrollbar">
-          <DeviceMemoryLine totalBytes={totalBytes} />
+          <RequirementsLine totalBytes={totalBytes} />
 
           {models.map((info, i) => (
             <ModelCard key={info.id} info={info} role={roles?.[i]} />
@@ -139,58 +138,36 @@ export function AiModelDetailsDialog({ open, onClose, models, roles }: AiModelDe
 }
 
 /**
- * Small status strip showing what we know about the user's device and
- * how it compares to the model download size. Tints amber when the
- * device looks tight, slate when it looks comfortable. Renders nothing
- * unique-to-the-tool — just surfaces the raw browser signal so curious
- * users can sanity-check whether the "≥ 16 GB RAM" recommendation
- * matches their setup.
+ * Plain informational strip showing the model bundle's peak-RAM
+ * footprint and the recommended baseline. **We deliberately do not
+ * read `navigator.deviceMemory`** — Chrome caps it at 8 GB for
+ * fingerprinting privacy (so 16 GB and 32 GB desktops both report 8),
+ * Firefox/Safari don't expose it at all, and any "Detected on your
+ * device: X GB" line we'd render from that signal is at best
+ * uninformative and at worst self-contradictory.
  *
- * **Caveats** (worth knowing if you tweak the copy):
- *   - `navigator.deviceMemory` is quantized to {0.25, 0.5, 1, 2, 4, 8}
- *     and capped at 8 GB for privacy. A user with 32 GB sees the same
- *     reading as one with 8 GB — we can't distinguish.
- *   - Firefox / Safari don't expose `navigator.deviceMemory` at all;
- *     the API returns `null` and we say so explicitly rather than
- *     guessing.
+ * The deal we offer the user instead: tell them what the models need,
+ * and trust them to know whether their machine has it. A single
+ * neutral tone, no amber/slate split based on a signal we don't
+ * trust, no per-user diagnosis.
  *
  * The dialog only renders on desktop — the Ask PDF tool is gated to
  * non-mobile devices upstream (see `tool.desktopOnly` in
  * `tool-registry.ts`), so we don't need a phone-specific branch here.
  */
-function DeviceMemoryLine({ totalBytes }: { totalBytes: number }) {
-  const gb = getDeviceMemoryGb();
+function RequirementsLine({ totalBytes }: { totalBytes: number }) {
   const totalGb = totalBytes / (1024 * 1024 * 1024);
-
-  // Use the same threshold as the in-tool RAM hint in AskPdf so the two
-  // surfaces never disagree: <8 GB or unknown = "tight".
-  const tight = gb === null || gb < 8;
-
-  let detected: string;
-  if (gb === null) {
-    detected = "RAM not reported by your browser";
-  } else if (gb >= 8) {
-    // Chrome caps the reading at 8 GB for privacy — be explicit so
-    // users with 16/32 GB machines don't think we mis-read them.
-    detected = `${gb} GB or more (your browser caps the reading at 8 GB)`;
-  } else {
-    detected = `${gb} GB`;
-  }
-
-  const tone = tight
-    ? "border-amber-200 dark:border-amber-800/60 bg-amber-50/70 dark:bg-amber-900/20 text-amber-800 dark:text-amber-200"
-    : "border-slate-200 dark:border-dark-border bg-slate-50/60 dark:bg-dark-surface-alt/60 text-slate-700 dark:text-dark-text";
-
   return (
-    <div
-      className={`rounded-xl border p-3 text-xs leading-relaxed flex items-start gap-2.5 ${tone}`}
-    >
-      <MemoryStick className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
+    <div className="rounded-xl border border-slate-200 dark:border-dark-border bg-slate-50/60 dark:bg-dark-surface-alt/60 text-slate-700 dark:text-dark-text p-3 text-xs leading-relaxed flex items-start gap-2.5">
+      <MemoryStick
+        className="w-4 h-4 shrink-0 mt-0.5 text-primary-600 dark:text-primary-400"
+        aria-hidden="true"
+      />
       <div className="min-w-0 flex-1">
-        <p className="font-medium">Detected on your device: {detected}</p>
+        <p className="font-medium">Memory requirement</p>
         <p className="opacity-80 mt-0.5">
-          These models load about {totalGb.toFixed(1)} GB into memory at the same time. We recommend
-          at least 16 GB of RAM for smooth performance.
+          These models load about {totalGb.toFixed(1)} GB into memory at the same time. At least 16
+          GB of RAM is recommended for smooth performance.
         </p>
       </div>
     </div>
