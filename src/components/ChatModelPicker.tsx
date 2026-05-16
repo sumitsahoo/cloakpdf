@@ -18,7 +18,7 @@
  * Pure presentational — no localStorage / state. Caller (the gate or
  * the swap dialog) owns the selection and persistence.
  */
-import { Check, Cpu } from "lucide-react";
+import { Check, Cpu, Download, MemoryStick } from "lucide-react";
 import {
   AI_MODELS,
   CHAT_VARIANT_IDS,
@@ -28,7 +28,7 @@ import {
   getChatModelId,
 } from "../utils/ai-models.ts";
 
-interface ChatVariantPickerProps {
+interface ChatModelPickerProps {
   /** Currently-selected tier. */
   value: ChatVariantId;
   /** Fires when the user picks a different tier. */
@@ -37,7 +37,7 @@ interface ChatVariantPickerProps {
   disabled?: boolean;
 }
 
-export function ChatVariantPicker({ value, onChange, disabled }: ChatVariantPickerProps) {
+export function ChatModelPicker({ value, onChange, disabled }: ChatModelPickerProps) {
   return (
     <fieldset className="space-y-2" aria-label="Chat model tier" disabled={disabled}>
       <legend className="sr-only">Chat model tier</legend>
@@ -82,10 +82,26 @@ export function ChatVariantPicker({ value, onChange, disabled }: ChatVariantPick
               <p className="mt-0.5 text-xs text-slate-600 dark:text-dark-text-muted leading-relaxed">
                 {info.description}
               </p>
-              <span className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xxs text-slate-500 dark:text-dark-text-muted tabular-nums">
-                <span>{formatApproxSize(info.approxSizeBytes)} download</span>
-                <span aria-hidden="true">·</span>
-                <span>{formatApproxSize(info.approxPeakRamBytes)} RAM</span>
+              {/*
+                Size + RAM strip. Earlier rev used a `·` between the
+                two values; against the slate-500 text colour the dot
+                disappeared into the line and users couldn't see where
+                one metric ended and the next began. Icons fix it two
+                ways: (a) they create a clear visual gap on their own,
+                so no fragile mid-sentence separator is needed, and
+                (b) each metric self-labels via its icon (download
+                arrow vs memory stick) so a user can parse the line
+                at a glance without reading the suffix word.
+              */}
+              <span className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xxs text-slate-500 dark:text-dark-text-muted tabular-nums">
+                <span className="inline-flex items-center gap-1">
+                  <Download className="w-3 h-3" aria-hidden="true" />
+                  {formatApproxSize(info.approxSizeBytes)} download
+                </span>
+                <span className="inline-flex items-center gap-1">
+                  <MemoryStick className="w-3 h-3" aria-hidden="true" />
+                  {formatApproxSize(info.approxPeakRamBytes)} RAM
+                </span>
               </span>
             </span>
           </button>

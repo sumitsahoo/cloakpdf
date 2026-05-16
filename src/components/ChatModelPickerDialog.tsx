@@ -1,5 +1,5 @@
 /**
- * Modal wrapper around {@link ChatVariantPicker} for the
+ * Modal wrapper around {@link ChatModelPicker} for the
  * mid-session swap path.
  *
  * Used when the user clicks "Change model" in the active-model bar
@@ -15,9 +15,9 @@ import { Cpu, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import type { ChatVariantId } from "../utils/ai-models.ts";
-import { ChatVariantPicker } from "./ChatVariantPicker.tsx";
+import { ChatModelPicker } from "./ChatModelPicker.tsx";
 
-interface ChatVariantPickerDialogProps {
+interface ChatModelPickerDialogProps {
   open: boolean;
   /** The variant that's currently active — pre-selects it in the picker. */
   current: ChatVariantId;
@@ -27,12 +27,12 @@ interface ChatVariantPickerDialogProps {
   onCancel: () => void;
 }
 
-export function ChatVariantPickerDialog({
+export function ChatModelPickerDialog({
   open,
   current,
   onConfirm,
   onCancel,
-}: ChatVariantPickerDialogProps) {
+}: ChatModelPickerDialogProps) {
   // Pending selection — only persisted via `onConfirm`. Re-init when the
   // dialog reopens so a cancel followed by a re-open shows the active
   // tier highlighted (not whatever the user was about to pick last time).
@@ -66,7 +66,7 @@ export function ChatVariantPickerDialog({
       className="fixed inset-0 z-200 flex items-end sm:items-center justify-center sm:px-3 md:px-6"
       role="dialog"
       aria-modal="true"
-      aria-labelledby="chat-variant-picker-title"
+      aria-labelledby="chat-model-picker-title"
       style={{
         background: "color-mix(in oklab, rgb(15 23 42) 30%, transparent)",
         backdropFilter: "blur(14px)",
@@ -93,7 +93,7 @@ export function ChatVariantPickerDialog({
           </span>
           <div className="flex-1 min-w-0">
             <h2
-              id="chat-variant-picker-title"
+              id="chat-model-picker-title"
               className="text-card-title sm:text-base font-semibold tracking-[-0.01em] text-slate-800 dark:text-dark-text"
             >
               Pick a chat model
@@ -114,7 +114,7 @@ export function ChatVariantPickerDialog({
         </div>
 
         <div className="overflow-y-auto px-4 md:px-7 py-4 md:py-5 thin-scrollbar">
-          <ChatVariantPicker value={pending} onChange={setPending} />
+          <ChatModelPicker value={pending} onChange={setPending} />
         </div>
 
         <div className="px-4 md:px-7 py-4 bg-slate-50/55 dark:bg-dark-surface-alt/55 border-t border-slate-200/70 dark:border-dark-border/70 flex flex-col-reverse sm:flex-row items-stretch sm:items-center sm:justify-end gap-2">

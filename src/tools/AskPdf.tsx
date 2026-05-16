@@ -31,7 +31,7 @@ import { ActiveModelBar } from "../components/ActiveModelBar.tsx";
 import { AiConsentDialog } from "../components/AiConsentDialog.tsx";
 import { AiModelGate } from "../components/AiModelGate.tsx";
 import { AlertBox } from "../components/AlertBox.tsx";
-import { ChatVariantPickerDialog } from "../components/ChatVariantPickerDialog.tsx";
+import { ChatModelPickerDialog } from "../components/ChatModelPickerDialog.tsx";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { FileInfoBar } from "../components/FileInfoBar.tsx";
 import { InfoCallout } from "../components/InfoCallout.tsx";
@@ -320,15 +320,31 @@ export default function AskPdf() {
           rag.status === "loading" ||
           rag.status === "awaiting-consent"
         }
-        // Trigger consent on the *rollup*, not just chat, so a
-        // partial-cache state (e.g. chat + embed flagged but rerank
-        // not — exactly what migrateLegacyChatReadyFlag's one-shot
-        // rerank reset produces for returning users) still opens
-        // the consent dialog. Without this override, the gate's
-        // default click handler calls ai.ensureReady() on chat
-        // alone — a no-op when chat is already loaded — and the
-        // user is stuck staring at a button that does nothing.
-        onDownload={rag.ensureReady}
+        // Gate's "Download model" click should kick off the actual
+        // download for every pipeline in the bundle. We use
+        // `rag.confirm` (not `rag.ensureReady`) deliberately:
+        //
+        //   - `ensureReady` would push each model through the
+        //     `awaiting-consent` state and the user would have to
+        //     click "Download model" *again* in the consent dialog
+        //     that opens. Two identical buttons for the same
+        //     decision is bad UX — the gate already shows the
+        //     picker, the aggregate footprint, and a "View details"
+        //     link covering everything the consent body would
+        //     repeat. The dialog's job from here is just to show
+        //     progress, not to gather a second confirmation.
+        //   - `confirm` calls each sub-hook's confirm directly,
+        //     which calls `startDownload` and flips status
+        //     `idle → downloading` in one shot. The dialog opens
+        //     in download state (per `dialogOpen` below covering
+        //     `downloading`), the progress UI renders, no extra
+        //     click needed.
+        //   - Also fixes the partial-cache edge case
+        //     (migrateLegacyChatReadyFlag clears the rerank flag
+        //     once): confirm iterates all three sub-models, so
+        //     even if chat is already cached and ready, embed +
+        //     rerank still get a fresh startDownload call.
+        onDownload={rag.confirm}
         // Storage actions in the gate-side details modal — covers
         // the "I freed memory and now I want to delete the disk
         // cache too" path without forcing the user to re-download
@@ -445,7 +461,7 @@ export default function AskPdf() {
         onCancel={rag.cancel}
       />
 
-      <ChatVariantPickerDialog
+      <ChatModelPickerDialog
         open={variantPickerOpen}
         current={rag.chatVariant}
         onConfirm={(next) => {

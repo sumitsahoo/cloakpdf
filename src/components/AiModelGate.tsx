@@ -23,13 +23,13 @@
  * — the *primary* hook is expected to be the rollup (e.g. `rag.chat`)
  * whose `ensureReady` kicks off both downloads (see useRagModels).
  */
-import { Cpu, Loader2 } from "lucide-react";
+import { Cpu, Download, Loader2 } from "lucide-react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import type { UseAiModelReturn } from "../hooks/useAiModel.ts";
 import { type AiModelInfo, type ChatVariantId, formatApproxSize } from "../utils/ai-models.ts";
 import { isModelMarkedReady } from "../utils/ai-runtime.ts";
 import { AiModelDetailsDialog } from "./AiModelDetailsDialog.tsx";
-import { ChatVariantPicker } from "./ChatVariantPicker.tsx";
+import { ChatModelPicker } from "./ChatModelPicker.tsx";
 
 interface AiModelGateProps {
   ai: UseAiModelReturn;
@@ -201,7 +201,7 @@ export function AiModelGate({
             <p className="text-xs font-medium text-slate-600 dark:text-dark-text-muted mb-2">
               Choose a chat model
             </p>
-            <ChatVariantPicker
+            <ChatModelPicker
               value={chatVariant}
               onChange={onChatVariantChange}
               disabled={loading}
@@ -233,7 +233,7 @@ export function AiModelGate({
             </>
           ) : (
             <>
-              <Cpu className="w-4 h-4" />
+              <Download className="w-4 h-4" />
               Download model
             </>
           )}
