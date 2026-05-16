@@ -284,137 +284,146 @@ export default function AskPdf() {
         </p>
       )}
 
-      {!pdf.file ? (
-        <>
+      {/*
+        Sequential flow — gate first, PDF second.
+        ─────────────────────────────────────────
+        Old layout asked for a PDF upload *before* downloading the
+        models, which meant the user committed a file (and looked at
+        an unactionable "Loading…" state) before they'd even seen the
+        download size or picked a chat tier. New layout walks the
+        user through one step at a time:
+            (1) gate card — tier picker + Download CTA
+            (2) PDF drop zone — only shown once the rollup says all
+                three pipelines are loaded
+            (3) indexing card — while the embedder chunks the file
+            (4) chat panel — with the composer enabled
+
+        The gate's `ready`/`loading` overrides take the *rollup*
+        status (`rag.status`) instead of just the chat status — that
+        way the children only mount when every pipeline is actually
+        usable, not the moment chat alone resolves. Without the
+        override the gate would render an unusable chat panel during
+        the brief window where chat is "ready" but embed/rerank are
+        still mid-load (partial-cache return-visit edge case).
+      */}
+      <AiModelGate
+        ai={rag.chat}
+        models={[rag.chat.info, rag.embed.info, rag.rerank.info]}
+        roles={["chat", "retrieval", "rerank"]}
+        chatVariant={rag.chatVariant}
+        onChatVariantChange={rag.setChatVariant}
+        title="Download AI models to chat with your PDFs"
+        blurb="Ask your PDF runs entirely on your device. Pick a chat-model size below, download it once, then upload a PDF to start chatting."
+        ready={rag.status === "ready"}
+        loading={
+          rag.status === "downloading" ||
+          rag.status === "loading" ||
+          rag.status === "awaiting-consent"
+        }
+        // Trigger consent on the *rollup*, not just chat, so a
+        // partial-cache state (e.g. chat + embed flagged but rerank
+        // not — exactly what migrateLegacyChatReadyFlag's one-shot
+        // rerank reset produces for returning users) still opens
+        // the consent dialog. Without this override, the gate's
+        // default click handler calls ai.ensureReady() on chat
+        // alone — a no-op when chat is already loaded — and the
+        // user is stuck staring at a button that does nothing.
+        onDownload={rag.ensureReady}
+        // Storage actions in the gate-side details modal — covers
+        // the "I freed memory and now I want to delete the disk
+        // cache too" path without forcing the user to re-download
+        // just to surface a delete button. canFreeMemory is false
+        // here (gate only shows when not ready), so the dialog
+        // hides Free Memory; canDelete may be true if disk cache
+        // survives, so Delete appears when there's something to do.
+        onFreeMemory={rag.dispose}
+        onDeleteCachedModels={rag.evict}
+        canFreeMemory={rag.canFreeMemory}
+        canDelete={rag.canDelete}
+      >
+        {/* Children render only when all three models are ready. */}
+        {pdf.file && (
+          <FileInfoBar
+            fileName={pdf.file.name}
+            details={formatFileSize(pdf.file.size)}
+            onChangeFile={pdf.reset}
+          />
+        )}
+
+        {!pdf.file ? (
           <FileDropZone
             glowColor={categoryGlow.transform}
             iconColor={categoryAccent.transform}
             accept=".pdf,application/pdf"
             onFiles={pdf.onFiles}
             label="Drop a PDF file here"
-            hint="Chat with your PDF — answers are generated on-device, never uploaded"
+            hint="Models are ready — drop a PDF to start chatting"
           />
-
-          {/*
-            Render the active-model bar at the drop-zone stage too
-            (in addition to the post-upload location below) whenever
-            there's anything to manage — either models in RAM
-            (canFreeMemory) or models cached on disk (canDelete).
-            This brings the storage actions one click from the entry
-            point for return visitors who want to free or delete
-            without first uploading a PDF.
-          */}
-          {(rag.canFreeMemory || rag.canDelete) && (
-            <ActiveModelBar
-              models={[rag.chat.info, rag.embed.info, rag.rerank.info]}
-              roles={["chat", "retrieval", "rerank"]}
-              ready={rag.status === "ready"}
-              onChange={() => setVariantPickerOpen(true)}
-              onFreeMemory={rag.dispose}
-              onDeleteCachedModels={rag.evict}
-              canFreeMemory={rag.canFreeMemory}
-              canDelete={rag.canDelete}
+        ) : scannedHint ? (
+          <InfoCallout icon={ScanSearch} title="Couldn't extract any text" accent="warning">
+            This PDF has no usable text — even after OCR. It may be encrypted, password-protected,
+            or low-resolution. Try a different file.
+          </InfoCallout>
+        ) : isIndexing ? (
+          <IndexingCard progress={indexing} />
+        ) : (
+          <>
+            <ChatPanel
+              turns={turns}
+              scrollAnchorRef={scrollAnchorRef}
+              composer={
+                <Composer
+                  value={question}
+                  onChange={setQuestion}
+                  onKeyDown={onKeyDown}
+                  onSubmit={handleAsk}
+                  disabled={task.processing || !sessionReady}
+                  placeholder="Ask something about this PDF…"
+                  busyLabel={task.processing ? "Thinking…" : "Preparing…"}
+                />
+              }
             />
-          )}
-        </>
-      ) : (
-        <>
-          <FileInfoBar
-            fileName={pdf.file.name}
-            details={formatFileSize(pdf.file.size)}
-            onChangeFile={pdf.reset}
-          />
-
-          {scannedHint ? (
-            <InfoCallout icon={ScanSearch} title="Couldn't extract any text" accent="warning">
-              This PDF has no usable text — even after OCR. It may be encrypted, password-protected,
-              or low-resolution. Try a different file.
-            </InfoCallout>
-          ) : (
-            <>
-              <AiModelGate
-                ai={rag.chat}
-                models={[rag.chat.info, rag.embed.info, rag.rerank.info]}
-                roles={["chat", "retrieval", "rerank"]}
-                chatVariant={rag.chatVariant}
-                onChatVariantChange={rag.setChatVariant}
-                title="Download AI models to start chatting"
-                blurb="All three run entirely in your browser; your PDFs are never uploaded."
-              >
-                {/*
-                  Once models are ready we render one of two states.
-                  Indexing shows a dominant card; chatting shows a
-                  fixed-height panel with a scrollable conversation and
-                  a composer anchored at the bottom — the composer
-                  never shifts as turns accumulate because the scroll
-                  lives *inside* the panel, not on the page.
-                */}
-                {isIndexing ? (
-                  <IndexingCard progress={indexing} />
-                ) : (
-                  <>
-                    <ChatPanel
-                      turns={turns}
-                      scrollAnchorRef={scrollAnchorRef}
-                      composer={
-                        <Composer
-                          value={question}
-                          onChange={setQuestion}
-                          onKeyDown={onKeyDown}
-                          onSubmit={handleAsk}
-                          disabled={task.processing || !sessionReady}
-                          placeholder="Ask something about this PDF…"
-                          busyLabel={task.processing ? "Thinking…" : "Preparing…"}
-                        />
-                      }
-                    />
-                    {/*
-                      Persistent caveat shown beneath the chat panel while
-                      chatting. On-device chat models in the 1-3 B range
-                      occasionally misread digits, mis-attribute facts, or
-                      paraphrase loosely — true across all three tiers we
-                      ship today. Users should treat answers as a search
-                      assist, not as authoritative extracts. Matches the
-                      visual idiom of the RAM heads-up above so the
-                      warning vocabulary stays consistent across the tool.
-                    */}
-                    <p className="flex items-start gap-1.5 text-xs text-slate-500 dark:text-dark-text-muted px-1">
-                      <AlertTriangle
-                        className="w-3.5 h-3.5 mt-0.5 shrink-0 text-amber-500 dark:text-amber-400"
-                        aria-hidden="true"
-                      />
-                      <span>
-                        AI answers may be inaccurate — always verify against the source document
-                        before relying on them.
-                      </span>
-                    </p>
-                  </>
-                )}
-              </AiModelGate>
-
-              <ActiveModelBar
-                models={[rag.chat.info, rag.embed.info, rag.rerank.info]}
-                roles={["chat", "retrieval", "rerank"]}
-                ready={rag.status === "ready"}
-                onChange={() => setVariantPickerOpen(true)}
-                disabled={task.processing || isIndexing}
-                // Storage knobs in the details modal: dispose frees
-                // RAM (warm cache stays), evict frees disk too +
-                // forces re-consent on next use. The session-
-                // invalidation effect above clears sessionRef when
-                // rag.status drops, so either action leaves the
-                // tool in a clean rebuild-on-next-ready state. The
-                // can* flags hide each button after its
-                // corresponding store empties, so the user never
-                // gets to click on a no-op.
-                onFreeMemory={rag.dispose}
-                onDeleteCachedModels={rag.evict}
-                canFreeMemory={rag.canFreeMemory}
-                canDelete={rag.canDelete}
+            {/*
+              Persistent caveat shown beneath the chat panel while
+              chatting. On-device chat models in the 1-3 B range
+              occasionally misread digits, mis-attribute facts, or
+              paraphrase loosely — true across all the tiers we ship
+              today. Users should treat answers as a search assist,
+              not as authoritative extracts.
+            */}
+            <p className="flex items-start gap-1.5 text-xs text-slate-500 dark:text-dark-text-muted px-1">
+              <AlertTriangle
+                className="w-3.5 h-3.5 mt-0.5 shrink-0 text-amber-500 dark:text-amber-400"
+                aria-hidden="true"
               />
-            </>
-          )}
-        </>
+              <span>
+                AI answers may be inaccurate — always verify against the source document before
+                relying on them.
+              </span>
+            </p>
+          </>
+        )}
+      </AiModelGate>
+
+      {/*
+        Single storage / status bar at the bottom, shown only when
+        the rollup says everything is ready. While the gate is up
+        the gate itself surfaces "View details" + the same storage
+        actions, so a second bar would just stack two model-info
+        widgets on top of each other.
+      */}
+      {rag.status === "ready" && (
+        <ActiveModelBar
+          models={[rag.chat.info, rag.embed.info, rag.rerank.info]}
+          roles={["chat", "retrieval", "rerank"]}
+          ready
+          onChange={() => setVariantPickerOpen(true)}
+          disabled={task.processing || isIndexing}
+          onFreeMemory={rag.dispose}
+          onDeleteCachedModels={rag.evict}
+          canFreeMemory={rag.canFreeMemory}
+          canDelete={rag.canDelete}
+        />
       )}
 
       {task.error && <AlertBox message={task.error} />}

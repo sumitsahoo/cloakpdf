@@ -259,31 +259,10 @@ async function main() {
       console.warn("⚠ Couldn't auto-navigate to Ask PDF — open it manually in the browser window.");
     }
 
-    // Upload the fixture. The drop zone renders an <input type="file">.
-    // 30 s timeout accommodates the initial chunk download for the
-    // tool route (react-markdown, remark-gfm, the rag bundle) on a
-    // cold cache + slow disk — the previous 10 s was tight enough to
-    // false-fail on the first run after a `pnpm add`.
-    console.log("→ Uploading fixture PDF…");
-    const fileInput = await page
-      .waitForSelector('input[type="file"]', { timeout: 30_000 })
-      .catch(async () => {
-        const dump = await page.evaluate(() => ({
-          url: location.href,
-          bodyText: (document.body.textContent ?? "").slice(0, 500),
-          tagCounts: {
-            buttons: document.querySelectorAll("button").length,
-            inputs: document.querySelectorAll("input").length,
-            cards: document.querySelectorAll("[data-bubble], [role='dialog'], main").length,
-          },
-        }));
-        bail(`File input not found. Page state: ${JSON.stringify(dump, null, 2)}`);
-      });
-    if (!fileInput) bail("File input not found on the page.");
-    await (fileInput as { uploadFile: (...p: string[]) => Promise<void> }).uploadFile(FIXTURE_PATH);
-
-    // Click the gate's "Download model" button. On a first-run profile
-    // (no localStorage cache flag) the gate sits at "Selected … Download
+    // Click the gate's "Download model" button. The gate is the
+    // very first thing the user sees on Ask PDF — *before* the file
+    // drop zone, which only renders once all three pipelines are
+    // ready. On a first-run profile the gate sits at "Download
     // model" until the user clicks. On a returning profile the gate
     // auto-loads and the button is gone — we treat its absence as
     // "already started" and move on.
@@ -294,7 +273,7 @@ async function main() {
           const buttons = Array.from(document.querySelectorAll("button"));
           return buttons.some((b) => (b.textContent ?? "").trim().startsWith("Download model"));
         },
-        { timeout: 10_000 },
+        { timeout: 30_000 },
       )
       .catch(() => undefined);
     const gateClicked = await page.evaluate(() => {
@@ -335,22 +314,71 @@ async function main() {
     });
     console.log(consentClicked ? "  ✓ clicked consent Download" : "  · no consent dialog");
 
-    console.log("→ Waiting for models to load + index (first run downloads ~1.55 GB)…");
-    // Drive a polling loop in the page context that:
-    //   1. Waits for the composer textarea to enable (= models loaded
-    //      + indexing finished, the original gate condition).
-    //   2. Records every distinct value of the ProgressBar's
-    //      "<current> / <total>" counter it sees along the way.
+    // Phase 1 — wait for models to finish loading. Signal: the file
+    // drop zone (= `<input type="file">`) appears, which only mounts
+    // once `rag.status === "ready"` per the gate's children-render
+    // gate. On a cold first run this is the long pole (~1.55 GB
+    // download); on a warm-cache return visit it's seconds.
     //
-    // The second part is the regression check for the React 18
-    // batching bug: before `dd70365` the indexing card would jump
-    // straight from 0/1 to gone with no intermediate states. We now
-    // require ≥3 distinct states observed on the cold path (model
-    // download + text-layer + embed each contribute multiple).
-    const progressOutcome = await page.evaluate(async () => {
+    // While we poll, also record every distinct value of the
+    // ProgressBar's `<current>/<total>` counter (the only
+    // `.tabular-nums` element in the dialog) so we can assert
+    // progress visibly advanced — the React 18 batching bug used to
+    // make the bar snap from 0 → done with no intermediate states.
+    console.log("→ Waiting for models to load (first run downloads ~1.55 GB)…");
+    const modelLoadOutcome = await page.evaluate(async () => {
       const states = new Set<string>();
       const startedAt = Date.now();
       while (Date.now() - startedAt < 10 * 60_000) {
+        const counter = document.querySelector(".tabular-nums");
+        if (counter) {
+          const s = (counter.textContent ?? "").trim();
+          if (s) states.add(s);
+        }
+        const fileInput = document.querySelector('input[type="file"]');
+        if (fileInput) return { states: [...states], modelsReady: true };
+        await new Promise((r) => setTimeout(r, 150));
+      }
+      return { states: [...states], modelsReady: false };
+    });
+    if (!modelLoadOutcome.modelsReady) {
+      bail("Models never finished loading — file drop zone never appeared.");
+    }
+    console.log(
+      `  ✓ models loaded; download-progress recorded ${modelLoadOutcome.states.length} distinct states`,
+    );
+
+    // Phase 2 — upload the fixture now that the drop zone is live.
+    // 10 s timeout because the input is already in the DOM at this
+    // point (we just confirmed it via the polling loop above).
+    console.log("→ Uploading fixture PDF…");
+    const fileInput = await page
+      .waitForSelector('input[type="file"]', { timeout: 10_000 })
+      .catch(async () => {
+        const dump = await page.evaluate(() => ({
+          url: location.href,
+          bodyText: (document.body.textContent ?? "").slice(0, 500),
+          tagCounts: {
+            buttons: document.querySelectorAll("button").length,
+            inputs: document.querySelectorAll("input").length,
+            cards: document.querySelectorAll("[data-bubble], [role='dialog'], main").length,
+          },
+        }));
+        bail(
+          `File input not found post-models-ready. Page state: ${JSON.stringify(dump, null, 2)}`,
+        );
+      });
+    if (!fileInput) bail("File input not found on the page.");
+    await (fileInput as { uploadFile: (...p: string[]) => Promise<void> }).uploadFile(FIXTURE_PATH);
+
+    // Phase 3 — wait for indexing to finish (signal: composer enables).
+    // The indexing card has its own `.tabular-nums` counter so we
+    // continue to harvest progress states here.
+    console.log("→ Waiting for indexing to finish…");
+    const progressOutcome = await page.evaluate(async () => {
+      const states = new Set<string>();
+      const startedAt = Date.now();
+      while (Date.now() - startedAt < 5 * 60_000) {
         const counter = document.querySelector(".tabular-nums");
         if (counter) {
           const s = (counter.textContent ?? "").trim();
@@ -365,10 +393,13 @@ async function main() {
       return { states: [...states], composerEnabled: false };
     });
     if (!progressOutcome.composerEnabled) {
-      bail("Composer never enabled — model load timed out or failed.");
+      bail("Composer never enabled — indexing failed or stalled.");
     }
+    // Combine download-phase + index-phase states for the progress-
+    // advances regression check below.
+    const combinedStates = new Set([...modelLoadOutcome.states, ...progressOutcome.states]);
     console.log(
-      `  ✓ composer enabled; progress recorded ${progressOutcome.states.length} distinct states (${progressOutcome.states.slice(0, 6).join(", ")}${progressOutcome.states.length > 6 ? "…" : ""})`,
+      `  ✓ composer enabled; progress recorded ${combinedStates.size} distinct states (${[...combinedStates].slice(0, 6).join(", ")}${combinedStates.size > 6 ? "…" : ""})`,
     );
     // The progress-advances assertion only makes sense on the cold
     // path. On a warm cache (IndexedDB has the indexed vectors, model
@@ -379,7 +410,7 @@ async function main() {
     // model was already cached, so we skip the React-batching check.
     if (!gateClicked && !consentClicked) {
       console.log("  · skipping progress-advances check (warm cache — no progress dialog)");
-    } else if (progressOutcome.states.length < 3) {
+    } else if (combinedStates.size < 3) {
       // The React-batching regression check is meant to catch a UI
       // regression on the canonical default-tier load. Cross-tier
       // comparison runs (CHAT_VARIANT_OVERRIDE set) are about
@@ -387,7 +418,7 @@ async function main() {
       // not the cold-load progress UX. Soften to a warning so a
       // single weird progress sample doesn't abort a multi-tier
       // comparison.
-      const msg = `Progress did not visibly advance — only ${progressOutcome.states.length} distinct state(s) observed: ${progressOutcome.states.join(", ")}.`;
+      const msg = `Progress did not visibly advance — only ${combinedStates.size} distinct state(s) observed: ${[...combinedStates].join(", ")}.`;
       if (CHAT_VARIANT_OVERRIDE) {
         console.warn(`  ⚠ ${msg} (warned: CHAT_VARIANT comparison run, not bailing)`);
       } else {
@@ -459,13 +490,27 @@ async function main() {
     if (!cardClickedAgain) {
       console.warn("⚠ Couldn't re-navigate to Ask PDF after reload.");
     }
-    console.log("→ Re-uploading fixture…");
-    const fileInput2 = await page.waitForSelector('input[type="file"]', { timeout: 10_000 });
+    // On the warm-cache return visit, the file drop zone doesn't
+    // render until `rag.status === "ready"` — i.e. until both
+    // AiModelGate's chat auto-load AND useRagModels' all-three
+    // auto-load have re-hydrated pipelines from CacheStorage. That
+    // takes a few seconds (init cost, not network). Bump the
+    // selector timeout to 90 s so we don't false-fail on slower
+    // disks.
+    console.log("→ Waiting for warm-cache auto-load + file drop zone (no clicks)…");
+    const fileInput2 = await page
+      .waitForSelector('input[type="file"]', { timeout: 90_000 })
+      .catch(() =>
+        bail(
+          "Warm-cache file input never appeared — auto-load stalled before rag.status reached 'ready'.",
+        ),
+      );
     if (!fileInput2) bail("File input not found after reload.");
+    console.log("→ Re-uploading fixture…");
     await (fileInput2 as { uploadFile: (...p: string[]) => Promise<void> }).uploadFile(
       FIXTURE_PATH,
     );
-    console.log("→ Waiting for warm-cache auto-load to enable composer (no clicks)…");
+    console.log("→ Waiting for composer to enable (warm-cache index also re-hydrates from IDB)…");
     await page
       .waitForFunction(
         () => {

@@ -60,6 +60,51 @@ interface AiModelGateProps {
   title?: string;
   /** Lead-in sentence. Aggregate footprint and details link are appended. */
   blurb?: string;
+  /**
+   * Optional "all required pipelines are ready" override. Without
+   * this, the gate decides whether to render children purely from
+   * `ai.status === "ready"` — fine for single-model tools, wrong for
+   * multi-model tools where `ai` is just one of N pipelines (chat,
+   * say) and the others might still be loading. Pass the rollup
+   * status from {@link useRagModels} (or equivalent) here so the
+   * gate waits for the full set.
+   */
+  ready?: boolean;
+  /**
+   * Optional "any required pipeline is mid-load" override. Same
+   * rationale as {@link ready} — the gate's "Loading model…" button
+   * state should reflect the rollup, not just the chat slot.
+   */
+  loading?: boolean;
+  /**
+   * Release in-tab pipelines (RAM only). Passed through to the gate's
+   * "View details" modal so users in the post-dispose-with-cache
+   * state (gate visible because not loaded, but disk still cached)
+   * can still surface storage actions one click away.
+   */
+  onFreeMemory?: () => void | Promise<unknown>;
+  /**
+   * Destructive: also evict CacheStorage bytes + clear consent flags.
+   * Passed through to the gate's details modal. See
+   * {@link onFreeMemory} for why this lives on the gate too.
+   */
+  onDeleteCachedModels?: () => void | Promise<unknown>;
+  /** `true` if there's RAM-resident state for "Free memory" to free. */
+  canFreeMemory?: boolean;
+  /** `true` if there's anything cached on disk or in RAM for "Delete" to evict. */
+  canDelete?: boolean;
+  /**
+   * Overrides what the gate's "Download model" button calls when
+   * clicked. Defaults to `ai.ensureReady()` — fine for single-model
+   * tools. Multi-model tools should pass the rollup ensure-ready
+   * (e.g. `rag.ensureReady`) so the button triggers consent for
+   * every required pipeline, not just `ai`. Without this override
+   * a partial-cache state (some models flagged ready, some not)
+   * would leave the user stuck: clicking Download would no-op on
+   * the already-ready primary model and never open the consent
+   * dialog for the rest.
+   */
+  onDownload?: () => Promise<unknown> | void;
   /** Tool controls — rendered once the model is ready. */
   children: ReactNode;
 }
@@ -72,6 +117,13 @@ export function AiModelGate({
   onChatVariantChange,
   title = "Download AI model to continue",
   blurb = "Runs entirely in your browser; your PDFs are never uploaded.",
+  ready: readyOverride,
+  loading: loadingOverride,
+  onFreeMemory,
+  onDeleteCachedModels,
+  canFreeMemory,
+  canDelete,
+  onDownload,
   children,
 }: AiModelGateProps) {
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -90,16 +142,23 @@ export function AiModelGate({
     });
   }, [ai]);
 
-  if (ai.status === "ready") return <>{children}</>;
+  // "Ready" decides whether to render children. For multi-model tools
+  // the caller passes the rollup status (e.g. `rag.status === "ready"`)
+  // so the gate waits for all pipelines, not just chat. Without that
+  // override we fall back to the single-model semantics.
+  const ready = readyOverride ?? ai.status === "ready";
+  if (ready) return <>{children}</>;
 
   // `loading` covers every transient state where the consent flow has
   // started: explicit download, cache-warm load (no network), and the
   // brief window between "consent given" and "first byte fetched".
   // The dialog handles the visible progress for downloads — here we
   // just want the gate button to read "Loading model…" so the
-  // interaction is consistent across both code paths.
+  // interaction is consistent across both code paths. Caller can
+  // override with the rollup loading-state for multi-model gates.
   const loading =
-    ai.status === "downloading" || ai.status === "loading" || ai.status === "awaiting-consent";
+    loadingOverride ??
+    (ai.status === "downloading" || ai.status === "loading" || ai.status === "awaiting-consent");
 
   const modelList = models && models.length > 0 ? models : [ai.info];
   const totalBytes = modelList.reduce((sum, m) => sum + m.approxSizeBytes, 0);
@@ -152,9 +211,17 @@ export function AiModelGate({
         <button
           type="button"
           onClick={() => {
-            ai.ensureReady().catch(() => {
+            const trigger = onDownload ?? (() => ai.ensureReady());
+            try {
+              const out = trigger();
+              if (out && typeof (out as Promise<unknown>).catch === "function") {
+                (out as Promise<unknown>).catch(() => {
+                  /* dialog shows the error */
+                });
+              }
+            } catch {
               /* dialog shows the error */
-            });
+            }
           }}
           disabled={loading}
           className="mt-4 w-full inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg text-sm font-semibold bg-primary-600 hover:bg-primary-700 text-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
@@ -178,6 +245,10 @@ export function AiModelGate({
         onClose={() => setDetailsOpen(false)}
         models={modelList}
         roles={roles}
+        onFreeMemory={onFreeMemory}
+        onDelete={onDeleteCachedModels}
+        canFreeMemory={canFreeMemory}
+        canDelete={canDelete}
       />
     </>
   );
