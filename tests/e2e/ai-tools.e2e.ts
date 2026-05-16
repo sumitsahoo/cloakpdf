@@ -22,9 +22,10 @@
  *
  *   pnpm test:e2e
  *
- * The first run downloads ~530 MB of model weights into the browser's
- * CacheStorage and may take several minutes. Subsequent runs reuse
- * the cache and complete in a few seconds.
+ * The first run downloads ~1.55 GB of model weights into the browser's
+ * CacheStorage (chat ~1.2 GB + embed ~309 MB + rerank ~23 MB) and
+ * may take several minutes. Subsequent runs reuse the cache and
+ * complete in a few seconds.
  *
  * ## Caveats
  *
@@ -143,27 +144,49 @@ async function main() {
     // unattended CI usage would flip this to true.
     headless: false,
     defaultViewport: { width: 1280, height: 900 },
+    // The in-page progress-polling loop runs for up to 10 minutes
+    // inside a single `evaluate()` call (it busy-polls for the
+    // composer to enable). Puppeteer's default CDP `protocolTimeout`
+    // is well under that, so cold-cache runs with three models to
+    // download (chat ~1.2 GB + embed ~309 MB + rerank ~23 MB)
+    // would `Runtime.callFunctionOn` time out before the page-side
+    // loop even gets a chance. 15 min is comfortable headroom.
+    protocolTimeout: 15 * 60_000,
   });
 
   try {
     const page = await browser.newPage();
     page.setDefaultTimeout(60_000);
 
-    // Seed the chat-tier preference *before* any app script runs so
-    // the picker boots straight into the override. `evaluateOnNewDocument`
-    // fires before every navigation in this page's lifetime, so the
-    // post-reload warm-cache path is covered too.
-    if (CHAT_VARIANT_OVERRIDE) {
-      const variant = CHAT_VARIANT_OVERRIDE;
-      await page.evaluateOnNewDocument((v) => {
+    // Seed the chat-tier preference + any RAG feature flags *before*
+    // any app script runs so the picker + graph boot with the
+    // overrides applied. `evaluateOnNewDocument` fires before every
+    // navigation in this page's lifetime, so the post-reload
+    // warm-cache path is covered too.
+    //
+    // Flag wiring:
+    //   - CHAT_VARIANT=...  → cloakpdf:chat-variant
+    //   - RAG_NO_RERANK=1   → cloakpdf:rag-rerank = "0" (disables reranker)
+    //   - RAG_NO_HYDE=1     → cloakpdf:rag-hyde   = "0" (disables HyDE)
+    //
+    // Each flag is independent; combining them isolates per-feature
+    // contribution in cross-cut comparison runs.
+    const lsSeeds: Array<[string, string]> = [];
+    if (CHAT_VARIANT_OVERRIDE) lsSeeds.push(["cloakpdf:chat-variant", CHAT_VARIANT_OVERRIDE]);
+    if (process.env.RAG_NO_RERANK === "1") lsSeeds.push(["cloakpdf:rag-rerank", "0"]);
+    if (process.env.RAG_NO_HYDE === "1") lsSeeds.push(["cloakpdf:rag-hyde", "0"]);
+    if (lsSeeds.length > 0) {
+      await page.evaluateOnNewDocument((seeds) => {
         try {
-          localStorage.setItem("cloakpdf:chat-variant", v);
+          for (const [k, v] of seeds) localStorage.setItem(k, v);
         } catch {
           // Private mode / quota — the test will just exercise
           // whatever localStorage default applies.
         }
-      }, variant);
-      console.log(`→ CHAT_VARIANT override active: ${variant}`);
+      }, lsSeeds);
+      console.log(
+        `→ localStorage seeds active: ${lsSeeds.map(([k, v]) => `${k}=${v}`).join(", ")}`,
+      );
     }
 
     // Per-question timing so cross-tier comparison runs can be
@@ -312,7 +335,7 @@ async function main() {
     });
     console.log(consentClicked ? "  ✓ clicked consent Download" : "  · no consent dialog");
 
-    console.log("→ Waiting for model to load + index (first run downloads ~275 MB)…");
+    console.log("→ Waiting for models to load + index (first run downloads ~1.55 GB)…");
     // Drive a polling loop in the page context that:
     //   1. Waits for the composer textarea to enable (= models loaded
     //      + indexing finished, the original gate condition).

@@ -1,13 +1,15 @@
 /**
  * Registry of AI models used by Ask PDF.
  *
- * Two models load together: a small instruction-tuned chat LLM and a
- * tiny sentence-embedding model. The chat model answers questions; the
- * embedder powers the RAG retriever that picks which chunks of the PDF
- * to feed the chat model. Both run locally in the browser via
- * Transformers.js; weights are fetched from huggingface.co on first
- * use and cached in the browser's CacheStorage so repeat visits work
- * offline.
+ * Three models load together: a small instruction-tuned chat LLM, a
+ * tiny sentence-embedding model, and a cross-encoder reranker. The
+ * chat model answers questions; the embedder powers the RAG retriever
+ * that picks which chunks of the PDF to feed the chat model; the
+ * reranker re-scores the retriever's top candidates so the most
+ * relevant chunks land at the front of the context window. All three
+ * run locally in the browser via Transformers.js; weights are fetched
+ * from huggingface.co on first use and cached in the browser's
+ * CacheStorage so repeat visits work offline.
  *
  * The chat slot ships **two tiers** (see {@link CHAT_VARIANT_IDS}),
  * both from Liquid AI's LFM family:
@@ -45,7 +47,7 @@ import type { PipelineType } from "@huggingface/transformers";
  * correctly when the user switches tiers — without the suffix two
  * variants would share one cache slot and clobber each other.
  */
-export type AiModelId = "chat:lfm2.5-1.2b" | "chat:lfm2-2.6b" | "embed";
+export type AiModelId = "chat:lfm2.5-1.2b" | "chat:lfm2-2.6b" | "embed" | "rerank";
 
 /**
  * Just the chat-variant slugs — used by the picker UI which doesn't
@@ -311,10 +313,99 @@ const EMBED: AiModelInfo = {
  * chat-variant selection layer can be added without touching every
  * call site.
  */
+const RERANK: AiModelInfo = {
+  id: "rerank",
+  displayName: "MS MARCO MiniLM-L-6-v2 (cross-encoder)",
+  repo: "Xenova/ms-marco-MiniLM-L-6-v2",
+  task: "text-classification",
+  // ~23 MB on disk at int8 (`model_int8.onnx`). Peak RAM ~90 MB
+  // during inference (int8 weights + fp32 activations + ONNX
+  // runtime overhead). MiniLM-L6 backbone — 22M params, a 12-fold
+  // size reduction over the previous BGE-base entry (278M) at the
+  // cost of multilingual coverage (this model is English-only).
+  // Cross-encoders are still heavier per-pair than embedders
+  // because they tokenise the (query, passage) concatenation
+  // end-to-end, but at 22M params the per-pair forward pass is
+  // small enough that scoring the hybrid top-K (~18 candidates)
+  // takes well under a second on WASM.
+  //
+  // **History of swaps in this slot:**
+  //
+  //   - `Xenova/bge-reranker-base` (278M, 279 MB int8, ~600 MB
+  //     peak RAM) — multilingual XLM-RoBERTa-base. Retired after
+  //     the smaller MiniLM showed equivalent top-K ranking
+  //     quality on the résumé fixture; the 256 MB download saving
+  //     is the practical win that drops the three-model bundle
+  //     under 1.6 GB.
+  //   - `onnx-community/bge-reranker-v2-m3-ONNX` (568M, 571 MB int8,
+  //     ~1.2 GB peak RAM) — v2 multilingual. Briefly shipped for
+  //     a measurable warm-overview quality lift (more specific
+  //     TOGAF/DevOps vocabulary) but doubled both download and
+  //     peak RAM. Retired in favour of bge-base for size; bge-base
+  //     in turn retired for MiniLM.
+  //
+  // **Why MiniLM-L-6-v2 specifically:**
+  //   - 23 MB int8 download — the lowest-cost cross-encoder in
+  //     the Transformers.js ecosystem that still does real ranking
+  //     work. MS MARCO training is purpose-built for this exact
+  //     job (passage relevance over English search queries).
+  //   - Drop-in for the `text-classification` pipeline and the
+  //     `{text, text_pair}` input shape we already use in
+  //     {@link CrossEncoderReranker}. Outputs a single raw
+  //     relevance score per pair (not sigmoid-normalised like BGE,
+  //     but that doesn't matter for the sort the reranker does —
+  //     higher score = more relevant, regardless of scale).
+  //
+  // **Trade-off you should know about:** this model is English
+  // only. The {@link EMBED} stage is still multilingual
+  // (EmbeddingGemma covers 100+ languages), so non-English PDFs
+  // still get reasonable hybrid retrieval — they just lose the
+  // reranking refinement pass on their candidate chunks. For most
+  // users the win on bundle size is worth this trade, but if the
+  // primary use-case is non-English documents the multilingual
+  // BGE-base (279 MB) is a sound fallback — swap `repo` +
+  // `displayName` + `approxSizeBytes` back, the rest of the
+  // pipeline is identical.
+  //
+  // **Why `dtype: "int8"` and not q4 / q4f16:**
+  //   - At 23 MB int8 we're already operating below the threshold
+  //     where further quantisation matters for download UX — the
+  //     model loads in well under a second on any broadband
+  //     connection. q4f16 (30 MB) and q4 (55 MB) actually weigh
+  //     *more* than int8 here because the model is small enough
+  //     that the unpacked weight storage exceeds the int8 cost.
+  //   - `int8` (model_int8.onnx, 23 MB): int8 weights + fp32
+  //     activations. Universally supported across onnxruntime-web's
+  //     WASM + WebGPU backends; no exotic ops. Same file as
+  //     `model_quantized.onnx` and `model_uint8.onnx` (all 23 MB).
+  //
+  // **Quality knob if a user complains:** swap back to BGE-base
+  // by restoring repo `onnx-community/bge-reranker-base-ONNX` +
+  // sizes 279 MB / 600 MB — the rest of the reranker pipeline
+  // doesn't care. We don't expose this as a UI picker because
+  // the user-visible difference is subtle on typical English PDFs
+  // and a separate reranker picker doubles UX complexity.
+  approxSizeBytes: 23 * 1024 * 1024,
+  approxPeakRamBytes: 90 * 1024 * 1024,
+  description:
+    "Microsoft's tiny MiniLM cross-encoder trained on MS MARCO (22M params). Scores each (question, retrieved chunk) pair directly, then we keep the top scoring chunks — sharper relevance than the BM25 + dense fusion alone. English only.",
+  bestFor:
+    "Sharpening the chunks the LLM sees on English documents so answers stay grounded in the most relevant text.",
+  license: "Apache 2.0",
+  // Point at the Xenova ONNX export we actually download — the
+  // upstream `cross-encoder/ms-marco-MiniLM-L-6-v2` is the source
+  // model card but doesn't ship the int8 ONNX weights this entry
+  // pulls. Linking the Xenova repo lets users inspect the exact
+  // bytes the consent dialog is asking them to download.
+  modelUrl: "https://huggingface.co/Xenova/ms-marco-MiniLM-L-6-v2",
+  pipelineOptions: { dtype: "int8" },
+};
+
 export const AI_MODELS: Record<AiModelId, AiModelInfo> = {
   "chat:lfm2.5-1.2b": CHAT_LFM2_5_1_2B,
   "chat:lfm2-2.6b": CHAT_LFM2_2_6B,
   embed: EMBED,
+  rerank: RERANK,
 };
 
 // ── Chat-variant picker helpers ─────────────────────────────────────
@@ -402,23 +493,53 @@ export function getActiveChatModelId(): AiModelId {
 }
 
 /**
- * Cleanup-only migration for the pre-tier
- * `cloakpdf:ai-model-ready:chat` flag (and the SmolLM2-specific
- * variant-suffixed flag we briefly used while SmolLM2 was the
- * Balanced tier). Both removed because SmolLM2 isn't in the registry
- * any more — the flags would just be orphan localStorage entries.
+ * Cleanup-only migration for stale ready flags + variant prefs left
+ * over from prior shipped registry shapes. Returns nothing — this is
+ * pure side-effect cleanup. Idempotent. Call once at app startup;
+ * safe to re-run.
  *
- * Returning users who downloaded SmolLM2 still have the model bytes
- * sitting in CacheStorage (~1 GB). Those are wasted but unavoidable
- * — there's no programmatic way to evict a CacheStorage entry from
- * here without knowing the exact request URLs. They get reclaimed
- * the next time the user clicks "Free model memory" in the active-
- * model bar (which calls `disposeAllModels` + lets the browser GC
- * the underlying entries) or when CacheStorage hits its quota and
- * evicts LRU.
+ * **What it clears, and why:**
  *
- * Idempotent. Call once at app startup; safe to re-run.
+ *   - `cloakpdf:ai-model-ready:chat` — the pre-tier flag (existed
+ *     before we shipped a chat-variant picker). The current schema
+ *     keys the flag by full model id (e.g. `chat:lfm2.5-1.2b`); the
+ *     bare `chat` slot is no longer written, so anything stored here
+ *     is from a much older build.
+ *   - `cloakpdf:ai-model-ready:chat:smollm2-1.7b` — SmolLM2 was
+ *     briefly the Balanced tier. Dropped after the LFM2 comparison.
+ *     The model id isn't in `AI_MODELS` any more so the flag would
+ *     just rot as an orphan.
+ *   - {@link CHAT_VARIANT_STORAGE_KEY} pointing at `smollm2-1.7b` —
+ *     same reason; without this clear `getActiveChatVariant` would
+ *     fall back via the unknown-slug branch but the orphan slug
+ *     would still sit in storage.
+ *   - **`cloakpdf:ai-model-ready:rerank` (one-shot, guarded)** — the
+ *     `rerank` *model id* didn't change across the BGE-base →
+ *     MiniLM-L-6-v2 swap, only the underlying repo did. So the
+ *     existing ready flag would silently auto-load the new MiniLM
+ *     without re-consent, hiding the licence + size change from
+ *     returning users. We clear it exactly once (guarded by a
+ *     separate "I already cleared it" key) so the consent dialog
+ *     re-appears one more time on first run after the swap, then
+ *     never bothers the user again.
+ *
+ * **Orphan CacheStorage entries we can't clean up:** every retired
+ * model leaves its weight files in the browser's CacheStorage —
+ * SmolLM2 (~1 GB), bge-reranker-v2-m3 (571 MB), bge-reranker-base
+ * (279 MB) are the notable ones. The Cache API requires the exact
+ * request URLs to evict, and Transformers.js doesn't expose them.
+ * They get reclaimed when:
+ *
+ *   - The browser hits its origin storage quota and evicts LRU.
+ *   - The user clicks "Clear site data" in browser settings.
+ *
+ * "Free model memory" in the active-model bar only releases the
+ * in-tab JS / WASM heap — it does **not** clear CacheStorage.
+ * Document this to avoid the same finding showing up in future
+ * audits.
  */
+const RERANK_SWAP_MIGRATION_KEY = "cloakpdf:migration:rerank-minilm-swap";
+
 export function migrateLegacyChatReadyFlag(): void {
   const storage = safeLocalStorage();
   if (!storage) return;
@@ -430,6 +551,17 @@ export function migrateLegacyChatReadyFlag(): void {
     // default rather than returning a slug that's not in CHAT_VARIANT_IDS.
     if (storage.getItem(CHAT_VARIANT_STORAGE_KEY) === "smollm2-1.7b") {
       storage.removeItem(CHAT_VARIANT_STORAGE_KEY);
+    }
+    // One-shot rerank ready-flag reset: the reranker repo changed
+    // (BGE-base → MiniLM-L-6-v2) but the model id stayed `rerank`,
+    // so without this clear the auto-load path would silently swap
+    // the underlying model without re-prompting. We use a separate
+    // migration key (not the ready flag itself) so a user who
+    // *re-downloads* the new MiniLM and then revisits doesn't get
+    // the consent dialog a third time.
+    if (!storage.getItem(RERANK_SWAP_MIGRATION_KEY)) {
+      storage.removeItem("cloakpdf:ai-model-ready:rerank");
+      storage.setItem(RERANK_SWAP_MIGRATION_KEY, "1");
     }
   } catch {
     // ignore

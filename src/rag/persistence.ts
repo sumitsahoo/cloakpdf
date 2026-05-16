@@ -36,7 +36,13 @@ const DB_NAME = "cloakpdf-rag";
 //       bge-base's vectors AND the chunks are now prefixed
 //       ("title: none | text: ...") before embedding — so cached v4
 //       vectors are stale on every axis.
-const DB_VERSION = 5;
+//   v6: chunking switched from `RecursiveCharacterTextSplitter` (char-
+//       window, prefers paragraph→sentence→word boundaries) to a
+//       sentence-aware packer that never splits mid-sentence. Chunk
+//       text changes → cached embeddings would be misaligned with
+//       the new BM25 corpus and dense embeddings, so we drop the
+//       store.
+const DB_VERSION = 6;
 const STORE_NAME = "index-cache";
 const MAX_CACHED = 10;
 

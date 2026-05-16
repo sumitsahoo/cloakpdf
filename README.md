@@ -27,7 +27,15 @@
 
 ## ✨ Features
 
-CloakPDF offers **35 powerful PDF tools**, all running 100% client-side:
+CloakPDF offers **36 powerful PDF tools**, all running 100% client-side. Features are grouped by what they do; the order roughly tracks day-to-day usefulness, with the differentiating on-device AI feature leading.
+
+### 🤖 AI Tools _(on-device)_
+
+_Chat with your PDF using a small AI model running entirely in your browser — no API keys, no server round-trips_
+
+| Tool                      | Description                                                                                                                                                                                                                                               |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Ask your PDF** _(beta)_ | Ask natural-language questions about any PDF and get grounded answers extracted from the document text. Powered by a downloadable small chat model (1.2 GB or 2.6 GB tier, your choice) — see [On-device AI](#-on-device-ai) below for the full pipeline. |
 
 ### 🗂️ Organise & Edit
 
@@ -96,30 +104,32 @@ _Protect your PDFs and manage metadata_
 
 ## 🔒 Privacy First
 
-|                               |                                                         |
-| ----------------------------- | ------------------------------------------------------- |
-| **No file uploads**           | Everything is processed locally in your browser         |
-| **No server-side processing** | Zero network requests for your files                    |
-| **No data collection**        | No analytics, no tracking, no cookies                   |
-| **Fully offline capable**     | Works without an internet connection after initial load |
+|                               |                                                                                                      |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------- |
+| **No file uploads**           | Everything is processed locally in your browser                                                      |
+| **No server-side processing** | Zero network requests for your files                                                                 |
+| **On-device AI**              | The Ask-your-PDF chat model runs entirely in the browser — no API key, no inference server, no quota |
+| **No data collection**        | No analytics, no tracking, no cookies                                                                |
+| **Fully offline capable**     | Works without an internet connection after the initial model + asset load                            |
 
 ---
 
 ## 🛠️ Tech Stack
 
-| Category         | Technology                                                     |
-| ---------------- | -------------------------------------------------------------- |
-| Framework        | [React 19](https://react.dev/)                                 |
-| Styling          | [Tailwind CSS 4](https://tailwindcss.com/)                     |
-| Build Tool       | [Vite+](https://vite.dev/) (Vite + Rolldown unified toolchain) |
-| Language         | [TypeScript 6](https://www.typescriptlang.org/)                |
-| PDF Manipulation | [@pdfme/pdf-lib](https://github.com/pdfme/pdf-lib)             |
-| PDF Rendering    | [PDF.js](https://mozilla.github.io/pdf.js/)                    |
-| Drag & Drop      | [dnd-kit](https://dndkit.com/)                                 |
-| Icons            | [Lucide React](https://lucide.dev/)                            |
-| OCR Engine       | [Tesseract.js](https://tesseract.projectnaptha.com/)           |
-| ZIP Export       | [JSZip](https://stuk.github.io/jszip/)                         |
-| Toolchain CLI    | [Vite+ (`vp`)](https://viteplus.dev/)                          |
+| Category         | Technology                                                                                                                |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Framework        | [React 19](https://react.dev/)                                                                                            |
+| Styling          | [Tailwind CSS 4](https://tailwindcss.com/)                                                                                |
+| Build Tool       | [Vite+](https://vite.dev/) (Vite + Rolldown unified toolchain)                                                            |
+| Language         | [TypeScript 6](https://www.typescriptlang.org/)                                                                           |
+| PDF Manipulation | [@pdfme/pdf-lib](https://github.com/pdfme/pdf-lib)                                                                        |
+| PDF Rendering    | [PDF.js](https://mozilla.github.io/pdf.js/)                                                                               |
+| On-device AI     | [Transformers.js](https://github.com/huggingface/transformers.js) + [LangChain.js](https://js.langchain.com/) / LangGraph |
+| Drag & Drop      | [dnd-kit](https://dndkit.com/)                                                                                            |
+| Icons            | [Lucide React](https://lucide.dev/)                                                                                       |
+| OCR Engine       | [Tesseract.js](https://tesseract.projectnaptha.com/)                                                                      |
+| ZIP Export       | [JSZip](https://stuk.github.io/jszip/)                                                                                    |
+| Toolchain CLI    | [Vite+ (`vp`)](https://viteplus.dev/)                                                                                     |
 
 ---
 
@@ -187,6 +197,52 @@ CloakPDF leverages two complementary libraries for full PDF support:
 - **[PDF.js](https://mozilla.github.io/pdf.js/)** — Renders PDF pages to canvas for visual previews and thumbnail generation.
 
 All operations happen in-memory using the browser's `FileReader` API and `ArrayBuffer`s. Processed files are delivered as downloadable blobs — no data ever touches a remote server.
+
+---
+
+## 🤖 On-device AI
+
+The **Ask your PDF** tool runs a complete retrieval-augmented question-answering pipeline **entirely in your browser**. There is no API key, no inference server, no usage quota — the model weights are downloaded once from Hugging Face's CDN, cached in the browser, and re-used offline forever after.
+
+### Model bundle
+
+Three small models load together on first use:
+
+| Role      | Model                                                                                    | Size on disk | Peak RAM | License           |
+| --------- | ---------------------------------------------------------------------------------------- | ------------ | -------- | ----------------- |
+| Chat      | [LFM2.5-1.2B-Instruct](https://huggingface.co/LiquidAI/LFM2.5-1.2B-Instruct) _(Compact)_ | ~1.2 GB      | ~2.0 GB  | LFM Open Lic v1.0 |
+| Chat      | [LFM2-2.6B](https://huggingface.co/LiquidAI/LFM2-2.6B) _(Quality — picker upgrade)_      | ~1.5 GB      | ~3.5 GB  | LFM Open Lic v1.0 |
+| Retrieval | [EmbeddingGemma-300M](https://huggingface.co/onnx-community/embeddinggemma-300m-ONNX)    | ~309 MB      | ~400 MB  | Gemma Terms       |
+| Reranking | [MS MARCO MiniLM-L-6-v2](https://huggingface.co/Xenova/ms-marco-MiniLM-L-6-v2)           | ~23 MB       | ~90 MB   | Apache 2.0        |
+
+A fresh visitor with the default Compact chat tier downloads **~1.55 GB total**. The chat tier is user-selectable from a picker in the consent dialog; both LFM tiers share the same embedder and reranker, so swapping tiers only re-downloads the chat slot.
+
+### Why these models
+
+The chat slot has been A/B-tested against Qwen 2.5 (0.5B / 1.5B), Llama 3.2 1B, Gemma 4 E2B, SmolLM2 (360M / 1.7B), and SmolLM3-3B. Every non-LFM candidate either produced gibberish in-browser, hallucinated content not in the document, or emitted catastrophic repetition loops. Liquid AI's LFM family is the only one we've found at this size class that consistently stays anchored to the supplied excerpts. The full history-of-swaps comment in [`src/utils/ai-models.ts`](src/utils/ai-models.ts) documents each rejected candidate and the exact failure mode it exhibited.
+
+### The retrieval pipeline
+
+Per question, a LangGraph state machine in [`src/rag/graph.ts`](src/rag/graph.ts) runs:
+
+```
+classify → (chitchat | hyde → retrieve → relevance-gate → generate) → END
+```
+
+1. **Classify** — a small-talk regex routes greetings to a canned `chitchat` reply with no retrieval.
+2. **HyDE** _(Hypothetical Document Embeddings)_ — the chat model writes a one-sentence hypothetical answer, which is embedded alongside the question to broaden the semantic search. Skipped for fast-path-eligible questions (phone, email, "who is X").
+3. **Retrieve** — hybrid retrieval fuses **BM25 keyword scoring** with **dense embedding similarity** via Reciprocal Rank Fusion ([`src/rag/retrievers/hybrid.ts`](src/rag/retrievers/hybrid.ts)). The first chunk of the document is always merged in as an anchor so identity questions ("whose résumé is this?") can use the header.
+4. **Rerank** — a cross-encoder rescores the top ~18 candidates and keeps the top 6, sharpening relevance beyond what rank fusion alone can do ([`src/rag/reranker.ts`](src/rag/reranker.ts)).
+5. **Relevance gate** — if the best chunk's dense-cosine score falls below a threshold, the graph routes to a `refuse` reply instead of letting the model hallucinate an answer.
+6. **Generate** — three deterministic fast-paths run first ([`src/rag/fast-paths.ts`](src/rag/fast-paths.ts)): verbatim contact extraction (phone/email regex), document-type identification, and topic-absence refusal. On a miss, the chat model streams a grounded answer with the document header + retrieved excerpts as context.
+
+### Caching + offline use
+
+Chunks and embeddings are persisted in **IndexedDB** keyed by the SHA-256 of the PDF bytes ([`src/rag/persistence.ts`](src/rag/persistence.ts)), so re-opening the same file is instant — no re-chunking, no re-embedding. Model weights live in the browser's `CacheStorage` after first download, so the entire pipeline works offline thereafter.
+
+### Runtime
+
+Models execute via [Transformers.js](https://github.com/huggingface/transformers.js) on top of ONNX Runtime Web. The chat model runs on **WebGPU** when available (falling back to WASM); the embedder is pinned to WASM to sidestep a known WebGPU LayerNorm fp16 shader compile bug. All three pipelines are constructed lazily — the bytes don't leave your browser, ever.
 
 ---
 

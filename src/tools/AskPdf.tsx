@@ -129,6 +129,24 @@ export default function AskPdf() {
   }, [rag.chatVariant]);
 
   /**
+   * Same idea, different trigger. The session also captures the
+   * embedder + reranker pipes by reference; if `disposeAllModels` ran
+   * (e.g. user clicked "Free model memory" mid-session) the rollup
+   * status drops out of `"ready"` and every pipe handle the session
+   * is holding becomes a disposed-runtime call waiting to happen.
+   *
+   * Clearing the session ref here makes the next "models ready"
+   * transition rebuild the session against the fresh pipes — the
+   * same code path that runs after the initial cold load.
+   */
+  useEffect(() => {
+    if (rag.status !== "ready") {
+      sessionRef.current = null;
+      setSessionReady(false);
+    }
+  }, [rag.status]);
+
+  /**
    * Build the RAG session as soon as the PDF is loaded *and* both
    * models are ready. Idempotent — re-renders short-circuit on
    * `sessionRef.current`.
@@ -140,11 +158,12 @@ export default function AskPdf() {
     const file = pdf.file;
     void task.run(async () => {
       try {
-        const { chat, embed } = await rag.ensureReady();
+        const { chat, embed, rerank } = await rag.ensureReady();
         const session = await createRagSession({
           chatPipe: chat,
           chatInfo: rag.chat.info,
           embedPipe: embed,
+          rerankPipe: rerank,
           file,
           onIndexProgress: setIndexing,
         });
@@ -291,12 +310,12 @@ export default function AskPdf() {
             <>
               <AiModelGate
                 ai={rag.chat}
-                models={[rag.chat.info, rag.embed.info]}
-                roles={["chat", "retrieval"]}
+                models={[rag.chat.info, rag.embed.info, rag.rerank.info]}
+                roles={["chat", "retrieval", "rerank"]}
                 chatVariant={rag.chatVariant}
                 onChatVariantChange={rag.setChatVariant}
                 title="Download AI models to start chatting"
-                blurb="Both run entirely in your browser; your PDFs are never uploaded."
+                blurb="All three run entirely in your browser; your PDFs are never uploaded."
               >
                 {/*
                   Once models are ready we render one of two states.
@@ -350,9 +369,8 @@ export default function AskPdf() {
               </AiModelGate>
 
               <ActiveModelBar
-                info={rag.chat.info}
-                secondaryInfo={rag.embed.info}
-                roles={["chat", "retrieval"]}
+                models={[rag.chat.info, rag.embed.info, rag.rerank.info]}
+                roles={["chat", "retrieval", "rerank"]}
                 ready={rag.status === "ready"}
                 onChange={() => setVariantPickerOpen(true)}
                 disabled={task.processing || isIndexing}
@@ -366,11 +384,15 @@ export default function AskPdf() {
 
       <AiConsentDialog
         open={dialogOpen}
-        info={rag.chat.info}
-        secondaryInfo={rag.embed.info}
-        roles={["chat", "retrieval"]}
+        models={[rag.chat.info, rag.embed.info, rag.rerank.info]}
+        roles={["chat", "retrieval", "rerank"]}
         status={rag.status}
         progress={rag.progress}
+        // Per-model arrays parallel to `models` — drive the per-model
+        // breakdown beneath the overall bar so users see *which*
+        // pipeline the current bytes are flowing into.
+        perModelStatus={[rag.chat.status, rag.embed.status, rag.rerank.status]}
+        perModelProgress={[rag.chat.progress, rag.embed.progress, rag.rerank.progress]}
         error={rag.error}
         onConfirm={rag.confirm}
         onRetry={rag.retry}

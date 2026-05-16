@@ -18,24 +18,20 @@ import { AiModelDetailsDialog } from "./AiModelDetailsDialog.tsx";
 
 interface ActiveModelBarProps {
   /**
-   * Spec for the primary active model — typically the chat LLM.
-   * Passed straight through from {@link useAiModel.info}.
+   * Active models for the running tool — typically `[chat, embed,
+   * rerank]` for the RAG stack. `models[0]` drives the single-model
+   * label when only one is loaded; multi-model bundles render a
+   * count-aware "Running N AI models — ≈ X total" strip.
    */
-  info: AiModelInfo;
+  models: AiModelInfo[];
   /**
-   * Optional second model rendered alongside the primary (e.g. the
-   * embedder in a RAG tool). When omitted the strip falls back to the
-   * single-model summary that names just `info`.
+   * Optional role labels matching {@link models} by index, e.g.
+   * `["chat", "retrieval", "rerank"]`. Used by the details modal —
+   * the strip itself stays terse.
    */
-  secondaryInfo?: AiModelInfo;
+  roles?: string[];
   /**
-   * Optional role labels matching the models in order (primary,
-   * secondary), e.g. `["chat", "retrieval"]`. Used by the details
-   * modal — the strip itself stays terse.
-   */
-  roles?: [string, string];
-  /**
-   * `true` when both pipelines are loaded and the tool is operational.
+   * `true` when every pipeline is loaded and the tool is operational.
    * Drives the "Running" / "Selected" verb so users can distinguish
    * "downloaded and active" from "selected, waiting for download".
    */
@@ -54,19 +50,12 @@ interface ActiveModelBarProps {
   disabled?: boolean;
 }
 
-export function ActiveModelBar({
-  info,
-  secondaryInfo,
-  roles,
-  ready,
-  onChange,
-  disabled,
-}: ActiveModelBarProps) {
+export function ActiveModelBar({ models, roles, ready, onChange, disabled }: ActiveModelBarProps) {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const verb = ready ? "Running" : "Selected";
 
-  const models: AiModelInfo[] = secondaryInfo ? [info, secondaryInfo] : [info];
   const totalBytes = models.reduce((sum, m) => sum + m.approxSizeBytes, 0);
+  const primary = models[0];
 
   // Build the line as discrete segments so the flex-wrap layout below
   // can break them onto separate rows naturally. `formatApproxSize`
@@ -75,9 +64,9 @@ export function ActiveModelBar({
     models.length > 1
       ? [`${verb} ${models.length} AI models`, formatApproxSize(totalBytes), "on-device"]
       : [
-          `${verb} ${info.displayName}`,
-          formatApproxSize(info.approxSizeBytes),
-          info.license,
+          `${verb} ${primary.displayName}`,
+          formatApproxSize(primary.approxSizeBytes),
+          primary.license,
           "on-device",
         ];
 

@@ -156,6 +156,25 @@ const CHITCHAT_PROMPT =
   "You are a friendly assistant who helps a user explore a PDF document. Respond briefly to the user's greeting and invite them to ask something specific about the document.";
 
 /**
+ * HyDE prompt — asks the chat model for a 1-sentence guess of what
+ * the answer would be, given only the question. The guess doesn't
+ * need to be *correct* (the model probably can't be without seeing
+ * the document); it just needs to sit in the same semantic
+ * neighborhood as the real answer would. That neighborhood is what
+ * the embedder uses to retrieve the right chunks.
+ *
+ * Intentionally constrained: "one short sentence" cap keeps the
+ * generation under ~80 tokens, capping the latency penalty per
+ * question to a single chat-model forward pass.
+ */
+const HYDE_PROMPT = `You are a helper that writes a single short hypothetical answer to a question. The answer will be used to search a document for relevant passages — it doesn't need to be correct, just plausible in shape and vocabulary.
+
+Rules:
+- Output exactly one sentence.
+- Use the kind of words that would appear in a real answer (specific nouns, concrete terms — not "the document discusses...").
+- Don't ask for clarification. Don't say "I don't know". Just guess.`;
+
+/**
  * Canned reply for questions whose best embedding match against the
  * corpus falls below {@link RELEVANCE_THRESHOLD}. Written to be polite
  * but unambiguous about the scope — "I can only answer questions about
@@ -234,6 +253,53 @@ function isSmallTalk(q: string): boolean {
   const trimmed = q.trim().toLowerCase();
   if (trimmed.length <= 2) return true;
   return SMALL_TALK_RE.test(trimmed);
+}
+
+/**
+ * localStorage flag that disables HyDE when set to "0". Default =
+ * enabled. The e2e comparison orchestrator flips this for cross-cut
+ * measurement runs.
+ */
+export const RAG_HYDE_FLAG = "cloakpdf:rag-hyde";
+
+function hydeEnabled(): boolean {
+  if (typeof localStorage === "undefined") return true;
+  try {
+    return localStorage.getItem(RAG_HYDE_FLAG) !== "0";
+  } catch {
+    return true;
+  }
+}
+
+/**
+ * Heuristics that gate when HyDE is worth running.
+ *
+ *   - **Very short queries** (< 18 chars): too little signal to
+ *     meaningfully re-encode. The hypothetical-answer prompt would
+ *     spend more inference time than the embedding lookup it's
+ *     trying to improve.
+ *   - **Fast-path-eligible shapes**: contact extraction (phone /
+ *     email / address) and "who is X" identity questions hit the
+ *     deterministic fast-paths in [fast-paths.ts](./fast-paths.ts)
+ *     before the LLM ever sees them — the retrieval result for these
+ *     is only used as a sanity check, not as the actual answer
+ *     source. HyDE here is pure latency tax.
+ *   - **Pasted prose** (multi-sentence paragraph with no `?`): the
+ *     pasted-prose defense in `looksLikePastedProse` short-circuits
+ *     to off-topic anyway; HyDE on top would waste a generation.
+ *
+ * Everything else (open-ended questions, paraphrased queries) gets
+ * the HyDE rewrite — that's where the recall lift actually shows.
+ */
+const HYDE_SKIP_MIN_LEN = 18;
+const HYDE_FAST_PATH_RE = /\b(phone|email|address|contact|who\s+is|who's|who\b)\b/i;
+
+function shouldSkipHyde(question: string): boolean {
+  const trimmed = question.trim();
+  if (trimmed.length < HYDE_SKIP_MIN_LEN) return true;
+  if (HYDE_FAST_PATH_RE.test(trimmed)) return true;
+  if (looksLikePastedProse(trimmed)) return true;
+  return false;
 }
 
 /**
@@ -373,6 +439,16 @@ export function extractCoreQuery(question: string): string {
 export const RagStateAnnotation = Annotation.Root({
   question: Annotation<string>(),
   /**
+   * Query used for retrieval — either the user's original question or
+   * a HyDE-generated hypothetical answer. Defaults to `question` when
+   * the `hyde` node short-circuits (small queries, fast-path-eligible
+   * shapes, or the user-disabled feature flag).
+   */
+  searchQuery: Annotation<string>({
+    reducer: (_prev, next) => next,
+    default: () => "",
+  }),
+  /**
    * Routing tag. `classify` sets this to `"chitchat"` or `"question"`;
    * `retrieve` may then re-tag a `"question"` as `"off-topic"` when
    * the dense-similarity gate fires. Surfaced on `AskResult` so the
@@ -467,6 +543,68 @@ export function buildRagGraph(options: BuildGraphOptions) {
   }
 
   /**
+   * hyde → optionally rewrite the retrieval query as a hypothetical
+   * answer (Hypothetical Document Embeddings, [Gao et al. 2022]).
+   *
+   * The user's question and a hypothetical answer occupy different
+   * regions of the embedding space — a question is a *query* shape
+   * ("what tools does X use?") while a document chunk is a *statement*
+   * shape ("X uses Python, JavaScript, and Docker"). Embedding the
+   * question directly asks the retriever to match a query against
+   * statements, which works but bridges a stylistic gap each time.
+   * Embedding a hypothetical answer (a fake statement that sits in
+   * the same semantic neighborhood as the real answer) lets the
+   * retriever do statement-to-statement matching — typically tighter
+   * cosine on the right chunk.
+   *
+   * **When we skip:** see {@link shouldSkipHyde}. Fast-path-eligible
+   * questions (phone, email, "who is X") and very short queries don't
+   * benefit enough to justify the extra chat-model forward pass. The
+   * `RAG_HYDE_FLAG` localStorage flag also disables HyDE globally for
+   * A/B testing.
+   *
+   * **Cost:** one chat-model call with `maxNewTokens: 80`. On
+   * LFM2.5-1.2B that's ~600-1500 ms added per question. Bounded.
+   */
+  async function hyde(state: RagState): Promise<Partial<RagState>> {
+    // Skip-cases set searchQuery = original question so retrieve
+    // uses the user's wording. The reducer is last-write-wins so
+    // this is the canonical place to set the default.
+    if (!hydeEnabled() || shouldSkipHyde(state.question)) {
+      return { searchQuery: state.question };
+    }
+    try {
+      // No `onToken` callback — HyDE is an internal step the user
+      // shouldn't see token-by-token. The chat model's own
+      // `maxNewTokens` (256 for our LFM tiers) caps total latency
+      // and the prompt explicitly asks for "one short sentence" so
+      // the model typically stops well before the cap.
+      const hypothetical = await streamReply(
+        chatModel,
+        HYDE_PROMPT,
+        null,
+        state.question,
+        undefined,
+      );
+      const trimmed = hypothetical.trim();
+      // Defensive: if the model returned nothing useful (whitespace,
+      // single token), fall back to the question rather than
+      // embedding noise.
+      if (trimmed.length < 8) {
+        return { searchQuery: state.question };
+      }
+      // Compose: original question + hypothetical. The original keeps
+      // discriminating tokens (named entities, specific nouns) that
+      // the hypothetical may have generalised away; the hypothetical
+      // adds the statement-shape vocabulary HyDE is meant to provide.
+      return { searchQuery: `${state.question}\n${trimmed}` };
+    } catch (e) {
+      console.warn("[hyde] hypothetical generation failed; using raw question", e);
+      return { searchQuery: state.question };
+    }
+  }
+
+  /**
    * retrieve → hybrid BM25 + dense, top-K via RRF, plus a cosine-
    * similarity guard that flags off-topic queries AND a per-chunk
    * relevance filter that drops marginal noise before the LLM ever
@@ -517,7 +655,16 @@ export function buildRagGraph(options: BuildGraphOptions) {
     // question, not the full padded input. `state.question` still
     // carries the original text downstream (fast-paths, LLM prompt),
     // so the user sees their own wording answered or refused.
-    const coreQuery = extractCoreQuery(state.question);
+    //
+    // If the `hyde` node ran, `state.searchQuery` holds the
+    // hypothetical-answer rewrite (concatenated with the original
+    // question). Use that for retrieval — the embedder gets a
+    // statement-shape query that matches chunk-shape text better
+    // than a bare question. Fall back to the user's question when
+    // HyDE was skipped or disabled.
+    const queryForRetrieval =
+      state.searchQuery && state.searchQuery.trim().length > 0 ? state.searchQuery : state.question;
+    const coreQuery = extractCoreQuery(queryForRetrieval);
     const [hitsRaw, relevance] = await Promise.all([
       retriever.invoke(coreQuery) as Promise<Document<ChunkMetadata>[]>,
       scoreRelevance ? scoreRelevance(coreQuery).catch(() => null) : Promise.resolve(null),
@@ -626,14 +773,19 @@ export function buildRagGraph(options: BuildGraphOptions) {
 
   const builder = new StateGraph(RagStateAnnotation)
     .addNode("classify", classify)
+    .addNode("hyde", hyde)
     .addNode("retrieve", retrieve)
     .addNode("generate", generate)
     .addNode("chitchat", chitchat)
     .addNode("refuse", refuse)
     .addEdge(START, "classify")
+    // classify routes chitchat directly to its own node; questions
+    // run through `hyde` (which may no-op based on shape / flag)
+    // before retrieve so the embedder gets the best-shaped query.
     .addConditionalEdges("classify", (s: RagState) =>
-      s.intent === "chitchat" ? "chitchat" : "retrieve",
+      s.intent === "chitchat" ? "chitchat" : "hyde",
     )
+    .addEdge("hyde", "retrieve")
     .addConditionalEdges("retrieve", (s: RagState) => (s.offTopic ? "refuse" : "generate"))
     .addEdge("refuse", END)
     .addEdge("generate", END)

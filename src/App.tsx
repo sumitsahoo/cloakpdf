@@ -12,8 +12,8 @@
 
 import {
   ArrowRight,
+  Cpu,
   GitFork,
-  Laptop,
   MonitorSmartphone,
   Rocket,
   LayoutGrid,
@@ -402,9 +402,9 @@ function WhyCloakPdfSection() {
           description="Merge, split, sign, redact, OCR, compress, convert — one workspace for every PDF chore."
         />
         <FeatureItem
-          icon={<Laptop className="w-5 h-5" />}
-          title="Light & dark mode"
-          description="Thoughtful theming that follows your system preference automatically."
+          icon={<Cpu className="w-5 h-5" />}
+          title="On-device AI"
+          description="Ask questions about your PDF with a chat model that runs entirely in your browser — no API key, no server round-trip."
         />
         <FeatureItem
           icon={<GitFork className="w-5 h-5" />}

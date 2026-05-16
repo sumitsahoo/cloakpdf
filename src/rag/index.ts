@@ -23,6 +23,7 @@ import { TransformersJsEmbeddings } from "./embeddings.ts";
 import { buildRagGraph, type RagState, type RelevanceContext } from "./graph.ts";
 import { loadPdf } from "./pdf-loader.ts";
 import { cacheIndex, getCachedIndex, sha256Hex } from "./persistence.ts";
+import { CrossEncoderReranker, RerankingRetriever } from "./reranker.ts";
 import { buildBm25Retriever } from "./retrievers/bm25.ts";
 import { buildDenseRetrieverFromStore } from "./retrievers/dense.ts";
 import { HybridRetriever } from "./retrievers/hybrid.ts";
@@ -41,6 +42,14 @@ export interface CreateSessionOptions {
   chatInfo: AiModelInfo;
   /** Resolved Transformers.js `feature-extraction` pipeline. */
   embedPipe: AiPipeline;
+  /**
+   * Resolved Transformers.js `text-classification` pipeline for the
+   * cross-encoder reranker. Optional: when omitted (or when the user
+   * has disabled reranking via the localStorage flag, see
+   * `RAG_RERANK_FLAG`) the session uses raw hybrid retrieval — same
+   * correctness, slightly worse precision on the top-K.
+   */
+  rerankPipe?: AiPipeline;
   /** The PDF the session indexes and answers questions about. */
   file: File;
   /**
@@ -48,6 +57,23 @@ export interface CreateSessionOptions {
    * UI can render a determinate progress bar.
    */
   onIndexProgress?: (info: IndexingProgress) => void;
+}
+
+/**
+ * localStorage flag that disables reranking when set to "0".
+ * Default = enabled. Read by `createRagSession` so a power user can
+ * A/B without touching code. The e2e comparison orchestrator flips
+ * this for cross-cut measurement runs.
+ */
+export const RAG_RERANK_FLAG = "cloakpdf:rag-rerank";
+
+function rerankEnabled(): boolean {
+  if (typeof localStorage === "undefined") return true;
+  try {
+    return localStorage.getItem(RAG_RERANK_FLAG) !== "0";
+  } catch {
+    return true;
+  }
 }
 
 export type IndexingProgress =
@@ -86,19 +112,30 @@ export interface RagSession {
 }
 
 /**
- * How many chunks the hybrid retriever surfaces per query.
+ * How many chunks the LLM ultimately sees per question — i.e. the
+ * size of the final top-K after reranking (when enabled) or after
+ * RRF fusion alone (when disabled).
  *
  * Bumped from 3 → 6 after the retrieval probe showed the right chunk
  * sat at rank ~5 with the older bge-small embedder and got cut off
  * entirely at k=3 (see `tests/retrieval-debug/*.json`). 6 keeps the
  * LLM context modest (~4 KB at chunkSize=700) while giving the right
- * chunk a real chance of landing in scope, even now that we've moved
- * to bge-base where the same chunk ranks higher. When we add a cross-
- * encoder reranker we can drop this back down — the reranker is a
- * strict upgrade over RRF's top-k slice and 3 reranked chunks beats
- * 6 fused ones.
+ * chunk a real chance of landing in scope.
  */
-const HYBRID_TOP_K = 6;
+const FINAL_TOP_K = 6;
+/**
+ * How many candidates the hybrid retriever returns *before* the
+ * cross-encoder reranks them down to {@link FINAL_TOP_K}. 3× the
+ * final K is the standard rule of thumb: wide enough that a chunk
+ * the embedder ranked weakly but is actually most relevant can
+ * still reach the reranker, narrow enough that we don't pay
+ * per-pair cross-encoder inference on obvious garbage.
+ *
+ * When the reranker is disabled (user flag, or model failed to
+ * load) the hybrid retriever is built with `k = FINAL_TOP_K`
+ * directly — no point fetching candidates we won't filter.
+ */
+const RERANK_CANDIDATE_K = FINAL_TOP_K * 3;
 /**
  * How many candidates each underlying retriever fetches pre-fusion.
  *
@@ -200,9 +237,28 @@ export async function createRagSession(options: CreateSessionOptions): Promise<R
   }
 
   // ── Wire retrievers + graph ──────────────────────────────────────
+  //
+  // Reranker presence flips the hybrid retriever's `k` between two
+  // regimes:
+  //   - reranker available + enabled → hybrid returns
+  //     RERANK_CANDIDATE_K (~18) and the reranker rescores down to
+  //     FINAL_TOP_K (6) before the LLM sees them.
+  //   - reranker absent → hybrid returns FINAL_TOP_K directly; no
+  //     point fetching candidates we won't filter.
+  const reranker =
+    options.rerankPipe && rerankEnabled() ? new CrossEncoderReranker(options.rerankPipe) : null;
+  const hybridK = reranker ? RERANK_CANDIDATE_K : FINAL_TOP_K;
+
   const dense = buildDenseRetrieverFromStore(vectorStore, CANDIDATE_K);
   const sparse = buildBm25Retriever({ documents: chunks, k: CANDIDATE_K });
-  const retriever = new HybridRetriever({ dense, sparse, k: HYBRID_TOP_K });
+  const hybrid = new HybridRetriever({ dense, sparse, k: hybridK });
+  const retriever = reranker
+    ? new RerankingRetriever({
+        base: hybrid,
+        reranker,
+        k: FINAL_TOP_K,
+      })
+    : hybrid;
 
   /**
    * "Document anchor" chunk(s) — always merged into the retrieve

@@ -13,10 +13,15 @@
  *     visibility of the download (Cancel button is the explicit exit).
  *   - `error` — error message with Retry / Cancel buttons.
  *
- * **Multi-model support.** Pass `secondaryInfo` (e.g. the embedder in a
- * RAG tool) to render a second card in the consent body and a combined
- * size estimate in the download body. The model cards themselves come
- * from the shared {@link ModelCard} component used by
+ * **Multi-model support.** Pass `models` (one entry per pipeline) to
+ * render a card per model in the consent body. Pass `perModelStatus`
+ * and `perModelProgress` (both parallel to `models`) to render an
+ * itemised per-model breakdown beneath the overall download bar — one
+ * row per model with its own mini bar so users can see *which* model
+ * is currently being pulled, not just the rolled-up percent. The
+ * arrays are optional; when omitted the dialog renders only the
+ * combined bar (matches the original single-bar UX). The model cards
+ * themselves come from the shared {@link ModelCard} component used by
  * {@link AiModelDetailsDialog}, so the two dialogs read as one system.
  *
  * **Visual pattern.** Mirrors `ToolPickerModal`'s translucent layout —
@@ -24,11 +29,11 @@
  * `animate-slide-up-in`, `bg-white/85` for the see-through feel.
  * Bottom-sheet on mobile / centered card on desktop.
  */
-import { AlertCircle, Cpu, Loader2, ShieldCheck, X } from "lucide-react";
+import { AlertCircle, Check, Cpu, Loader2, ShieldCheck, X } from "lucide-react";
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import type { AiModelStatus } from "../hooks/useAiModel.ts";
-import { type AiModelInfo, formatApproxSize } from "../utils/ai-models.ts";
+import type { AiModelInfo } from "../utils/ai-models.ts";
 import type { AiProgress } from "../utils/ai-runtime.ts";
 import { formatFileSize } from "../utils/file-helpers.ts";
 import { ModelCard } from "./ModelCard.tsx";
@@ -36,21 +41,36 @@ import { ModelCard } from "./ModelCard.tsx";
 interface AiConsentDialogProps {
   /** When `false` the dialog is unmounted entirely. */
   open: boolean;
-  /** Primary model — drives the headline when only one model is shown. */
-  info: AiModelInfo;
   /**
-   * Optional second model. When provided the consent body renders both
-   * as separate cards and the headline / copy adapt to the plural case.
+   * Models the user is being asked to download together. `models[0]`
+   * drives the single-model headline copy; with multiple models the
+   * headline / body switches to the plural case. One card is rendered
+   * per model with metadata (size, licence, Hugging Face link).
    */
-  secondaryInfo?: AiModelInfo;
+  models: AiModelInfo[];
   /**
-   * Optional role labels matching `[info, secondaryInfo]`, e.g.
-   * `["chat", "retrieval"]`. Surface a small pill in each card so users
-   * know which model handles which job.
+   * Optional role labels matching {@link models} by index, e.g.
+   * `["chat", "retrieval", "rerank"]`. Surfaces a small pill in each
+   * card so users can tell which model handles which job.
    */
-  roles?: [string, string];
+  roles?: string[];
+  /** Rollup status driving the dialog's high-level state machine. */
   status: AiModelStatus;
+  /**
+   * Combined byte progress across every model — drives the dominant
+   * "overall" bar. Sum of every model's loaded/total.
+   */
   progress: AiProgress | null;
+  /**
+   * Per-model status, parallel to {@link models}. When provided
+   * alongside {@link perModelProgress}, the download body renders a
+   * row per model under the overall bar so users can see *which*
+   * model is currently being pulled. Omitting either array falls back
+   * to the single-bar layout.
+   */
+  perModelStatus?: AiModelStatus[];
+  /** Per-model byte progress, parallel to {@link models}. */
+  perModelProgress?: Array<AiProgress | null>;
   error: string | null;
   /** "Download model" — only fires from the `awaiting-consent` state. */
   onConfirm: () => void;
@@ -62,11 +82,12 @@ interface AiConsentDialogProps {
 
 export function AiConsentDialog({
   open,
-  info,
-  secondaryInfo,
+  models,
   roles,
   status,
   progress,
+  perModelStatus,
+  perModelProgress,
   error,
   onConfirm,
   onRetry,
@@ -98,8 +119,8 @@ export function AiConsentDialog({
   const dismissOnBackdrop = status !== "downloading" && status !== "loading";
   const disableClose = !dismissOnBackdrop;
 
-  const models = secondaryInfo ? [info, secondaryInfo] : [info];
   const totalBytes = models.reduce((sum, m) => sum + m.approxSizeBytes, 0);
+  const primary = models[0];
 
   return createPortal(
     <div
@@ -132,7 +153,7 @@ export function AiConsentDialog({
         </div>
 
         <DialogHeader
-          primary={info}
+          primary={primary}
           models={models}
           status={status}
           onCancel={onCancel}
@@ -144,10 +165,13 @@ export function AiConsentDialog({
             <ConsentBody models={models} roles={roles} />
           ) : status === "downloading" || status === "loading" ? (
             <DownloadBody
-              primary={info}
+              primary={primary}
               models={models}
+              roles={roles}
               totalBytes={totalBytes}
               progress={progress}
+              perModelStatus={perModelStatus}
+              perModelProgress={perModelProgress}
               warm={status === "loading"}
             />
           ) : status === "error" ? (
@@ -195,9 +219,10 @@ function DialogHeader({
 
   // Description: generic line when multi-model (each model has its
   // own detailed description further down in its card); the model's
-  // own description when single.
+  // own description when single. Count-aware so a 2-model vs 3-model
+  // bundle reads correctly.
   const description = multi
-    ? "Two small models load together — one to chat with the document, one to find the right pages. Both run entirely on your device; your PDFs are never uploaded."
+    ? `${models.length} small models load together — one to chat with the document, the others to find and rerank the right pages. All run entirely on your device; your PDFs are never uploaded.`
     : primary.description;
 
   return (
@@ -235,7 +260,7 @@ function DialogHeader({
   );
 }
 
-function ConsentBody({ models, roles }: { models: AiModelInfo[]; roles?: [string, string] }) {
+function ConsentBody({ models, roles }: { models: AiModelInfo[]; roles?: string[] }) {
   return (
     <div className="space-y-3">
       {models.map((info, i) => (
@@ -258,15 +283,21 @@ function ConsentBody({ models, roles }: { models: AiModelInfo[]; roles?: [string
 function DownloadBody({
   primary,
   models,
+  roles,
   totalBytes,
   progress,
+  perModelStatus,
+  perModelProgress,
   warm,
 }: {
   primary: AiModelInfo;
   models: AiModelInfo[];
+  roles?: string[];
   /** Sum of `approxSizeBytes` across all models — used as the total fallback. */
   totalBytes: number;
   progress: AiProgress | null;
+  perModelStatus?: AiModelStatus[];
+  perModelProgress?: Array<AiProgress | null>;
   /**
    * `true` when the bytes are already in CacheStorage and we're only
    * constructing the pipeline from disk. Suppresses the byte counter
@@ -276,6 +307,12 @@ function DownloadBody({
   warm: boolean;
 }) {
   const multi = models.length > 1;
+  const showBreakdown =
+    multi &&
+    Array.isArray(perModelStatus) &&
+    Array.isArray(perModelProgress) &&
+    perModelStatus.length === models.length &&
+    perModelProgress.length === models.length;
 
   if (warm) {
     return (
@@ -291,7 +328,7 @@ function DownloadBody({
         </div>
         <p className="text-xs text-slate-500 dark:text-dark-text-muted leading-relaxed">
           {multi
-            ? "Both models are already cached in your browser — initialising the runtimes now. This usually takes a few seconds."
+            ? "All models are already cached in your browser — initialising the runtimes now. This usually takes a few seconds."
             : `${primary.displayName} is already cached in your browser — initialising the runtime now. This usually takes a few seconds.`}
         </p>
       </div>
@@ -304,39 +341,239 @@ function DownloadBody({
   // window between "initiate" and the first "progress" event.
   const total = Math.max(progress?.total ?? 0, totalBytes);
   const percent = total > 0 ? Math.min(100, Math.round((loaded / total) * 100)) : 0;
-  const fileName = progress?.file ? progress.file.split("/").pop() || progress.file : "preparing…";
+
+  // Single-model fallback (e.g. a tool that only loads one pipeline)
+  // keeps the original "one chunky bar + filename + bytes" layout —
+  // there's nothing for a per-model breakdown to add when there's
+  // only one model.
+  if (!showBreakdown) {
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center justify-between text-sm">
+          <span className="text-slate-700 dark:text-dark-text font-medium">
+            {progress?.status ?? "Downloading"}
+          </span>
+          <span className="font-medium text-primary-600 dark:text-primary-400 tabular-nums">
+            {percent}%
+          </span>
+        </div>
+        <div className="w-full bg-slate-200 dark:bg-dark-border rounded-full h-2 overflow-hidden">
+          <div
+            className="bg-primary-600 h-full rounded-full transition-[width] duration-300"
+            style={{ width: `${percent}%` }}
+          />
+        </div>
+        <div className="flex items-center justify-between gap-2 text-xs text-slate-500 dark:text-dark-text-muted">
+          <span className="font-mono wrap-anywhere truncate">
+            {progress?.file ? progress.file.split("/").pop() || progress.file : "preparing…"}
+          </span>
+          <span className="tabular-nums shrink-0">
+            {formatFileSize(loaded)} / {formatFileSize(total)}
+          </span>
+        </div>
+        <p className="text-xs text-slate-500 dark:text-dark-text-muted leading-relaxed pt-1">
+          If your connection drops, the download will resume next time — files already saved to your
+          browser cache won't be redownloaded.
+        </p>
+      </div>
+    );
+  }
+
+  // Multi-model breakdown.
+  //
+  // **Layout intent.** A single tinted "summary" panel at the top
+  // (big percent + total bytes) followed by one white card per
+  // model. The summary doesn't repeat the bar — the per-model cards
+  // already visualise where bytes are flowing, and a second
+  // top-level bar would be redundant. The summary's big numeric
+  // anchors the eye; the cards below answer "which model is next".
+  //
+  // Each per-model card is self-contained: role pill, display name,
+  // its own per-model bar, and a tail that swaps between size /
+  // "Ready" / "Loading…" / "Waiting" depending on the model's own
+  // state machine. Cards keep the project's slate-200 border + white
+  // surface + rounded-xl idiom so the dialog reads as one of the
+  // app's regular surfaces, not a special download UI.
+  const completed = perModelStatus.filter((s) => s === "ready").length;
+  const downloading = models.length - completed;
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between text-sm">
-        <span className="text-slate-700 dark:text-dark-text font-medium">
-          {progress?.status ?? "Downloading"}
-        </span>
-        <span className="font-medium text-primary-600 dark:text-primary-400 tabular-nums">
-          {percent}%
-        </span>
+    <div className="space-y-4">
+      {/* Tinted summary panel — big percent left, totals on the right.
+          Replaces the old "Overall progress" + bar combo. The
+          per-model bars below already show progress in detail; a
+          second top bar was redundant and made the panel feel
+          stacked. */}
+      <div className="rounded-xl border border-primary-100/80 dark:border-primary-900/40 bg-primary-50/60 dark:bg-primary-900/15 px-4 py-3.5">
+        <div className="flex items-end justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-xxs uppercase tracking-wider font-medium text-primary-700 dark:text-primary-300">
+              {progress?.status ?? "Downloading"}
+            </p>
+            <p className="text-sm font-semibold text-slate-800 dark:text-dark-text tabular-nums mt-1">
+              {formatFileSize(loaded)}{" "}
+              <span className="text-slate-500 dark:text-dark-text-muted font-normal">
+                of {formatFileSize(total)}
+              </span>
+            </p>
+            <p className="text-xs text-slate-500 dark:text-dark-text-muted mt-0.5">
+              {completed} of {models.length} ready
+              {downloading > 0 ? ` · ${downloading} pending` : ""}
+            </p>
+          </div>
+          <span className="text-3xl font-semibold text-primary-600 dark:text-primary-400 tabular-nums leading-none shrink-0">
+            {percent}
+            <span className="text-base font-medium">%</span>
+          </span>
+        </div>
       </div>
-      <div className="w-full bg-slate-200 dark:bg-dark-border rounded-full h-2 overflow-hidden">
-        <div
-          className="bg-primary-600 h-full rounded-full transition-[width] duration-300"
-          style={{ width: `${percent}%` }}
-        />
-      </div>
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-xs text-slate-500 dark:text-dark-text-muted">
-        <span className="font-mono wrap-anywhere">{fileName}</span>
-        <span className="tabular-nums shrink-0">
-          {formatFileSize(loaded)} / {formatFileSize(total)}
-        </span>
-      </div>
-      <p className="text-xs text-slate-500 dark:text-dark-text-muted leading-relaxed pt-1">
+
+      {/* Per-model cards — one row per pipeline. Listed in the same
+          order the consumer passed in `models`, so the chat row sits
+          at the top (it's the slowest + most visible). */}
+      <ul className="space-y-2">
+        {models.map((info, i) => (
+          <li key={info.id}>
+            <ModelProgressCard
+              info={info}
+              role={roles?.[i]}
+              status={perModelStatus[i] ?? "idle"}
+              progress={perModelProgress[i] ?? null}
+            />
+          </li>
+        ))}
+      </ul>
+
+      <p className="text-xs text-slate-500 dark:text-dark-text-muted leading-relaxed">
         If your connection drops, the download will resume next time — files already saved to your
         browser cache won't be redownloaded.
       </p>
-      {multi && (
-        <p className="text-xs text-slate-400 dark:text-dark-text-muted tabular-nums pt-0.5">
-          {models.length} models · ≈ {formatApproxSize(totalBytes)} total
-        </p>
-      )}
+    </div>
+  );
+}
+
+/**
+ * One card per model in the multi-model breakdown. Shows the model's
+ * role pill, display name, a thin per-model progress bar, and a tail
+ * that swaps between size counter / "Ready" / "Loading…" / "Waiting"
+ * depending on the model's state. The card is self-contained — the
+ * summary panel above doesn't repeat any of this information.
+ *
+ * **Visual idiom.** `rounded-xl border border-slate-200 bg-white` —
+ * the same surface treatment {@link ModelCard} uses, so the consent
+ * body and download body share a visual language.
+ */
+function ModelProgressCard({
+  info,
+  role,
+  status,
+  progress,
+}: {
+  info: AiModelInfo;
+  role?: string;
+  status: AiModelStatus;
+  progress: AiProgress | null;
+}) {
+  const loaded = progress?.loaded ?? 0;
+  // Fall back to the model's published size hint when the runtime
+  // hasn't reported a total yet — keeps the card's percent meaningful
+  // during the early "initiate" / first-file window before the first
+  // byte arrives.
+  const total = Math.max(progress?.total ?? 0, info.approxSizeBytes);
+  const percent = total > 0 ? Math.min(100, Math.round((loaded / total) * 100)) : 0;
+
+  // Bar appearance keys off status, not just percent — a finished
+  // card reads as "done" (lighter fill + check), a failed card as
+  // "error" (red track), a waiting card as "queued" (muted track),
+  // a downloading card as the active fill. The bar fill on error is
+  // intentionally full + red so the row still has visual weight,
+  // matching the "Failed" tail.
+  const barPercent =
+    status === "ready" || status === "error" ? 100 : status === "downloading" ? percent : 0;
+  const barClass =
+    status === "ready"
+      ? "bg-primary-400/80 dark:bg-primary-500/70"
+      : status === "error"
+        ? "bg-red-500/70 dark:bg-red-400/70"
+        : status === "downloading"
+          ? "bg-primary-600 dark:bg-primary-500"
+          : "bg-slate-200 dark:bg-dark-border";
+
+  // Tail: the per-card status indicator on the right. Each status
+  // maps to one affordance so the card never juggles two competing
+  // signals (e.g. a percent + a "Ready" badge at the same time).
+  // Without an `error` branch a failed model rendered as "Waiting"
+  // while the dialog header already shouted "Download failed" — the
+  // user couldn't tell *which* model broke. The red tail closes
+  // that loop.
+  let tail: React.ReactNode;
+  if (status === "ready") {
+    tail = (
+      <span className="inline-flex items-center gap-1 text-primary-700 dark:text-primary-300 font-medium">
+        <Check className="w-3.5 h-3.5" aria-hidden="true" />
+        Ready
+      </span>
+    );
+  } else if (status === "error") {
+    tail = (
+      <span className="inline-flex items-center gap-1 text-red-600 dark:text-red-400 font-medium">
+        <AlertCircle className="w-3.5 h-3.5" aria-hidden="true" />
+        Failed
+      </span>
+    );
+  } else if (status === "loading") {
+    tail = (
+      <span className="inline-flex items-center gap-1 text-slate-500 dark:text-dark-text-muted">
+        <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
+        Loading…
+      </span>
+    );
+  } else if (status === "downloading") {
+    tail = (
+      <span className="tabular-nums text-primary-600 dark:text-primary-400 font-medium">
+        {percent}%
+      </span>
+    );
+  } else {
+    tail = <span className="text-slate-400 dark:text-dark-text-muted">Waiting</span>;
+  }
+
+  // Sub-tail under the bar: byte counter while downloading (the
+  // user's "how big is this one?" hint), or the model's published
+  // size hint in any other state. Keeps the card looking the same
+  // height across states so the list doesn't jiggle as models
+  // transition.
+  const subTail =
+    status === "downloading"
+      ? `${formatFileSize(loaded)} / ${formatFileSize(total)}`
+      : `${formatFileSize(info.approxSizeBytes)}`;
+
+  return (
+    <div className="rounded-xl border border-slate-200 dark:border-dark-border bg-white dark:bg-dark-surface px-3.5 py-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-baseline gap-2 mb-0.5">
+            {role && (
+              <span className="shrink-0 text-xxs uppercase tracking-wider text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/30 rounded px-1.5 py-0.5 font-medium">
+                {role}
+              </span>
+            )}
+            <span className="font-medium text-sm text-slate-700 dark:text-dark-text truncate">
+              {info.displayName}
+            </span>
+          </div>
+        </div>
+        <span className="text-xs shrink-0">{tail}</span>
+      </div>
+      <div className="mt-2 w-full bg-slate-100 dark:bg-dark-bg rounded-full h-1.5 overflow-hidden">
+        <div
+          className={`${barClass} h-full rounded-full transition-[width] duration-300`}
+          style={{ width: `${barPercent}%` }}
+        />
+      </div>
+      <p className="mt-1.5 text-xxs tabular-nums text-slate-400 dark:text-dark-text-muted">
+        {subTail}
+      </p>
     </div>
   );
 }
