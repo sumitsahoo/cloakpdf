@@ -13,12 +13,12 @@
  * state and never have to click anything.
  *
  * The progress, error, and confirmation UI continue to live in
- * {@link AiConsentDialog} (rendered by the tool) — the gate is just
+ * {@link AiConsentModal} (rendered by the tool) — the gate is just
  * the entry point.
  *
  * **Two-model support.** Ask PDF needs a chat LLM *and* an embedder.
  * Pass both via `models`; the gate shows the aggregate footprint and
- * a "View details" link that opens {@link AiModelDetailsDialog} for
+ * a "View details" link that opens {@link AiModelDetailsModal} for
  * the full per-model breakdown. The CTA still drives `ai.ensureReady()`
  * — the *primary* hook is expected to be the rollup (e.g. `rag.chat`)
  * whose `ensureReady` kicks off both downloads (see useRagModels).
@@ -28,7 +28,7 @@ import { type ReactNode, useEffect, useRef, useState } from "react";
 import type { UseAiModelReturn } from "../hooks/useAiModel.ts";
 import { type AiModelInfo, type ChatVariantId, formatApproxSize } from "../utils/ai-models.ts";
 import { isModelMarkedReady } from "../utils/ai-runtime.ts";
-import { AiModelDetailsDialog } from "./AiModelDetailsDialog.tsx";
+import { AiModelDetailsModal } from "./AiModelDetailsModal.tsx";
 import { ChatModelPicker } from "./ChatModelPicker.tsx";
 
 interface AiModelGateProps {
@@ -240,7 +240,7 @@ export function AiModelGate({
         </button>
       </div>
 
-      <AiModelDetailsDialog
+      <AiModelDetailsModal
         open={detailsOpen}
         onClose={() => setDetailsOpen(false)}
         models={modelList}

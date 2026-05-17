@@ -23,7 +23,7 @@ import {
   Workflow as WorkflowIcon,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ConfirmDialog } from "../components/ConfirmDialog.tsx";
+import { ConfirmModal } from "../components/ConfirmModal.tsx";
 import { findTool } from "../config/tool-registry.ts";
 import { downloadBlob, errorMessage } from "../utils/file-helpers.ts";
 import {
@@ -227,7 +227,7 @@ export function WorkflowsHome({ onCreate, onEdit, onRun }: WorkflowsHomeProps) {
         </div>
       )}
 
-      <ConfirmDialog
+      <ConfirmModal
         open={pendingDelete !== null}
         title="Delete workflow?"
         description={

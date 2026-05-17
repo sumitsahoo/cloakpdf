@@ -19,18 +19,18 @@
  *     and onto the bar itself.
  *
  * The destructive **Delete cached models** action lives one click
- * deeper, inside {@link AiModelDetailsDialog} via "View details" —
+ * deeper, inside {@link AiModelDetailsModal} via "View details" —
  * intentionally not at the bar level because it needs a two-step
  * confirm and a clear warning about the re-download cost.
  *
  * Per-model details (names, repos, licences, Hugging Face links) and
- * the destructive delete action live in {@link AiModelDetailsDialog}
+ * the destructive delete action live in {@link AiModelDetailsModal}
  * one tap away.
  */
 import { MemoryStick, RefreshCcw, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { type AiModelInfo, formatApproxSize } from "../utils/ai-models.ts";
-import { AiModelDetailsDialog } from "./AiModelDetailsDialog.tsx";
+import { AiModelDetailsModal } from "./AiModelDetailsModal.tsx";
 
 interface ActiveModelBarProps {
   /**
@@ -183,7 +183,7 @@ export function ActiveModelBar({
         </div>
       </div>
 
-      <AiModelDetailsDialog
+      <AiModelDetailsModal
         open={detailsOpen}
         onClose={() => setDetailsOpen(false)}
         models={models}

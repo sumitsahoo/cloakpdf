@@ -745,7 +745,7 @@ step circles, and the smaller card promotes the parent
 version chip in monospace. Tool pages collapse the bento to a slim
 attribution row.
 
-**Modal / ConfirmDialog** — portalled to `document.body`, a
+**Modal / ConfirmModal** — portalled to `document.body`, a
 slate-900/30 + 14 px-blur scrim, a white-85 surface with `scale-in`
 overshoot on entry. Footer row sits in a slate-50/55 wash with a
 hairline top border. The danger tone swaps the icon chip and CTA

@@ -10,7 +10,7 @@
  * who want to know exactly what's running on their device are one tap
  * away from the full picture.
  *
- * Different from {@link AiConsentDialog}: that dialog drives the
+ * Different from {@link AiConsentModal}: that modal drives the
  * download / consent flow with progress, retry, and cancel actions.
  * This one is purely informational and dismissible from any state.
  *
@@ -27,7 +27,7 @@ import { createPortal } from "react-dom";
 import { type AiModelInfo, formatApproxSize } from "../utils/ai-models.ts";
 import { ModelCard } from "./ModelCard.tsx";
 
-interface AiModelDetailsDialogProps {
+interface AiModelDetailsModalProps {
   open: boolean;
   onClose: () => void;
   /** Models to list. Render order is preserved. */
@@ -80,7 +80,7 @@ interface AiModelDetailsDialogProps {
   canDelete?: boolean;
 }
 
-export function AiModelDetailsDialog({
+export function AiModelDetailsModal({
   open,
   onClose,
   models,
@@ -90,7 +90,7 @@ export function AiModelDetailsDialog({
   storageActionsDisabled,
   canFreeMemory = true,
   canDelete = true,
-}: AiModelDetailsDialogProps) {
+}: AiModelDetailsModalProps) {
   // Two-step confirm state for "Delete cached models" — clicking the
   // button arms it ("Click again to confirm"); clicking the armed
   // button fires the actual delete. Resets whenever the dialog opens

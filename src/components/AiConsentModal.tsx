@@ -1,14 +1,14 @@
 /**
- * Consent + progress dialog shown before any AI model is downloaded.
+ * Consent + progress modal shown before any AI model is downloaded.
  *
- * The dialog cycles through three visual states driven by the `status`
+ * The modal cycles through three visual states driven by the `status`
  * prop from `useAiModel`:
  *
  *   - `awaiting-consent` — full model card(s) with size, licence, and
  *     Hugging Face link plus a primary "Download model" CTA. User must
  *     explicitly opt in before any bytes are fetched.
  *   - `downloading` — determinate progress bar, current file name,
- *     loaded/total byte counts. The dialog refuses to close on backdrop
+ *     loaded/total byte counts. The modal refuses to close on backdrop
  *     click while in this state so the user can't accidentally lose
  *     visibility of the download (Cancel button is the explicit exit).
  *   - `error` — error message with Retry / Cancel buttons.
@@ -19,17 +19,25 @@
  * itemised per-model breakdown beneath the overall download bar — one
  * row per model with its own mini bar so users can see *which* model
  * is currently being pulled, not just the rolled-up percent. The
- * arrays are optional; when omitted the dialog renders only the
+ * arrays are optional; when omitted the modal renders only the
  * combined bar (matches the original single-bar UX). The model cards
  * themselves come from the shared {@link ModelCard} component used by
- * {@link AiModelDetailsDialog}, so the two dialogs read as one system.
+ * {@link AiModelDetailsModal}, so the two modals read as one system.
  *
  * **Visual pattern.** Mirrors `ToolPickerModal`'s translucent layout —
  * one painting layer for backdrop + close-button, sheet rises in via
  * `animate-slide-up-in`, `bg-white/85` for the see-through feel.
  * Bottom-sheet on mobile / centered card on desktop.
+ *
+ * **Download indicator.** The header swaps `Loader2` for a plain
+ * `ArrowDown` during the `downloading` state — the arrow rises in
+ * from the top, settles, then exits downward in a loop. A bare
+ * down-arrow reads more directly as "bytes flowing in" than Lucide's
+ * `Download` glyph (arrow + tray), which adds visual weight the
+ * motion already conveys. Warm-load keeps the spinner since nothing
+ * is being downloaded then.
  */
-import { AlertCircle, Check, Cpu, Loader2, ShieldCheck, X } from "lucide-react";
+import { AlertCircle, ArrowDown, Check, Cpu, Loader2, ShieldCheck, X } from "lucide-react";
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import type { AiModelStatus } from "../hooks/useAiModel.ts";
@@ -38,7 +46,7 @@ import type { AiProgress } from "../utils/ai-runtime.ts";
 import { formatFileSize } from "../utils/file-helpers.ts";
 import { ModelCard } from "./ModelCard.tsx";
 
-interface AiConsentDialogProps {
+interface AiConsentModalProps {
   /** When `false` the dialog is unmounted entirely. */
   open: boolean;
   /**
@@ -80,7 +88,7 @@ interface AiConsentDialogProps {
   onCancel: () => void;
 }
 
-export function AiConsentDialog({
+export function AiConsentModal({
   open,
   models,
   roles,
@@ -92,7 +100,7 @@ export function AiConsentDialog({
   onConfirm,
   onRetry,
   onCancel,
-}: AiConsentDialogProps) {
+}: AiConsentModalProps) {
   // Lock body scroll + wire Escape while the dialog is open.
   useEffect(() => {
     if (!open) return;
@@ -152,7 +160,7 @@ export function AiConsentDialog({
           <span className="w-11 h-1 rounded-full bg-slate-300 dark:bg-dark-border" />
         </div>
 
-        <DialogHeader
+        <ModalHeader
           primary={primary}
           models={models}
           status={status}
@@ -179,7 +187,7 @@ export function AiConsentDialog({
           ) : null}
         </div>
 
-        <DialogFooter status={status} onConfirm={onConfirm} onRetry={onRetry} onCancel={onCancel} />
+        <ModalFooter status={status} onConfirm={onConfirm} onRetry={onRetry} onCancel={onCancel} />
       </div>
     </div>,
     document.body,
@@ -188,7 +196,7 @@ export function AiConsentDialog({
 
 // ── Sub-components ────────────────────────────────────────────────
 
-function DialogHeader({
+function ModalHeader({
   primary,
   models,
   status,
@@ -227,13 +235,24 @@ function DialogHeader({
 
   return (
     <div className="flex items-start gap-4 px-4 md:px-7 pt-2 sm:pt-5 pb-3.5 border-b border-slate-200/70 dark:border-dark-border/70">
-      <span className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400">
-        {status === "downloading" || status === "loading" ? (
-          <Loader2 className="w-5 h-5 animate-spin" />
+      <span className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 overflow-hidden">
+        {status === "downloading" ? (
+          // Bare down-arrow looping top→middle→bottom→fade — visually
+          // mirrors what the bar below is doing (bytes flowing in)
+          // without the visual weight of `Download`'s tray + line.
+          // Hidden from a11y; the headline below already announces the
+          // downloading state.
+          <ArrowDown
+            className="w-5 h-5 animate-download-arrow"
+            aria-hidden="true"
+            strokeWidth={2.5}
+          />
+        ) : status === "loading" ? (
+          <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />
         ) : status === "error" ? (
-          <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
+          <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" aria-hidden="true" />
         ) : (
-          <Cpu className="w-5 h-5" />
+          <Cpu className="w-5 h-5" aria-hidden="true" />
         )}
       </span>
       <div className="flex-1 min-w-0">
@@ -605,7 +624,7 @@ function ErrorBody({ models, message }: { models: AiModelInfo[]; message: string
   );
 }
 
-function DialogFooter({
+function ModalFooter({
   status,
   onConfirm,
   onRetry,

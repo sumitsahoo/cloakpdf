@@ -200,10 +200,39 @@ Replace these per brand:
   prevents this.
 - **Tagline + feature tiles** — replace the copy and the four
   Lucide-style icons inside each tile to reflect what your app does.
+  The bottom-right tile is reserved for the **headline differentiator**
+  — the thing this app does that nothing else in the field does. For
+  CloakPDF that's the **Local AI · Beta** tile (on-device chat over
+  uploaded PDFs, powered by an in-browser LangGraph RAG pipeline —
+  see [local-ai.md](./local-ai.md) for the implementation). For other
+  Cloak apps, swap that tile to whatever distinguishes them; keep the
+  other three tiles as category-level call-outs ("X & Y" title, comma-
+  separated description). The footer chip line below the tiles
+  (`On-device AI · No uploads · Works offline · Open source`) is also
+  per-brand — re-arrange to lead with whichever value prop wins the
+  card preview.
 - **URL chip** — update the host (`pdf.cloakyard.com` →
   `<your-subdomain>.cloakyard.com`).
 
 The viewBox stays `0 0 1200 630` regardless of brand.
+
+#### 5.4.1 Choosing an icon for the AI / differentiator tile
+
+The other three tiles use generic functional icons (`file-stack`,
+`shield-check`, `eye-off`). The AI tile uses Lucide's **`bot`** —
+a robot head with side dots — because it reads as "AI" without
+needing a label. Alternatives that test poorly:
+
+| Icon            | Why it failed                                        |
+| --------------- | ---------------------------------------------------- |
+| `cpu`           | Too generic — reads as "computer hardware" not "AI". |
+| `sparkles`      | Reads as "decorative / new" not "intelligent".       |
+| `wand-sparkles` | Reads as "auto-fix tool" not "chat".                 |
+| `brain`         | Reads as anatomical / health-tech.                   |
+
+If you swap to a different chat-style icon (e.g. `message-circle-question`),
+keep the 24-coord viewBox and the existing `transform="translate(663 407)"`
+positioning — the icon needs to sit centered in the 30 × 30 chip.
 
 ---
 

@@ -7,7 +7,7 @@
  * dialog handles the pure "which tier?" decision and hands off
  * back to the gate / consent flow once the user confirms.
  *
- * Visually matches `AiConsentDialog` — same translucent backdrop,
+ * Visually matches `AiConsentModal` — same translucent backdrop,
  * same slide-up animation, same border/shadow palette — so swap and
  * consent read as one system.
  */
@@ -17,7 +17,7 @@ import { createPortal } from "react-dom";
 import type { ChatVariantId } from "../utils/ai-models.ts";
 import { ChatModelPicker } from "./ChatModelPicker.tsx";
 
-interface ChatModelPickerDialogProps {
+interface ChatModelPickerModalProps {
   open: boolean;
   /** The variant that's currently active — pre-selects it in the picker. */
   current: ChatVariantId;
@@ -27,12 +27,12 @@ interface ChatModelPickerDialogProps {
   onCancel: () => void;
 }
 
-export function ChatModelPickerDialog({
+export function ChatModelPickerModal({
   open,
   current,
   onConfirm,
   onCancel,
-}: ChatModelPickerDialogProps) {
+}: ChatModelPickerModalProps) {
   // Pending selection — only persisted via `onConfirm`. Re-init when the
   // dialog reopens so a cancel followed by a re-open shows the active
   // tier highlighted (not whatever the user was about to pick last time).
@@ -42,7 +42,7 @@ export function ChatModelPickerDialog({
   }, [open, current]);
 
   // Lock body scroll + Escape to dismiss while open. Same pattern as
-  // AiConsentDialog.
+  // AiConsentModal.
   useEffect(() => {
     if (!open) return;
     const prev = document.body.style.overflow;

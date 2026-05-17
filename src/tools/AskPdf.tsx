@@ -28,10 +28,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ActiveModelBar } from "../components/ActiveModelBar.tsx";
-import { AiConsentDialog } from "../components/AiConsentDialog.tsx";
+import { AiConsentModal } from "../components/AiConsentModal.tsx";
 import { AiModelGate } from "../components/AiModelGate.tsx";
 import { AlertBox } from "../components/AlertBox.tsx";
-import { ChatModelPickerDialog } from "../components/ChatModelPickerDialog.tsx";
+import { ChatModelPickerModal } from "../components/ChatModelPickerModal.tsx";
 import { FileDropZone } from "../components/FileDropZone.tsx";
 import { FileInfoBar } from "../components/FileInfoBar.tsx";
 import { InfoCallout } from "../components/InfoCallout.tsx";
@@ -251,7 +251,7 @@ export default function AskPdf() {
   //     the hint on devices we can't actually verify.
   //   - Firefox / Safari don't ship the API at all (returns `null`).
   //
-  // The detected RAM line still lives in `AiModelDetailsDialog` for
+  // The detected RAM line still lives in `AiModelDetailsModal` for
   // users who want to inspect what we read; this surface just gives
   // every user the recommendation up-front. Mobile users never reach
   // this code — `App.tsx` short-circuits to a "desktop only" view
@@ -464,7 +464,7 @@ export default function AskPdf() {
 
       {task.error && <AlertBox message={task.error} />}
 
-      <AiConsentDialog
+      <AiConsentModal
         open={dialogOpen}
         models={[rag.chat.info, rag.embed.info, rag.rerank.info]}
         roles={["chat", "retrieval", "rerank"]}
@@ -481,7 +481,7 @@ export default function AskPdf() {
         onCancel={rag.cancel}
       />
 
-      <ChatModelPickerDialog
+      <ChatModelPickerModal
         open={variantPickerOpen}
         current={rag.chatVariant}
         onConfirm={(next) => {
@@ -638,7 +638,7 @@ function ChatPanel({
   return (
     <div className="flex flex-col h-[min(58svh,520px)] min-h-80 sm:h-[min(72svh,720px)] sm:min-h-115 rounded-2xl border border-slate-200 dark:border-dark-border bg-slate-50/70 dark:bg-dark-bg/60 overflow-hidden">
       {/* `thin-scrollbar` matches the scrollbar idiom used in modals
-          (AiConsentDialog, AiModelDetailsDialog, ToolPickerModal) so
+          (AiConsentModal, AiModelDetailsModal, ToolPickerModal) so
           the chat panel doesn't read as a different surface from the
           rest of the app's overflow containers. */}
       <div className="flex-1 overflow-y-auto thin-scrollbar px-4 py-4">

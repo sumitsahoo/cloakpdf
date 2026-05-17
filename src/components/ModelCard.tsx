@@ -3,10 +3,10 @@
  * one-paragraph description, then a dl of repo / size / licence /
  * "used for" / Hugging Face source link.
  *
- * Shared between {@link AiModelDetailsDialog} (purely informational,
- * reachable from a "View details" link) and {@link AiConsentDialog}
+ * Shared between {@link AiModelDetailsModal} (purely informational,
+ * reachable from a "View details" link) and {@link AiConsentModal}
  * (the consent + download flow). Keeping a single card definition
- * means the two dialogs read as one system instead of two
+ * means the two modals read as one system instead of two
  * gently-diverging variants of the same content.
  */
 import { ExternalLink } from "lucide-react";
