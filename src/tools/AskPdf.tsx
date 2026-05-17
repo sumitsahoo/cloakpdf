@@ -566,7 +566,7 @@ function IndexingCard({ progress }: { progress: IndexingProgress | null }) {
  * **Weight choice** (extract = 30 %, embed = 70 %): on a typical
  * text-layer PDF, extraction is fast (a few ms per page) while
  * embedding is the long pole — each batch is a WASM forward pass
- * against a 309 MB int8 model. Roughly matches the wall-clock split
+ * against a ~320 MB int8 embedder. Roughly matches the wall-clock split
  * we see on the résumé fixture. OCR-heavy PDFs invert this, but we
  * accept the small lie there because OCR users see the dedicated
  * "Running OCR on scanned pages…" label and know it's slow.

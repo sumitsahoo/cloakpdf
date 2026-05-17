@@ -51,7 +51,7 @@ interface AiModelDetailsModalProps {
    * and clear the consent flags so the user re-experiences the
    * download dialog on next use. Wire from `useRagModels.evict`.
    * Hidden when omitted; rendered with an inline two-step confirm
-   * when present so a stray click can't nuke a 1.5 GB download.
+   * when present so a stray click can't nuke a 1+ GB download.
    */
   onDelete?: () => void | Promise<unknown>;
   /**
@@ -290,7 +290,8 @@ function RequirementsLine({ totalBytes }: { totalBytes: number }) {
  * Footer panel offering the two storage knobs: a soft "Free memory"
  * (release RAM, keep the downloaded weights cached on disk so the
  * next use warm-loads in seconds) and a destructive "Delete cached
- * models" (also evict the CacheStorage bytes, ~1.5 GB).
+ * models" (also evict the CacheStorage bytes — roughly 1.2 GB on the
+ * Compact tier, 1.9 GB on Quality).
  *
  * The destructive action goes through a two-step confirm: the first
  * click swaps the button into an "armed" state with a red warning

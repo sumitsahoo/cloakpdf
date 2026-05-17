@@ -14,10 +14,10 @@
  * The chat slot ships **two tiers** (see {@link CHAT_VARIANT_IDS}),
  * both from Liquid AI's LFM family:
  *
- *   - `lfm2.5-1.2b` — Compact: ~1.2 GB / ~2 GB peak. Liquid AI's
+ *   - `lfm2.5-1.2b` — Compact: ~810 MB / ~2 GB peak. Liquid AI's
  *     latest 1.2B hybrid (LFM2.5 = LFM2 base + extended pretraining
  *     + RL post-training). The static default for fresh visitors.
- *   - `lfm2-2.6b` — Quality: ~1.5 GB / ~3.5 GB peak. Liquid AI's
+ *   - `lfm2-2.6b` — Quality: ~1.55 GB / ~3.5 GB peak. Liquid AI's
  *     larger hybrid; purpose-built for on-device structured extraction
  *     and RAG. Liquid hasn't shipped a 2.6 B variant of LFM2.5 yet, so
  *     this tier stays on the LFM2 build. Recommended on ≥ 8 GB free RAM.
@@ -179,21 +179,23 @@ const CHAT_LFM2_5_1_2B: AiModelInfo = {
   displayName: "LFM2.5 (1.2B, instruct, Liquid AI)",
   repo: "LiquidAI/LFM2.5-1.2B-Instruct-ONNX",
   task: "text-generation",
-  // ~1.2 GB on disk at q4, ~2 GB peak RAM (Liquid AI's published
-  // q4 size; q4f16 isn't shipped for this repo so we use plain q4
-  // which is their documented WebGPU-recommended quant). Same
-  // hybrid architecture as LFM2-1.2B (10-conv + 6-attention) but
-  // newer training recipe (extended pretraining + RL post-training)
-  // — Liquid markets LFM2.5 as the latest of the family.
+  // ~810 MB on disk at q4 (`model_q4.onnx_data` 850 MB on HF +
+  // tokenizer/configs ~3 MB; the q4 weights count toward both disk
+  // and RAM), ~2 GB peak RAM. Same hybrid architecture as LFM2-1.2B
+  // (10-conv + 6-attention) but newer training recipe (extended
+  // pretraining + RL post-training) — Liquid markets LFM2.5 as the
+  // latest of the family. We pin `dtype: "q4"` (plain int4 with fp32
+  // activations) because it's the WebGPU-validated quant on this repo;
+  // q4f16 *is* shipped now (760 MB) but introduces fp16 LayerNorms
+  // that have historically broken onnxruntime-web's WebGPU shader on
+  // some Chrome builds — sticking with q4 keeps the pipeline robust.
   //
   // **Why this slot is LFM2.5-1.2B-Instruct and not LFM2-1.2B**:
   // straight version-superset. Same parameter count, same family,
-  // newer training. The q4-vs-q4f16 swap is forced by Liquid's
-  // ONNX export (they don't ship q4f16 for LFM2.5-1.2B) — q4 with
-  // fp32 activations is slightly heavier on disk but works on the
-  // same WebGPU path. Validated against the résumé probe before
-  // shipping; passes phone/email/address extraction the same way
-  // the LFM2-1.2B q4f16 build did.
+  // newer training. We pin `dtype: "q4"` (not q4f16) because the
+  // q4 build is the one we validated end-to-end on WebGPU — passes
+  // phone/email/address extraction on the résumé probe the same
+  // way the prior LFM2-1.2B q4f16 build did.
   //
   // **Why not LFM2.5-350M**: tried it on paper but the chat slot
   // has burned every model at ≤ 500M params (SmolLM2-360M, Qwen
@@ -201,7 +203,7 @@ const CHAT_LFM2_5_1_2B: AiModelInfo = {
   // verbatim extraction — they confabulate plausible-looking
   // digits/emails instead of copying from the retrieved chunk.
   // Sticking to 1.2B keeps the discipline guarantee.
-  approxSizeBytes: Math.round(1.2 * 1024 * 1024 * 1024),
+  approxSizeBytes: Math.round(810 * 1024 * 1024),
   approxPeakRamBytes: Math.round(2 * 1024 * 1024 * 1024),
   description:
     "Liquid AI's latest 1.2B hybrid (extended pretraining + RL post-training over the LFM2 base). Designed for on-device structured extraction and RAG. The smaller of the two LFM2-family tiers we ship.",
@@ -239,12 +241,13 @@ const CHAT_LFM2_2_6B: AiModelInfo = {
   displayName: "LFM2 (2.6B, Liquid AI)",
   repo: "onnx-community/LFM2-2.6B-ONNX",
   task: "text-generation",
-  // ~1.5 GB on disk at q4f16, ~3.5 GB peak RAM. The largest of the
-  // three tiers — recommended on ≥ 8 GB free RAM. Same hybrid
+  // ~1.55 GB on disk at q4f16 (`model_q4f16.onnx_data` 1.54 GB on HF
+  // + tokenizer 3.3 MB + configs), ~3.5 GB peak RAM. The larger of
+  // the two tiers — recommended on ≥ 8 GB free RAM. Same hybrid
   // architecture and training discipline as LFM2-1.2B but with the
   // extra capacity that lets it handle longer, more nuanced
   // extraction questions.
-  approxSizeBytes: Math.round(1.5 * 1024 * 1024 * 1024),
+  approxSizeBytes: Math.round(1.55 * 1024 * 1024 * 1024),
   approxPeakRamBytes: Math.round(3.5 * 1024 * 1024 * 1024),
   description:
     "Liquid AI's larger hybrid model. Same on-device extraction discipline as LFM2-1.2B with more capacity for longer answers and harder questions.",
@@ -270,8 +273,10 @@ const EMBED: AiModelInfo = {
   displayName: "EmbeddingGemma (300M)",
   repo: "onnx-community/embeddinggemma-300m-ONNX",
   task: "feature-extraction",
-  // ~309 MB on disk (int8 quantized weights), ~400 MB peak RAM.
-  // 2× the prior bge-base-en-v1.5 (~140 MB) on disk but the
+  // ~320 MB on disk (~295 MB int8 weights via `model_quantized.onnx`
+  // + ~26 MB Gemma SentencePiece tokenizer — the latter is non-trivial
+  // and used to be missed in the registry estimate), ~500 MB peak RAM.
+  // Bigger than the prior bge-base-en-v1.5 (~140 MB) on disk but the
   // retrieval quality jump from EmbeddingGemma's asymmetric
   // task-prefix training is meaningful, and runtime RAM is
   // comparable thanks to int8 weights vs bge's fp16. 308M params
@@ -315,8 +320,8 @@ const EMBED: AiModelInfo = {
   // Prefix handling lives in `src/rag/embeddings.ts` — swapping
   // back to a symmetric embedder (e.g. bge) means dropping that
   // prefix layer.
-  approxSizeBytes: 309 * 1024 * 1024,
-  approxPeakRamBytes: 400 * 1024 * 1024,
+  approxSizeBytes: 320 * 1024 * 1024,
+  approxPeakRamBytes: 500 * 1024 * 1024,
   description:
     "Google's on-device embedding model from the Gemma family. Trained for asymmetric retrieval — applies task-specific prompts to PDF chunks vs your question, then matches them in a 768-dim vector space so the chat model gets the right pages. Multilingual (100+ langs).",
   bestFor: "Semantic retrieval over PDFs in any of 100+ languages.",

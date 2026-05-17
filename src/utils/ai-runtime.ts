@@ -254,8 +254,9 @@ export interface ModelCacheEvictResult {
 
 /**
  * Evict the Transformers.js model bytes from the browser's
- * CacheStorage. Frees ~1.5 GB of disk for the current AI bundle
- * (chat + embed + rerank) and forces a fresh download on next use.
+ * CacheStorage. Frees roughly 1.2 GB on the Compact tier / 1.9 GB on
+ * Quality for the current AI bundle (chat + embed + rerank) and
+ * forces a fresh download on next use.
  *
  * Does **not** unload the in-memory pipelines — call
  * {@link disposeAllModels} alongside this when you actually want the

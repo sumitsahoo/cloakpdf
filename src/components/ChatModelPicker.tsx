@@ -3,8 +3,8 @@
  *
  * Two tiers, each backed by an entry in `src/utils/ai-models.ts`:
  *
- *   - Compact  → LFM2.5-1.2B-Instruct (~1.2 GB / ~2 GB peak)
- *   - Quality  → LFM2-2.6B  (~1.5 GB / ~3.5 GB peak)
+ *   - Compact  → LFM2.5-1.2B-Instruct (~810 MB / ~2 GB peak)
+ *   - Quality  → LFM2-2.6B  (~1.55 GB / ~3.5 GB peak)
  *
  * The picker shows download size and peak RAM so users can see what
  * they're committing to. We deliberately do **not** auto-recommend a
