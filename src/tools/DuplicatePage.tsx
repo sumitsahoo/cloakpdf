@@ -108,6 +108,8 @@ export default function DuplicatePage() {
           iconColor={categoryAccent.organise}
           accept=".pdf,application/pdf"
           onFiles={pdf.onFiles}
+          encryptedFile={pdf.encryptedFile}
+          onClearEncrypted={pdf.reset}
           label="Drop a PDF file here"
           hint="Click a page to duplicate it right after and drag copies to rearrange"
         />

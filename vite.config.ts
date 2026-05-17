@@ -120,7 +120,43 @@ export default defineConfig({
               cacheableResponse: { statuses: [0, 200] },
             },
           },
+          // Hugging Face hosts the AI model weights used by the on-device
+          // AI tools. Files are immutable per-revision so CacheFirst is
+          // safe; we keep a generous entry budget because each model can
+          // span 4–8 files (config.json, tokenizer.json, model weights).
+          {
+            urlPattern: /^https:\/\/huggingface\.co\/.*\/resolve\/.*/i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "huggingface-models-cache",
+              expiration: {
+                maxEntries: 80,
+                maxAgeSeconds: 60 * 60 * 24 * 365,
+              },
+              cacheableResponse: { statuses: [0, 200] },
+              rangeRequests: true,
+            },
+          },
+          // Transformers.js falls back to a CDN mirror for some assets.
+          {
+            urlPattern: /^https:\/\/cdn-lfs\.huggingface\.co\/.*/i,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "huggingface-lfs-cache",
+              expiration: {
+                maxEntries: 80,
+                maxAgeSeconds: 60 * 60 * 24 * 365,
+              },
+              cacheableResponse: { statuses: [0, 200] },
+              rangeRequests: true,
+            },
+          },
         ],
+        // Service-worker precache shouldn't try to swallow large model
+        // bytes — they're delivered via the runtime cache rules above.
+        // Bump the inlined-asset budget so the build doesn't refuse to
+        // precache the WASM glue Transformers.js ships with.
+        maximumFileSizeToCacheInBytes: 30 * 1024 * 1024,
       },
     }),
   ],

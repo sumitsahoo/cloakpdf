@@ -31,6 +31,14 @@ interface Props {
   color2?: string;
   color3?: string;
   className?: string;
+  /**
+   * When `true`, freezes the animation: the rAF loop keeps ticking
+   * (so resume is instant — no WebGL re-mount, no shader recompile)
+   * but stops advancing `iTime` and skips the render call. The last
+   * rendered frame stays visible on screen. Toggling this is cheap;
+   * we ref-track it so prop changes don't re-run the setup effect.
+   */
+  paused?: boolean;
 }
 
 const hexToRgb = (hex: string): [number, number, number] => {
@@ -158,8 +166,16 @@ export function Grainient({
   color2 = "#3B82F6",
   color3 = "#EFF4FF",
   className = "",
+  paused = false,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Ref-track `paused` so the rAF loop sees the latest value without
+  // triggering the heavy setup effect to re-run. Assigning on every
+  // render is the canonical pattern for "external value the inner
+  // callback should see" without paying for a re-mount.
+  const pausedRef = useRef(paused);
+  pausedRef.current = paused;
 
   useEffect(() => {
     const container = containerRef.current;
@@ -230,9 +246,23 @@ export function Grainient({
 
     let raf = 0;
     const t0 = performance.now();
+    // Accumulated time spent in the paused state. Subtracted from the
+    // wall-clock elapsed when computing `iTime` so the shader doesn't
+    // see a discontinuous jump when the user returns to the home view
+    // — the warp picks up exactly where it left off.
+    let pausedAccum = 0;
+    let pauseStartedAt = 0;
     const loop = (t: number) => {
-      program.uniforms.iTime.value = (t - t0) * 0.001;
-      renderer.render({ scene: mesh });
+      if (pausedRef.current) {
+        if (pauseStartedAt === 0) pauseStartedAt = t;
+      } else {
+        if (pauseStartedAt !== 0) {
+          pausedAccum += t - pauseStartedAt;
+          pauseStartedAt = 0;
+        }
+        program.uniforms.iTime.value = (t - t0 - pausedAccum) * 0.001;
+        renderer.render({ scene: mesh });
+      }
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);

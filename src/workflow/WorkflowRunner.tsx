@@ -32,6 +32,7 @@ import { LoadingSpinner } from "../components/LoadingSpinner.tsx";
 import { findTool, findToolComponent } from "../config/tool-registry.ts";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { downloadPdf, errorMessage, formatFileSize, pdfFilename } from "../utils/file-helpers.ts";
+import { isPdfEncrypted } from "../utils/pdf-security.ts";
 import { loadWorkflows } from "./storage.ts";
 import { WorkflowContext, type WorkflowSlot } from "./WorkflowContext.tsx";
 
@@ -47,6 +48,7 @@ export function WorkflowRunner({ workflowId, onExit }: WorkflowRunnerProps) {
   );
 
   const [originalFile, setOriginalFile] = useState<File | null>(null);
+  const [encryptedFile, setEncryptedFile] = useState<File | null>(null);
   const [currentFile, setCurrentFile] = useState<File | null>(null);
   const [stepIndex, setStepIndex] = useState(0);
   const [suffixChain, setSuffixChain] = useState<string[]>([]);
@@ -54,9 +56,14 @@ export function WorkflowRunner({ workflowId, onExit }: WorkflowRunnerProps) {
   const [skipNotice, setSkipNotice] = useState<string | null>(null);
   const [runError, setRunError] = useState<string | null>(null);
 
-  const handleStart = useCallback((files: File[]) => {
+  const handleStart = useCallback(async (files: File[]) => {
     const f = files[0];
     if (!f) return;
+    if (await isPdfEncrypted(f)) {
+      setEncryptedFile(f);
+      return;
+    }
+    setEncryptedFile(null);
     setOriginalFile(f);
     setCurrentFile(f);
     setStepIndex(0);
@@ -65,6 +72,8 @@ export function WorkflowRunner({ workflowId, onExit }: WorkflowRunnerProps) {
     setSkipNotice(null);
     setRunError(null);
   }, []);
+
+  const clearEncrypted = useCallback(() => setEncryptedFile(null), []);
 
   const handleReset = useCallback(() => {
     setOriginalFile(null);
@@ -192,6 +201,8 @@ export function WorkflowRunner({ workflowId, onExit }: WorkflowRunnerProps) {
           iconColor={categoryAccent.organise}
           accept=".pdf,application/pdf"
           onFiles={handleStart}
+          encryptedFile={encryptedFile}
+          onClearEncrypted={clearEncrypted}
           label="Drop a PDF to start the workflow"
           hint="The PDF will be processed by each step in order"
         />

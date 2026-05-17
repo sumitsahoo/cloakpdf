@@ -51,6 +51,31 @@ export interface Tool {
   description: string;
   icon: ComponentType<{ className?: string }>;
   category?: string;
+  /**
+   * When `true`, the tool card renders a small "Beta" badge next to
+   * the title. Use it for tools that are functional but still
+   * iterating on quality / UX — sets expectations without hiding
+   * the feature.
+   */
+  beta?: boolean;
+  /**
+   * Requirement note shown beneath the description on the tool card
+   * and as a callout inside the tool. Use for tools whose footprint
+   * is meaningfully heavier than the rest of the suite (e.g. on-
+   * device AI tools that load 1 GB+ of weights into RAM) so users
+   * self-select before clicking through.
+   */
+  requirements?: string;
+  /**
+   * Hard-gate the tool to non-mobile devices. When `true` the home-
+   * screen card is hidden on mobile and direct-routing to the tool
+   * shows a friendly "desktop only" placeholder instead of mounting
+   * the tool. Reserved for tools that genuinely don't work on phone
+   * GPUs / RAM ceilings — e.g. the on-device AI tools, where
+   * WebGPU device-lost errors and OOM tab crashes are the dominant
+   * mobile experience.
+   */
+  desktopOnly?: boolean;
 }
 
 /** Position of page numbers on the page. */
@@ -156,4 +181,5 @@ export type ToolId =
   | "split-pdf"
   | "extract-images"
   | "compare-pdf"
-  | "digital-signature";
+  | "digital-signature"
+  | "ask-pdf";

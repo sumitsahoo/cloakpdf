@@ -186,6 +186,8 @@ export default function CropPages() {
           iconColor={categoryAccent.transform}
           accept=".pdf,application/pdf"
           onFiles={pdf.onFiles}
+          encryptedFile={pdf.encryptedFile}
+          onClearEncrypted={pdf.reset}
           label="Drop a PDF file here"
           hint="Set margins to crop the visible area of each page"
         />

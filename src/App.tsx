@@ -12,13 +12,13 @@
 
 import {
   ArrowRight,
+  Cpu,
   GitFork,
-  Laptop,
   MonitorSmartphone,
   Rocket,
+  LayoutGrid,
   Search,
   ShieldCheck,
-  Sparkles,
   UserRoundCheck,
   WifiOff,
   EyeOff,
@@ -35,6 +35,8 @@ import { ReloadPrompt } from "./components/ReloadPrompt.tsx";
 import { ToolCard } from "./components/ToolCard.tsx";
 import { categories, findTool, findToolComponent, tools } from "./config/tool-registry.ts";
 import type { Tool, ToolId } from "./types.ts";
+import { isMobileDevice } from "./utils/device-memory.ts";
+import { NAVIGATE_TOOL_EVENT } from "./utils/nav.ts";
 import { WorkflowBuilder } from "./workflow/WorkflowBuilder.tsx";
 import { WorkflowRunner } from "./workflow/WorkflowRunner.tsx";
 import { WorkflowsHome } from "./workflow/WorkflowsHome.tsx";
@@ -69,10 +71,15 @@ interface ToolViewProps {
 
 /**
  * Renders the active tool's header (title + description) and its
- * lazily-loaded component wrapped in a `Suspense` boundary.
+ * lazily-loaded component wrapped in a `Suspense` boundary. For
+ * `desktopOnly` tools on a mobile UA, renders a placeholder explaining
+ * why the tool isn't available instead of mounting it — the home grid
+ * already hides the card, but a saved URL / shared link could still
+ * land a phone user here directly.
  */
 function ToolView({ tool, Component }: ToolViewProps) {
   const Icon = tool.icon;
+  const blockedOnMobile = tool.desktopOnly && isMobileDevice();
   return (
     <div>
       <div className="flex items-center gap-4 mb-6">
@@ -86,9 +93,38 @@ function ToolView({ tool, Component }: ToolViewProps) {
           <p className="text-slate-500 dark:text-dark-text-muted mt-0.5">{tool.description}</p>
         </div>
       </div>
-      <Suspense fallback={<LoadingSpinner />}>
-        <Component />
-      </Suspense>
+      {blockedOnMobile ? (
+        <DesktopOnlyNotice tool={tool} />
+      ) : (
+        <Suspense fallback={<LoadingSpinner />}>
+          <Component />
+        </Suspense>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Calm placeholder shown when a `desktopOnly` tool is opened on a
+ * mobile device. Says *why* (mobile WebGPU / RAM ceilings make the
+ * on-device AI tools unreliable) so the user understands this isn't
+ * a generic "feature unavailable" message but a deliberate gate.
+ */
+function DesktopOnlyNotice({ tool }: { tool: Tool }) {
+  return (
+    <div className="rounded-2xl border border-slate-200 dark:border-dark-border bg-white dark:bg-dark-surface p-6 sm:p-8 text-slate-700 dark:text-dark-text">
+      <h2 className="text-lg font-semibold tracking-[-0.01em] mb-2">
+        {tool.title} runs only on desktop
+      </h2>
+      <p className="text-slate-600 dark:text-dark-text-muted leading-relaxed">
+        On-device AI loads large model files into memory and pushes the GPU hard during inference.
+        On phones this reliably causes the browser tab to crash or the GPU device to be lost
+        mid-question, so we've disabled the tool on mobile rather than ship a broken experience.
+      </p>
+      <p className="text-slate-600 dark:text-dark-text-muted leading-relaxed mt-3">
+        Open this page on a laptop or desktop with at least 16 GB of RAM to use it. Every other
+        CloakPDF tool runs fine on this device.
+      </p>
     </div>
   );
 }
@@ -132,11 +168,18 @@ function HomeScreen({ onSelectTool, onOpenWorkflows }: HomeScreenProps) {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [searchQuery]);
 
-  /** Tools whose title or description matches the query (case-insensitive). */
+  /**
+   * Tools whose title or description matches the query (case-insensitive).
+   * `desktopOnly` tools (currently just Ask PDF) are also dropped on
+   * mobile so phones don't see cards for features that crash their
+   * tabs — see the `desktopOnly` rationale in `tool-registry.ts`.
+   */
   const filteredTools = useMemo(() => {
+    const mobile = isMobileDevice();
+    const visible = mobile ? tools.filter((t) => !t.desktopOnly) : tools;
     const q = searchQuery.trim().toLowerCase();
-    if (!q) return tools;
-    return tools.filter(
+    if (!q) return visible;
+    return visible.filter(
       (t) => t.title.toLowerCase().includes(q) || t.description.toLowerCase().includes(q),
     );
   }, [searchQuery]);
@@ -355,14 +398,14 @@ function WhyCloakPdfSection() {
           description="Every tool adapts fluidly across screen sizes — edit on the go, finalise at your desk."
         />
         <FeatureItem
-          icon={<Sparkles className="w-5 h-5" />}
+          icon={<LayoutGrid className="w-5 h-5" />}
           title={`${tools.length}+ PDF tools`}
           description="Merge, split, sign, redact, OCR, compress, convert — one workspace for every PDF chore."
         />
         <FeatureItem
-          icon={<Laptop className="w-5 h-5" />}
-          title="Light & dark mode"
-          description="Thoughtful theming that follows your system preference automatically."
+          icon={<Cpu className="w-5 h-5" />}
+          title="On-device AI"
+          description="Ask questions about your PDF with a chat model that runs entirely in your browser — no API key, no server round-trip."
         />
         <FeatureItem
           icon={<GitFork className="w-5 h-5" />}
@@ -529,6 +572,18 @@ export function App() {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [view]);
+
+  // Cross-component deep-link: a tool fires `navigateToTool(id)` and we
+  // route to it. Currently used by the encrypted-PDF notice in
+  // `usePdfFile` to deep-link into the PDF Password tool.
+  useEffect(() => {
+    function onNavigate(event: Event) {
+      const id = (event as CustomEvent<ToolId>).detail;
+      if (findTool(id)) setView({ kind: "tool", toolId: id });
+    }
+    window.addEventListener(NAVIGATE_TOOL_EVENT, onNavigate);
+    return () => window.removeEventListener(NAVIGATE_TOOL_EVENT, onNavigate);
+  }, []);
 
   const showBack = view.kind !== "home";
 

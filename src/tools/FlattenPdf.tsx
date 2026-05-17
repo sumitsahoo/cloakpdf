@@ -55,6 +55,8 @@ export default function FlattenPdf() {
           iconColor={categoryAccent.transform}
           accept=".pdf,application/pdf"
           onFiles={pdf.onFiles}
+          encryptedFile={pdf.encryptedFile}
+          onClearEncrypted={pdf.reset}
           label="Drop a PDF file here"
           hint="Form fields and annotations will be converted to static content"
         />

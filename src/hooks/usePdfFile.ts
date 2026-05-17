@@ -36,6 +36,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { LOAD_ERROR_MESSAGE, errorMessage } from "../utils/file-helpers.ts";
+import { isPdfEncrypted } from "../utils/pdf-security.ts";
 import { useWorkflowSlot } from "../workflow/WorkflowContext.tsx";
 
 export interface UsePdfFileOptions<T> {
@@ -67,6 +68,19 @@ export interface UsePdfFileOptions<T> {
    * displays identical wording without copy-pasting the string.
    */
   loadErrorMessage?: string;
+  /**
+   * Whether to accept password-protected PDFs.
+   *
+   * By default the hook rejects encrypted PDFs upfront — every tool except
+   * `PdfPassword` (which strips the password) and `PdfInspector` (which
+   * inspects encryption status) needs a clear-text PDF to do useful work,
+   * so the default keeps them from hitting opaque pdf-lib / PDF.js errors
+   * mid-operation. When rejected, `encryptedFile` exposes the file so the
+   * tool can render `EncryptedPdfNotice` with a CTA to PDF Password.
+   *
+   * Set to `true` for tools whose purpose is to deal with encrypted PDFs.
+   */
+  allowEncrypted?: boolean;
 }
 
 export interface UsePdfFileReturn<T> {
@@ -80,6 +94,13 @@ export interface UsePdfFileReturn<T> {
   loadError: string | null;
   /** Imperatively override the load error (e.g. to clear it after the user dismisses it). */
   setLoadError: (message: string | null) => void;
+  /**
+   * The user-dropped PDF that turned out to be password-protected, or
+   * `null`. Tools render `<EncryptedPdfNotice>` when this is set instead
+   * of the dropzone / loaded-file UI. Always `null` when
+   * `allowEncrypted: true` was passed in.
+   */
+  encryptedFile: File | null;
   /**
    * Handler to pass to `<FileDropZone onFiles={...} />`. Starts the
    * upload lifecycle with the first file in the array; ignores empty
@@ -106,7 +127,9 @@ export interface UsePdfFileReturn<T> {
  *   Use `void` (the default) when the tool doesn't need derived data.
  */
 export function usePdfFile<T = void>(options: UsePdfFileOptions<T> = {}): UsePdfFileReturn<T> {
-  const { loadErrorMessage = LOAD_ERROR_MESSAGE } = options;
+  const { loadErrorMessage = LOAD_ERROR_MESSAGE, allowEncrypted = false } = options;
+  const allowEncryptedRef = useRef(allowEncrypted);
+  allowEncryptedRef.current = allowEncrypted;
 
   // Latch the latest callbacks in refs so that `onFiles` and `reset`
   // don't need to be recreated every render. This keeps the hook's
@@ -123,6 +146,7 @@ export function usePdfFile<T = void>(options: UsePdfFileOptions<T> = {}): UsePdf
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [encryptedFile, setEncryptedFile] = useState<File | null>(null);
 
   // Track the most recent data so that `onReset` sees it even when
   // invoked before React has committed a state update.
@@ -152,6 +176,7 @@ export function usePdfFile<T = void>(options: UsePdfFileOptions<T> = {}): UsePdf
     setData(null);
     setLoading(false);
     setLoadError(null);
+    setEncryptedFile(null);
     onResetRef.current?.(previous);
   }, []);
 
@@ -162,19 +187,41 @@ export function usePdfFile<T = void>(options: UsePdfFileOptions<T> = {}): UsePdf
     const previous = dataRef.current;
     const requestId = ++requestIdRef.current;
 
-    // Synchronously flip state so the UI switches into the file-loaded
-    // view immediately. Any stale data/thumbs get torn down first.
+    // Clear any stale state before the async work begins. We deliberately
+    // do NOT set `file` synchronously: setting it before the encryption
+    // check completes leaks one render to consumers that watch
+    // `pdf.file` (e.g. AskPdf's RAG `useEffect`), which then races
+    // pdfjs against the gate and surfaces a "No password given" alert
+    // alongside the encrypted notice. The encryption check is fast
+    // enough (parsing the trailer, not the streams) that the brief
+    // dropzone-flashing window before the file view appears is the
+    // better trade-off.
     onResetRef.current?.(previous);
-    setFile(pdf);
+    setFile(null);
     setData(null);
     setLoadError(null);
-
-    const loader = loadRef.current;
-    if (!loader) return;
+    setEncryptedFile(null);
 
     setLoading(true);
     void (async () => {
       try {
+        // Gate on encryption first — every tool except the password
+        // remover and inspector needs clear-text bytes. Rejecting here
+        // means the tool never sees the file (no loader run, no
+        // half-broken state) and the UI can render the encrypted notice
+        // in place of the dropzone.
+        if (!allowEncryptedRef.current && (await isPdfEncrypted(pdf))) {
+          if (requestIdRef.current !== requestId) return;
+          setEncryptedFile(pdf);
+          return;
+        }
+        if (requestIdRef.current !== requestId) return;
+        // Encryption gate passed — now expose the file to consumers
+        // and kick off the optional loader.
+        setFile(pdf);
+
+        const loader = loadRef.current;
+        if (!loader) return;
         const result = await loader(pdf);
         if (requestIdRef.current !== requestId) return;
         setData(result);
@@ -202,5 +249,5 @@ export function usePdfFile<T = void>(options: UsePdfFileOptions<T> = {}): UsePdf
     onFilesRef.current([injectedFile]);
   }, [injectedFile]);
 
-  return { file, data, loading, loadError, setLoadError, onFiles, reset };
+  return { file, data, loading, loadError, setLoadError, encryptedFile, onFiles, reset };
 }

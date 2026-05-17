@@ -170,6 +170,8 @@ export default function AddPageNumbers() {
           iconColor={categoryAccent.annotate}
           accept=".pdf,application/pdf"
           onFiles={pdf.onFiles}
+          encryptedFile={pdf.encryptedFile}
+          onClearEncrypted={pdf.reset}
           label="Drop a PDF file here"
           hint="Page numbers will be drawn on every page"
         />

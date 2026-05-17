@@ -5,13 +5,20 @@
 
     <!--
       Content Security Policy — enforces the "no uploads, 100% private" promise.
-      `connect-src` is intentionally narrow: only the CDNs that deliver the
-      Tesseract OCR engine and language data are permitted. There is no path
-      for user file content to leave the browser.
+      `connect-src` is intentionally narrow: only the CDNs that deliver tool
+      assets (Tesseract OCR data, Hugging Face AI model weights) are permitted.
+      User file content is never sent to any origin; these endpoints serve
+      read-only model files, not uploads.
+
+      Hugging Face hosts model weights across several CDN subdomains:
+        - huggingface.co        → API + small JSON config files
+        - cdn-lfs.huggingface.co → legacy LFS routing for larger weights
+        - cas-bridge.xethub.hf.co → newer Xet-protocol CDN
+      `*.huggingface.co` and `*.hf.co` cover current and any future endpoints.
     -->
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' blob: https://cdn.jsdelivr.net https://unpkg.com; worker-src 'self' blob: https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' blob: https://cdn.jsdelivr.net https://unpkg.com https://tessdata.projectnaptha.com; object-src 'none'; base-uri 'self'; form-action 'self'; manifest-src 'self'"
+      content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' blob: https://cdn.jsdelivr.net https://unpkg.com; worker-src 'self' blob: https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' blob: https://cdn.jsdelivr.net https://unpkg.com https://tessdata.projectnaptha.com https://huggingface.co https://*.huggingface.co https://*.hf.co; object-src 'none'; base-uri 'self'; form-action 'self'; manifest-src 'self'"
     />
 
     <!-- SVG favicon (primary + only) -->

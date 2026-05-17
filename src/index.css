@@ -261,6 +261,43 @@ body {
 }
 
 /*
+ * Download-arrow loop used in the AI consent modal's header while a
+ * model bundle is streaming in. The arrow rises in from above, settles
+ * in the middle for a beat, then drops out the bottom — visually mirrors
+ * the byte counter and progress bar below rather than the generic spin.
+ * Held-open middle (35–65%) is intentional so the icon is fully readable
+ * for most of each cycle. Disabled under reduced-motion.
+ */
+@keyframes download-arrow {
+  0% {
+    transform: translateY(-55%);
+    opacity: 0;
+  }
+  35% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  65% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(55%);
+    opacity: 0;
+  }
+}
+
+.animate-download-arrow {
+  animation: download-arrow 1.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-download-arrow {
+    animation: none;
+  }
+}
+
+/*
  * Looping attention-pulse for error / warning banners. Box-shadow ring runs
  * continuously with a pause between pulses (0→60% pulse, 60→100% hold-at-zero)
  * so it grabs the eye without becoming frantic. Respects prefers-reduced-motion

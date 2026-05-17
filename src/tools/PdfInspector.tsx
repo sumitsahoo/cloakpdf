@@ -56,6 +56,11 @@ export default function PdfInspector() {
   const pdf = usePdfFile<PdfInfo>({
     load: getPdfInfo,
     loadErrorMessage: "Failed to read PDF information.",
+    // The whole point of this tool is to inspect the document — which
+    // includes reporting on its encryption status. Skip the
+    // encrypted-PDF gate so the user can still see version, page
+    // count, etc. for a password-protected file.
+    allowEncrypted: true,
   });
 
   const info = pdf.data;

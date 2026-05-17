@@ -107,6 +107,8 @@ export default function PdfToImage() {
           iconColor={categoryAccent.transform}
           accept=".pdf,application/pdf"
           onFiles={pdf.onFiles}
+          encryptedFile={pdf.encryptedFile}
+          onClearEncrypted={pdf.reset}
           label="Drop a PDF file here"
           hint="Each page will be exported as a PNG or JPEG image"
         />

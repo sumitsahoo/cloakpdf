@@ -17,7 +17,12 @@ interface AlertBoxProps {
 export function AlertBox({ message }: AlertBoxProps) {
   return (
     <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl p-4 text-sm text-red-700 dark:text-red-300 error-pulse">
-      <p>{message}</p>
+      {/* `overflow-wrap: anywhere` (vs the gentler `break-words`) so
+          long unbreakable tokens in surfaced runtime errors —
+          `onnxruntime::webgpu::BufferManager::Download(void *, size_t)`,
+          file paths with no spaces, stack-trace lines — wrap at the
+          container edge instead of spilling past it on narrow viewports. */}
+      <p className="wrap-anywhere">{message}</p>
     </div>
   );
 }

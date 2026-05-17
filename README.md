@@ -27,7 +27,15 @@
 
 ## ✨ Features
 
-CloakPDF offers **35 powerful PDF tools**, all running 100% client-side:
+CloakPDF offers **36 powerful PDF tools**, all running 100% client-side. Features are grouped by what they do; the order roughly tracks day-to-day usefulness, with the differentiating on-device AI feature leading.
+
+### 🤖 AI Tools _(on-device)_
+
+_Chat with your PDF using a small AI model running entirely in your browser — no API keys, no server round-trips_
+
+| Tool                      | Description                                                                                                                                                                                                                              |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Ask your PDF** _(beta)_ | Ask natural-language questions about any PDF and get grounded answers extracted from the document text. Powered by a downloadable small chat model (1.2 GB or 2.6 GB tier, your choice). See [Local AI](#-local-ai-on-device-rag) below. |
 
 ### 🗂️ Organise & Edit
 
@@ -96,30 +104,32 @@ _Protect your PDFs and manage metadata_
 
 ## 🔒 Privacy First
 
-|                               |                                                         |
-| ----------------------------- | ------------------------------------------------------- |
-| **No file uploads**           | Everything is processed locally in your browser         |
-| **No server-side processing** | Zero network requests for your files                    |
-| **No data collection**        | No analytics, no tracking, no cookies                   |
-| **Fully offline capable**     | Works without an internet connection after initial load |
+|                               |                                                                                                      |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------- |
+| **No file uploads**           | Everything is processed locally in your browser                                                      |
+| **No server-side processing** | Zero network requests for your files                                                                 |
+| **On-device AI**              | The Ask-your-PDF chat model runs entirely in the browser — no API key, no inference server, no quota |
+| **No data collection**        | No analytics, no tracking, no cookies                                                                |
+| **Fully offline capable**     | Works without an internet connection after the initial model + asset load                            |
 
 ---
 
 ## 🛠️ Tech Stack
 
-| Category         | Technology                                                     |
-| ---------------- | -------------------------------------------------------------- |
-| Framework        | [React 19](https://react.dev/)                                 |
-| Styling          | [Tailwind CSS 4](https://tailwindcss.com/)                     |
-| Build Tool       | [Vite+](https://vite.dev/) (Vite + Rolldown unified toolchain) |
-| Language         | [TypeScript 6](https://www.typescriptlang.org/)                |
-| PDF Manipulation | [@pdfme/pdf-lib](https://github.com/pdfme/pdf-lib)             |
-| PDF Rendering    | [PDF.js](https://mozilla.github.io/pdf.js/)                    |
-| Drag & Drop      | [dnd-kit](https://dndkit.com/)                                 |
-| Icons            | [Lucide React](https://lucide.dev/)                            |
-| OCR Engine       | [Tesseract.js](https://tesseract.projectnaptha.com/)           |
-| ZIP Export       | [JSZip](https://stuk.github.io/jszip/)                         |
-| Toolchain CLI    | [Vite+ (`vp`)](https://viteplus.dev/)                          |
+| Category         | Technology                                                                                                                |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Framework        | [React 19](https://react.dev/)                                                                                            |
+| Styling          | [Tailwind CSS 4](https://tailwindcss.com/)                                                                                |
+| Build Tool       | [Vite+](https://vite.dev/) (Vite + Rolldown unified toolchain)                                                            |
+| Language         | [TypeScript 6](https://www.typescriptlang.org/)                                                                           |
+| PDF Manipulation | [@pdfme/pdf-lib](https://github.com/pdfme/pdf-lib)                                                                        |
+| PDF Rendering    | [PDF.js](https://mozilla.github.io/pdf.js/)                                                                               |
+| On-device AI     | [Transformers.js](https://github.com/huggingface/transformers.js) + [LangChain.js](https://js.langchain.com/) / LangGraph |
+| Drag & Drop      | [dnd-kit](https://dndkit.com/)                                                                                            |
+| Icons            | [Lucide React](https://lucide.dev/)                                                                                       |
+| OCR Engine       | [Tesseract.js](https://tesseract.projectnaptha.com/)                                                                      |
+| ZIP Export       | [JSZip](https://stuk.github.io/jszip/)                                                                                    |
+| Toolchain CLI    | [Vite+ (`vp`)](https://viteplus.dev/)                                                                                     |
 
 ---
 
@@ -187,6 +197,30 @@ CloakPDF leverages two complementary libraries for full PDF support:
 - **[PDF.js](https://mozilla.github.io/pdf.js/)** — Renders PDF pages to canvas for visual previews and thumbnail generation.
 
 All operations happen in-memory using the browser's `FileReader` API and `ArrayBuffer`s. Processed files are delivered as downloadable blobs — no data ever touches a remote server.
+
+---
+
+## 🤖 Local AI (on-device RAG)
+
+**Ask your PDF** runs a full retrieval-augmented question-answering
+pipeline **entirely in your browser** — no API key, no inference
+server, no usage quota. The model weights download once from Hugging
+Face's CDN, get cached, and work offline forever after.
+
+Three small models work together on first use (~1.55 GB total on the
+default Compact chat tier):
+
+- **Chat** — [LFM2.5-1.2B-Instruct](https://huggingface.co/LiquidAI/LFM2.5-1.2B-Instruct) _(Compact, default)_ or [LFM2-2.6B](https://huggingface.co/LiquidAI/LFM2-2.6B) _(Quality)_
+- **Retrieval** — [EmbeddingGemma-300M](https://huggingface.co/onnx-community/embeddinggemma-300m-ONNX)
+- **Reranking** — [MS MARCO MiniLM-L-6-v2](https://huggingface.co/Xenova/ms-marco-MiniLM-L-6-v2)
+
+For everything else — the LangGraph state machine, the BM25 + dense
+hybrid retriever, the three deterministic fast-paths, sampling
+profiles, caching layers, WebGPU vs WASM choices, and the rationale
+behind every model swap — see the implementation deep-dive:
+
+**→ [docs/local-ai.md](docs/local-ai.md)** _(with diagrams of the
+graph + ingest pipeline)_
 
 ---
 

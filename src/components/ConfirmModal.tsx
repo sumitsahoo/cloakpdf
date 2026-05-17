@@ -2,7 +2,7 @@
  * Lightweight confirmation modal — a designed replacement for the
  * browser's native `window.confirm`.
  *
- * Visual language adapted from cloakresume's ConfirmDialog: a glass-
+ * Visual language adapted from cloakresume's confirm modal: a glass-
  * blur backdrop, scale-in card, danger / default tone. Translated to
  * CloakPDF's Tailwind tokens (`primary-*`, `slate-*`, `dark-*`) so it
  * matches the rest of the app instead of using cloakresume's CSS vars.
@@ -15,7 +15,7 @@ import { AlertTriangle, X } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 
-interface ConfirmDialogProps {
+interface ConfirmModalProps {
   open: boolean;
   title: string;
   description?: string;
@@ -26,7 +26,7 @@ interface ConfirmDialogProps {
   onCancel: () => void;
 }
 
-export function ConfirmDialog({
+export function ConfirmModal({
   open,
   title,
   description,
@@ -35,7 +35,7 @@ export function ConfirmDialog({
   tone = "default",
   onConfirm,
   onCancel,
-}: ConfirmDialogProps) {
+}: ConfirmModalProps) {
   const confirmRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -71,7 +71,7 @@ export function ConfirmDialog({
       className="fixed inset-0 z-200 flex items-center justify-center p-4 animate-fade-in overscroll-contain"
       role="dialog"
       aria-modal="true"
-      aria-labelledby="confirm-dialog-title"
+      aria-labelledby="confirm-modal-title"
     >
       {/* Backdrop dim + blur — the layer below; click to dismiss. Inline
           backdrop-filter for the `-webkit-` prefix (Safari). */}
@@ -100,7 +100,7 @@ export function ConfirmDialog({
             </span>
             <div className="flex-1 min-w-0">
               <h2
-                id="confirm-dialog-title"
+                id="confirm-modal-title"
                 className="text-base font-semibold tracking-[-0.01em] text-slate-800 dark:text-dark-text"
               >
                 {title}

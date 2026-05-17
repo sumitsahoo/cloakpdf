@@ -25,3 +25,16 @@ dist-ssr
 
 # Claude Code local state
 .claude/scheduled_tasks.lock
+
+# Test fixtures — PDFs dropped into tests/fixtures/ for the e2e and
+# fixture-aware integration tests. Kept out of version control because
+# they're throwaway documents the contributor supplies themselves.
+tests/fixtures/*.pdf
+
+# Puppeteer profile populated by the e2e runner (CacheStorage, IndexedDB,
+# shader caches, etc.). Reused across runs to keep the AI models cached
+# on disk; never checked in.
+tests/.puppeteer-profile/
+
+# Debug artifacts written by tests/e2e/retrieval-probe.ts.
+tests/retrieval-debug/

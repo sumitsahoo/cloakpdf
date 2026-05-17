@@ -102,6 +102,8 @@ export default function RemoveBlankPages() {
           iconColor={categoryAccent.organise}
           accept=".pdf,application/pdf"
           onFiles={pdf.onFiles}
+          encryptedFile={pdf.encryptedFile}
+          onClearEncrypted={pdf.reset}
           label="Drop a PDF file here"
           hint="Blank pages are detected automatically — review before removing"
         />

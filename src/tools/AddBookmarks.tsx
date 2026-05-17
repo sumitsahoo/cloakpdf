@@ -126,6 +126,8 @@ export default function AddBookmarks() {
           iconColor={categoryAccent.organise}
           accept=".pdf,application/pdf"
           onFiles={pdf.onFiles}
+          encryptedFile={pdf.encryptedFile}
+          onClearEncrypted={pdf.reset}
           label="Drop a PDF file here"
           hint="Add a clickable bookmark list to navigate the document"
         />

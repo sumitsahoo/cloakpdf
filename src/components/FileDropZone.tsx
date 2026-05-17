@@ -12,6 +12,7 @@ import { useCallback, useRef, useState } from "react";
 import { categoryGlow } from "../config/theme.ts";
 import { useSpotlightGlow } from "../hooks/useSpotlightGlow.ts";
 import { useWorkflowSlot } from "../workflow/WorkflowContext.tsx";
+import { EncryptedPdfNotice } from "./EncryptedPdfNotice.tsx";
 
 interface FileDropZoneProps {
   /** MIME type filter for the hidden file input (e.g. ".pdf,application/pdf"). */
@@ -34,6 +35,20 @@ interface FileDropZoneProps {
    * Should match the tool's category accent. Defaults to slate.
    */
   iconColor?: string;
+  /**
+   * When set, the dropzone is replaced with an `EncryptedPdfNotice`
+   * pointing the user at the PDF Password tool. Wired from
+   * `usePdfFile`'s `encryptedFile` so tools just forward the value;
+   * setting it to `null` (the default) keeps the standard dropzone.
+   */
+  encryptedFile?: File | null;
+  /**
+   * Clear the encrypted-file state and return the dropzone (the
+   * "Choose another file" button on the notice). Typically
+   * `pdf.reset` from `usePdfFile`. Required when `encryptedFile` is
+   * passed.
+   */
+  onClearEncrypted?: () => void;
 }
 
 export function FileDropZone({
@@ -44,6 +59,8 @@ export function FileDropZone({
   hint,
   glowColor = categoryGlow.organise,
   iconColor,
+  encryptedFile = null,
+  onClearEncrypted,
 }: FileDropZoneProps) {
   // In workflow mode the file is injected by the runner, so the
   // dropzone is unreachable. Skip rendering it entirely so the inflated
@@ -87,6 +104,14 @@ export function FileDropZone({
   // gated. In workflow mode the runner has already injected a file, so
   // there is nothing for the dropzone to do.
   if (inWorkflow) return null;
+
+  // The hook detected the user dropped an encrypted PDF — render the
+  // notice (with a deep-link to PDF Password) in place of the dropzone.
+  // Render only when the caller wired the clear callback, otherwise the
+  // notice's "Choose another file" button would be a dead-end.
+  if (encryptedFile && onClearEncrypted) {
+    return <EncryptedPdfNotice file={encryptedFile} onChangeFile={onClearEncrypted} />;
+  }
 
   return (
     <button

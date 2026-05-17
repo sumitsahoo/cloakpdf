@@ -42,6 +42,13 @@
        tiles, URL chip. Replace these per brand. The viewBox stays
        1200 × 630.
 
+       The bottom-right tile is reserved for the **headline
+       differentiator** of the app — for CloakPDF that's the
+       "Local AI" tile (on-device chat over your PDFs).
+       For other Cloak apps, swap that tile to whatever distinguishes
+       them from the field; keep the other three tiles as
+       category-level call-outs.
+
   Re-render with: `node scripts/build-og-image.mjs`. The output lands
   at public/icons/og-image.png, which is what each Cloak app's
   <meta og:image> in index.html points at.
@@ -336,18 +343,24 @@
             stroke-linecap="round"
             stroke-linejoin="round"
           >
-            <!-- Lucide `archive` — box with lid and a handle line on
-                 the inner pocket. Reads as "compressed package" at a
-                 glance, which is the primary connotation of this tile. -->
-            <rect width="20" height="5" x="2" y="3" rx="1" />
-            <path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8" />
-            <path d="M10 12h4" />
+            <!-- Lucide `bot` — robot head + antenna + side dots. Reads
+                 as "AI" at a glance for the Ask-your-PDF tile. The
+                 on-device chat model is the headline differentiator vs
+                 other browser PDF tools, so it earns a slot in the
+                 four-up tile grid instead of the more generic
+                 "Compress & Convert" call-out (which used to live
+                 here — every PDF tool does that, only we ship AI in
+                 the browser). -->
+            <path d="M12 8V4H8" />
+            <rect width="16" height="12" x="4" y="8" rx="2" />
+            <path d="M2 14h2" />
+            <path d="M20 14h2" />
+            <path d="M15 13v2" />
+            <path d="M9 13v2" />
           </g>
-          <text x="708" y="415" font-size="17" font-weight="700" fill="#1e293b">
-            Compress &amp; Convert
-          </text>
+          <text x="708" y="415" font-size="17" font-weight="700" fill="#1e293b">Local AI</text>
           <text x="708" y="436" font-size="12.5" fill="#475569">
-            Shrink files, PDF ↔ image, page numbers
+            Ask your PDF · runs entirely on-device
           </text>
         </g>
 
@@ -360,7 +373,8 @@
           fill="#334155"
           letter-spacing="0.1"
         >
-          No uploads &#160;·&#160; Works offline &#160;·&#160; 35+ tools &#160;·&#160; Open source
+          On-device AI &#160;·&#160; No uploads &#160;·&#160; Works offline &#160;·&#160; Open
+          source
         </text>
 
         <g transform="translate(508 510)">
