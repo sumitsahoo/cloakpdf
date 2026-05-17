@@ -98,8 +98,9 @@ export interface UseRagModelsReturn {
    * Full evict — releases RAM **and** deletes the model weights
    * from the browser's CacheStorage, then clears every
    * `cloakpdf:ai-model-ready:*` flag so the consent dialog re-
-   * appears on next use. Frees ~1.5 GB of disk for the current AI
-   * bundle; the user pays a full re-download next time they touch
+   * appears on next use. Frees roughly 1.2 GB (Compact) / 1.9 GB
+   * (Quality) of disk for the current AI bundle; the user pays a
+   * full re-download next time they touch
    * the AI feature. Returns the cache-evict result so the caller
    * can tell the user how much was actually deleted (0 caches
    * means there was nothing cached to begin with).

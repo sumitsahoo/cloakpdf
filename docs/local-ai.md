@@ -18,17 +18,19 @@ the pipeline or debugging an unexpected answer.
 
 Three pipelines load together on first use:
 
-| Role             | Model                                                                                 | On disk | Peak RAM | License           |
-| ---------------- | ------------------------------------------------------------------------------------- | ------- | -------- | ----------------- |
-| Chat _(Compact)_ | [LFM2.5-1.2B-Instruct](https://huggingface.co/LiquidAI/LFM2.5-1.2B-Instruct)          | ~1.2 GB | ~2.0 GB  | LFM Open Lic v1.0 |
-| Chat _(Quality)_ | [LFM2-2.6B](https://huggingface.co/LiquidAI/LFM2-2.6B) _(picker upgrade)_             | ~1.5 GB | ~3.5 GB  | LFM Open Lic v1.0 |
-| Retrieval        | [EmbeddingGemma-300M](https://huggingface.co/onnx-community/embeddinggemma-300m-ONNX) | ~309 MB | ~400 MB  | Gemma Terms       |
-| Reranking        | [MS MARCO MiniLM-L-6-v2](https://huggingface.co/Xenova/ms-marco-MiniLM-L-6-v2)        | ~23 MB  | ~90 MB   | Apache 2.0        |
+| Role             | Model                                                                                 | On disk  | Peak RAM | License           |
+| ---------------- | ------------------------------------------------------------------------------------- | -------- | -------- | ----------------- |
+| Chat _(Compact)_ | [LFM2.5-1.2B-Instruct](https://huggingface.co/LiquidAI/LFM2.5-1.2B-Instruct)          | ~810 MB  | ~2.0 GB  | LFM Open Lic v1.0 |
+| Chat _(Quality)_ | [LFM2-2.6B](https://huggingface.co/LiquidAI/LFM2-2.6B) _(picker upgrade)_             | ~1.55 GB | ~3.5 GB  | LFM Open Lic v1.0 |
+| Retrieval        | [EmbeddingGemma-300M](https://huggingface.co/onnx-community/embeddinggemma-300m-ONNX) | ~320 MB  | ~500 MB  | Gemma Terms       |
+| Reranking        | [MS MARCO MiniLM-L-6-v2](https://huggingface.co/Xenova/ms-marco-MiniLM-L-6-v2)        | ~23 MB   | ~90 MB   | Apache 2.0        |
 
-A fresh visitor on the **Compact** tier downloads **~1.55 GB** total.
-The chat tier is user-selectable in the consent modal; both LFM tiers
-share the embedder and reranker, so swapping tiers only re-downloads
-the chat slot.
+A fresh visitor on the **Compact** tier downloads **~1.15 GB** total
+(810 MB chat + 320 MB embed + 23 MB rerank); switching to **Quality**
+adds ~750 MB on top for the 2.6B chat weights, landing the bundle
+at **~1.9 GB**. The chat tier is user-selectable in the consent modal;
+both LFM tiers share the embedder and reranker, so swapping tiers
+only re-downloads the chat slot.
 
 The registry of these models lives in
 [`src/utils/ai-models.ts`](../src/utils/ai-models.ts) — every entry
@@ -224,7 +226,7 @@ caches:
 ```mermaid
 flowchart LR
     subgraph Cold["Cold visit"]
-        CDN[Hugging Face CDN] --> Cache[CacheStorage<br/><i>~1.55 GB</i>]
+        CDN[Hugging Face CDN] --> Cache[CacheStorage<br/><i>~1.15 GB Compact / ~1.9 GB Quality</i>]
         PDF1([upload PDF]) --> Embed1[chunk + embed] --> IDB1[(IndexedDB)]
     end
 

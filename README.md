@@ -33,9 +33,9 @@ CloakPDF offers **36 powerful PDF tools**, all running 100% client-side. Feature
 
 _Chat with your PDF using a small AI model running entirely in your browser — no API keys, no server round-trips_
 
-| Tool                      | Description                                                                                                                                                                                                                              |
-| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Ask your PDF** _(beta)_ | Ask natural-language questions about any PDF and get grounded answers extracted from the document text. Powered by a downloadable small chat model (1.2 GB or 2.6 GB tier, your choice). See [Local AI](#-local-ai-on-device-rag) below. |
+| Tool                      | Description                                                                                                                                                                                                                                    |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Ask your PDF** _(beta)_ | Ask natural-language questions about any PDF and get grounded answers extracted from the document text. Powered by a downloadable small chat model (1.2B or 2.6B parameter tier, your choice). See [Local AI](#-local-ai-on-device-rag) below. |
 
 ### 🗂️ Organise & Edit
 
@@ -207,8 +207,8 @@ pipeline **entirely in your browser** — no API key, no inference
 server, no usage quota. The model weights download once from Hugging
 Face's CDN, get cached, and work offline forever after.
 
-Three small models work together on first use (~1.55 GB total on the
-default Compact chat tier):
+Three small models work together on first use (~1.15 GB total on the
+default Compact chat tier; ~1.9 GB on Quality):
 
 - **Chat** — [LFM2.5-1.2B-Instruct](https://huggingface.co/LiquidAI/LFM2.5-1.2B-Instruct) _(Compact, default)_ or [LFM2-2.6B](https://huggingface.co/LiquidAI/LFM2-2.6B) _(Quality)_
 - **Retrieval** — [EmbeddingGemma-300M](https://huggingface.co/onnx-community/embeddinggemma-300m-ONNX)

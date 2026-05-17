@@ -361,11 +361,14 @@ export const tools: Tool[] = [
     beta: true,
     // Two chat tiers ship today (see `CHAT_VARIANT_IDS` in
     // `src/utils/ai-models.ts`): LFM2.5-1.2B-Instruct Compact
-    // (~1.2 GB / 2 GB peak) and LFM2-2.6B Quality (~1.5 GB / 3.5 GB
+    // (~810 MB / 2 GB peak) and LFM2-2.6B Quality (~1.55 GB / 3.5 GB
     // peak). Both are Liquid AI's LFM family — the cross-tier e2e
     // showed they dominate SmolLM2-1.7B on speed AND extraction
     // discipline, so we dropped SmolLM2 entirely. The embedder is
-    // shared — EmbeddingGemma 300M (~197 MB / ~300 MB peak RAM).
+    // shared — EmbeddingGemma 300M (~320 MB / ~500 MB peak RAM,
+    // tokenizer included). A 23 MB MS MARCO MiniLM reranker rides
+    // alongside. Aggregate first-time download: ~1.15 GB on Compact,
+    // ~1.9 GB on Quality.
     // With OS + browser + tab overhead the practical floor for the
     // Quality tier is ~16 GB; users on lower-RAM machines should
     // pick Compact in the gate's tier picker. The `desktopOnly` flag below hides the tool on mobile
