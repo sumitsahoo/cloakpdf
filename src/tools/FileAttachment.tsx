@@ -20,6 +20,7 @@ import { useWorkflowSlot } from "../workflow/WorkflowContext.tsx";
 import { downloadBlob, errorMessage } from "../utils/file-helpers.ts";
 import { formatFileSize } from "../utils/file-helpers.ts";
 import type { PdfAttachment } from "../utils/pdf-operations.ts";
+import { isPdfEncrypted } from "../utils/pdf-security.ts";
 import {
   attachFilesToPdf,
   listPdfAttachments,
@@ -28,6 +29,7 @@ import {
 
 export default function FileAttachment() {
   const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [encryptedFile, setEncryptedFile] = useState<File | null>(null);
   const [attachments, setAttachments] = useState<PdfAttachment[]>([]);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
@@ -92,9 +94,14 @@ export default function FileAttachment() {
   }, [pdfFile, setTaskError]);
 
   const handlePdfFile = useCallback(
-    (files: File[]) => {
+    async (files: File[]) => {
       const pdf = files[0];
       if (!pdf) return;
+      if (await isPdfEncrypted(pdf)) {
+        setEncryptedFile(pdf);
+        return;
+      }
+      setEncryptedFile(null);
       setPdfFile(pdf);
       setAttachments([]);
       task.setError(null);
@@ -103,6 +110,8 @@ export default function FileAttachment() {
     },
     [task],
   );
+
+  const clearEncrypted = useCallback(() => setEncryptedFile(null), []);
 
   const handleAddFiles = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -164,6 +173,8 @@ export default function FileAttachment() {
           iconColor={categoryAccent.organise}
           accept=".pdf,application/pdf"
           onFiles={handlePdfFile}
+          encryptedFile={encryptedFile}
+          onClearEncrypted={clearEncrypted}
           label="Drop a PDF file here"
           hint="View, add, extract, or remove embedded file attachments"
         />

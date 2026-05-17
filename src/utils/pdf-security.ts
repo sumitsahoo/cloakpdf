@@ -795,6 +795,30 @@ export async function isPdfEncrypted(file: File): Promise<boolean> {
   return !!pdfDoc.context.trailerInfo.Encrypt;
 }
 
+/**
+ * Sentinel error thrown when a tool that requires a clear-text PDF is fed
+ * a password-protected one.
+ *
+ * Tools catch this and surface a clear "remove the password first" UI
+ * (see `EncryptedPdfNotice`) with a CTA into the PDF Password tool, instead
+ * of letting the raw pdf-lib / PDF.js error ("No password given",
+ * "EncryptedPDFError") bubble up — those messages mean nothing to end users
+ * and don't tell them how to proceed.
+ *
+ * The `usePdfFile` hook does the rejection up-front so tools never have
+ * to try-catch this themselves; this class exists for the small set of
+ * tools that don't use the hook (Merge, Compare, Digital Signature) and
+ * for the RAG pipeline.
+ */
+export class EncryptedPdfError extends Error {
+  readonly file: File;
+  constructor(file: File) {
+    super("This PDF is password-protected.");
+    this.name = "EncryptedPdfError";
+    this.file = file;
+  }
+}
+
 /** Bitmask granting all document permissions (PDF spec §7.6.3.2, Table 22). */
 const ALL_PERMS = -4; // 0xFFFFFFFC — all permission bits set
 

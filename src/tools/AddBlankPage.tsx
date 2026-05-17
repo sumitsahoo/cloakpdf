@@ -108,6 +108,8 @@ export default function AddBlankPage() {
           iconColor={categoryAccent.organise}
           accept=".pdf,application/pdf"
           onFiles={pdf.onFiles}
+          encryptedFile={pdf.encryptedFile}
+          onClearEncrypted={pdf.reset}
           label="Drop a PDF file here"
           hint="Add one or more blank pages and drag to set their position"
         />

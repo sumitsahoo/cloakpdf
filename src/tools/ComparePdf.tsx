@@ -18,6 +18,7 @@ import { canvas as canvasColors, categoryAccent, categoryGlow } from "../config/
 import { useAsyncProcess } from "../hooks/useAsyncProcess.ts";
 import { formatFileSize } from "../utils/file-helpers.ts";
 import { pdfjsLib } from "../utils/pdf-renderer.ts";
+import { isPdfEncrypted } from "../utils/pdf-security.ts";
 
 /**
  * Convert a canvas to a Blob URL (more memory-efficient than data-URLs).
@@ -209,6 +210,8 @@ type ViewMode = "side-by-side" | "diff-overlay";
 export default function ComparePdf() {
   const [fileA, setFileA] = useState<File | null>(null);
   const [fileB, setFileB] = useState<File | null>(null);
+  const [encryptedA, setEncryptedA] = useState<File | null>(null);
+  const [encryptedB, setEncryptedB] = useState<File | null>(null);
   const [comparisons, setComparisons] = useState<PageComparison[]>([]);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("side-by-side");
@@ -224,26 +227,39 @@ export default function ComparePdf() {
   const setError = task.setError;
 
   const handleFileA = useCallback(
-    (files: File[]) => {
-      if (files[0]) {
-        setFileA(files[0]);
-        setComparisons([]);
-        setError(null);
+    async (files: File[]) => {
+      const pdf = files[0];
+      if (!pdf) return;
+      if (await isPdfEncrypted(pdf)) {
+        setEncryptedA(pdf);
+        return;
       }
+      setEncryptedA(null);
+      setFileA(pdf);
+      setComparisons([]);
+      setError(null);
     },
     [setError],
   );
 
   const handleFileB = useCallback(
-    (files: File[]) => {
-      if (files[0]) {
-        setFileB(files[0]);
-        setComparisons([]);
-        setError(null);
+    async (files: File[]) => {
+      const pdf = files[0];
+      if (!pdf) return;
+      if (await isPdfEncrypted(pdf)) {
+        setEncryptedB(pdf);
+        return;
       }
+      setEncryptedB(null);
+      setFileB(pdf);
+      setComparisons([]);
+      setError(null);
     },
     [setError],
   );
+
+  const clearEncryptedA = useCallback(() => setEncryptedA(null), []);
+  const clearEncryptedB = useCallback(() => setEncryptedB(null), []);
 
   const handleCompare = useCallback(async () => {
     if (!fileA || !fileB) return;
@@ -336,6 +352,8 @@ export default function ComparePdf() {
                 iconColor={categoryAccent.security}
                 accept=".pdf,application/pdf"
                 onFiles={handleFileA}
+                encryptedFile={encryptedA}
+                onClearEncrypted={clearEncryptedA}
                 label="Drop the original PDF"
                 hint="First document to compare"
               />
@@ -372,6 +390,8 @@ export default function ComparePdf() {
                 iconColor={categoryAccent.security}
                 accept=".pdf,application/pdf"
                 onFiles={handleFileB}
+                encryptedFile={encryptedB}
+                onClearEncrypted={clearEncryptedB}
                 label="Drop the modified PDF"
                 hint="Second document to compare"
               />

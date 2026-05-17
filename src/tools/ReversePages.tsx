@@ -78,6 +78,8 @@ export default function ReversePages() {
           iconColor={categoryAccent.organise}
           accept=".pdf,application/pdf"
           onFiles={pdf.onFiles}
+          encryptedFile={pdf.encryptedFile}
+          onClearEncrypted={pdf.reset}
           label="Drop a PDF file here"
           hint="Reverse the order of all pages in one click"
         />

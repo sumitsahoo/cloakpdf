@@ -40,6 +40,7 @@ import { InfoCallout } from "../components/InfoCallout.tsx";
 import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { useAsyncProcess } from "../hooks/useAsyncProcess.ts";
 import { downloadPdf, formatFileSize, pdfFilename } from "../utils/file-helpers.ts";
+import { isPdfEncrypted } from "../utils/pdf-security.ts";
 import {
   type CertificateInfo,
   type ExistingSignature,
@@ -87,6 +88,7 @@ function formatSignatureStandard(filter: string, subFilter: string): string {
 export default function DigitalSignature() {
   // PDF state
   const [file, setFile] = useState<File | null>(null);
+  const [encryptedFile, setEncryptedFile] = useState<File | null>(null);
   const [existingSignatures, setExistingSignatures] = useState<ExistingSignature[]>([]);
   const [detectingSignatures, setDetectingSignatures] = useState(false);
 
@@ -120,9 +122,14 @@ export default function DigitalSignature() {
   const [success, setSuccess] = useState(false);
 
   const handleFile = useCallback(
-    (files: File[]) => {
+    async (files: File[]) => {
       const pdf = files[0];
       if (!pdf) return;
+      if (await isPdfEncrypted(pdf)) {
+        setEncryptedFile(pdf);
+        return;
+      }
+      setEncryptedFile(null);
       setFile(pdf);
       setExistingSignatures([]);
       setError(null);
@@ -130,6 +137,8 @@ export default function DigitalSignature() {
     },
     [setError],
   );
+
+  const clearEncrypted = useCallback(() => setEncryptedFile(null), []);
 
   // Detect existing signatures when a file is loaded
   useEffect(() => {
@@ -275,6 +284,8 @@ export default function DigitalSignature() {
           iconColor={categoryAccent.security}
           accept=".pdf,application/pdf"
           onFiles={handleFile}
+          encryptedFile={encryptedFile}
+          onClearEncrypted={clearEncrypted}
           label="Drop a PDF file here"
           hint="Digitally sign with a cryptographic certificate"
         />

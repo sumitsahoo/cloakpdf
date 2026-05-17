@@ -226,6 +226,8 @@ export default function RedactPdf() {
           iconColor={categoryAccent.security}
           accept=".pdf,application/pdf"
           onFiles={pdf.onFiles}
+          encryptedFile={pdf.encryptedFile}
+          onClearEncrypted={pdf.reset}
           label="Drop a PDF file here"
           hint="Draw black boxes over sensitive content to permanently redact it"
         />

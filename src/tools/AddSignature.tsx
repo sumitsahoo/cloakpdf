@@ -331,6 +331,8 @@ export default function AddSignature() {
           iconColor={categoryAccent.annotate}
           accept=".pdf,application/pdf"
           onFiles={pdf.onFiles}
+          encryptedFile={pdf.encryptedFile}
+          onClearEncrypted={pdf.reset}
           label="Drop a PDF file here"
           hint="Draw or upload your signature, then place it on a page"
         />

@@ -109,6 +109,8 @@ export default function ExtractPages() {
           iconColor={categoryAccent.organise}
           accept=".pdf,application/pdf"
           onFiles={pdf.onFiles}
+          encryptedFile={pdf.encryptedFile}
+          onClearEncrypted={pdf.reset}
           label="Drop a PDF file here"
           hint="Select pages to keep and download as a new PDF"
         />

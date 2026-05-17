@@ -16,6 +16,7 @@ import { categoryAccent, categoryGlow } from "../config/theme.ts";
 import { useAsyncProcess } from "../hooks/useAsyncProcess.ts";
 import { downloadPdf, formatFileSize, naturalCompare } from "../utils/file-helpers.ts";
 import { mergePdfs } from "../utils/pdf-operations.ts";
+import { isPdfEncrypted } from "../utils/pdf-security.ts";
 
 /** Internal representation of a queued PDF file. */
 interface FileItem {
@@ -26,6 +27,7 @@ interface FileItem {
 export default function MergePdf() {
   const [files, setFiles] = useState<FileItem[]>([]);
   const [sortMode, setSortMode] = useState<SortMode>("off");
+  const [encryptedFile, setEncryptedFile] = useState<File | null>(null);
   const task = useAsyncProcess();
 
   /**
@@ -41,12 +43,23 @@ export default function MergePdf() {
 
   const isSortActive = sortMode !== "off";
 
-  const handleFiles = useCallback((newFiles: File[]) => {
-    const items = newFiles
-      .filter((f) => f.type === "application/pdf")
-      .map((f) => ({ file: f, id: crypto.randomUUID() }));
+  const handleFiles = useCallback(async (newFiles: File[]) => {
+    const pdfs = newFiles.filter((f) => f.type === "application/pdf");
+    // Surface the first encrypted file as the blocker — mirroring how
+    // each single-PDF tool gates on encryption. The user fixes that one
+    // with PDF Password, then re-drops it alongside the rest.
+    for (const pdf of pdfs) {
+      if (await isPdfEncrypted(pdf)) {
+        setEncryptedFile(pdf);
+        return;
+      }
+    }
+    setEncryptedFile(null);
+    const items = pdfs.map((f) => ({ file: f, id: crypto.randomUUID() }));
     setFiles((prev) => [...prev, ...items]);
   }, []);
+
+  const clearEncrypted = useCallback(() => setEncryptedFile(null), []);
 
   const removeFile = useCallback((id: string) => {
     setFiles((prev) => prev.filter((f) => f.id !== id));
@@ -83,6 +96,8 @@ export default function MergePdf() {
         accept=".pdf,application/pdf"
         multiple
         onFiles={handleFiles}
+        encryptedFile={encryptedFile}
+        onClearEncrypted={clearEncrypted}
         label="Drop PDF files here or click to browse"
         hint="Select 2 or more PDF files to merge"
       />

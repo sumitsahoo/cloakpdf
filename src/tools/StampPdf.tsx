@@ -326,6 +326,8 @@ export default function StampPdf() {
           iconColor={categoryAccent.annotate}
           accept=".pdf,application/pdf"
           onFiles={pdf.onFiles}
+          encryptedFile={pdf.encryptedFile}
+          onClearEncrypted={pdf.reset}
           label="Drop a PDF file here"
           hint="Apply a stamp (DRAFT, APPROVED, etc.) or a custom text watermark"
         />

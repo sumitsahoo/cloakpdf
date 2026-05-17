@@ -126,6 +126,8 @@ export default function SplitPdf() {
           iconColor={categoryAccent.organise}
           accept=".pdf,application/pdf"
           onFiles={pdf.onFiles}
+          encryptedFile={pdf.encryptedFile}
+          onClearEncrypted={pdf.reset}
           label="Drop a PDF file here"
           hint="Split a PDF into multiple separate files"
         />

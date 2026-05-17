@@ -36,6 +36,7 @@ import { ToolCard } from "./components/ToolCard.tsx";
 import { categories, findTool, findToolComponent, tools } from "./config/tool-registry.ts";
 import type { Tool, ToolId } from "./types.ts";
 import { isMobileDevice } from "./utils/device-memory.ts";
+import { NAVIGATE_TOOL_EVENT } from "./utils/nav.ts";
 import { WorkflowBuilder } from "./workflow/WorkflowBuilder.tsx";
 import { WorkflowRunner } from "./workflow/WorkflowRunner.tsx";
 import { WorkflowsHome } from "./workflow/WorkflowsHome.tsx";
@@ -571,6 +572,18 @@ export function App() {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [view]);
+
+  // Cross-component deep-link: a tool fires `navigateToTool(id)` and we
+  // route to it. Currently used by the encrypted-PDF notice in
+  // `usePdfFile` to deep-link into the PDF Password tool.
+  useEffect(() => {
+    function onNavigate(event: Event) {
+      const id = (event as CustomEvent<ToolId>).detail;
+      if (findTool(id)) setView({ kind: "tool", toolId: id });
+    }
+    window.addEventListener(NAVIGATE_TOOL_EVENT, onNavigate);
+    return () => window.removeEventListener(NAVIGATE_TOOL_EVENT, onNavigate);
+  }, []);
 
   const showBack = view.kind !== "home";
 

@@ -69,6 +69,8 @@ export default function DeletePages() {
           iconColor={categoryAccent.organise}
           accept=".pdf,application/pdf"
           onFiles={pdf.onFiles}
+          encryptedFile={pdf.encryptedFile}
+          onClearEncrypted={pdf.reset}
           label="Drop a PDF file here"
           hint="Click pages to mark them for deletion"
         />

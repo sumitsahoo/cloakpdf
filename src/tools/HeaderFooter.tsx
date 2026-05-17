@@ -180,6 +180,8 @@ export default function HeaderFooter() {
           iconColor={categoryAccent.annotate}
           accept=".pdf,application/pdf"
           onFiles={pdf.onFiles}
+          encryptedFile={pdf.encryptedFile}
+          onClearEncrypted={pdf.reset}
           label="Drop a PDF file here"
           hint="Header and footer text will be added to every page"
         />

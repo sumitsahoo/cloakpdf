@@ -153,6 +153,8 @@ export default function BatesNumbering() {
           iconColor={categoryAccent.annotate}
           accept=".pdf,application/pdf"
           onFiles={pdf.onFiles}
+          encryptedFile={pdf.encryptedFile}
+          onClearEncrypted={pdf.reset}
           label="Drop a PDF file here"
           hint="Sequential Bates numbers will be stamped on every page"
         />
